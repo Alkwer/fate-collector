@@ -1,0 +1,194 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { offerSchema, formatValidationError, type Offer, type Evidence } from '../shared/schema'
+import { newOffer, exampleOffer, submissionProblem } from '../shared/offers'
+import { SourcePanel, CaptureDetails } from './components/SourcePanel'
+import { OfferEditor } from './components/OfferEditor'
+import { OfferPreview } from './components/OfferPreview'
+import { SavedOffers } from './components/SavedOffers'
+import { importFile, importJson, downloadArchive, type Imported } from './lib/imports'
+import * as storage from './lib/storage'
+import { collectionStatus, submitOffer } from './lib/api'
+import { useCaptureSync } from './lib/useCaptureSync'
+import { CaptureConnection } from './components/CaptureConnection'
+
+const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Your draft is still open.'
+export default function App() {
+  const [tab, setTab] = useState<'collector' | 'saved'>('collector')
+  const [draft, setDraft] = useState<Offer>(() => newOffer())
+  const [evidence, setEvidence] = useState<Evidence | null>(null)
+  const [records, setRecords] = useState<storage.SavedOffer[]>([])
+  const [dirty, setDirtyState] = useState(false)
+  const [busy, setBusyState] = useState(false)
+  const dirtyRef = useRef(false)
+  const busyRef = useRef(false)
+  const detailsPanel = useRef<HTMLDetailsElement>(null)
+  function setDirty(value: boolean) { dirtyRef.current = value; setDirtyState(value) }
+  function setBusy(value: boolean) { busyRef.current = value; setBusyState(value) }
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
+  const [accessKey, setAccessKey] = useState('')
+  const [connected, setConnected] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const moreActions = useRef<HTMLDetailsElement>(null)
+  const savedLocally = records.some(record => record.offer.id === draft.id)
+  const canConfirm = !!evidence && draft.cards.length > 0 && draft.cards.every(card => card.name.trim())
+  const needsConfirmation = canConfirm && !draft.reviewed
+  const canSave = !busy && (!!evidence || draft.cards.length > 0 || dirty) && (!savedLocally || dirty || needsConfirmation)
+  function closeActions() { if (moreActions.current) moreActions.current.open = false }
+  const announce = (text: string, error = false) => setNotice({ text, error })
+  const refresh = useCallback(async () => setRecords(await storage.listOffers()), [])
+  const sync = useCaptureSync(async entry => {
+    await refresh()
+    // Captures still enter history while the user edits or imports another offer.
+    if (!dirtyRef.current && !busyRef.current && !detailsPanel.current?.open) {
+      setDraft(entry.offer); setEvidence(entry.evidence); setDirty(false)
+    }
+  })
+  const automatic = sync.status === 'active' && savedLocally
+  const savedCurrent = savedLocally && !dirty
+  const reviewMessage = draft.reviewed
+    ? draft.completeness === 'partial' ? 'Reviewed · some cards are missing.' : 'Reviewed · all offered cards are included.'
+    : 'Not reviewed yet.'
+  const saveMessage = automatic && (autoSaving || dirty)
+    ? autoSaving ? 'Saving your corrections…' : 'Your corrections have not been saved yet.'
+    : savedCurrent && draft.reviewed ? 'Review saved. You can still correct a misread in Edit details.'
+    : automatic ? 'Capture saved. Open Edit details only if something needs correcting.'
+    : canConfirm ? draft.completeness === 'partial'
+      ? 'Confirm the listed cards. This offer will stay marked as incomplete.'
+      : 'Confirm all offered cards are listed correctly. Unknown rewards are OK.'
+    : savedCurrent ? 'Capture saved. You can check the details later.'
+    : evidence || draft.cards.length ? 'Save on this device. You can check the details later.'
+    : 'Capture an offer to start reviewing.'
+  useEffect(() => {
+    if (!automatic || !dirty || busy) return
+    let obsolete = false
+    const timer = window.setTimeout(() => {
+      const parsed = offerSchema.safeParse(draft)
+      if (!parsed.success) { announce(`Changes are not saved yet. ${formatValidationError(parsed.error)}`, true); return }
+      setAutoSaving(true)
+      void storage.saveOffer(parsed.data, evidence).then(async saved => {
+        if (!obsolete) { setDraft(saved.offer); setDirty(false) }
+        await refresh()
+      }).catch(error => { if (!obsolete) announce(errorText(error), true) }).finally(() => setAutoSaving(false))
+    }, 700)
+    return () => { obsolete = true; window.clearTimeout(timer) }
+  }, [automatic, dirty, busy, draft, evidence, refresh])
+  useEffect(() => { void refresh().catch(e => announce(errorText(e), true)); void collectionStatus().then(setConnected).catch(() => setConnected(false)) }, [refresh])
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+  function canReplace(): boolean { return !dirty || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
+  function change(patch: Partial<Offer>) {
+    setDraft(current => ({ ...current, ...patch, reviewed: patch.reviewed ?? false,
+      completeness: patch.completeness ?? (patch.reviewed !== true && current.completeness === 'complete' ? 'unverified' : current.completeness) }))
+    setDirty(true)
+  }
+  async function acceptImport(result: Imported) {
+    if (result.entries.length === 1) {
+      const entry = result.entries[0]
+      const existing = await storage.getOffer(entry.offer.id)
+      if (existing) {
+        const restored = entry.evidence ? await storage.restoreEvidence(existing.offer.id, entry.evidence) : false
+        setDraft(existing.offer); setEvidence(await storage.getEvidence(existing.offer.captureId)); setDirty(false)
+        announce(restored ? 'Original screenshot and OCR restored. Your existing corrections were preserved.' : 'This capture is already saved. Your existing corrections were preserved.')
+      } else { setDraft(entry.offer); setEvidence(entry.evidence); setDirty(true); announce(result.message) }
+      setTab('collector')
+      return
+    }
+    const imported = await storage.importOffers(result.entries)
+    await refresh(); setTab('saved'); announce(`Imported ${imported} new offers and restored available missing evidence. Existing corrections were preserved.`)
+  }
+  async function loadFile(file: File) {
+    if (busy || !canReplace()) return
+    setBusy(true)
+    try { await acceptImport(await importFile(file)) } catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+  }
+  useEffect(() => {
+    const paste = (event: ClipboardEvent) => {
+      if (busy || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
+      const file = event.clipboardData?.files[0]
+      const text = event.clipboardData?.getData('text/plain') || ''
+      if (file) { event.preventDefault(); void loadFile(file); return }
+      if (!text.includes('fate-collector.')) return
+      event.preventDefault()
+      if (!canReplace()) return
+      setBusy(true)
+      void importJson(text).then(acceptImport).catch(e => announce(errorText(e), true)).finally(() => setBusy(false))
+    }
+    window.addEventListener('paste', paste)
+    return () => window.removeEventListener('paste', paste)
+  })
+  async function save(mode: 'current' | 'confirm' | 'later' = 'current') {
+    const candidate = mode === 'confirm' && canConfirm
+      ? { ...draft, reviewed: true, completeness: draft.completeness === 'partial' ? 'partial' : 'complete' }
+      : mode === 'later' ? { ...draft, reviewed: false, completeness: 'unverified' } : draft
+    const parsed = offerSchema.safeParse(candidate)
+    if (!parsed.success) { announce(formatValidationError(parsed.error), true); return }
+    setBusy(true)
+    try { const saved = await storage.saveOffer(parsed.data, evidence); setDraft(saved.offer); setDirty(false); await refresh(); announce('Offer saved on this device. This save did not upload any changes.') }
+    catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+  }
+  async function open(id: string) {
+    if (!canReplace()) return
+    setBusy(true)
+    try {
+      const saved = await storage.getOffer(id)
+      if (!saved) throw new Error('This offer no longer exists on this device.')
+      setDraft(saved.offer); setEvidence(await storage.getEvidence(saved.offer.captureId)); setDirty(false); setTab('collector'); setNotice(null)
+    } catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+  }
+  async function remove(id: string) {
+    if (!window.confirm('Delete this local offer and its evidence? This does not delete a previously shared observation.')) return
+    setBusy(true)
+    try { await storage.deleteOffer(id); await refresh(); if (id === draft.id) { setDraft(newOffer()); setEvidence(null); setDirty(false) }; announce('Local offer deleted.') }
+    catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+  }
+  async function share(offer: Offer) {
+    if (dirtyRef.current && draft.id === offer.id) { announce('Save your changes before sharing this offer.', true); return }
+    const problem = submissionProblem(offer)
+    if (problem) { announce(problem, true); return }
+    setBusy(true)
+    try { await submitOffer(offer, accessKey.trim()); await storage.markUploaded(offer.id, offer.revision); await refresh(); announce('Reviewed offer shared. The screenshot was not uploaded.') }
+    catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+  }
+  function exportCurrent() {
+    const parsed = offerSchema.safeParse(draft)
+    if (!parsed.success) { announce(formatValidationError(parsed.error), true); return }
+    try { downloadArchive([{ offer: parsed.data, evidence }]) } catch (error) { announce(errorText(error), true) }
+  }
+  return <>
+    <a href="#main" className="skip-link">Skip to content</a>
+    <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button></nav></div></header>
+    <main id="main" className="workspace" tabIndex={-1}>
+      {notice && <div className={`notice ${notice.error ? 'error' : ''}`} role={notice.error ? 'alert' : 'status'}><span>{notice.text}</span><button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}
+      {tab === 'collector' ? <>
+        <div className="page-heading"><div><h1>Review your captures.</h1><p>Check detected Fates and correct any misreads.</p></div>
+          <details ref={moreActions} className="more-actions"><summary>More actions</summary><div className="action-menu">
+            {canConfirm && <button disabled={busy || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
+            <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
+            <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { setDraft(newOffer()); setEvidence(null); setDirty(false); setNotice(null) } }}>New offer</button>
+            <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { setDraft(exampleOffer()); setEvidence(null); setDirty(true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button>
+          </div></details>
+        </div>
+        <CaptureConnection sync={sync} />
+        <div className={`collector-grid ${draft.cards.length ? 'has-fates' : ''} ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
+          <SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />
+          <OfferPreview offer={draft} saved={savedLocally && !dirty} automatic={sync.status === 'active'} />
+        </div>
+        <details ref={detailsPanel} className="advanced-panel" key={draft.id}><summary>Edit details</summary><div className="advanced-grid" inert={busy}>
+          <OfferEditor offer={draft} onChange={change} />
+          <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
+        </div></details>
+        <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : dirty ? 'Changes pending…' : 'Saved locally'}</span> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
+      </> : <SavedOffers records={records} busy={busy} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
+        try { downloadArchive(records.map(r => ({ offer: r.offer, evidence: null })), 'fate-collector-data.json') } catch (error) { announce(errorText(error), true) }
+      }} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
+      <input ref={fileInput} className="file-input" type="file" accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = '' }} />
+      <details className="setup-help"><summary>How to capture from Path of Exile</summary><p>Run the Windows helper. Calibrate the panel with F6 and F7, then press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. Capture is currently SDR; in-game and HDR compatibility still need live validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></details>
+    </main>
+    <footer className="app-footer">Icon recognition needs verification. The collector does not recommend choices yet.<span>Independent community tool · Not affiliated with Grinding Gear Games</span></footer>
+  </>
+}

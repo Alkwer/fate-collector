@@ -1,0 +1,3 @@
+# Copy to .dev.vars for LOCAL DEVELOPMENT only. Never use this key in production.
+COLLECTOR_INGEST_KEY=local-development-only
+COLLECTOR_CAPTURE_KEY=local-capture-development-only

@@ -1,0 +1,147 @@
+{
+  "status": "ok",
+  "text": "0:13\n0:06\nTorchbearer\nCreates dangerous\nbonfires of corpses\nTempest\nCreates volatile orbs\nof lightning\nFates\nStormcaller\nCreates leylines of\nlightning\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice\nCONFIRM\nTorchbearer\nCreates dangerous\nbonfires of corpses",
+  "lines": [
+    {
+      "text": "0:13",
+      "x": 61,
+      "y": 149,
+      "width": 50,
+      "height": 22
+    },
+    {
+      "text": "0:06",
+      "x": 352,
+      "y": 147,
+      "width": 51,
+      "height": 22
+    },
+    {
+      "text": "Torchbearer",
+      "x": 1164,
+      "y": 520,
+      "width": 164,
+      "height": 25
+    },
+    {
+      "text": "Creates dangerous",
+      "x": 1124,
+      "y": 883,
+      "width": 248,
+      "height": 32
+    },
+    {
+      "text": "bonfires of corpses",
+      "x": 1121,
+      "y": 918,
+      "width": 255,
+      "height": 32
+    },
+    {
+      "text": "Tempest",
+      "x": 1638,
+      "y": 523,
+      "width": 115,
+      "height": 29
+    },
+    {
+      "text": "Creates volatile orbs",
+      "x": 1560,
+      "y": 883,
+      "width": 275,
+      "height": 25
+    },
+    {
+      "text": "of lightning",
+      "x": 1618,
+      "y": 918,
+      "width": 159,
+      "height": 32
+    },
+    {
+      "text": "Fates",
+      "x": 1872,
+      "y": 342,
+      "width": 97,
+      "height": 31
+    },
+    {
+      "text": "Stormcaller",
+      "x": 2068,
+      "y": 520,
+      "width": 156,
+      "height": 25
+    },
+    {
+      "text": "Creates leylines of",
+      "x": 2024,
+      "y": 883,
+      "width": 249,
+      "height": 32
+    },
+    {
+      "text": "lightning",
+      "x": 2086,
+      "y": 918,
+      "width": 123,
+      "height": 32
+    },
+    {
+      "text": "Houndmaster",
+      "x": 2503,
+      "y": 479,
+      "width": 185,
+      "height": 25
+    },
+    {
+      "text": "Creates spectral",
+      "x": 2491,
+      "y": 843,
+      "width": 212,
+      "height": 32
+    },
+    {
+      "text": "wolves which explode",
+      "x": 2447,
+      "y": 878,
+      "width": 299,
+      "height": 32
+    },
+    {
+      "text": "into ice",
+      "x": 2547,
+      "y": 915,
+      "width": 100,
+      "height": 23
+    },
+    {
+      "text": "CONFIRM",
+      "x": 1840,
+      "y": 1150,
+      "width": 160,
+      "height": 23
+    },
+    {
+      "text": "Torchbearer",
+      "x": 1837,
+      "y": 1335,
+      "width": 164,
+      "height": 25
+    },
+    {
+      "text": "Creates dangerous",
+      "x": 1798,
+      "y": 1699,
+      "width": 248,
+      "height": 32
+    },
+    {
+      "text": "bonfires of corpses",
+      "x": 1795,
+      "y": 1734,
+      "width": 255,
+      "height": 32
+    }
+  ],
+  "language": "en-US"
+}

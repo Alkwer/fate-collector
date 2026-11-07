@@ -1,0 +1,135 @@
+import { z } from 'zod'
+
+export const MAX_IMPORT_BYTES = 12 * 1024 * 1024
+export const MAX_API_BYTES = 128 * 1024
+const uuid = z.string().uuid()
+const timestamp = z.string().datetime({ offset: true })
+const shortText = z.string().max(160)
+const coordinate = z.number().finite().min(0).max(16384)
+
+export const rewardSchema = z.object({
+  id: uuid,
+  label: z.string().max(160),
+  kind: z.enum(['regular', 'combo', 'unknown']),
+  count: z.number().int().min(1).max(100),
+  threshold: z.number().int().min(1).max(100).nullable(),
+  identified: z.boolean(),
+}).strict().refine(r => !r.identified || r.label.trim().length > 0, 'An identified reward needs a label.')
+
+export const cardSchema = z.object({
+  id: uuid,
+  name: shortText,
+  tier: z.number().int().min(1).max(100).nullable(),
+  modifiers: z.array(z.string().max(1000)).max(40),
+  rewards: z.array(rewardSchema).max(30),
+}).strict()
+
+export const offerSchema = z.object({
+  kind: z.literal('fate-collector.offer'),
+  schemaVersion: z.literal(1),
+  id: uuid,
+  revision: z.number().int().min(1).max(100000),
+  capturedAt: timestamp,
+  updatedAt: timestamp,
+  captureId: uuid.nullable(),
+  source: z.enum(['manual', 'screenshot', 'windows-helper', 'example']),
+  origin: z.enum(['test', 'live']),
+  gameVersion: z.string().max(64),
+  area: shortText,
+  areaLevel: z.number().int().min(1).max(100).nullable(),
+  encounterNumber: z.number().int().min(1).max(10000),
+  completeness: z.enum(['unverified', 'partial', 'complete']),
+  reviewed: z.boolean(),
+  cards: z.array(cardSchema).max(30),
+  selectedCardId: uuid.nullable(),
+  notes: z.string().max(4000),
+}).strict().superRefine((offer, ctx) => {
+  if (new Set(offer.cards.map(c => c.id)).size !== offer.cards.length) {
+    ctx.addIssue({ code: 'custom', message: 'Card IDs must be unique.', path: ['cards'] })
+  }
+  for (const [index, card] of offer.cards.entries()) {
+    if (new Set(card.rewards.map(r => r.id)).size !== card.rewards.length) {
+      ctx.addIssue({ code: 'custom', message: 'Reward IDs must be unique.', path: ['cards', index, 'rewards'] })
+    }
+  }
+  if (offer.selectedCardId && !offer.cards.some(c => c.id === offer.selectedCardId)) {
+    ctx.addIssue({ code: 'custom', message: 'The chosen card must belong to this offer.', path: ['selectedCardId'] })
+  }
+  if (offer.source === 'example' && offer.origin !== 'test') {
+    ctx.addIssue({ code: 'custom', message: 'Examples must remain test observations.', path: ['origin'] })
+  }
+  if (offer.completeness === 'complete' && (!offer.reviewed || !offer.cards.length || offer.cards.some(c => !c.name.trim()))) {
+    ctx.addIssue({ code: 'custom', message: 'A complete offer needs named cards and a manual review.', path: ['completeness'] })
+  }
+})
+
+export const captureSchema = z.object({
+  kind: z.literal('fate-collector.capture'),
+  schemaVersion: z.literal(1),
+  captureId: uuid,
+  capturedAt: timestamp,
+  source: z.literal('windows-helper'),
+  helperVersion: z.string().min(1).max(40),
+  context: z.object({ captureMode: z.enum(['game', 'fixture']) }).strict().optional(),
+  image: z.object({
+    mimeType: z.literal('image/png'),
+    width: z.number().int().positive().max(8192),
+    height: z.number().int().positive().max(8192),
+    dataBase64: z.string().min(1).max(MAX_IMPORT_BYTES).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  }).strict().refine(i => i.width * i.height <= 16_777_216, 'The image is too large.'),
+  ocr: z.object({
+    status: z.enum(['ok', 'unavailable', 'error']),
+    text: z.string().max(20000),
+    lines: z.array(z.object({ text: z.string().max(2000), x: coordinate, y: coordinate, width: coordinate, height: coordinate }).strict()).max(500),
+    language: z.string().max(40).nullable(),
+  }).strict(),
+}).strict()
+
+// Network-only projection of a helper capture. Image bytes are deliberately absent.
+export const captureUploadSchema = z.object({
+  kind: z.literal('fate-collector.upload'),
+  schemaVersion: z.literal(1),
+  captureId: uuid,
+  capturedAt: timestamp,
+  source: z.literal('windows-helper'),
+  helperVersion: captureSchema.shape.helperVersion,
+  context: z.object({ captureMode: z.enum(['game', 'fixture']) }).strict(),
+  image: z.object({
+    width: z.number().int().positive().max(8192),
+    height: z.number().int().positive().max(8192),
+  }).strict().refine(i => i.width * i.height <= 16_777_216, 'The image is too large.'),
+  ocr: captureSchema.shape.ocr,
+}).strict()
+
+export const evidenceSchema = z.object({
+  id: uuid,
+  imageDataUrl: z.string().max(MAX_IMPORT_BYTES).regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/),
+  ocrText: z.string().max(20000),
+  ocrStatus: z.enum(['ok', 'unavailable', 'error', 'not-run']),
+  helperVersion: z.string().max(40).nullable(),
+  ocrLines: captureSchema.shape.ocr.shape.lines,
+}).strict()
+
+export const exportSchema = z.object({
+  kind: z.literal('fate-collector.export'),
+  schemaVersion: z.literal(1),
+  offers: z.array(z.object({ offer: offerSchema, evidence: evidenceSchema.nullable() }).strict()).min(1).max(250),
+}).strict().superRefine((archive, ctx) => {
+  for (const [index, entry] of archive.offers.entries()) {
+    if (entry.evidence && entry.offer.captureId !== entry.evidence.id) {
+      ctx.addIssue({ code: 'custom', path: ['offers', index], message: 'Evidence must match the offer capture ID.' })
+    }
+  }
+})
+
+export type Offer = z.infer<typeof offerSchema>
+export type FateCard = z.infer<typeof cardSchema>
+export type Reward = z.infer<typeof rewardSchema>
+export type Capture = z.infer<typeof captureSchema>
+export type CaptureUpload = z.infer<typeof captureUploadSchema>
+export type Evidence = z.infer<typeof evidenceSchema>
+export type Archive = z.infer<typeof exportSchema>
+
+export function formatValidationError(error: z.ZodError): string {
+  return error.issues.slice(0, 3).map(i => `${i.path.join('.') || 'File'}: ${i.message}`).join(' ')
+}
