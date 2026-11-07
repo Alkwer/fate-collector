@@ -102,3 +102,7 @@ try {
     Get-ChildItem -LiteralPath $folder -File | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
     Remove-Item -LiteralPath $folder
 }
+
+# Expected exporter failures leave a nonzero LASTEXITCODE. Report suite success
+# only after every assertion and cleanup has completed; thrown failures still fail.
+exit 0
