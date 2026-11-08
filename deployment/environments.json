@@ -1,0 +1,15 @@
+{
+  "accountId": "619a3c8442859105470a2d20ea33c1bd",
+  "staging": {
+    "worker": "app-staging",
+    "databaseName": "fate-collector-staging",
+    "databaseId": "b2f3ee5a-b4f4-46ef-8488-8488d3795bd7",
+    "url": "https://app-staging.fate-collector.workers.dev"
+  },
+  "production": {
+    "worker": "app",
+    "databaseName": "fate-collector",
+    "databaseId": "b464a0f3-b966-4070-af9b-ee1fca27a7ea",
+    "url": "https://app.fate-collector.workers.dev"
+  }
+}

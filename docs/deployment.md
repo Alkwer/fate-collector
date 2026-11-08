@@ -1,156 +1,182 @@
-# Publish with GitHub and Cloudflare
+# Staging and production releases
 
-GitHub stores the source and runs checks. A single Cloudflare Worker serves the
-built website and `/api/*`; a D1 database holds reviewed observations and automatic
-OCR captures in separate tables.
-Local saves remain in the user's browser. No separate Pages project, Vercel account
-or custom domain is required for the initial deployment.
+Production is `https://app.fate-collector.workers.dev`; staging is
+`https://app-staging.fate-collector.workers.dev`. Both serve the website and API.
+The staging page displays a gold **STAGING** notice and sends a `noindex` header.
+The staging URL is accessible to anyone with the link; uploads require its private
+keys. Do not copy real user captures into staging.
 
-## 1. Put the source on GitHub
+## Isolated resources
 
-Create a repository named `fate-collector`, with `main` as its default branch.
-Push this project's source and lockfile. Do not commit `.dev.vars`, `.env`, captures,
-`node_modules`, `dist` or `.wrangler`; the ignore files already cover them.
-Review the existing `research/` folder separately before publishing it.
+| Target | Worker | D1 database | Upload keys |
+| --- | --- | --- | --- |
+| Local | Wrangler simulation | local SQLite | `.dev.vars`, development values only |
+| Staging | `app-staging` | `fate-collector-staging` | Separate `COLLECTOR_CAPTURE_KEY` and `COLLECTOR_INGEST_KEY` |
+| Production | `app` | `fate-collector` | Existing production keys, preserved on deployment |
 
-The `Validate collector` workflow runs on pushes and pull requests. It checks
-TypeScript, unit/integration tests, browser flows and the Windows exporter. This
-repository does not automatically deploy pull requests or changes to `main`.
+The account, database IDs and origins are pinned in
+[`deployment/environments.json`](../deployment/environments.json). These IDs are
+not credentials. Deployment checks reject identical database IDs/names and wrong
+Worker targets. `wrangler.jsonc` retains a zero database UUID for local development.
+The deployment script generates environment-specific configs in ignored `.wrangler/`.
+There is no fallback from staging to production configuration.
 
-## 2. Create the Cloudflare database
+The older production URL `https://fate-collector.fate-collector.workers.dev`
+continues through `wrangler.legacy.jsonc` and its service binding to `app`.
+Staging deployments never update that compatibility Worker.
 
-Install dependencies locally, sign into the intended Cloudflare account and create
-the database:
+## GitHub settings
+
+`CLOUDFLARE_API_TOKEN` remains the existing repository deployment secret. It needs
+Workers Scripts Edit and D1 Edit on the configured account. It is an administrative
+credential and must never be given to testers or entered in the helper.
+
+Create these GitHub environments:
+
+| Environment | Setting | Kind |
+| --- | --- | --- |
+| `staging` | `CLOUDFLARE_ACCOUNT_ID` | Variable, matching `deployment/environments.json` |
+| `staging` | `COLLECTOR_CAPTURE_KEY` | Secret, independently generated, at least 32 characters |
+| `staging` | `COLLECTOR_INGEST_KEY` | Secret, different from capture and production keys |
+| `production` | `CLOUDFLARE_ACCOUNT_ID` | Existing secret |
+
+The previous `CLOUDFLARE_D1_DATABASE_ID` production variable is no longer used;
+the reviewed target configuration is the source of truth. Never store upload keys
+in source, frontend variables, release artifacts or workflow inputs.
+
+Restrict the `production` environment to branch `main`. Protect `main` with the
+`app` and `windows-helper` checks, up-to-date branches, resolved conversations,
+no force pushes and no deletions. These settings complement the workflow checks;
+repo owners and Cloudflare administrators can still change protections or deploy
+directly. This is a controlled release process, not a restriction on account owners.
+
+Required environment reviewers can add another approval when the GitHub plan and
+repository visibility support them. The workflow also requires an explicit manual
+test confirmation, independently of that feature. Do not make the repository public
+just to enable reviewers.
+
+## 1. Validate changes
+
+Use a branch and pull request. **Validate collector** runs on pushes and PRs and
+is reused by the staging workflow. It runs:
+
+- TypeScript, unit/integration tests and the frontend build;
+- browser flows against a local Worker and local D1;
+- Windows capture and upload queue tests;
+- the real Windows helper-to-local-Worker upload integration test.
+
+The app job packages the tested `dist`, a bundled Worker, the downloadable helper,
+SQL migrations and runtime settings into the `collector-release` artifact. A
+manifest records the commit SHA and SHA-256 of every file. Packaging uses Wrangler
+`deploy --dry-run`; it makes no remote changes. Artifacts are retained for 30 days.
+A failed Windows job prevents staging deployment even if the app artifact exists.
+
+## 2. Deploy and test staging
+
+In **Actions → Deploy staging → Run workflow**, select the desired branch.
+The workflow repeats the complete reusable validation for that exact commit,
+downloads its package, applies migrations only to staging, and deploys `app-staging`.
+It supplies the two staging upload secrets with the deployment through a temporary
+JSON file that is removed afterwards. Production keys are never read or rotated.
+
+The live smoke test checks the environment, commit and package ID, homepage and
+helper ZIP, then sends a clearly labelled synthetic capture and reviewed correction
+to staging. It verifies duplicate receipts, authorization and invalid-input rejection.
+Synthetic records remain in the test database and never enter production.
+A failed smoke test makes the run ineligible for promotion; staging is left available
+for diagnosis and the previous production stays active.
+
+For a feature branch, review and merge the changes, then run **Deploy staging**
+again on `main`. Production promotion requires a staging run from the exact `main`
+commit selected when launching promotion.
+
+Before promotion, manually check:
+
+- the gold STAGING notice and the version under `/api/status`;
+- F9 capture, crop calibration and OCR with the downloaded helper;
+- offline queuing, restarting the helper and eventual receipt-backed upload;
+- local folder review, correction and explicit reviewed sharing.
+
+Use a separate extracted helper directory and test captures. The helper's cloud
+settings are shared per Windows user: two extracted copies do not create separate
+cloud profiles. For parallel production and staging use a separate Windows user or
+VM. When switching the site in Cloud upload settings, enter the staging origin and
+capture key explicitly; the existing queue isolation starts a new scope. Re-enabling
+production does not backfill captures created while it was disabled.
+
+During initial setup, staging credentials can be retained in the ignored
+`.wrangler/staging-access.clixml` file, encrypted with Windows DPAPI for the local
+Windows user. GitHub secrets cannot be read back. Do not attach this file to issues.
+
+## 3. Promote exactly that package
+
+In **Actions → Promote tested release → Run workflow**, select `main`, enter the
+successful **Deploy staging** run ID from its summary and confirm the manual tests.
+The confirmation defaults to **false**. No deployment starts without it.
+
+Before accessing the production environment, the workflow verifies that:
+
+1. The source run belongs to this repository's staging workflow, was manually
+   dispatched on `main`, finished successfully and matches this exact commit.
+2. The downloaded artifact has the expected commit and unchanged checksums.
+3. The live staging still reports that same commit and package, both upload paths
+   are enabled, and the homepage and helper are reachable.
+
+Staging and promotion share one concurrency group, so a staging deployment cannot
+replace the tested version in the middle of promotion. The production job downloads
+the same artifact; it never rebuilds the frontend, helper or Worker. It rechecks
+staging immediately before applying production migrations and deploying `app`.
+After deployment it verifies production identity and upload configuration with GET;
+it does not insert synthetic data into production.
+
+If staging is newer, the artifact expired, the commit changed, or any check failed,
+run staging again for the intended `main` commit and retest it. Do not bypass the
+checks with a direct Wrangler deployment.
+
+## Local validation and dry runs
 
 ```sh
 npm ci
-npx wrangler login
-npx wrangler d1 create fate-collector
-```
-
-Save the returned **database UUID**. Keep `wrangler.jsonc`'s all-zero UUID for local
-development; decline any automatic configuration update offered by the CLI. The
-deployment script generates a separate configuration using the real UUID. The
-repository deliberately cannot deploy using the local placeholder.
-
-## 3. Configure GitHub Actions
-
-Create a GitHub environment named `production`. Add these repository or environment
-settings under **Settings → Secrets and variables → Actions**:
-
-| Setting | Type | Value |
-| --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Secret | Token scoped to your account, with Workers Scripts Edit and D1 Edit permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | Secret | Your Cloudflare account ID |
-| `CLOUDFLARE_D1_DATABASE_ID` | Variable | The database UUID from step 2 |
-
-Use Cloudflare's **Edit Cloudflare Workers** token template and include D1 Edit.
-Restrict account resources to the intended account. A `workers.dev` deployment does
-not require managing a custom DNS zone. The Cloudflare API token is an administrator
-credential; it must never be entered into the collector's website or Windows helper.
-
-In GitHub **Actions → Deploy to Cloudflare → Run workflow**, choose **main**. The
-workflow runs validation, applies migrations, and deploys the `app` Worker. Wrangler
-prints the site's `workers.dev` URL. Local IndexedDB data belongs to each origin:
-data collected on localhost does not automatically appear on the public URL.
-
-## 4. Enable private research sharing
-
-### Automatic helper uploads
-
-Generate a long random capture key in your password manager and configure the
-dedicated Worker secret (use a different value from the reviewed-offer key):
-
-```sh
-npx wrangler secret put COLLECTOR_CAPTURE_KEY --name app
-```
-
-Give trusted testers the deployed site's HTTPS origin and this capture key. They
-enter both once under **Cloud upload settings** in the helper's tray menu and
-explicitly enable upload. F9 captures then reach `/api/captures` without an open
-browser. The helper stores pending uploads on disk and retries while running.
-Screenshots remain local; raw OCR, line positions, dimensions and capture metadata
-are uploaded. Only game captures created after enabling the feature are eligible.
-
-`GET /api/status` exposes `captureIngestionEnabled` separately from reviewed sharing.
-It is a configuration check, not a database health check. Capture uploads remain
-unreviewed, including successful OCR. This key cannot submit reviewed observations
-when the two secrets have different values. Neither key is a Cloudflare API token.
-
-### Reviewed offers from the website
-
-The deployed website works locally in each browser without a collection key. The
-reviewed-offer API rejects uploads until its secret is configured. Generate a long random key in
-your password manager, then run this command in the project directory:
-
-```sh
-npx wrangler secret put COLLECTOR_INGEST_KEY --name app
-```
-
-Paste the key into Wrangler's hidden prompt. Give it only to your trusted testers.
-They enter it under **Saved offers → Shared research collection** and click **Share**
-for each reviewed live offer. Their key stays in memory and is cleared on reload.
-Use **Check connection** after enabling the secret. This checks configuration, not
-database health; an actual submission reports database errors separately.
-
-This key grants write access to the shared dataset. There are no individual accounts,
-quotas, contributor identities or moderation in v0.1. Before inviting the general
-public, add per-contributor authentication, abuse controls and a moderation process.
-Do not publish the shared key in source, frontend environment variables or screenshots.
-
-## Deploy from a local terminal instead
-
-After logging into Cloudflare, in PowerShell:
-
-```powershell
-$env:CLOUDFLARE_D1_DATABASE_ID = 'YOUR_DATABASE_UUID'
 npm run check
-npm run test:e2e
-npm run deploy
+npx playwright test
+npm run test:helper
+npm run test:upload
+npm run test:upload:integration
+npm run release:pack
+npm run deploy -- staging --dry-run
+npm run deploy -- production --dry-run
 ```
 
-`npm run deploy` applies remote migrations and uploads the **existing `dist` build**.
-Always build and check first. It refuses a missing or placeholder database UUID.
-If more than one Cloudflare account is available, set `CLOUDFLARE_ACCOUNT_ID` too.
+The helper tests require Windows. `release:pack` requires an absent `.release/`
+directory to avoid mixing packages; archive or remove only that generated directory
+before packaging a new build. Local packaging does not certify the working tree as
+a tested Git commit. Remote deployment through `scripts/deploy.mjs` is restricted
+to the designated GitHub workflows; plain `npm run deploy` fails closed.
 
-## Operations
+The smoke test uses `STAGING_URL`, `EXPECTED_REVISION`, `EXPECTED_RELEASE_ID`,
+`COLLECTOR_CAPTURE_KEY` and `COLLECTOR_INGEST_KEY`. `STAGING_READ_ONLY=true` skips all
+POST requests and needs no keys. It refuses production URLs or mismatched identity.
 
-The production URL is https://app.fate-collector.workers.dev. The database is still
-named `fate-collector`. The previous URL, https://fate-collector.fate-collector.workers.dev,
-remains available through a small compatibility Worker that forwards requests to
-`app` using a service binding. Existing helper settings and browser-local saves
-therefore remain usable at the previous origin. Browser-local saves are not copied
-to the new origin; use the existing export/import flow to transfer them if needed.
+## Recovery and database changes
 
-The compatibility Worker is configured in `wrangler.legacy.jsonc` and can be
-published with `npx wrangler deploy --config wrangler.legacy.jsonc`. It has no
-database or upload secrets of its own. Normal application deployments update `app`
-only; the compatibility Worker automatically uses that Worker's current deployment.
+Use additive/backward-compatible migrations so the previously deployed Worker can
+still run while the new version is being deployed. Test migrations with representative
+synthetic data on staging, including older records. A fresh test database alone does
+not establish that a destructive migration is safe for production.
 
-The API has no public read endpoint. Use the Cloudflare D1 console to inspect
-`capture_uploads` for automatic raw OCR and unverified parsed candidates, and
-`research_observations` to combine automatic captures with reviewed corrections.
-The combined view prefers the latest reviewed offer over its raw capture, avoiding
-double counting. Filter `reviewed = 1` and the appropriate completeness/context
-when analyzing checked samples. Never treat `unverified` as complete.
+Before a production migration that changes existing data, create and verify a D1
+backup/recovery point and review the migration separately. There are no destructive
+migrations in this staging setup. Code rollback does not restore the database.
 
-`latest_observations` returns the highest submitted reviewed revision for each offer.
-The underlying `observations` table preserves earlier revisions. An API retry of
-the same ID/revision/payload returns `duplicate`; conflicting content returns 409.
-Automatic captures instead deduplicate by capture ID and raw payload hash. Their
-parser version is stored so recognition can be revisited without inventing a new
-observation. OCR failures are retained to measure recognition coverage.
+For an incident, identify the last good **production Worker version**, check that
+its code remains compatible with the current schema, and use Cloudflare's rollback
+for `app` only. Do not roll back the staging Worker or compatibility Worker by
+mistake. Restore D1 only as a separately reviewed recovery operation. Follow up with
+a corrected release through staging. A failed post-deploy check requires diagnosis;
+the workflow does not blindly roll back schema changes.
 
-Deleting a browser record does not remove shared D1 data. At this stage, deletion
-requests are handled manually by the database owner using the offer/capture ID,
-including `capture_uploads` and any linked reviewed revisions. Keep backups
-before destructive database work. Never run the browser test fixtures against a
-production endpoint. Use the local test runner instead.
-
-Cloudflare plan limits and billing are account-specific. Check the account dashboard
-before opening a public deployment. A domain is optional and can be connected later.
-
-References checked for this foundation: [Workers static assets](https://developers.cloudflare.com/workers/static-assets/),
-[D1 getting started](https://developers.cloudflare.com/d1/get-started/),
-[GitHub Actions deployment](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
-and [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
+References: [Wrangler environments](https://developers.cloudflare.com/workers/wrangler/environments/),
+[Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/),
+[D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/),
+[Worker rollback limits](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/),
+[GitHub environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).

@@ -1,16 +1,25 @@
-name: Deploy to Cloudflare
+name: Deploy staging
 on:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: cloudflare-production
+  group: collector-release
   cancel-in-progress: false
 jobs:
-  deploy:
-    if: github.ref == 'refs/heads/main'
+  validate:
+    uses: ./.github/workflows/ci.yml
+  staging:
+    needs: validate
     runs-on: ubuntu-latest
-    environment: production
+    environment:
+      name: staging
+      url: https://app-staging.fate-collector.workers.dev
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      COLLECTOR_CAPTURE_KEY: ${{ secrets.COLLECTOR_CAPTURE_KEY }}
+      COLLECTOR_INGEST_KEY: ${{ secrets.COLLECTOR_INGEST_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,12 +27,24 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run check
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-      - name: Apply migrations and publish
-        run: npm run deploy
+      - uses: actions/download-artifact@v4
+        with:
+          name: collector-release
+          path: .release
+      - run: npm run release:verify
+      - name: Apply staging migrations and publish
+        run: npm run deploy -- staging
+      - name: Verify staging uploads and receipts
+        run: |
+          export EXPECTED_RELEASE_ID=$(node -p "JSON.parse(require('fs').readFileSync('.release/release.json')).releaseId")
+          npm run test:staging
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_D1_DATABASE_ID: ${{ vars.CLOUDFLARE_D1_DATABASE_ID }}
+          STAGING_URL: https://app-staging.fate-collector.workers.dev
+          EXPECTED_REVISION: ${{ github.sha }}
+      - name: Record tested release
+        run: |
+          echo "### Staging ready for manual testing" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: https://app-staging.fate-collector.workers.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Staging run: $GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "After testing F9, offline recovery and local review, promote this run from main." >> "$GITHUB_STEP_SUMMARY"

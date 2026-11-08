@@ -3,6 +3,7 @@
   "name": "app",
   "main": "worker/index.ts",
   "compatibility_date": "2026-11-07",
+  "vars": { "APP_ENV": "local", "RELEASE_REVISION": "local", "RELEASE_ID": "local" },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

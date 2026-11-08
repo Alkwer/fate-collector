@@ -183,3 +183,6 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
   .cards-table .card-name { min-width: 90px; }
   .cards-table .reward-summary { min-width: 0; }
 }
+/* Keep the test environment visible without changing the collector layout. */
+.environment-banner { padding: 10px 20px; text-align: center; background: var(--gold); color: var(--background); font-size: 14px; line-height: 1.5; }
+.environment-banner strong { margin-right: 12px; letter-spacing: .06em; }
