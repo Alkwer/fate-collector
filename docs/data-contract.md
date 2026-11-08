@@ -73,7 +73,7 @@ on disk. The feature is designed for desktop Chrome/Edge and a secure origin.
 ## Direct automatic upload
 
 `POST /api/captures` accepts `fate-collector.upload` schema version 1, authorized by
-`COLLECTOR_CAPTURE_KEY`. Its fields are `captureId`, `capturedAt`, `source`,
+`COLLECTOR_CAPTURE_KEY` and a current capture consent (see below). Its fields are `captureId`, `capturedAt`, `source`,
 `helperVersion`, required `context.captureMode`, `image: {width, height}` and the
 original `ocr` object. Image bytes and all unknown fields are rejected. Only game
 captures are accepted; this is still a client assertion, not verified provenance.
@@ -165,8 +165,63 @@ Only reviewed live offers with at least one card and partial/complete coverage a
 accepted by the reviewed endpoint. Examples cannot be reclassified as live. The
 server enforces these rules again. Automatic captures use a separate endpoint/key
 and remain unverified. These collection keys are intended for a small trusted research group.
-They do not provide contributor ownership or prevent a trusted key holder from
-submitting fabricated observations. Browser deletion is local only.
+They do not provide accounts or prevent a trusted key holder from submitting
+fabricated observations. Individual consent credentials control submissions and
+withdrawal within their scope. Browser offer deletion is local only.
+
+## Explicit sharing consent
+
+The canonical copy is `shared/consent-policy.json`, packaged with both the website
+and Windows helper. Operator: **Fate Collector — Alkwer**; contact:
+https://github.com/Alkwer/fate-collector. Each grant covers one channel (`captures`
+or `observations`), device/profile and API origin. Local capture/review remains
+available without a grant. The checkbox starts unchecked. Accepting website
+consent never sends an offer by itself; each offer still needs explicit Share.
+
+`POST /api/consents` requires the channel's collection bearer key and a strict
+JSON object: `id` (random UUID), `scope`, `policyVersion`, `acceptedAt` (device ISO
+time), `text` (the exact displayed copy including destination), and `token`
+(cryptographically random 32 bytes, encoded as 64 lowercase hexadecimal digits).
+The server verifies current version/text and rejects future dates beyond five
+minutes. It stores an immutable record with an independent server `recordedAt`
+time and a SHA-256 token hash. The response (201 new / 200 identical retry)
+contains the record without the token, plus `withdrawnAt: null`.
+
+Both data endpoints require `X-Consent-Id` and `X-Consent-Token` in addition to
+their collection key. Missing consent returns 428; invalid, withdrawn, wrong-scope
+or outdated consent returns 403. Captures predating acceptance are rejected (422).
+Clients validate the exact consent receipt before sending gameplay data. Updating
+the policy version requires a new explicit choice. Previously enabled helper
+settings are not consent evidence. Reviewed revisions cannot reuse another
+consent's offer ID (409), including unassigned legacy rows.
+
+`POST /api/consents/{id}/withdraw` accepts `X-Consent-Token` and
+`{ "withdrawnAt": "<device ISO time>" }`, without a collection key. It returns
+`{id, status: "withdrawn", withdrawnAt: "<server ISO time>"}`. Requests are
+idempotent; an early withdrawal also blocks a delayed grant. The database records
+the request and server dates, deletes capture/observation rows attached to that
+consent in the same statement through a trigger, and rejects late writes.
+Another consent's data and local files are preserved. Only the minimal consent
+audit remains; Cloudflare recovery backups may retain deleted data temporarily.
+Unknown consent IDs have an atomic limit of 100 new withdrawal records per UTC
+day, returning 429 with Retry-After until the next day. Deleting known consents
+and repeating existing withdrawals do not consume this allowance. Both clients
+persist the retry time while keeping sharing disabled locally.
+
+The website's **Saved offers → Shared research collection** contains the consent
+text, acceptance time, one-click **Withdraw consent**, history, accepted text and
+an audit export without credentials. The helper provides these controls in
+**Cloud upload settings** and stores records under its local `consents` folder.
+Withdrawal immediately disables local sends and is retried on connection/restart
+until confirmed. An in-flight send may finish before the server receives the
+withdrawal. Data already sent under that consent is then removed from D1.
+
+Website records use browser local storage; helper credentials use Windows DPAPI.
+Do not clear site data or delete helper settings while withdrawal is pending:
+without the local credential, this version has no account-based recovery.
+Withdrawing website consent does not withdraw helper consent or another device's
+consent. A grant is permission scoped to a random credential, not identity proof.
+Old rows stay unassigned; no consent is inferred for historical collection data.
 
 ## Rules for later frequency analysis
 

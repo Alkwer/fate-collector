@@ -1,4 +1,6 @@
 import { DatabaseSync } from 'node:sqlite'
+import { createHash } from 'node:crypto'
+import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { readFileSync, readdirSync } from 'node:fs'
 import { afterEach, expect, test } from 'vitest'
 import worker, { type Env } from '../worker'
@@ -7,12 +9,18 @@ import { offerSchema, type Offer, type CaptureUpload } from '../shared/schema'
 import presskitOcr from './fixtures/presskit-ocr.json'
 
 const databases: DatabaseSync[] = []
+const consentIds = { captures: '11111111-1111-4111-8111-111111111111', observations: '22222222-2222-4222-8222-222222222222' }
+const consentToken = 'c'.repeat(64)
 afterEach(() => { for (const db of databases.splice(0)) db.close() })
 function env(): Env {
   const database = new DatabaseSync(':memory:')
   const migrations = new URL('../migrations/', import.meta.url)
   for (const file of readdirSync(migrations).filter(name => name.endsWith('.sql')).sort()) database.exec(readFileSync(new URL(file, migrations), 'utf8'))
   databases.push(database)
+  for (const scope of ['captures', 'observations'] as const) {
+    database.prepare('INSERT INTO data_consents (id, scope, policy_version, consent_text, origin, accepted_at, recorded_at, token_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(consentIds[scope], scope, CONSENT_VERSION, consentText(scope, 'https://collector.test'), 'https://collector.test', '2020-01-01T00:00:00.000Z', '2020-01-01T00:00:00.000Z', createHash('sha256').update(consentToken).digest('hex'))
+  }
   const adapter = { prepare(sql: string) {
     let args: (string | number | null)[] = []
     const query = { bind(...values: (string | number | null)[]) { args = values; return query },
@@ -23,9 +31,9 @@ function env(): Env {
   return { DB: adapter as unknown as D1Database, ASSETS: { fetch: async () => new Response('static') } as unknown as Fetcher, COLLECTOR_INGEST_KEY: 'test-access', COLLECTOR_CAPTURE_KEY: 'capture-access' }
 }
 function offer(): Offer { return { ...newOffer(), source: 'manual', origin: 'live', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Alchemist' }] } }
-function post(body: unknown, key = 'test-access') { return new Request('https://collector.test/api/observations', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(body) }) }
+function post(body: unknown, key = 'test-access') { return new Request('https://collector.test/api/observations', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'X-Consent-Id': consentIds.observations, 'X-Consent-Token': consentToken }, body: JSON.stringify(body) }) }
 function upload(): CaptureUpload { return { kind: 'fate-collector.upload', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', context: { captureMode: 'game' }, image: { width: 3840, height: 2160 }, ocr: { ...presskitOcr, status: 'ok' } } }
-function capturePost(body: unknown, key = 'capture-access') { return new Request('https://collector.test/api/captures', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(body) }) }
+function capturePost(body: unknown, key = 'capture-access') { return new Request('https://collector.test/api/captures', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'X-Consent-Id': consentIds.captures, 'X-Consent-Token': consentToken }, body: JSON.stringify(body) }) }
 
 test('ingestion is closed when not configured or unauthorized', async () => {
   const bindings = env()

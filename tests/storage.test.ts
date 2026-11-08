@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { newOffer, exampleOffer } from '../shared/offers'
 import { importJson } from '../src/lib/imports'
+import * as consent from '../src/lib/consent'
 import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence } from '../src/lib/storage'
 import type { Evidence } from '../shared/schema'
 
@@ -18,6 +19,38 @@ test('corrections use one local offer with increasing revisions and retry receip
   await deleteOffer(draft.id)
   expect(await getOffer(draft.id)).toBeUndefined()
 })
+
+test('upload receipts keep their own revision when a different consent replaces a withdrawn grant', async () => {
+  const draft = exampleOffer()
+  const timestamp = new Date().toISOString()
+  const previous: consent.LocalConsent = {
+    id: crypto.randomUUID(), scope: 'observations', policyVersion: 'test', text: 'Test consent',
+    token: '0'.repeat(64), acceptedAt: timestamp, recordedAt: timestamp,
+    withdrawnAt: null, withdrawalConfirmedAt: null, blocked: false,
+  }
+  const current = { ...previous, id: crypto.randomUUID() }
+  const active = vi.spyOn(consent, 'sharingConsent').mockReturnValue(previous)
+  try {
+    const first = await saveOffer(draft, null)
+    const second = await saveOffer({ ...first.offer, notes: 'Correction' }, null)
+    await markUploaded(draft.id, second.offer.revision, previous.id)
+    active.mockReturnValue(current)
+    await markUploaded(draft.id, first.offer.revision, current.id)
+    await markUploaded(draft.id, second.offer.revision, previous.id)
+    expect(await getOffer(draft.id)).toMatchObject({
+      uploadedRevision: first.offer.revision, uploadedConsentId: current.id,
+    })
+    await markUploaded(draft.id, second.offer.revision, current.id)
+    await markUploaded(draft.id, first.offer.revision, current.id)
+    expect(await getOffer(draft.id)).toMatchObject({
+      uploadedRevision: second.offer.revision, uploadedConsentId: current.id,
+    })
+  } finally {
+    active.mockRestore()
+    await deleteOffer(draft.id)
+  }
+})
+
 test('unread captures can be saved for later review', async () => {
   const draft = newOffer()
   const saved = await saveOffer(draft, null)

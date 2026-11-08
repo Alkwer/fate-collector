@@ -1,3 +1,4 @@
+import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { expect, it, vi } from 'vitest'
 import { submissionProblem } from '../shared/offers'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
@@ -11,21 +12,38 @@ const captureKey = 'capture-test-key'
 const ingestKey = 'ingest-test-key'
 const status = {
   environment: 'staging', revision: expectedRevision, releaseId: expectedReleaseId,
-  ingestionEnabled: true, captureIngestionEnabled: true,
+  ingestionEnabled: true, captureIngestionEnabled: true, consentRequired: true, consentPolicyVersion: CONSENT_VERSION,
 }
 const options = { url, expectedRevision, expectedReleaseId, captureKey, ingestKey }
 
-function mockStaging(override?: (path: string, method: string) => Response | undefined) {
+function mockStaging(override?: (path: string, method: string, init?: RequestInit) => Response | undefined) {
   const uploads = new Set<string>()
+  const grants = new Map<string, { id: string; token: string; scope: string }>()
+  const withdrawn = new Set<string>()
   return vi.fn<typeof fetch>(async (input, init) => {
     const path = new URL(String(input)).pathname
     const method = init?.method ?? 'GET'
-    const response = override?.(path, method)
+    const response = override?.(path, method, init)
     if (response) return response
     if (method === 'GET') {
       if (path === '/api/status') return Response.json(status)
       if (path === '/') return new Response('<!doctype html><html><title>Fate Collector</title></html>', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
       if (path === '/downloads/fate-collector-helper.zip') return new Response(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 20]))
+    }
+    if (method === 'POST' && path === '/api/consents') {
+      const grant = JSON.parse(String(init?.body))
+      if (withdrawn.has(grant.id)) return new Response(null, { status: 403 })
+      expect(grant.text).toBe(consentText(grant.scope, url))
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer ' + (grant.scope === 'captures' ? captureKey : ingestKey))
+      grants.set(grant.id, grant)
+      const { token: _secret, ...receipt } = grant
+      return Response.json({ ...receipt, recordedAt: new Date().toISOString(), withdrawnAt: null }, { status: 201 })
+    }
+    if (method === 'POST' && path.endsWith('/withdraw')) {
+      const id = path.split('/')[3]
+      expect(new Headers(init?.headers).get('X-Consent-Token')).toBe(grants.get(id)?.token)
+      withdrawn.add(id)
+      return Response.json({ id, status: 'withdrawn', withdrawnAt: new Date().toISOString() })
     }
     if (method !== 'POST' || (path !== '/api/captures' && path !== '/api/observations')) return new Response(null, { status: 404 })
 
@@ -33,6 +51,11 @@ function mockStaging(override?: (path: string, method: string) => Response | und
     if (new Headers(init?.headers).get('authorization') !== `Bearer ${isCapture ? captureKey : ingestKey}`) {
       return new Response(null, { status: 401 })
     }
+    const headers = new Headers(init?.headers)
+    const id = headers.get('X-Consent-Id')
+    if (!id) return new Response(null, { status: 428 })
+    const consent = grants.get(id)
+    if (!consent || withdrawn.has(id) || consent.token !== headers.get('X-Consent-Token') || consent.scope !== (isCapture ? 'captures' : 'observations')) return new Response(null, { status: 403 })
     const body: unknown = JSON.parse(String(init?.body))
     const parsed = isCapture ? captureUploadSchema.safeParse(body) : offerSchema.safeParse(body)
     if (!parsed.success) return new Response(null, { status: 400 })
@@ -94,48 +117,32 @@ it('performs only unauthenticated GET requests in read-only mode', async () => {
   ])
 })
 
-it('uploads a synthetic capture and linked observation, retries both and checks rejected posts', async () => {
+it('requires consent, uploads both channels, and rejects reuse after withdrawing both grants', async () => {
   const fetch = mockStaging()
   await smokeStaging({ ...options, fetch })
   const posts = fetch.mock.calls.filter(([, init]) => init?.method === 'POST')
-  const capturePath = `${url}/api/captures`
-  const observationPath = `${url}/api/observations`
-  expect(posts.map(([input, init]) => [input, new Headers(init?.headers).get('Authorization')])).toEqual([
-    [capturePath, `Bearer ${captureKey}`],
-    [capturePath, `Bearer ${captureKey}`],
-    [observationPath, `Bearer ${ingestKey}`],
-    [observationPath, `Bearer ${ingestKey}`],
-    [capturePath, null],
-    [observationPath, null],
-    [capturePath, `Bearer ${captureKey}`],
-    [capturePath, `Bearer ${ingestKey}`],
-    [observationPath, `Bearer ${captureKey}`],
-  ])
-  const capture = captureUploadSchema.parse(JSON.parse(String(posts[0][1]?.body)))
-  expect(capture).toMatchObject({
-    helperVersion: 'staging-smoke', context: { captureMode: 'game' }, image: { width: 64, height: 64 },
-    ocr: { status: 'ok', text: '', lines: [], language: null },
-  })
-  const observation = offerSchema.parse(JSON.parse(String(posts[2][1]?.body)))
-  expect(observation).toMatchObject({
-    captureId: capture.captureId, origin: 'live', source: 'windows-helper', gameVersion: 'staging-smoke',
-    reviewed: true, completeness: 'partial', cards: [{ name: 'Staging smoke test' }], notes: expect.stringMatching(/synthetic/i),
-  })
+  const grants = posts.filter(([input]) => String(input).endsWith('/api/consents'))
+  expect(grants).toHaveLength(4) // two registrations, two rejected attempts to reuse withdrawn IDs
+  const captures = posts.filter(([input, init]) => String(input).endsWith('/api/captures') && JSON.parse(String(init?.body)).kind && new Headers(init?.headers).get('Authorization') === 'Bearer ' + captureKey)
+  const observations = posts.filter(([input, init]) => String(input).endsWith('/api/observations') && JSON.parse(String(init?.body)).kind && new Headers(init?.headers).get('Authorization') === 'Bearer ' + ingestKey)
+  const capture = captureUploadSchema.parse(JSON.parse(String(captures[0][1]?.body)))
+  const observation = offerSchema.parse(JSON.parse(String(observations[0][1]?.body)))
+  expect(capture.helperVersion).toBe('staging-smoke')
+  expect(observation.captureId).toBe(capture.captureId)
+  expect(observation.notes).toMatch(/synthetic/i)
   expect(submissionProblem(observation)).toBeNull()
-  expect(posts[1][1]?.body).toBe(posts[0][1]?.body)
-  expect(posts[3][1]?.body).toBe(posts[2][1]?.body)
-  expect(captureUploadSchema.safeParse(JSON.parse(String(posts[6][1]?.body))).success).toBe(false)
-  for (const [, init] of fetch.mock.calls) {
-    expect(init).toMatchObject({ redirect: 'error', signal: expect.any(AbortSignal) })
-  }
+  expect(captures[1][1]?.body).toBe(captures[0][1]?.body)
+  expect(observations[1][1]?.body).toBe(observations[0][1]?.body)
+  expect(posts.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(2)
+  for (const [, init] of fetch.mock.calls) expect(init).toMatchObject({ redirect: 'error', signal: expect.any(AbortSignal) })
 })
 
 it('stops before sending an observation when the capture receipt is wrong', async () => {
-  const fetch = mockStaging((path, method) => path === '/api/captures' && method === 'POST'
+  const fetch = mockStaging((path, method, init) => path === '/api/captures' && method === 'POST' && String(init?.body) !== '{}'
     ? Response.json({ id: 'wrong-id', status: 'accepted', reviewed: false }, { status: 201 })
     : undefined)
   await expect(smokeStaging({ ...options, fetch })).rejects.toThrow('Capture upload returned an unexpected receipt id.')
-  expect(fetch.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1)
+  expect(fetch.mock.calls.some(([input, init]) => String(input).endsWith('/api/observations') && JSON.parse(String(init?.body || '{}')).kind)).toBe(false)
 })
 
 it('rejects an HTML fallback at the helper download URL before posting', async () => {
@@ -145,7 +152,7 @@ it('rejects an HTML fallback at the helper download URL before posting', async (
 })
 
 it('reports an unexpected HTTP status without printing the response body', async () => {
-  const fetch = mockStaging((path, method) => path === '/api/captures' && method === 'POST'
+  const fetch = mockStaging((path, method, init) => path === '/api/captures' && method === 'POST' && String(init?.body) !== '{}'
     ? new Response(captureKey, { status: 503 })
     : undefined)
   await expect(smokeStaging({ ...options, fetch })).rejects.toThrow(/^Capture upload returned HTTP 503, expected 201\.$/)

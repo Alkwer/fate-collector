@@ -1,3 +1,4 @@
+import { useSharingConsent } from './lib/useSharingConsent'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { offerSchema, formatValidationError, type Offer, type Evidence } from '../shared/schema'
 import { newOffer, exampleOffer, submissionProblem } from '../shared/offers'
@@ -13,6 +14,7 @@ import { CaptureConnection } from './components/CaptureConnection'
 
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Your draft is still open.'
 export default function App() {
+  const consentState = useSharingConsent()
   const [tab, setTab] = useState<'collector' | 'saved'>('collector')
   const [draft, setDraft] = useState<Offer>(() => newOffer())
   const [evidence, setEvidence] = useState<Evidence | null>(null)
@@ -152,7 +154,7 @@ export default function App() {
     const problem = submissionProblem(offer)
     if (problem) { announce(problem, true); return }
     setBusy(true)
-    try { await submitOffer(offer, accessKey.trim()); await storage.markUploaded(offer.id, offer.revision); await refresh(); announce('Reviewed offer shared. The screenshot was not uploaded.') }
+    try { const consentId = await submitOffer(offer, accessKey.trim()); await storage.markUploaded(offer.id, offer.revision, consentId); await refresh(); announce('Reviewed offer shared. The screenshot was not uploaded.') }
     catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
   }
   function exportCurrent() {
@@ -185,7 +187,7 @@ export default function App() {
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
         </div></details>
         <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : dirty ? 'Changes pending…' : 'Saved locally'}</span> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
-      </> : <SavedOffers records={records} busy={busy} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
+      </> : <SavedOffers consentState={consentState} records={records} busy={busy} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
         try { downloadArchive(records.map(r => ({ offer: r.offer, evidence: null })), 'fate-collector-data.json') } catch (error) { announce(errorText(error), true) }
       }} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       <input ref={fileInput} className="file-input" type="file" accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = '' }} />

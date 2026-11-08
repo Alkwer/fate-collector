@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { evidenceSchema, offerSchema, type Evidence, type Offer } from '../../shared/schema'
+import { sharingConsent } from './consent'
 
-const recordSchema = z.object({ offer: offerSchema, uploadedRevision: z.number().int().nullable(), uploadedAt: z.string().nullable() }).strict()
+const recordSchema = z.object({ offer: offerSchema, uploadedRevision: z.number().int().nullable(), uploadedAt: z.string().nullable(), uploadedConsentId: z.string().uuid().optional() }).strict()
 export type SavedOffer = z.infer<typeof recordSchema>
 const DB_NAME = 'fate-collector'
 let connection: Promise<IDBDatabase> | undefined
@@ -78,7 +79,7 @@ export async function saveOffer(draft: Offer, evidence: Evidence | null): Promis
   const count = await value(store.count())
   if (!existing && count >= 250) { transaction.abort(); await done.catch(() => {}); throw new Error('Local storage is limited to 250 offers. Export and remove older offers first.') }
   const offer = offerSchema.parse({ ...draft, revision: existing ? Math.max(existing.offer.revision + 1, draft.revision) : draft.revision, updatedAt: new Date().toISOString() })
-  const record = { offer, uploadedRevision: existing?.uploadedRevision ?? null, uploadedAt: existing?.uploadedAt ?? null }
+  const record = { offer, uploadedRevision: existing?.uploadedRevision ?? null, uploadedAt: existing?.uploadedAt ?? null, ...(existing?.uploadedConsentId ? { uploadedConsentId: existing.uploadedConsentId } : {}) }
   store.put(record)
   if (evidence) await addMissingEvidence(transaction.objectStore('evidence'), evidence)
   await done
@@ -118,13 +119,19 @@ export async function importOffers(entries: { offer: Offer; evidence: Evidence |
   await done
   return newEntries.length
 }
-export async function markUploaded(id: string, revision: number): Promise<void> {
+export async function markUploaded(id: string, revision: number, consentId?: string): Promise<void> {
   const database = await db()
   const transaction = database.transaction('offers', 'readwrite')
   const done = complete(transaction)
   const store = transaction.objectStore('offers')
   const record = await value(store.get(id)) as SavedOffer | undefined
-  if (record) store.put({ ...record, uploadedRevision: Math.max(record.uploadedRevision ?? 0, revision), uploadedAt: new Date().toISOString() })
+  // A response from an earlier consent may arrive after a new consent was selected.
+  if (record && (consentId ? sharingConsent()?.id === consentId : !record.uploadedConsentId)) {
+    const sameConsent = record.uploadedConsentId === consentId
+    if (!sameConsent || revision >= (record.uploadedRevision ?? 0)) {
+      store.put({ ...record, uploadedRevision: revision, uploadedAt: new Date().toISOString(), ...(consentId ? { uploadedConsentId: consentId } : {}) })
+    }
+  }
   await done
 }
 export async function deleteOffer(id: string): Promise<void> {

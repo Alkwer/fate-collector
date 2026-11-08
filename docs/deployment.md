@@ -82,7 +82,10 @@ JSON file that is removed afterwards. Production keys are never read or rotated.
 The live smoke test checks the environment, commit and package ID, homepage and
 helper ZIP, then sends a clearly labelled synthetic capture and reviewed correction
 to staging. It verifies duplicate receipts, authorization and invalid-input rejection.
-Synthetic records remain in the test database and never enter production.
+The test records separate capture and reviewed-offer consents, verifies uploads are
+blocked without them, then withdraws both and verifies that replay is blocked.
+Successful smoke tests remove their own submitted data; the minimal consent audit
+stays in staging. Failed runs may leave synthetic records for diagnosis.
 A failed smoke test makes the run ineligible for promotion; staging is left available
 for diagnosis and the previous production stays active.
 
@@ -96,6 +99,8 @@ Before promotion, manually check:
 - F9 capture, crop calibration and OCR with the downloaded helper;
 - offline queuing, restarting the helper and eventual receipt-backed upload;
 - local folder review, correction and explicit reviewed sharing.
+- unchecked consent, exact accepted text/dates, withdrawal online and offline,
+  browser reload/helper restart, and denial of uploads under a withdrawn consent.
 
 Use a separate extracted helper directory and test captures. The helper's cloud
 settings are shared per Windows user: two extracted copies do not create separate
@@ -107,6 +112,13 @@ production does not backfill captures created while it was disabled.
 During initial setup, staging credentials can be retained in the ignored
 `.wrangler/staging-access.clixml` file, encrypted with Windows DPAPI for the local
 Windows user. GitHub secrets cannot be read back. Do not attach this file to issues.
+
+Migration `0003_consents.sql` adds consent records and links new submissions to
+them. Existing rows retain a null consent ID: no historical consent is invented.
+Legacy clients without the new consent headers are rejected after deployment.
+Before production promotion, distribute the updated helper and decide how to
+handle previously collected data, which cannot be attributed to these new grants.
+Withdrawal is intentionally destructive only for data attached to that consent.
 
 ## 3. Promote exactly that package
 
