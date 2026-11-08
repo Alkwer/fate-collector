@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fate-collector",
+  "main": "worker/legacy-origin.ts",
+  "compatibility_date": "2026-11-07",
+  "workers_dev": true,
+  "preview_urls": false,
+  "services": [{ "binding": "APP", "service": "app" }],
+  "observability": { "enabled": true }
+}

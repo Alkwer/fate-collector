@@ -50,7 +50,7 @@ not require managing a custom DNS zone. The Cloudflare API token is an administr
 credential; it must never be entered into the collector's website or Windows helper.
 
 In GitHub **Actions → Deploy to Cloudflare → Run workflow**, choose **main**. The
-workflow runs validation, applies migrations, and deploys `fate-collector`. Wrangler
+workflow runs validation, applies migrations, and deploys the `app` Worker. Wrangler
 prints the site's `workers.dev` URL. Local IndexedDB data belongs to each origin:
 data collected on localhost does not automatically appear on the public URL.
 
@@ -62,7 +62,7 @@ Generate a long random capture key in your password manager and configure the
 dedicated Worker secret (use a different value from the reviewed-offer key):
 
 ```sh
-npx wrangler secret put COLLECTOR_CAPTURE_KEY --name fate-collector
+npx wrangler secret put COLLECTOR_CAPTURE_KEY --name app
 ```
 
 Give trusted testers the deployed site's HTTPS origin and this capture key. They
@@ -84,7 +84,7 @@ reviewed-offer API rejects uploads until its secret is configured. Generate a lo
 your password manager, then run this command in the project directory:
 
 ```sh
-npx wrangler secret put COLLECTOR_INGEST_KEY --name fate-collector
+npx wrangler secret put COLLECTOR_INGEST_KEY --name app
 ```
 
 Paste the key into Wrangler's hidden prompt. Give it only to your trusted testers.
@@ -114,6 +114,18 @@ Always build and check first. It refuses a missing or placeholder database UUID.
 If more than one Cloudflare account is available, set `CLOUDFLARE_ACCOUNT_ID` too.
 
 ## Operations
+
+The production URL is https://app.fate-collector.workers.dev. The database is still
+named `fate-collector`. The previous URL, https://fate-collector.fate-collector.workers.dev,
+remains available through a small compatibility Worker that forwards requests to
+`app` using a service binding. Existing helper settings and browser-local saves
+therefore remain usable at the previous origin. Browser-local saves are not copied
+to the new origin; use the existing export/import flow to transfer them if needed.
+
+The compatibility Worker is configured in `wrangler.legacy.jsonc` and can be
+published with `npx wrangler deploy --config wrangler.legacy.jsonc`. It has no
+database or upload secrets of its own. Normal application deployments update `app`
+only; the compatibility Worker automatically uses that Worker's current deployment.
 
 The API has no public read endpoint. Use the Cloudflare D1 console to inspect
 `capture_uploads` for automatic raw OCR and unverified parsed candidates, and
