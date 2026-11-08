@@ -1,0 +1,251 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "images/showcase-third.png",
+  "size": [
+    1280,
+    720
+  ],
+  "sourceSha256": "ae150d9c823f09205beb4de4a03a20a4e98f59c54f12a9e0d7ec98b5cc691993",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "0:03\n0:07\nTorch bearer\nCreates dangerous\nbonfires of corpses\ne;\nInvoke Fates\nCONFIRM\nTempest\nCreates Wlatile orbs of\nlightning\nARYA HAS INCREASED MONSVFR VARIETY\nAREA HAS PATCHES OV DESECRATED GROUND\nAREA CONTAINS VANY TOTTMS\n60% INCREASED OV MONSTERS\nAREA IS INFLUENCED BY THE SHAPER\nINCREASEO AUAS DROPS IN nus AREA\n25+6 INCREASED QUANTITY OF liiMS FOUND IN THIS ARFA\nINCREASED RARITY OF FOUND IN nus ARFA\nINCREASED PACK SIZE\nEAT10RiNC, KINC.SVARCH (OPTIONAL)\nf\u00f6 Talk to Johan in the Karui Shores\nTHREADS OF THE ORIGINATOR\nSpeak to Eagon in your Hideout\nTHE MAVEN\nT IIE EATER OF WORIDS\nPursue The Fazer Of Worlds' influence in a\nTier 90 Map\nTHE SEARING EXARCH\nPursue the Searing Exarch's influence in a\nTier Map\nTHE ELDER\nTalk to Commander Kirac",
+    "lines": [
+      {
+        "text": "0:03",
+        "x": 117.0,
+        "y": 47.0,
+        "width": 17.0,
+        "height": 7.5
+      },
+      {
+        "text": "0:07",
+        "x": 166.0,
+        "y": 47.0,
+        "width": 17.0,
+        "height": 7.5
+      },
+      {
+        "text": "Torch bearer",
+        "x": 404.0,
+        "y": 121.0,
+        "width": 53.0,
+        "height": 8.5
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 390.5,
+        "y": 242.0,
+        "width": 81.0,
+        "height": 11.0
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 389.5,
+        "y": 253.5,
+        "width": 82.5,
+        "height": 10.5
+      },
+      {
+        "text": "e;",
+        "x": 488.0,
+        "y": 318.5,
+        "width": 15.5,
+        "height": 13.0
+      },
+      {
+        "text": "Invoke Fates",
+        "x": 599.0,
+        "y": 71.5,
+        "width": 82.5,
+        "height": 12.5
+      },
+      {
+        "text": "CONFIRM",
+        "x": 613.5,
+        "y": 350.5,
+        "width": 51.0,
+        "height": 8.5
+      },
+      {
+        "text": "Tempest",
+        "x": 830.0,
+        "y": 121.5,
+        "width": 37.5,
+        "height": 9.5
+      },
+      {
+        "text": "Creates Wlatile orbs of",
+        "x": 799.5,
+        "y": 241.5,
+        "width": 101.0,
+        "height": 9.5
+      },
+      {
+        "text": "lightning",
+        "x": 829.5,
+        "y": 253.5,
+        "width": 40.5,
+        "height": 10.5
+      },
+      {
+        "text": "ARYA HAS INCREASED MONSVFR VARIETY",
+        "x": 1105.0,
+        "y": 184.0,
+        "width": 171.0,
+        "height": 8.0
+      },
+      {
+        "text": "AREA HAS PATCHES OV DESECRATED GROUND",
+        "x": 1086.5,
+        "y": 197.0,
+        "width": 189.5,
+        "height": 7.5
+      },
+      {
+        "text": "AREA CONTAINS VANY TOTTMS",
+        "x": 1141.5,
+        "y": 209.0,
+        "width": 134.5,
+        "height": 7.5
+      },
+      {
+        "text": "60% INCREASED OV MONSTERS",
+        "x": 1080.0,
+        "y": 220.5,
+        "width": 196.0,
+        "height": 8.0
+      },
+      {
+        "text": "AREA IS INFLUENCED BY THE SHAPER",
+        "x": 1117.5,
+        "y": 233.0,
+        "width": 158.5,
+        "height": 7.5
+      },
+      {
+        "text": "INCREASEO AUAS DROPS IN nus AREA",
+        "x": 1112.0,
+        "y": 245.5,
+        "width": 164.0,
+        "height": 7.5
+      },
+      {
+        "text": "25+6 INCREASED QUANTITY OF liiMS FOUND IN THIS ARFA",
+        "x": 1026.0,
+        "y": 257.0,
+        "width": 250.0,
+        "height": 10.0
+      },
+      {
+        "text": "INCREASED RARITY OF FOUND IN nus ARFA",
+        "x": 1063.0,
+        "y": 269.5,
+        "width": 213.0,
+        "height": 7.5
+      },
+      {
+        "text": "INCREASED PACK SIZE",
+        "x": 1185.0,
+        "y": 281.5,
+        "width": 90.5,
+        "height": 7.5
+      },
+      {
+        "text": "EAT10RiNC, KINC.SVARCH (OPTIONAL)",
+        "x": 1014.0,
+        "y": 310.5,
+        "width": 192.0,
+        "height": 11.0
+      },
+      {
+        "text": "f\u00f6 Talk to Johan in the Karui Shores",
+        "x": 1017.0,
+        "y": 323.0,
+        "width": 176.5,
+        "height": 12.0
+      },
+      {
+        "text": "THREADS OF THE ORIGINATOR",
+        "x": 1012.5,
+        "y": 338.5,
+        "width": 152.0,
+        "height": 8.5
+      },
+      {
+        "text": "Speak to Eagon in your Hideout",
+        "x": 1030.0,
+        "y": 351.0,
+        "width": 156.0,
+        "height": 12.0
+      },
+      {
+        "text": "THE MAVEN",
+        "x": 1012.5,
+        "y": 366.0,
+        "width": 61.0,
+        "height": 8.5
+      },
+      {
+        "text": "T IIE EATER OF WORIDS",
+        "x": 1013.0,
+        "y": 393.0,
+        "width": 116.0,
+        "height": 9.0
+      },
+      {
+        "text": "Pursue The Fazer Of Worlds' influence in a",
+        "x": 1030.0,
+        "y": 406.5,
+        "width": 207.5,
+        "height": 9.5
+      },
+      {
+        "text": "Tier 90 Map",
+        "x": 1029.5,
+        "y": 420.0,
+        "width": 58.5,
+        "height": 11.0
+      },
+      {
+        "text": "THE SEARING EXARCH",
+        "x": 1013.0,
+        "y": 433.0,
+        "width": 110.5,
+        "height": 9.0
+      },
+      {
+        "text": "Pursue the Searing Exarch's influence in a",
+        "x": 1030.0,
+        "y": 446.5,
+        "width": 207.5,
+        "height": 11.5
+      },
+      {
+        "text": "Tier Map",
+        "x": 1029.0,
+        "y": 460.0,
+        "width": 59.0,
+        "height": 11.0
+      },
+      {
+        "text": "THE ELDER",
+        "x": 1012.5,
+        "y": 473.0,
+        "width": 53.5,
+        "height": 8.5
+      },
+      {
+        "text": "Talk to Commander Kirac",
+        "x": 1029.0,
+        "y": 486.5,
+        "width": 127.0,
+        "height": 9.5
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 2
+}

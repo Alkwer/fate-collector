@@ -1,0 +1,848 @@
+{
+  "version": "fate-visual-prototype-2",
+  "thresholds": {
+    "score": 0.86,
+    "margin": 0.07,
+    "proposal": 0.72
+  },
+  "datasetSha256": "dd1c2e8cb7a61170ff29073ac1a988bfa39ae4ac022356e6b1a35e1ff410740c",
+  "scope": "Full screenshot scan; known labels require correct family/class and >=50% smaller-box overlap, one-to-one. Wrong classes count as FP plus FN.",
+  "independence": "Press kit scenes and showcase scenes; showcase frames from the same broadcast and encounter are correlated.",
+  "oldHoldoutIsDevelopmentForV2": true,
+  "summary": {
+    "holdout-v2": {
+      "tier": {
+        "knownTargets": 12,
+        "correct": 12,
+        "falseAccepts": 0,
+        "missed": 0,
+        "unsupportedTargets": 0,
+        "unsupportedFalseAccepts": 0,
+        "unknownProposals": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "reward": {
+        "knownTargets": 16,
+        "correct": 16,
+        "falseAccepts": 1,
+        "missed": 0,
+        "unsupportedTargets": 3,
+        "unsupportedFalseAccepts": 1,
+        "unknownProposals": 335,
+        "precision": 0.9412,
+        "recall": 1.0
+      }
+    }
+  },
+  "images": [
+    {
+      "image": "v2-invoke-fates",
+      "split": "holdout-v2",
+      "truncated": false,
+      "scan": {
+        "tier": {
+          "knownTargets": 4,
+          "correct": 4,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "reward": {
+          "knownTargets": 4,
+          "correct": 4,
+          "falseAccepts": 1,
+          "missed": 0,
+          "unsupportedTargets": 3,
+          "unsupportedFalseAccepts": 1,
+          "unknownProposals": 15,
+          "precision": 0.8,
+          "recall": 1.0
+        }
+      },
+      "labelledPatchResults": [
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            574,
+            216,
+            28,
+            34
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.5065,
+            "margin": 0.0083,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            888,
+            216,
+            28,
+            34
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.5102,
+            "margin": 0.0169,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            550,
+            637,
+            28,
+            34
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.8107,
+            "margin": 0.3508,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            774,
+            647,
+            28,
+            34
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "candidate",
+            "visualId": "tier-2",
+            "tier": 2,
+            "reward": null,
+            "score": 0.8975,
+            "margin": 0.4585,
+            "reason": null
+          }
+        },
+        {
+          "expected": "gold-stack",
+          "family": "reward",
+          "box": [
+            592,
+            852,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.772,
+            "margin": 0.0052,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-ring",
+          "family": "reward",
+          "box": [
+            631,
+            852,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7313,
+            "margin": 0.2655,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-stack",
+          "family": "reward",
+          "box": [
+            817,
+            862,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7655,
+            "margin": 0.0232,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "orange-feathers",
+          "family": "reward",
+          "box": [
+            855,
+            862,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "candidate",
+            "visualId": "orange-feathers",
+            "tier": null,
+            "reward": null,
+            "score": 0.9381,
+            "margin": 0.2913,
+            "reason": null
+          }
+        },
+        {
+          "expected": null,
+          "family": "reward",
+          "box": [
+            536,
+            476,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.8077,
+            "margin": 0.1378,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": null,
+          "family": "reward",
+          "box": [
+            574,
+            476,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7301,
+            "margin": 0.1398,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": null,
+          "family": "reward",
+          "box": [
+            1355,
+            476,
+            24,
+            24
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.6389,
+            "margin": 0.055,
+            "reason": "colour-evidence-missing"
+          }
+        }
+      ]
+    },
+    {
+      "image": "v2-campaign-boss",
+      "split": "holdout-v2",
+      "truncated": false,
+      "scan": {
+        "tier": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": null,
+          "recall": null
+        },
+        "reward": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 9,
+          "precision": null,
+          "recall": null
+        }
+      },
+      "labelledPatchResults": []
+    },
+    {
+      "image": "v2-atlas",
+      "split": "holdout-v2",
+      "truncated": false,
+      "scan": {
+        "tier": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": null,
+          "recall": null
+        },
+        "reward": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 42,
+          "precision": null,
+          "recall": null
+        }
+      },
+      "labelledPatchResults": []
+    },
+    {
+      "image": "v2-combat",
+      "split": "holdout-v2",
+      "truncated": false,
+      "scan": {
+        "tier": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": null,
+          "recall": null
+        },
+        "reward": {
+          "knownTargets": 0,
+          "correct": 0,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 84,
+          "precision": null,
+          "recall": null
+        }
+      },
+      "labelledPatchResults": []
+    },
+    {
+      "image": "v2-showcase",
+      "split": "holdout-v2",
+      "truncated": false,
+      "scan": {
+        "tier": {
+          "knownTargets": 4,
+          "correct": 4,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "reward": {
+          "knownTargets": 4,
+          "correct": 4,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 87,
+          "precision": 1.0,
+          "recall": 1.0
+        }
+      },
+      "labelledPatchResults": [
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            442,
+            196,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.6422,
+            "margin": 0.053,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            592,
+            184,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.491,
+            "margin": 0.0729,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            742,
+            196,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.5264,
+            "margin": 0.0408,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            592,
+            469,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.5371,
+            "margin": 0.0733,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            482,
+            339,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7969,
+            "margin": 0.2317,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-stack",
+          "family": "reward",
+          "box": [
+            632,
+            326,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "candidate",
+            "visualId": "gold-stack",
+            "tier": null,
+            "reward": null,
+            "score": 0.9016,
+            "margin": 0.0876,
+            "reason": null
+          }
+        },
+        {
+          "expected": "gold-ring",
+          "family": "reward",
+          "box": [
+            769,
+            339,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7336,
+            "margin": 0.1602,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-ring",
+          "family": "reward",
+          "box": [
+            795,
+            339,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7171,
+            "margin": 0.1866,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        }
+      ]
+    },
+    {
+      "image": "v2-showcase-26600",
+      "split": "holdout-v2",
+      "truncated": true,
+      "scan": {
+        "tier": {
+          "knownTargets": 4,
+          "correct": 4,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 0,
+          "precision": 1.0,
+          "recall": 1.0
+        },
+        "reward": {
+          "knownTargets": 8,
+          "correct": 8,
+          "falseAccepts": 0,
+          "missed": 0,
+          "unsupportedTargets": 0,
+          "unsupportedFalseAccepts": 0,
+          "unknownProposals": 98,
+          "precision": 1.0,
+          "recall": 1.0
+        }
+      },
+      "labelledPatchResults": [
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            367,
+            296,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7024,
+            "margin": 0.1476,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            517,
+            295,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7951,
+            "margin": 0.2202,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            667,
+            295,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7388,
+            "margin": 0.1887,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "tier-2",
+          "family": "tier",
+          "box": [
+            817,
+            292,
+            19,
+            23
+          ],
+          "prediction": {
+            "family": "tier",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7913,
+            "margin": 0.2093,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            397,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.6917,
+            "margin": 0.2016,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            423,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.665,
+            "margin": 0.1924,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            546,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.5775,
+            "margin": 0.01,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-ring",
+          "family": "reward",
+          "box": [
+            572,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.4603,
+            "margin": 0.0146,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            710,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.6286,
+            "margin": 0.1261,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            833,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7964,
+            "margin": 0.2129,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "blue-diamond",
+          "family": "reward",
+          "box": [
+            859,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "unknown",
+            "visualId": null,
+            "tier": null,
+            "reward": null,
+            "score": 0.7968,
+            "margin": 0.2185,
+            "reason": "low-similarity-or-ambiguous"
+          }
+        },
+        {
+          "expected": "gold-grid",
+          "family": "reward",
+          "box": [
+            884,
+            440,
+            16,
+            16
+          ],
+          "prediction": {
+            "family": "reward",
+            "status": "candidate",
+            "visualId": "gold-grid",
+            "tier": null,
+            "reward": {
+              "label": "Additional Currency Items",
+              "kind": "unknown",
+              "threshold": null,
+              "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+            },
+            "score": 0.8707,
+            "margin": 0.2517,
+            "reason": null
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,8 @@ param(
     [string]$OutputDirectory = (Join-Path $PSScriptRoot 'captures'),
     [guid]$CaptureId = [guid]::NewGuid(),
     [string]$OcrLanguage,
+    [ValidateSet('auto', 'original', 'normalized')][string]$OcrMode = 'auto',
+    [ValidateSet('auto', 'gdi', 'wgc')][string]$CaptureBackend = 'auto',
     [string]$SessionId,
     [string]$SessionStartedAt,
     [int]$CaptureSequence,
@@ -25,100 +27,7 @@ $ErrorActionPreference = 'Stop'
 # CopyFromScreen, WinRT OCR, and line geometry adapted from One More Map.
 # See README.md and LICENSE.one-more-map.txt.
 
-function Wait-WinRtResult($Operation, [type]$ResultType) {
-    $task = $asTask.MakeGenericMethod($ResultType).Invoke($null, @($Operation))
-    return $task.GetAwaiter().GetResult()
-}
-
-function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight) {
-    $ocr = [ordered]@{ status = 'unavailable'; text = ''; lines = @(); language = $null }
-    try {
-        Add-Type -AssemblyName System.Runtime.WindowsRuntime
-        [void][Windows.Storage.Streams.IRandomAccessStream, Windows.Storage.Streams, ContentType = WindowsRuntime]
-        [void][Windows.Graphics.Imaging.BitmapDecoder, Windows.Graphics.Imaging, ContentType = WindowsRuntime]
-        [void][Windows.Graphics.Imaging.SoftwareBitmap, Windows.Graphics.Imaging, ContentType = WindowsRuntime]
-        [void][Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
-        [void][Windows.Media.Ocr.OcrResult, Windows.Foundation, ContentType = WindowsRuntime]
-
-        $languages = @([Windows.Media.Ocr.OcrEngine]::AvailableRecognizerLanguages)
-        if ($OcrLanguage) {
-            $language = $languages | Where-Object LanguageTag -EQ $OcrLanguage | Select-Object -First 1
-            if ($null -eq $language) { return $ocr }
-            $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($language)
-        } else {
-            $english = $languages | Where-Object LanguageTag -Match '^en(-|$)' |
-                Sort-Object { if ($_.LanguageTag -eq 'en-US') { 0 } else { 1 } } | Select-Object -First 1
-            $engine = if ($null -ne $english) { [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($english) }
-            if ($null -eq $engine) { $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages() }
-            if ($null -eq $engine -and $languages.Count -gt 0) {
-                $engine = [Windows.Media.Ocr.OcrEngine]::TryCreateFromLanguage($languages[0])
-            }
-        }
-        if ($null -eq $engine) { return $ocr }
-    } catch {
-        Write-Verbose ("Windows OCR is unavailable. " + $_.Exception.Message)
-        return $ocr
-    }
-
-    $ocr.status = 'error'
-    try {
-        $ocr.language = [string]$engine.RecognizerLanguage.LanguageTag
-        $maxDimension = [Windows.Media.Ocr.OcrEngine]::MaxImageDimension
-        if ($ImageWidth -gt $maxDimension -or $ImageHeight -gt $maxDimension) {
-            throw "The capture exceeds the Windows OCR dimension limit ($maxDimension px)."
-        }
-
-        $asTask = [System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
-            $_.Name -eq 'AsTask' -and $_.IsGenericMethod -and $_.GetGenericArguments().Count -eq 1 -and
-            $_.GetParameters().Count -eq 1
-        } | Select-Object -First 1
-        $memory = [System.IO.MemoryStream]::new($Png, $false)
-        try {
-            $stream = [System.IO.WindowsRuntimeStreamExtensions]::AsRandomAccessStream($memory)
-            try {
-                $decoder = Wait-WinRtResult ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder])
-                $bitmap = Wait-WinRtResult ($decoder.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap])
-                try {
-                    $recognized = Wait-WinRtResult ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
-                } finally {
-                    $bitmap.Dispose()
-                }
-            } finally {
-                $stream.Dispose()
-            }
-        } finally {
-            $memory.Dispose()
-        }
-
-        $lines = @(
-            foreach ($line in $recognized.Lines) {
-                $left = [double]$ImageWidth
-                $top = [double]$ImageHeight
-                $right = $bottom = 0.0
-                foreach ($word in $line.Words) {
-                    $rect = $word.BoundingRect
-                    $left = [Math]::Min($left, [Math]::Max(0.0, $rect.X))
-                    $top = [Math]::Min($top, [Math]::Max(0.0, $rect.Y))
-                    $right = [Math]::Max($right, [Math]::Min($ImageWidth, $rect.X + $rect.Width))
-                    $bottom = [Math]::Max($bottom, [Math]::Min($ImageHeight, $rect.Y + $rect.Height))
-                }
-                if ($right -gt $left -and $bottom -gt $top) {
-                    [ordered]@{ text = [string]$line.Text; x = $left; y = $top; width = $right - $left; height = $bottom - $top }
-                }
-            }
-        )
-        $text = [string](($lines | ForEach-Object { $_.text }) -join "`n")
-        if ($lines.Count -gt 500 -or $text.Length -gt 20000 -or @($lines | Where-Object { $_.text.Length -gt 2000 }).Count -gt 0) {
-            throw 'Windows OCR returned too much text. Choose a tighter crop.'
-        }
-        $ocr.status = 'ok'
-        $ocr.text = $text
-        $ocr.lines = $lines
-    } catch {
-        Write-Verbose ("Windows OCR failed. " + $_.Exception.Message)
-    }
-    return $ocr
-}
+. (Join-Path $PSScriptRoot 'Ocr.Common.ps1')
 
 function Add-WindowCaptureType {
     Add-Type -TypeDefinition @'
@@ -221,42 +130,44 @@ try {
             $env:TEMP = $directory.FullName
             $env:TMP = $directory.FullName
             Add-WindowCaptureType
+            if (-not ('FateScreenCapture' -as [type])) {
+                Add-Type -Path (Join-Path $PSScriptRoot 'CaptureImage.cs') -ReferencedAssemblies System.Drawing
+            }
         } finally {
             $env:TEMP = $tempBefore
             $env:TMP = $tmpBefore
         }
         $failureCode = 3
         $origin = [FateCaptureWindow]::GetCrop([IntPtr]$WindowHandle, $WindowPid, $ClientWidth, $ClientHeight, $X, $Y, $Width, $Height)
-        $bitmap = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
-        try {
-            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-            try {
-                $graphics.CopyFromScreen($origin.X, $origin.Y, 0, 0, $bitmap.Size)
-            } finally {
-                $graphics.Dispose()
-            }
-            $afterCopy = [FateCaptureWindow]::GetCrop([IntPtr]$WindowHandle, $WindowPid, $ClientWidth, $ClientHeight, $X, $Y, $Width, $Height)
-            if ($origin.X -ne $afterCopy.X -or $origin.Y -ne $afterCopy.Y) {
-                throw 'The game window moved during the capture.'
-            }
+        $monitor = [FateScreenCapture]::MonitorForRegion($origin.X, $origin.Y, $Width, $Height)
+        $useWgc = $CaptureBackend -eq 'wgc' -or ($CaptureBackend -eq 'auto' -and [FateScreenCapture]::IsHdrEnabled($monitor))
+        if ($useWgc) {
+            $failureCode = 4
+            # Do not silently downgrade an HDR capture to washed-out GDI pixels.
+            $png = [FateScreenCapture]::CaptureRegion($origin.X, $origin.Y, $Width, $Height, $false)
+        } else {
             $failureCode = 1
-            $memory = [System.IO.MemoryStream]::new()
+            $bitmap = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
             try {
-                $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png)
-                $png = $memory.ToArray()
-            } finally {
-                $memory.Dispose()
-            }
-        } finally {
-            $bitmap.Dispose()
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try { $graphics.CopyFromScreen($origin.X, $origin.Y, 0, 0, $bitmap.Size) }
+                finally { $graphics.Dispose() }
+                $memory = [IO.MemoryStream]::new()
+                try { $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png); $png = $memory.ToArray() }
+                finally { $memory.Dispose() }
+            } finally { $bitmap.Dispose() }
         }
+        $failureCode = 3
+        $afterCopy = [FateCaptureWindow]::GetCrop([IntPtr]$WindowHandle, $WindowPid, $ClientWidth, $ClientHeight, $X, $Y, $Width, $Height)
+        if ($origin.X -ne $afterCopy.X -or $origin.Y -ne $afterCopy.Y) { throw 'The game window moved during the capture.' }
+        $failureCode = 1
     }
 
     if ($png.Length -ge 9MB) {
         $failureCode = 2
         throw 'The PNG is too large for a 12 MiB bundle. Choose a tighter crop.'
     }
-    $ocr = Get-OcrResult -Png $png -ImageWidth $Width -ImageHeight $Height
+    $ocr = Get-OcrResult -Png $png -ImageWidth $Width -ImageHeight $Height -OcrLanguage $OcrLanguage -OcrMode $OcrMode
     $captureMode = if ($PSCmdlet.ParameterSetName -eq 'Window') { 'game' } else { 'fixture' }
     $previous = $null
     if ($PreviousCapturePath -and [IO.File]::Exists($PreviousCapturePath)) {
@@ -275,7 +186,7 @@ try {
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.2.0'
+        helperVersion = '0.3.0'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context

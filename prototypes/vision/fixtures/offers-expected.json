@@ -1,0 +1,305 @@
+{
+  "images": [
+    {
+      "id": "press-offer-a",
+      "file": "images/press-offer-a.png",
+      "mode": "offer",
+      "offered": [
+        {
+          "name": "Alchemist",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond",
+            "gold-stack"
+          ]
+        },
+        {
+          "name": "Sanguine",
+          "tier": 2,
+          "visualIds": [
+            "gold-grid",
+            "blue-diamond"
+          ]
+        },
+        {
+          "name": "Butcher",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond"
+          ]
+        },
+        {
+          "name": "Gravewalker",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond",
+            "gold-ring"
+          ]
+        }
+      ],
+      "collected": [],
+      "invoked": [],
+      "sharedVisualIds": [],
+      "occlusionBoxes": [],
+      "notes": []
+    },
+    {
+      "id": "press-offer-b",
+      "file": "images/press-offer-b.png",
+      "mode": "offer",
+      "offered": [
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": [
+            "gold-ring"
+          ]
+        },
+        {
+          "name": "Tempest",
+          "tier": 2,
+          "visualIds": [
+            "silver-cluster",
+            "orange-feathers",
+            "gold-ring"
+          ]
+        },
+        {
+          "name": "Stormcaller",
+          "tier": 2,
+          "visualIds": [
+            "three-gems"
+          ]
+        },
+        {
+          "name": "Houndmaster",
+          "tier": 2,
+          "visualIds": [
+            "gold-axe"
+          ]
+        }
+      ],
+      "collected": [
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": [
+            "gold-stack",
+            "gold-ring"
+          ]
+        }
+      ],
+      "invoked": [],
+      "sharedVisualIds": [],
+      "occlusionBoxes": [],
+      "notes": [
+        "Houndmaster to podniesiona, wybrana karta po prawej."
+      ]
+    },
+    {
+      "id": "press-invoke",
+      "file": "images/press-invoke.png",
+      "mode": "invoke",
+      "offered": [],
+      "collected": [
+        {
+          "name": "Stormcaller",
+          "tier": 2,
+          "visualIds": [
+            "gold-stack",
+            "orange-feathers"
+          ]
+        }
+      ],
+      "invoked": [
+        {
+          "name": "Tempest",
+          "tier": 2,
+          "visualIds": null
+        },
+        {
+          "name": "Houndmaster",
+          "tier": 2,
+          "visualIds": null
+        },
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": null
+        }
+      ],
+      "sharedVisualIds": [
+        "gold-axe",
+        "gold-grid",
+        "gold-stack"
+      ],
+      "occlusionBoxes": [
+        [
+          347,
+          426,
+          480,
+          44
+        ]
+      ],
+      "notes": [
+        "Czarny dymek zasłania fragment panelu; szare symbole po prawej pominięto. Wspólny pasek nagród nie jest przypisany do poszczególnych kart."
+      ]
+    },
+    {
+      "id": "v2-showcase",
+      "file": "v2/images/showcase.png",
+      "mode": "offer",
+      "offered": [
+        {
+          "name": "Dryad",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond"
+          ]
+        },
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": [
+            "gold-stack"
+          ]
+        },
+        {
+          "name": "Avalanche",
+          "tier": 2,
+          "visualIds": [
+            "gold-ring",
+            "gold-ring"
+          ]
+        }
+      ],
+      "collected": [
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": null
+        }
+      ],
+      "invoked": [],
+      "sharedVisualIds": [],
+      "occlusionBoxes": [
+        [
+          565,
+          54,
+          449,
+          100
+        ],
+        [
+          534,
+          584,
+          213,
+          119
+        ]
+      ],
+      "notes": [
+        "Torchbearer w górnym rzędzie jest podniesioną wybraną kartą. Dymek Avalanche nie jest dodatkową kartą. Okno prezentera zasłania nagrody dolnej karty."
+      ]
+    },
+    {
+      "id": "v2-showcase-26600",
+      "file": "v2/images/showcase-26600.png",
+      "mode": "offer",
+      "offered": [
+        {
+          "name": "Tempest",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond",
+            "blue-diamond"
+          ]
+        },
+        {
+          "name": "Dryad",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond",
+            "gold-ring"
+          ]
+        },
+        {
+          "name": "Stormcaller",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond"
+          ]
+        },
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": [
+            "blue-diamond",
+            "blue-diamond",
+            "gold-grid"
+          ]
+        }
+      ],
+      "collected": [],
+      "invoked": [],
+      "sharedVisualIds": [],
+      "occlusionBoxes": [
+        [
+          534,
+          584,
+          213,
+          119
+        ]
+      ],
+      "notes": [
+        "Okno prezentera znajduje się poniżej oferty."
+      ]
+    },
+    {
+      "id": "v2-invoke-fates",
+      "file": "v2/images/invoke-fates.png",
+      "mode": "invoke",
+      "offered": [],
+      "collected": [
+        {
+          "name": "Torchbearer",
+          "tier": 2,
+          "visualIds": [
+            "gold-stack",
+            "gold-ring"
+          ]
+        },
+        {
+          "name": "Stormcaller",
+          "tier": 2,
+          "visualIds": [
+            "gold-stack",
+            "orange-feathers"
+          ]
+        }
+      ],
+      "invoked": [
+        {
+          "name": "Tempest",
+          "tier": 2,
+          "visualIds": null
+        },
+        {
+          "name": "Houndmaster",
+          "tier": 2,
+          "visualIds": null
+        }
+      ],
+      "sharedVisualIds": [],
+      "occlusionBoxes": [
+        [
+          294,
+          454,
+          656,
+          129
+        ]
+      ],
+      "notes": [
+        "Dymek Torchbearer zasłania wspólny pasek ikon; widoczne przez niego przyciemnione symbole pominięto, podobnie jak szary symbol po prawej. Tekst dymka nie jest dodatkową kartą. Wspólnego paska nie przypisano do poszczególnych kart."
+      ]
+    }
+  ]
+}

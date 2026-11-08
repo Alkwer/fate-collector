@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+#Include Calibration.ahk
 
 ; Window checks and calibration adapted from One More Map. See README.md and LICENSE.one-more-map.txt.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
@@ -7,6 +8,9 @@ CoordMode "Mouse", "Screen"
 CoordMode "ToolTip", "Screen"
 
 calibration := 0
+calibrationFile := A_ScriptDir "\fate-collector.ini"
+savedCalibrationAllowed := true
+previewWindows := []
 capturing := false
 cancelled := false
 uploaderPid := 0
@@ -31,6 +35,7 @@ SetTimer RunCloudUploader, -200
 #HotIf WinActive("ahk_class POEWindowClass")
 F6::CalibrateTopLeft()
 F7::CalibrateBottomRight()
+F8::PreviewCalibration()
 F9::CapturePanel()
 F10::CancelCapture()
 #HotIf
@@ -65,26 +70,72 @@ GetClientPointer(poe) {
     return {x: x, y: y}
 }
 
-VerifyCalibration() {
-    global calibration
-    if !calibration
-        throw Error("Press F6 at the upper-left corner of the panel first.")
+VerifyCalibration(preview := false) {
+    global calibration, calibrationFile, captureSession, savedCalibrationAllowed
     poe := GetForegroundPoe()
-    previous := calibration.window
-    if poe.hwnd != previous.hwnd || poe.pid != previous.pid || poe.path != previous.path
-        || poe.width != previous.width || poe.height != previous.height {
-        calibration := 0
-        throw Error("The window or its size changed. Repeat F6 and F7.")
+    if calibration {
+        previous := calibration.window
+        if poe.hwnd = previous.hwnd && poe.pid = previous.pid && poe.path = previous.path
+            && poe.width = previous.width && poe.height = previous.height
+            return poe
     }
+    if !savedCalibrationAllowed
+        throw Error("Select the panel again with F6 and F7.")
+    saved := ReadFateCalibration(calibrationFile)
+    if !saved
+        throw Error("Press F6 at the upper-left corner of the panel first.")
+    rect := FateCalibrationRect(saved, poe.width, poe.height, preview)
+    calibration := {window: poe, first: rect.first, last: rect.last}
+    if captureSession
+        captureSession.lastFile := ""
     return poe
 }
 
+PreviewCalibration() {
+    global calibration, capturing, previewWindows
+    if capturing
+        return
+    previousCalibration := calibration
+    try {
+        poe := VerifyCalibration(true)
+        if !calibration.last
+            throw Error("Press F7 at the lower-right corner of the panel.")
+        ClearCalibrationPreview()
+        left := poe.left + calibration.first.x, top := poe.top + calibration.first.y
+        width := calibration.last.x - calibration.first.x + 1, height := calibration.last.y - calibration.first.y + 1
+        for edge in [[left, top, width, 2], [left, top + height - 2, width, 2], [left, top, 2, height], [left + width - 2, top, 2, height]] {
+            outline := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 -DPIScale")
+            outline.BackColor := "EBCB73"
+            outline.Show("NA x" edge[1] " y" edge[2] " w" edge[3] " h" edge[4])
+            previewWindows.Push(outline)
+        }
+        SetTimer ClearCalibrationPreview, -2500
+        Notice("Check the panel outline. Press F9 to capture, or F6/F7 to adjust it.")
+    } catch as err {
+        calibration := previousCalibration
+        ClearCalibrationPreview()
+        Notice(err.Message)
+    }
+}
+
+ClearCalibrationPreview() {
+    global previewWindows
+    SetTimer ClearCalibrationPreview, 0
+    for outline in previewWindows
+        outline.Destroy()
+    previewWindows := []
+}
+
 CalibrateTopLeft() {
-    global calibration, capturing, captureSession
+    global calibration, capturing, captureSession, calibrationFile, savedCalibrationAllowed
     if capturing
         return
     try {
         poe := GetForegroundPoe()
+        ClearCalibrationPreview()
+        calibration := 0
+        savedCalibrationAllowed := false
+        ClearFateCalibration(calibrationFile)
         calibration := {window: poe, first: GetClientPointer(poe), last: 0}
         if captureSession
             captureSession.lastFile := ""
@@ -95,7 +146,7 @@ CalibrateTopLeft() {
 }
 
 CalibrateBottomRight() {
-    global calibration, capturing
+    global calibration, capturing, calibrationFile, savedCalibrationAllowed
     if capturing
         return
     try {
@@ -104,20 +155,23 @@ CalibrateBottomRight() {
         if last.x <= calibration.first.x || last.y <= calibration.first.y
             throw Error("The F7 corner must be to the right of and below the F6 corner.")
         calibration.last := last
-        Notice("Panel selected. Press F9 to save a capture.")
+        SaveFateCalibration(calibrationFile, calibration)
+        savedCalibrationAllowed := true
+        Notice("Panel saved for next time. F8 previews it; F9 saves a capture.")
     } catch as err {
         Notice(err.Message)
     }
 }
 
 CapturePanel() {
-    global calibration, capturing, cancelled, captureSession
+    global calibration, calibrationFile, capturing, cancelled, captureSession
     global feedbackCaptureId, feedbackRepeat, feedbackOcr, feedbackSeen
     if capturing
         return
     capturing := true
     cancelled := false
     try {
+        ClearCalibrationPreview()
         poe := VerifyCalibration()
         if !calibration.last
             throw Error("Press F7 at the lower-right corner of the panel.")
@@ -134,6 +188,9 @@ CapturePanel() {
         outputDir := captureDir "\.pending"
         outputFile := outputDir "\fate-" captureId ".json"
         powershell := WindowsPowerShellPath()
+        backend := IniRead(calibrationFile, "capture", "Backend", "auto")
+        if !(backend = "auto" || backend = "gdi" || backend = "wgc")
+            throw Error("Capture Backend must be auto, gdi or wgc in fate-collector.ini.")
         script := A_ScriptDir "\Export-FateCapture.ps1"
         if !FileExist(powershell) || !FileExist(script)
             throw Error("Windows PowerShell or Export-FateCapture.ps1 is missing.")
@@ -144,6 +201,7 @@ CapturePanel() {
             . ' -WindowHandle ' poe.hwnd ' -WindowPid ' poe.pid
             . ' -ClientWidth ' poe.width ' -ClientHeight ' poe.height
             . ' -X ' left ' -Y ' top ' -Width ' width ' -Height ' height
+            . ' -CaptureBackend ' backend
             . ' -SessionId ' captureSession.id ' -SessionStartedAt ' captureSession.startedAt
             . ' -CaptureSequence ' (captureSession.sequence + 1)
         if captureSession.lastFile
@@ -183,6 +241,9 @@ CapturePanel() {
         } else if code = 3 {
             RecordDiagnosticEvent("capture", "blocked")
             Notice("Keep the game in front and the panel visible, then press F9 again.")
+        } else if code = 4 {
+            RecordDiagnosticEvent("capture", "error")
+            Notice("HDR capture failed. Keep the panel on one monitor. Retry, or disable Windows HDR and retry.")
         } else {
             RecordDiagnosticEvent("capture", "error")
             Notice("Capture failed. Check write permissions and the Windows PowerShell execution policy.")
@@ -356,13 +417,24 @@ ReportProblem(*) {
 }
 
 CancelCapture() {
-    global calibration, capturing, cancelled
+    global calibration, calibrationFile, capturing, cancelled, captureSession, savedCalibrationAllowed
     calibration := 0
+    savedCalibrationAllowed := false
+    ClearCalibrationPreview()
+    clearFailed := false
+    try ClearFateCalibration(calibrationFile)
+    catch {
+        clearFailed := true
+    }
+    if captureSession
+        captureSession.lastFile := ""
     if capturing {
         cancelled := true
+        if clearFailed
+            Notice("Capture canceled. Could not clear the saved panel; check write access to fate-collector.ini.")
         return
     }
-    Notice("Calibration cleared. Use F6 and F7.")
+    Notice(clearFailed ? "Panel disabled for this session. Could not clear saved calibration; check fate-collector.ini write access." : "Calibration cleared. Use F6 and F7.")
 }
 
 NewCaptureId() {

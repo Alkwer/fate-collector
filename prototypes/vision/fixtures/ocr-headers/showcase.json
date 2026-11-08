@@ -1,0 +1,18 @@
+{
+  "kind": "fate-collector.header-ocr-fixture",
+  "sourceSha256": "bebe139c6384d1e7bdb8fa46179536a4cc28313bd318926dc46b2a2be78897df",
+  "readings": [
+    {
+      "box": [
+        446.3333333333333,
+        164.33333333333334,
+        86.66666666666666,
+        23.333333333333332
+      ],
+      "texts": [
+        "Dtyad",
+        "Dtyad"
+      ]
+    }
+  ]
+}

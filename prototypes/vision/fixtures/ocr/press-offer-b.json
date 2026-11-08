@@ -1,0 +1,188 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "images/press-offer-b.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "0:13\n0:06\nMENU\nFates\nTorchbearer\nCreates dangerous\nbonfires of corpses\nTempest\nCreates volatile orbs ,\nof lightning\n_ SFkE9T A FS'\nStormcaller\nCreates leylines of\nlightning\nCONFIR\nTorchbearer\nCreates dangerous\nbonfires of corpses\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice\nQ\nw",
+    "lines": [
+      {
+        "text": "0:13",
+        "x": 30,
+        "y": 74,
+        "width": 26,
+        "height": 12
+      },
+      {
+        "text": "0:06",
+        "x": 176,
+        "y": 73,
+        "width": 26,
+        "height": 12
+      },
+      {
+        "text": "MENU",
+        "x": 241,
+        "y": 1041,
+        "width": 48,
+        "height": 14
+      },
+      {
+        "text": "Fates",
+        "x": 936,
+        "y": 171,
+        "width": 49,
+        "height": 16
+      },
+      {
+        "text": "Torchbearer",
+        "x": 582,
+        "y": 260,
+        "width": 82,
+        "height": 12
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 562,
+        "y": 441,
+        "width": 124,
+        "height": 17
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 561,
+        "y": 459,
+        "width": 127,
+        "height": 16
+      },
+      {
+        "text": "Tempest",
+        "x": 819,
+        "y": 261,
+        "width": 57,
+        "height": 15
+      },
+      {
+        "text": "Creates volatile orbs ,",
+        "x": 780,
+        "y": 441,
+        "width": 147,
+        "height": 17
+      },
+      {
+        "text": "of lightning",
+        "x": 809,
+        "y": 459,
+        "width": 80,
+        "height": 16
+      },
+      {
+        "text": "_ SFkE9T A FS'",
+        "x": 1106,
+        "y": 230,
+        "width": 111,
+        "height": 22
+      },
+      {
+        "text": "Stormcaller",
+        "x": 1034,
+        "y": 260,
+        "width": 78,
+        "height": 12
+      },
+      {
+        "text": "Creates leylines of",
+        "x": 1012,
+        "y": 441,
+        "width": 125,
+        "height": 17
+      },
+      {
+        "text": "lightning",
+        "x": 1043,
+        "y": 459,
+        "width": 62,
+        "height": 16
+      },
+      {
+        "text": "CONFIR",
+        "x": 920,
+        "y": 575,
+        "width": 63,
+        "height": 12
+      },
+      {
+        "text": "Torchbearer",
+        "x": 918,
+        "y": 668,
+        "width": 82,
+        "height": 12
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 899,
+        "y": 849,
+        "width": 124,
+        "height": 17
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 898,
+        "y": 867,
+        "width": 127,
+        "height": 16
+      },
+      {
+        "text": "Houndmaster",
+        "x": 1252,
+        "y": 240,
+        "width": 92,
+        "height": 12
+      },
+      {
+        "text": "Creates spectral",
+        "x": 1245,
+        "y": 421,
+        "width": 106,
+        "height": 17
+      },
+      {
+        "text": "wolves which explode",
+        "x": 1224,
+        "y": 439,
+        "width": 149,
+        "height": 16
+      },
+      {
+        "text": "into ice",
+        "x": 1274,
+        "y": 457,
+        "width": 50,
+        "height": 12
+      },
+      {
+        "text": "Q",
+        "x": 1415,
+        "y": 1058,
+        "width": 10,
+        "height": 14
+      },
+      {
+        "text": "w",
+        "x": 1471,
+        "y": 1058,
+        "width": 14,
+        "height": 11
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 1
+}

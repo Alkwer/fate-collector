@@ -1,11 +1,21 @@
 import { useRef } from 'react'
 import type { Evidence, Offer } from '../../shared/schema'
+import { hasNewerHelper, HELPER_VERSION } from '../lib/helper-version'
 
 interface Props { evidence: Evidence | null; automatic?: boolean; onPick: () => void; onFile: (file: File) => void }
 export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   return <section className="panel source-panel" aria-labelledby="source-heading">
     <h2 id="source-heading">Your capture</h2>
+    {hasNewerHelper(evidence?.helperVersion) && <aside className="helper-update" aria-label="Windows helper update">
+      <strong>Newer Windows helper available</strong>
+      <p>This capture used version {evidence?.helperVersion}.</p>
+      <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
+      <details><summary>What's new and how to update</summary>
+        <p>Saved panel calibration, HDR capture and an extra OCR pass. Your saved capture stays unchanged.</p>
+        <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
+      </details>
+    </aside>}
     <div className={`dropzone ${evidence ? 'has-image' : ''}`} onDragOver={event => event.preventDefault()} onDrop={event => {
       event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) onFile(file)
     }}>

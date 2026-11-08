@@ -1,0 +1,169 @@
+{
+  "version": 2,
+  "templates": [
+    {
+      "family": "reward",
+      "visualId": "blue-diamond",
+      "box": [
+        593,
+        665,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-a.png",
+      "sourceImageId": "press-offer-a",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "gold-stack",
+      "box": [
+        631,
+        665,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-a.png",
+      "sourceImageId": "press-offer-a",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "gold-grid",
+      "box": [
+        818,
+        665,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-a.png",
+      "sourceImageId": "press-offer-a",
+      "reward": {
+        "label": "Additional Currency Items",
+        "kind": "unknown",
+        "threshold": null,
+        "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+      }
+    },
+    {
+      "family": "reward",
+      "visualId": "gold-ring",
+      "box": [
+        610,
+        509,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "silver-cluster",
+      "box": [
+        797,
+        509,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "orange-feathers",
+      "box": [
+        835,
+        509,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "three-gems",
+      "box": [
+        1060,
+        509,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "gold-axe",
+      "box": [
+        1285,
+        489,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "tier",
+      "visualId": "tier-2",
+      "box": [
+        550,
+        292,
+        28,
+        34
+      ],
+      "tier": 2,
+      "image": "images/press-offer-b.png",
+      "sourceImageId": "press-offer-b",
+      "reward": null
+    },
+    {
+      "family": "tier",
+      "visualId": "tier-3",
+      "box": [
+        571,
+        212,
+        28,
+        34
+      ],
+      "tier": 3,
+      "image": "images/merge-reference.png",
+      "sourceImageId": "merge-reference",
+      "reward": null
+    },
+    {
+      "family": "reward",
+      "visualId": "gold-grid",
+      "box": [
+        653,
+        476,
+        24,
+        24
+      ],
+      "note": "",
+      "image": "images/merge-reference.png",
+      "sourceImageId": "merge-reference",
+      "reward": {
+        "label": "Additional Currency Items",
+        "kind": "unknown",
+        "threshold": null,
+        "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+      }
+    }
+  ]
+}

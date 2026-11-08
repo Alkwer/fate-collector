@@ -1,0 +1,132 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "v2/images/atlas.png",
+  "size": [
+    1280,
+    720
+  ],
+  "sourceSha256": "68ec18d7718a6fed41462343b5d6091bfebde2408c4d973c8d7fb6dc565befe7",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "Atlas editing (B): OFF\nDrawtng\nATLAS\nO Highlight Maps I Type keywords here...\nLair of the Hydra\nBREACH THREAD\nTHREADS BREACHES INTO AN AREA\nCAN BE USED IN A PERSONAL MAP DEVICE TO ADD\nCONTENT TO A MAP.\nACTIVATE\nINVENTORY\n113,785\n19\nINVENTORY\n-84\nCOSME TICS",
+    "lines": [
+      {
+        "text": "Atlas editing (B): OFF",
+        "x": 263.0,
+        "y": 17.0,
+        "width": 122.0,
+        "height": 14.0
+      },
+      {
+        "text": "Drawtng",
+        "x": 291.5,
+        "y": 35.0,
+        "width": 29.5,
+        "height": 8.0
+      },
+      {
+        "text": "ATLAS",
+        "x": 620.0,
+        "y": 38.5,
+        "width": 40.5,
+        "height": 11.5
+      },
+      {
+        "text": "O Highlight Maps I Type keywords here...",
+        "x": 508.0,
+        "y": 61.5,
+        "width": 230.0,
+        "height": 19.5
+      },
+      {
+        "text": "Lair of the Hydra",
+        "x": 484.0,
+        "y": 136.0,
+        "width": 97.0,
+        "height": 13.5
+      },
+      {
+        "text": "BREACH THREAD",
+        "x": 482.0,
+        "y": 180.5,
+        "width": 101.5,
+        "height": 11.5
+      },
+      {
+        "text": "THREADS BREACHES INTO AN AREA",
+        "x": 440.5,
+        "y": 206.5,
+        "width": 183.5,
+        "height": 9.5
+      },
+      {
+        "text": "CAN BE USED IN A PERSONAL MAP DEVICE TO ADD",
+        "x": 401.5,
+        "y": 227.0,
+        "width": 264.0,
+        "height": 9.5
+      },
+      {
+        "text": "CONTENT TO A MAP.",
+        "x": 480.0,
+        "y": 242.0,
+        "width": 105.5,
+        "height": 9.5
+      },
+      {
+        "text": "ACTIVATE",
+        "x": 508.5,
+        "y": 327.0,
+        "width": 48.0,
+        "height": 7.5
+      },
+      {
+        "text": "INVENTORY",
+        "x": 894.0,
+        "y": 48.0,
+        "width": 55.5,
+        "height": 8.5
+      },
+      {
+        "text": "113,785",
+        "x": 888.5,
+        "y": 369.0,
+        "width": 33.0,
+        "height": 9.5
+      },
+      {
+        "text": "19",
+        "x": 851.5,
+        "y": 395.5,
+        "width": 11.5,
+        "height": 13.5
+      },
+      {
+        "text": "INVENTORY",
+        "x": 1018.0,
+        "y": 40.0,
+        "width": 80.5,
+        "height": 11.5
+      },
+      {
+        "text": "-84",
+        "x": 1041.5,
+        "y": 393.5,
+        "width": 27.5,
+        "height": 18.5
+      },
+      {
+        "text": "COSME TICS",
+        "x": 1169.5,
+        "y": 48.0,
+        "width": 53.5,
+        "height": 8.5
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 2
+}
