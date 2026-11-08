@@ -2,6 +2,7 @@ name: Validate collector
 on:
   push:
   pull_request:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -16,7 +17,15 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npx playwright test
+      - run: npm run release:pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collector-release
+          path: .release/
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

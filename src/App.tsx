@@ -7,7 +7,7 @@ import { OfferPreview } from './components/OfferPreview'
 import { SavedOffers } from './components/SavedOffers'
 import { importFile, importJson, downloadArchive, type Imported } from './lib/imports'
 import * as storage from './lib/storage'
-import { collectionStatus, submitOffer } from './lib/api'
+import { collectionInfo, collectionStatus, submitOffer } from './lib/api'
 import { useCaptureSync } from './lib/useCaptureSync'
 import { CaptureConnection } from './components/CaptureConnection'
 
@@ -28,6 +28,7 @@ export default function App() {
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
   const [accessKey, setAccessKey] = useState('')
   const [connected, setConnected] = useState(false)
+  const [environment, setEnvironment] = useState('unknown')
   const fileInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<HTMLDetailsElement>(null)
   const savedLocally = records.some(record => record.offer.id === draft.id)
@@ -73,7 +74,7 @@ export default function App() {
     }, 700)
     return () => { obsolete = true; window.clearTimeout(timer) }
   }, [automatic, dirty, busy, draft, evidence, refresh])
-  useEffect(() => { void refresh().catch(e => announce(errorText(e), true)); void collectionStatus().then(setConnected).catch(() => setConnected(false)) }, [refresh])
+  useEffect(() => { void refresh().catch(e => announce(errorText(e), true)); void collectionInfo().then(info => { setConnected(info.ingestionEnabled); setEnvironment(info.environment) }).catch(() => setConnected(false)) }, [refresh])
   useEffect(() => {
     if (!dirty) return
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
@@ -161,6 +162,7 @@ export default function App() {
   }
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
+    {environment === 'staging' && <div className="environment-banner" role="status"><strong>STAGING</strong> Test collection. Uploads go to the test database.</div>}
     <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button></nav></div></header>
     <main id="main" className="workspace" tabIndex={-1}>
       {notice && <div className={`notice ${notice.error ? 'error' : ''}`} role={notice.error ? 'alert' : 'status'}><span>{notice.text}</span><button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}

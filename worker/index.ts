@@ -2,7 +2,7 @@ import { MAX_API_BYTES, captureUploadSchema, offerSchema } from '../shared/schem
 import { newOffer, submissionProblem } from '../shared/offers'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
 
-export interface Env { DB?: D1Database; ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
+export interface Env extends Partial<WorkerBindings> { ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: {
     'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
@@ -68,9 +68,15 @@ async function receiveCapture(body: unknown, database: D1Database): Promise<Resp
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request)
+    if (!url.pathname.startsWith('/api/')) {
+      const response = await env.ASSETS.fetch(request)
+      if (env.APP_ENV !== 'staging') return response
+      const headers = new Headers(response.headers)
+      headers.set('X-Robots-Tag', 'noindex, nofollow')
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
+    }
     if (url.pathname === '/api/status' && request.method === 'GET') {
-      return json({ schemaVersion: 1, version: '0.1.0', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
+      return json({ schemaVersion: 1, version: '0.1.0', environment: env.APP_ENV || 'local', revision: env.RELEASE_REVISION || 'local', releaseId: env.RELEASE_ID || 'local', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
     }
     const isCapture = url.pathname === '/api/captures'
     if (!isCapture && url.pathname !== '/api/observations') return json({ error: 'Not found.' }, 404)

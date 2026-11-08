@@ -60,6 +60,18 @@ test('unknown API routes return JSON and never the SPA', async () => {
   expect(await (await worker.fetch(new Request('https://collector.test/'), bindings)).text()).toBe('static')
 })
 
+test('status identifies the deployed package without exposing bindings or secrets', async () => {
+  const bindings = { ...env(), APP_ENV: 'staging', RELEASE_REVISION: 'a'.repeat(40), RELEASE_ID: 'b'.repeat(64) }
+  const response = await worker.fetch(new Request('https://collector.test/api/status'), bindings)
+  const status = await response.json()
+  expect(status).toMatchObject({ environment: 'staging', revision: bindings.RELEASE_REVISION, releaseId: bindings.RELEASE_ID })
+  expect(JSON.stringify(status)).not.toContain('capture-access')
+  expect(JSON.stringify(status)).not.toContain('test-access')
+  const page = await worker.fetch(new Request('https://collector.test/'), bindings)
+  expect(page.headers.get('X-Robots-Tag')).toBe('noindex, nofollow')
+  expect((await worker.fetch(new Request('https://collector.test/'), env())).headers.has('X-Robots-Tag')).toBe(false)
+})
+
 test('capture access is independent and cannot submit reviewed observations', async () => {
   const bindings = env()
   expect((await worker.fetch(capturePost(upload()), { ...bindings, COLLECTOR_CAPTURE_KEY: undefined })).status).toBe(503)
