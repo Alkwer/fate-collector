@@ -1,0 +1,160 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "images/press-invoke.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "sourceSha256": "369c3c40260e8464b76a7026ce06bdf2b64520c476ace7efac399bf7315a0d7e",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "0:04\nTempest\nCreates volatile orbs\nof lightning\nEmpowered Boss will drop additional Currency Items\nInvoke Fates\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice\nCONFIRM\nStormcaller\nCreates leylines of\nlightning\nMENU\nTorchbearer\nCreates dangerous\nbonfires of corpses\nQ\nw",
+    "lines": [
+      {
+        "text": "0:04",
+        "x": 30,
+        "y": 74,
+        "width": 27,
+        "height": 12
+      },
+      {
+        "text": "Tempest",
+        "x": 617,
+        "y": 183,
+        "width": 58,
+        "height": 14
+      },
+      {
+        "text": "Creates volatile orbs",
+        "x": 578,
+        "y": 363,
+        "width": 138,
+        "height": 13
+      },
+      {
+        "text": "of lightning",
+        "x": 607,
+        "y": 381,
+        "width": 80,
+        "height": 16
+      },
+      {
+        "text": "Empowered Boss will drop additional Currency Items",
+        "x": 358,
+        "y": 439,
+        "width": 457,
+        "height": 20
+      },
+      {
+        "text": "Invoke Fates",
+        "x": 898,
+        "y": 108,
+        "width": 124,
+        "height": 17
+      },
+      {
+        "text": "Houndmaster",
+        "x": 914,
+        "y": 182,
+        "width": 92,
+        "height": 12
+      },
+      {
+        "text": "Creates spectral",
+        "x": 908,
+        "y": 363,
+        "width": 106,
+        "height": 17
+      },
+      {
+        "text": "wolves which explode",
+        "x": 886,
+        "y": 381,
+        "width": 150,
+        "height": 16
+      },
+      {
+        "text": "into ice",
+        "x": 936,
+        "y": 399,
+        "width": 50,
+        "height": 12
+      },
+      {
+        "text": "CONFIRM",
+        "x": 920,
+        "y": 526,
+        "width": 80,
+        "height": 12
+      },
+      {
+        "text": "Stormcaller",
+        "x": 809,
+        "y": 614,
+        "width": 78,
+        "height": 12
+      },
+      {
+        "text": "Creates leylines of",
+        "x": 787,
+        "y": 795,
+        "width": 125,
+        "height": 17
+      },
+      {
+        "text": "lightning",
+        "x": 818,
+        "y": 813,
+        "width": 62,
+        "height": 16
+      },
+      {
+        "text": "MENU",
+        "x": 241,
+        "y": 1041,
+        "width": 48,
+        "height": 14
+      },
+      {
+        "text": "Torchbearer",
+        "x": 1232,
+        "y": 182,
+        "width": 82,
+        "height": 12
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 1212,
+        "y": 363,
+        "width": 125,
+        "height": 17
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 1211,
+        "y": 381,
+        "width": 128,
+        "height": 16
+      },
+      {
+        "text": "Q",
+        "x": 1415,
+        "y": 1058,
+        "width": 10,
+        "height": 14
+      },
+      {
+        "text": "w",
+        "x": 1471,
+        "y": 1058,
+        "width": 14,
+        "height": 11
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 1
+}

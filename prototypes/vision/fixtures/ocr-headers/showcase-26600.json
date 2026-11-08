@@ -1,0 +1,18 @@
+{
+  "kind": "fate-collector.header-ocr-fixture",
+  "sourceSha256": "0222bf96282dd1a3f1d13b6f30a7edad20ca3499c557b220373b339b8b800ab5",
+  "readings": [
+    {
+      "box": [
+        672.3333333333334,
+        266.3333333333333,
+        86.66666666666666,
+        23.333333333333332
+      ],
+      "texts": [
+        "Stormca!tet:",
+        "St0rmcaltet:"
+      ]
+    }
+  ]
+}

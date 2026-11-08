@@ -1,0 +1,939 @@
+{
+  "baseline": "fate-visual-prototype-1",
+  "newVersion": "fate-visual-prototype-2",
+  "scope": "Former V1 holdout is V2 development data.",
+  "omissionCount": 18,
+  "localizedInV1": 18,
+  "recoveredInV2": 18,
+  "causes": {
+    "resolution-mismatch": 15,
+    "invoked-variant-and-alignment": 3
+  },
+  "omissions": [
+    {
+      "id": "showcase-before:3",
+      "image": "showcase-before",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        456,
+        576,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8497,
+        "margin": 0.3442,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          456,
+          576,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9213,
+        "margin": 0.3775,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9277,
+        "margin": 0.3373,
+        "reason": null,
+        "box": [
+          457,
+          576,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-before:4",
+      "image": "showcase-before",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        482,
+        576,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8492,
+        "margin": 0.3351,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          482,
+          576,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9205,
+        "margin": 0.3668,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9287,
+        "margin": 0.3294,
+        "reason": null,
+        "box": [
+          483,
+          576,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-before:5",
+      "image": "showcase-before",
+      "expected": "gold-grid",
+      "annotatedBox": [
+        508,
+        576,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8598,
+        "margin": 0.2892,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          509,
+          576,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "gold-grid",
+        "score": 0.9004,
+        "margin": 0.3028,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "gold-grid",
+        "tier": null,
+        "reward": {
+          "label": "Additional Currency Items",
+          "kind": "unknown",
+          "threshold": null,
+          "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+        },
+        "score": 0.923,
+        "margin": 0.2606,
+        "reason": null,
+        "box": [
+          508,
+          575,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:2",
+      "image": "showcase-merged",
+      "expected": "gold-grid",
+      "annotatedBox": [
+        357,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.7867,
+        "margin": 0.2576,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          358,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "gold-grid",
+        "score": 0.8172,
+        "margin": 0.2625,
+        "accepted": false
+      },
+      "cause": "invoked-variant-and-alignment",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "gold-grid",
+        "tier": null,
+        "reward": {
+          "label": "Additional Currency Items",
+          "kind": "unknown",
+          "threshold": null,
+          "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+        },
+        "score": 0.9221,
+        "margin": 0.3099,
+        "reason": null,
+        "box": [
+          357,
+          317,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:3",
+      "image": "showcase-merged",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        383,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8229,
+        "margin": 0.2696,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          383,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.889,
+        "margin": 0.2918,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.8964,
+        "margin": 0.2485,
+        "reason": null,
+        "box": [
+          384,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:4",
+      "image": "showcase-merged",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        409,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8541,
+        "margin": 0.2651,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          410,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9204,
+        "margin": 0.2852,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9204,
+        "margin": 0.2852,
+        "reason": null,
+        "box": [
+          410,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:5",
+      "image": "showcase-merged",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        461,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8541,
+        "margin": 0.2771,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          462,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9196,
+        "margin": 0.2975,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9202,
+        "margin": 0.3464,
+        "reason": null,
+        "box": [
+          462,
+          319,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:6",
+      "image": "showcase-merged",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        487,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.85,
+        "margin": 0.2594,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          488,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9165,
+        "margin": 0.279,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9165,
+        "margin": 0.279,
+        "reason": null,
+        "box": [
+          488,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:7",
+      "image": "showcase-merged",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        513,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8534,
+        "margin": 0.275,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          514,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9187,
+        "margin": 0.295,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9203,
+        "margin": 0.345,
+        "reason": null,
+        "box": [
+          514,
+          319,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-merged:11",
+      "image": "showcase-merged",
+      "expected": "gold-grid",
+      "annotatedBox": [
+        795,
+        576,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8593,
+        "margin": 0.2559,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          795,
+          576,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "gold-grid",
+        "score": 0.8988,
+        "margin": 0.2695,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "gold-grid",
+        "tier": null,
+        "reward": {
+          "label": "Additional Currency Items",
+          "kind": "unknown",
+          "threshold": null,
+          "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+        },
+        "score": 0.9222,
+        "margin": 0.2984,
+        "reason": null,
+        "box": [
+          795,
+          575,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:2",
+      "image": "showcase-third",
+      "expected": "gold-grid",
+      "annotatedBox": [
+        357,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.794,
+        "margin": 0.2643,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          358,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "gold-grid",
+        "score": 0.8246,
+        "margin": 0.2688,
+        "accepted": false
+      },
+      "cause": "invoked-variant-and-alignment",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "gold-grid",
+        "tier": null,
+        "reward": {
+          "label": "Additional Currency Items",
+          "kind": "unknown",
+          "threshold": null,
+          "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+        },
+        "score": 0.9248,
+        "margin": 0.3019,
+        "reason": null,
+        "box": [
+          357,
+          317,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:3",
+      "image": "showcase-third",
+      "expected": "gold-grid",
+      "annotatedBox": [
+        383,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.7901,
+        "margin": 0.2558,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          384,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "gold-grid",
+        "score": 0.8208,
+        "margin": 0.2616,
+        "accepted": false
+      },
+      "cause": "invoked-variant-and-alignment",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "gold-grid",
+        "tier": null,
+        "reward": {
+          "label": "Additional Currency Items",
+          "kind": "unknown",
+          "threshold": null,
+          "evidence": "press-invoke Currency Items tooltip; does not establish universal kind/threshold."
+        },
+        "score": 0.9234,
+        "margin": 0.2988,
+        "reason": null,
+        "box": [
+          383,
+          317,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:5",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        435,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8566,
+        "margin": 0.2822,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          436,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9232,
+        "margin": 0.3029,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9232,
+        "margin": 0.3029,
+        "reason": null,
+        "box": [
+          436,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:6",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        461,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8563,
+        "margin": 0.2804,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          462,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9222,
+        "margin": 0.3007,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9222,
+        "margin": 0.3007,
+        "reason": null,
+        "box": [
+          462,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:7",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        487,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8567,
+        "margin": 0.2798,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          488,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9233,
+        "margin": 0.3005,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9233,
+        "margin": 0.3005,
+        "reason": null,
+        "box": [
+          488,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:8",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        513,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8577,
+        "margin": 0.2843,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          514,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.924,
+        "margin": 0.3057,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.924,
+        "margin": 0.3057,
+        "reason": null,
+        "box": [
+          514,
+          318,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:9",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        539,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.8529,
+        "margin": 0.2962,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          540,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9168,
+        "margin": 0.3143,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.92,
+        "margin": 0.356,
+        "reason": null,
+        "box": [
+          540,
+          319,
+          16,
+          16
+        ]
+      }
+    },
+    {
+      "id": "showcase-third:10",
+      "image": "showcase-third",
+      "expected": "blue-diamond",
+      "annotatedBox": [
+        565,
+        319,
+        16,
+        16
+      ],
+      "v1Proposal": {
+        "family": "reward",
+        "status": "unknown",
+        "visualId": null,
+        "tier": null,
+        "reward": null,
+        "score": 0.854,
+        "margin": 0.2982,
+        "reason": "low-similarity-or-ambiguous",
+        "box": [
+          566,
+          318,
+          16,
+          16
+        ]
+      },
+      "equalResolutionAblation": {
+        "visualId": "blue-diamond",
+        "score": 0.9175,
+        "margin": 0.3162,
+        "accepted": true
+      },
+      "cause": "resolution-mismatch",
+      "v2Match": {
+        "family": "reward",
+        "status": "candidate",
+        "visualId": "blue-diamond",
+        "tier": null,
+        "reward": null,
+        "score": 0.9217,
+        "margin": 0.3573,
+        "reason": null,
+        "box": [
+          566,
+          319,
+          16,
+          16
+        ]
+      }
+    }
+  ]
+}

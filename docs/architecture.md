@@ -3,7 +3,7 @@
 ```text
 PoE visible panel
   → AHK foreground validation and crop calibration (F6/F7/F9)
-  → Windows PowerShell: GDI image + local WinRT OCR
+  → Windows PowerShell: GDI/Windows Graphics Capture image + local WinRT OCR passes
   → completed local JSON file (clipboard as a manual fallback)
   → optional durable helper upload queue → Worker /api/captures → D1 capture_uploads
     (works while the browser is closed; raw text, no screenshot pixels)
@@ -15,7 +15,7 @@ PoE visible panel
 
 | Module | Responsibility |
 | --- | --- |
-| `helpers/` | Capture, Windows OCR, explicit upload setup, durable queue and retries |
+| `helpers/` | Persistent/previewed crop calibration, SDR/HDR capture, Windows OCR, explicit upload setup, durable queue and retries |
 | `shared/` | Versioned Zod contracts, defaults and upload eligibility |
 | `shared/recognition.ts` | Shared browser/Worker prerelease text extraction adapter |
 | `src/lib/imports.ts` | Bounded imports, decoded-image validation, exports |
@@ -57,3 +57,15 @@ offer-change detection without replacing the capture evidence format. Validate
 those adapters against real screenshots at several resolutions before claiming
 automatic coverage. The reward advisor should follow a verified mechanics model
 and an assessed dataset, not inferred card-name-to-reward mappings.
+
+Helper 0.3.0 reuses One More Map's WGC backend and adapts its multi-pass OCR idea.
+Both OCR passes come from one original screenshot. Only one pass is emitted, with
+geometry mapped to original pixels; capture/upload v1 contracts stay unchanged.
+Calibration ratios are restored after process restarts, while a resolution change
+requires preview and an aspect-ratio change requires new corners. The helper never
+uses the Voyage solver, probabilities or game input automation.
+
+`scripts/research-corpus-stats.mjs` validates exported archives using the shared
+schema and produces separate live/test quality counts. Future advice still needs
+verified Fate mechanics and its own uncertainty model; no dormant Voyage advisor
+or arbitrary confidence thresholds are included.

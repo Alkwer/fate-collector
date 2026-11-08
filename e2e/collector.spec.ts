@@ -2,6 +2,7 @@ import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newOffer, newCard } from '../shared/offers'
+import { HELPER_VERSION } from '../src/lib/helper-version'
 
 async function helperCapture(page: Page, possibleRepeat = false) {
   return page.evaluate(possibleRepeat => {
@@ -32,6 +33,8 @@ test('helper import auto-fills text, saves evidence, survives reload, and avoids
   await expect(page.getByText('Session capture #2 · Possible repeat (matching OCR)', { exact: true })).toBeVisible()
   await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await expect(page.getByAltText('Captured Fate offer')).toBeVisible()
+  await expect(page.getByText('Newer Windows helper available', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: `Download helper ${HELPER_VERSION}`, exact: true })).toHaveAttribute('href', '/downloads/fate-collector-helper.zip')
   await page.getByRole('button', { name: 'Enlarge source screenshot' }).focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog', { name: 'Source evidence' })).toBeVisible()

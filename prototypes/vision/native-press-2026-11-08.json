@@ -1,0 +1,149 @@
+{
+  "version": "fate-offer-prototype-2",
+  "scope": "Check original 4K press PNGs: native pixels of known scenes, not a new holdout.",
+  "images": [
+    {
+      "image": "press-offer-a",
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "expectedCardSymbols": 7,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "correctCardSymbols": 7,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      }
+    },
+    {
+      "image": "press-offer-b",
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 5,
+        "cardCountDifference": 0,
+        "expectedCardSymbols": 8,
+        "locatedCards": 5,
+        "correctNames": 5,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 5,
+        "correctCardSymbols": 8,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      }
+    },
+    {
+      "image": "press-invoke",
+      "sourceSha256": "57972b24ef9956122c27826c325ce6a950c742c325e76556ec93d38a47829d1f",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "expectedCardSymbols": 2,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "correctCardSymbols": 2,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "acceptedWhereUnattributable": 0,
+        "expectedSharedSymbols": 3,
+        "correctSharedSymbols": 3,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      }
+    },
+    {
+      "image": "v2-invoke-fates",
+      "sourceSha256": "b80a1f612d48e4994a736d66b220a92c66221df3f38d1811c2010d0c9fed26d6",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "expectedCardSymbols": 4,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "correctCardSymbols": 4,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "acceptedWhereUnattributable": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      }
+    }
+  ],
+  "summary": {
+    "modeCorrect": 4,
+    "expectedCards": 17,
+    "cardCountDifference": 0,
+    "expectedCardSymbols": 21,
+    "locatedCards": 17,
+    "correctNames": 17,
+    "unknownNames": 0,
+    "wrongNames": 0,
+    "correctTiers": 17,
+    "correctCardSymbols": 21,
+    "missingCardSymbols": 0,
+    "unexpectedCardSymbols": 0,
+    "expectedSharedSymbols": 3,
+    "correctSharedSymbols": 3,
+    "missingSharedSymbols": 0,
+    "unexpectedSharedSymbols": 0,
+    "unassignedCards": 0,
+    "acceptedUnassignedSymbols": 0,
+    "acceptedWhereUnattributable": 0
+  }
+}

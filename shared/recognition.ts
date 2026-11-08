@@ -1,15 +1,12 @@
 import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers'
+import fateNames from './fate-names.json' with { type: 'json' }
 
 export const PARSER_VERSION = 'prerelease-names-1'
 
 // Card names observed in pre-release materials. This is a recognition dictionary,
 // not a reward mapping or an exhaustive catalog. Unknowns remain in the OCR evidence.
-export const KNOWN_FATE_NAMES = [
-  'Alchemist', 'Sanguine', 'Butcher', 'Gravewalker', 'Torchbearer', 'Tempest',
-  'Stormcaller', 'Houndmaster', 'Bloodthirsty', 'Deathbringer', 'Conjurer',
-  'Wildfire', 'Doomsayer', 'Incandescent', 'Crowkeeper',
-]
+export const KNOWN_FATE_NAMES = fateNames
 const normalize = (text: string) => text.toLowerCase().replace(/[^a-z]/g, '')
 const byName = new Map(KNOWN_FATE_NAMES.map(name => [normalize(name), name]))
 

@@ -208,3 +208,6 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .diagnostic-message { padding: 12px; border-left: 2px solid var(--gold); }
 @media (max-width: 600px) { .diagnostics-panel { padding: 16px; } .diagnostic-actions > button { width: 100%; } }
 .sharing-consent > button { margin: 8px 12px 8px 0; }
+.helper-update { margin-bottom: 16px; padding: 14px 16px; border-left: 2px solid var(--gold); background: var(--surface); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.helper-update p { margin: 6px 0; }
+.helper-update a { display: inline-block; padding-block: 6px; }

@@ -1,0 +1,467 @@
+{
+  "version": 1,
+  "annotationMethod": "Manual visual inspection with enlarged crops; boxes approximate. No model results inspected.",
+  "holdoutUnit": "Press kit scenes and showcase scenes; showcase frames from the same broadcast and encounter are correlated.",
+  "unknownPolicy": "Uncatalogued, obscured, or desaturated symbols have null visualId.",
+  "images": [
+    {
+      "id": "v2-invoke-fates",
+      "split": "holdout-v2",
+      "file": "v2/images/invoke-fates.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceFile": "InvokeFates_1.png",
+      "sourceSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "b80a1f612d48e4994a736d66b220a92c66221df3f38d1811c2010d0c9fed26d6",
+      "sha256": "dfa9b3f5683a2eb2fad127dacaeac6a4d77798447a969c90a4bb3b2e42940274",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            574,
+            216,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            888,
+            216,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            550,
+            637,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            774,
+            647,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            592,
+            852,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            631,
+            852,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            817,
+            862,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "orange-feathers",
+          "box": [
+            855,
+            862,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            536,
+            476,
+            24,
+            24
+          ],
+          "note": "Dim tooltip symbol."
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            574,
+            476,
+            24,
+            24
+          ],
+          "note": "Dim tooltip symbol."
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            1355,
+            476,
+            24,
+            24
+          ],
+          "note": "Desaturated combo glyph on right of invoked reward bar; added during pre-model ground-truth audit."
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "v2-campaign-boss",
+      "split": "holdout-v2",
+      "file": "v2/images/campaign-boss.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceFile": "Fate-EmpoweredCampaignBoss_InvokeFates2.png",
+      "sourceSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "3d750689d6e319cfc0241df05eb5ac793143aca95a6be179b7357a8c97327bdf",
+      "sha256": "e278b9e64c50b8f775f4b8a1128fd17096b7667d61e93dfcc6cf758979cc66f8",
+      "labels": [],
+      "ignoreRegions": []
+    },
+    {
+      "id": "v2-atlas",
+      "split": "holdout-v2",
+      "file": "v2/images/atlas.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26405s",
+      "sourceFile": "showcase-26405.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "68ec18d7718a6fed41462343b5d6091bfebde2408c4d973c8d7fb6dc565befe7",
+      "sha256": "68ec18d7718a6fed41462343b5d6091bfebde2408c4d973c8d7fb6dc565befe7",
+      "labels": [],
+      "ignoreRegions": []
+    },
+    {
+      "id": "v2-combat",
+      "split": "holdout-v2",
+      "file": "v2/images/combat.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26520s",
+      "sourceFile": "showcase-26520.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "6df17dd7a3115196cd81b8b10311937d50de945386c5dcf81bdd1d9e6ffce4d5",
+      "sha256": "6df17dd7a3115196cd81b8b10311937d50de945386c5dcf81bdd1d9e6ffce4d5",
+      "labels": [],
+      "ignoreRegions": []
+    },
+    {
+      "id": "v2-showcase",
+      "split": "holdout-v2",
+      "file": "v2/images/showcase.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s",
+      "sourceFile": "showcase-26635.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "bebe139c6384d1e7bdb8fa46179536a4cc28313bd318926dc46b2a2be78897df",
+      "sha256": "bebe139c6384d1e7bdb8fa46179536a4cc28313bd318926dc46b2a2be78897df",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            442,
+            196,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            592,
+            184,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            742,
+            196,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            592,
+            469,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            482,
+            339,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            632,
+            326,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            769,
+            339,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            795,
+            339,
+            16,
+            16
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "v2-showcase-26600",
+      "split": "holdout-v2",
+      "file": "v2/images/showcase-26600.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26600s",
+      "sourceFile": "showcase-26600.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "0222bf96282dd1a3f1d13b6f30a7edad20ca3499c557b220373b339b8b800ab5",
+      "sha256": "0222bf96282dd1a3f1d13b6f30a7edad20ca3499c557b220373b339b8b800ab5",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            367,
+            296,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            517,
+            295,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            667,
+            295,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            817,
+            292,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            397,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            423,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            546,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            572,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            710,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            833,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            859,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            884,
+            440,
+            16,
+            16
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    }
+  ],
+  "annotationAudit": "Primary agent inspected all six full images after code freeze and before any model run; added one omitted desaturated glyph in InvokeFates_1, no other class changes."
+}

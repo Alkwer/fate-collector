@@ -1,0 +1,139 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "v2/images/combat.png",
+  "size": [
+    1280,
+    720
+  ],
+  "sourceSha256": "6df17dd7a3115196cd81b8b10311937d50de945386c5dcf81bdd1d9e6ffce4d5",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "0:10\nAMBUSH Mirrs-:\nEXPI ORING KINC.SMARCYI (OPTIONAL)\n'8 Talk to Johan in the Karui Shores\nTHREADS OF THE ORIGINATOR\n@Speak to Eagon in your Hideout\nTHE MAVEN\nCollect Map Bosses in Tier 6\u2022 Maps (0/3)\nTHE EATER OF WORLDS\nPursue The Eater of Worlds' influence in a\nTier 9\u2022 Map\nTHE SEARING EXARCH\nPursue the Searing ExarcWs influence in a\nTier 9. Map\nTHE EIDER\nTalk to Commander Kirac\nMENU",
+    "lines": [
+      {
+        "text": "0:10",
+        "x": 360.5,
+        "y": 49.5,
+        "width": 17.0,
+        "height": 7.0
+      },
+      {
+        "text": "AMBUSH Mirrs-:",
+        "x": 398.5,
+        "y": 363.0,
+        "width": 93.0,
+        "height": 10.0
+      },
+      {
+        "text": "EXPI ORING KINC.SMARCYI (OPTIONAL)",
+        "x": 1014.0,
+        "y": 200.0,
+        "width": 192.5,
+        "height": 11.5
+      },
+      {
+        "text": "'8 Talk to Johan in the Karui Shores",
+        "x": 1016.0,
+        "y": 212.0,
+        "width": 177.5,
+        "height": 12.0
+      },
+      {
+        "text": "THREADS OF THE ORIGINATOR",
+        "x": 1012.5,
+        "y": 227.5,
+        "width": 153.0,
+        "height": 9.5
+      },
+      {
+        "text": "@Speak to Eagon in your Hideout",
+        "x": 1016.0,
+        "y": 240.0,
+        "width": 171.0,
+        "height": 12.0
+      },
+      {
+        "text": "THE MAVEN",
+        "x": 1012.0,
+        "y": 255.0,
+        "width": 61.5,
+        "height": 9.0
+      },
+      {
+        "text": "Collect Map Bosses in Tier 6\u2022 Maps (0/3)",
+        "x": 1029.5,
+        "y": 268.0,
+        "width": 198.0,
+        "height": 12.0
+      },
+      {
+        "text": "THE EATER OF WORLDS",
+        "x": 1012.0,
+        "y": 282.0,
+        "width": 117.0,
+        "height": 9.5
+      },
+      {
+        "text": "Pursue The Eater of Worlds' influence in a",
+        "x": 1030.0,
+        "y": 295.0,
+        "width": 207.5,
+        "height": 10.0
+      },
+      {
+        "text": "Tier 9\u2022 Map",
+        "x": 1029.0,
+        "y": 308.5,
+        "width": 59.5,
+        "height": 11.5
+      },
+      {
+        "text": "THE SEARING EXARCH",
+        "x": 1012.0,
+        "y": 322.0,
+        "width": 111.5,
+        "height": 9.5
+      },
+      {
+        "text": "Pursue the Searing ExarcWs influence in a",
+        "x": 1030.0,
+        "y": 335.5,
+        "width": 207.5,
+        "height": 12.5
+      },
+      {
+        "text": "Tier 9. Map",
+        "x": 1029.0,
+        "y": 349.0,
+        "width": 59.5,
+        "height": 11.5
+      },
+      {
+        "text": "THE EIDER",
+        "x": 1012.5,
+        "y": 362.0,
+        "width": 54.0,
+        "height": 9.0
+      },
+      {
+        "text": "Talk to Commander Kirac",
+        "x": 1029.0,
+        "y": 376.0,
+        "width": 127.0,
+        "height": 9.5
+      },
+      {
+        "text": "MENU",
+        "x": 160.5,
+        "y": 692.5,
+        "width": 32.0,
+        "height": 11.0
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 2
+}

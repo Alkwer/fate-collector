@@ -49,7 +49,8 @@ offers → Shared research collection**. Never use the example key in production
 Download the helper ZIP from the website, extract it, and run `FateCollector.ahk`
 with AutoHotkey v2. Right-click its tray icon and open **Cloud upload settings** to
 enable direct uploads to your deployed collection. Calibrate the panel with F6/F7
-once per helper session, then press F9 for each new offer. The helper creates a local
+once, then press F9 for each new offer. The selection is saved between sessions;
+F8 previews it and checks a same-aspect resolution change. The helper creates a local
 `captures` folder; its tray menu can open it. Connect that folder on the website when
 you want to inspect or correct captures. Direct upload does not download cloud
 history into the website; local review and reviewed sharing remain separate.
@@ -99,6 +100,10 @@ npm run check
 npx playwright install chromium
 npm run test:e2e
 npm run test:helper
+npm run test:calibration
+npm run test:capture-image
+npm run test:ocr
+npm run test:capture-backend
 npm run test:upload
 npm run test:upload:integration
 ```
@@ -117,7 +122,9 @@ Windows picker/permission prompt and live F9 capture need manual validation.
 
 The prerelease OCR fixture verifies four offered cards against GGG's showcase
 image. Live PoE capture, HDR and different UI scales still need validation. The
-current helper supports SDR, windowed/borderless capture. Plain image imports are
+current helper uses GDI for SDR and Windows Graphics Capture for detected HDR in
+windowed/borderless mode. Native WGC tests cover SDR and float16 fixture capture;
+real HDR/game coverage remains unvalidated. Plain image imports are
 preserved but do not run browser OCR. Unknown names may be missing from suggestions;
 the source image and raw OCR remain available for correction.
 
@@ -127,11 +134,21 @@ Background throttling or tab suspension can delay import; the app catches up fro
 disk when it resumes. Closing the page stops import until it is reopened. Folder
 polling checks about every two seconds while the browser allows it to run.
 
-Reward icons, exact combinations and probabilities are not inferred. There is no
+The separate [visual recognition prototype](prototypes/vision/README.md) scans
+saved screenshots for eight icon motifs and tier 2/3 feathers. Its measured
+coverage and abstentions are documented; it is not connected to F9 or uploads.
+Its [whole-offer reader](prototypes/vision/OFFERS-V2.md) adds positioned Windows OCR,
+offered/collected/invoked card grouping and tooltip masking, with explicit unknowns.
+
+Reward icons, exact combinations and probabilities are not inferred by the collector. There is no
 continuous screen watcher, automatic choice detection or public anonymous ingestion.
 Capture each offer once: importing the same file is deduplicated, but pressing F9
 again creates a new capture. Shared collection is currently for trusted testers
 with a private key, not an open crowd-sourcing launch.
+
+For a local dataset quality report, run `npm run research:stats -- path/to/export.json`.
+The [report guide](docs/research-statistics.md) explains Markdown/JSON output,
+report consistency checks and why session counts or repeat hints are not independent encounters.
 
 Independent community project. Not affiliated with Grinding Gear Games. Game names
 and content remain the property of their respective owners.

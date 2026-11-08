@@ -6,6 +6,17 @@ on:
 permissions:
   contents: read
 jobs:
+  vision-prototype:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: prototypes/vision/requirements.txt
+      - run: python -m pip install -r prototypes/vision/requirements.txt
+      - run: python -m unittest discover -s prototypes/vision -p 'test_*.py' -v
   app:
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +49,11 @@ jobs:
       - name: Validate PowerShell bundle generation
         shell: powershell
         run: ./helpers/tests/Test-FateCapture.ps1
+      - name: Validate capture conversion and OCR selection
+        shell: powershell
+        run: |
+          ./helpers/tests/Test-CaptureImage.ps1
+          ./helpers/tests/Test-OcrPasses.ps1
       - name: Validate persistent upload queue
         shell: powershell
         run: ./helpers/tests/Test-CloudUpload.ps1

@@ -1,0 +1,62 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "images/unknown-exceptional.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "sourceSha256": "e82aa5bab0bdb913ccb6640ef9fdb026e35af51fa75eb80464557cce2fc69b4c",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "Bloodthirsty\nEmpowered Monster will fire periodic volleys of bone projectiles\nEmpowered Monsters Attacks and Spells Impale on Hit\nBloodthirsty\nEmpowered Monster will drop an additional Exceptional Gem\nTo claim this reward, invoke three copies of it",
+    "lines": [
+      {
+        "text": "Bloodthirsty",
+        "x": 682,
+        "y": 302,
+        "width": 119,
+        "height": 24
+      },
+      {
+        "text": "Empowered Monster will fire periodic volleys of bone projectiles",
+        "x": 682,
+        "y": 349,
+        "width": 556,
+        "height": 20
+      },
+      {
+        "text": "Empowered Monsters Attacks and Spells Impale on Hit",
+        "x": 681,
+        "y": 372,
+        "width": 473,
+        "height": 19
+      },
+      {
+        "text": "Bloodthirsty",
+        "x": 919,
+        "y": 418,
+        "width": 82,
+        "height": 17
+      },
+      {
+        "text": "Empowered Monster will drop an additional Exceptional Gem",
+        "x": 696,
+        "y": 586,
+        "width": 528,
+        "height": 20
+      },
+      {
+        "text": "To claim this reward, invoke three copies of it",
+        "x": 694,
+        "y": 630,
+        "width": 397,
+        "height": 20
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 1
+}

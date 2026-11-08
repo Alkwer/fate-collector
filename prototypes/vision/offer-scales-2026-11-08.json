@@ -1,0 +1,182 @@
+{
+  "scope": "Synthetic Lanczos resizes of two development frames, each passed through real Windows OCR; not independent gameplay captures.",
+  "images": [
+    {
+      "source": "press-offer-b",
+      "size": [
+        1280,
+        720
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 5,
+        "cardCountDifference": 0,
+        "locatedCards": 5,
+        "correctNames": 5,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 5,
+        "expectedCardSymbols": 8,
+        "correctCardSymbols": 8,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 0,
+      "ocrResizeFactor": 2
+    },
+    {
+      "source": "press-offer-b",
+      "size": [
+        2560,
+        1440
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 5,
+        "cardCountDifference": 0,
+        "locatedCards": 5,
+        "correctNames": 5,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 5,
+        "expectedCardSymbols": 8,
+        "correctCardSymbols": 8,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 0,
+      "ocrResizeFactor": 1
+    },
+    {
+      "source": "press-offer-b",
+      "size": [
+        3840,
+        2160
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 5,
+        "cardCountDifference": 0,
+        "locatedCards": 5,
+        "correctNames": 5,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 5,
+        "expectedCardSymbols": 8,
+        "correctCardSymbols": 8,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 0,
+      "ocrResizeFactor": 1
+    },
+    {
+      "source": "v2-invoke-fates",
+      "size": [
+        1280,
+        720
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "expectedCardSymbols": 4,
+        "correctCardSymbols": 4,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "acceptedWhereUnattributable": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 1,
+      "ocrResizeFactor": 2
+    },
+    {
+      "source": "v2-invoke-fates",
+      "size": [
+        2560,
+        1440
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "expectedCardSymbols": 4,
+        "correctCardSymbols": 4,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "acceptedWhereUnattributable": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 1,
+      "ocrResizeFactor": 1
+    },
+    {
+      "source": "v2-invoke-fates",
+      "size": [
+        3840,
+        2160
+      ],
+      "metrics": {
+        "modeCorrect": 1,
+        "expectedCards": 4,
+        "cardCountDifference": 0,
+        "locatedCards": 4,
+        "correctNames": 4,
+        "unknownNames": 0,
+        "wrongNames": 0,
+        "correctTiers": 4,
+        "expectedCardSymbols": 4,
+        "correctCardSymbols": 4,
+        "missingCardSymbols": 0,
+        "unexpectedCardSymbols": 0,
+        "acceptedWhereUnattributable": 0,
+        "expectedSharedSymbols": 0,
+        "correctSharedSymbols": 0,
+        "missingSharedSymbols": 0,
+        "unexpectedSharedSymbols": 0,
+        "unassignedCards": 0,
+        "acceptedUnassignedSymbols": 0
+      },
+      "occlusions": 1,
+      "ocrResizeFactor": 1
+    }
+  ]
+}

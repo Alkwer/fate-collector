@@ -1,0 +1,132 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "images/press-offer-a.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "SELECT A FATE\nAlchemist\nCreates boiling\ncauldrons of blood\nFates\nSanguine\nCreates a deadly ring\nof boiling blood\nCONFIRM\nButcher\nFlings projectiles\nwhich open sores in\nthe earth on hit\nGravewalker\nCreates fissures of\nbloated corpses",
+    "lines": [
+      {
+        "text": "SELECT A FATE",
+        "x": 458,
+        "y": 120,
+        "width": 110,
+        "height": 14
+      },
+      {
+        "text": "Alchemist",
+        "x": 590,
+        "y": 415,
+        "width": 67,
+        "height": 13
+      },
+      {
+        "text": "Creates boiling",
+        "x": 574,
+        "y": 597,
+        "width": 102,
+        "height": 16
+      },
+      {
+        "text": "cauldrons of blood",
+        "x": 561,
+        "y": 614,
+        "width": 128,
+        "height": 13
+      },
+      {
+        "text": "Fates",
+        "x": 937,
+        "y": 326,
+        "width": 48,
+        "height": 15
+      },
+      {
+        "text": "Sanguine",
+        "x": 818,
+        "y": 416,
+        "width": 61,
+        "height": 15
+      },
+      {
+        "text": "Creates a deadly ring",
+        "x": 779,
+        "y": 597,
+        "width": 142,
+        "height": 16
+      },
+      {
+        "text": "of boiling blood",
+        "x": 796,
+        "y": 614,
+        "width": 108,
+        "height": 17
+      },
+      {
+        "text": "CONFIRM",
+        "x": 920,
+        "y": 730,
+        "width": 81,
+        "height": 12
+      },
+      {
+        "text": "Butcher",
+        "x": 1048,
+        "y": 415,
+        "width": 51,
+        "height": 13
+      },
+      {
+        "text": "Flings projectiles",
+        "x": 1018,
+        "y": 597,
+        "width": 113,
+        "height": 16
+      },
+      {
+        "text": "which open sores in",
+        "x": 1005,
+        "y": 614,
+        "width": 137,
+        "height": 17
+      },
+      {
+        "text": "the earth on hit",
+        "x": 1021,
+        "y": 632,
+        "width": 107,
+        "height": 13
+      },
+      {
+        "text": "Gravewalker",
+        "x": 1256,
+        "y": 415,
+        "width": 85,
+        "height": 13
+      },
+      {
+        "text": "Creates fissures of",
+        "x": 1237,
+        "y": 597,
+        "width": 125,
+        "height": 13
+      },
+      {
+        "text": "bloated corpses",
+        "x": 1247,
+        "y": 614,
+        "width": 105,
+        "height": 17
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 1
+}

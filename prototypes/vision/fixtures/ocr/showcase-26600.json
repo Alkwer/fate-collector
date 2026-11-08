@@ -1,0 +1,370 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "v2/images/showcase-26600.png",
+  "size": [
+    1280,
+    720
+  ],
+  "sourceSha256": "0222bf96282dd1a3f1d13b6f30a7edad20ca3499c557b220373b339b8b800ab5",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "20\n0:02\nHBORN Bowa\nATH GREAVES\u2014\n0:00\nTempest\nI Creates volatile orbs of\nlightning\nFates\nSELECT A FATE\nDryad\nSpawns vengeful vines\nMAELSTROM STAFF\u2014\nStormcalter\nCreates leylines of\nlightning\nTorchbearer\nCreates dangerous\nbonfires of corpses\nTITAN PLATE\n\u2022WN.'I\nB OF ALCHEMY\nR PLATE \u2022\nKINC.SMARCH (OPTIONAL)\n\u2022 Talk,to Johan in the Karui Shores\nTHREADS OF THE ORIGINATOR\nSpeak to Fagon in your Hideout\nTHE MAVEN\nCollect Map Bosses in Tier 6\u2022 Maps (0/3)\nTHE E\u00f6TER OF WORLDS\nPursue The Eater of Worlds' influence in a\nTier Map\nTHE SEARING EXARCH*\nPursue the Searing Exarch's influence in a\nTier Map\nTHE EtD\u00c9R\nTalL\u2022 Commander Kirac\nRANGER BOW \u2014\nDESERT BRIGANDINE\nAVE'\nGARB \u2022\nAMULET\nPLATINUM SCEPTRE\nEYE GOUGER (TIER 2) a\nCONFIRM\nTEMPERED FOIL :\nASTRAL PLATE a\nEAGLE CLAW\nFOSSILISED SPIRIT SHIELD\nVAAL CLAW*",
+    "lines": [
+      {
+        "text": "20",
+        "x": 268.0,
+        "y": 38.0,
+        "width": 9.0,
+        "height": 6.0
+      },
+      {
+        "text": "0:02",
+        "x": 263.0,
+        "y": 50.0,
+        "width": 17.0,
+        "height": 6.5
+      },
+      {
+        "text": "HBORN Bowa",
+        "x": 0.0,
+        "y": 72.5,
+        "width": 77.0,
+        "height": 9.5
+      },
+      {
+        "text": "ATH GREAVES\u2014",
+        "x": 0.0,
+        "y": 113.5,
+        "width": 79.5,
+        "height": 9.0
+      },
+      {
+        "text": "0:00",
+        "x": 360.5,
+        "y": 47.0,
+        "width": 17.0,
+        "height": 7.0
+      },
+      {
+        "text": "Tempest",
+        "x": 397.0,
+        "y": 277.5,
+        "width": 37.0,
+        "height": 9.5
+      },
+      {
+        "text": "I Creates volatile orbs of",
+        "x": 359.5,
+        "y": 397.0,
+        "width": 108.0,
+        "height": 9.5
+      },
+      {
+        "text": "lightning",
+        "x": 396.5,
+        "y": 409.0,
+        "width": 40.0,
+        "height": 11.0
+      },
+      {
+        "text": "Fates",
+        "x": 624.5,
+        "y": 216.5,
+        "width": 33.0,
+        "height": 11.5
+      },
+      {
+        "text": "SELECT A FATE",
+        "x": 579.0,
+        "y": 252.5,
+        "width": 73.0,
+        "height": 9.5
+      },
+      {
+        "text": "Dryad",
+        "x": 553.0,
+        "y": 276.0,
+        "width": 25.0,
+        "height": 10.0
+      },
+      {
+        "text": "Spawns vengeful vines",
+        "x": 516.5,
+        "y": 396.0,
+        "width": 99.0,
+        "height": 11.0
+      },
+      {
+        "text": "MAELSTROM STAFF\u2014",
+        "x": 667.0,
+        "y": 160.5,
+        "width": 107.5,
+        "height": 9.5
+      },
+      {
+        "text": "Stormcalter",
+        "x": 690.0,
+        "y": 276.0,
+        "width": 50.5,
+        "height": 8.5
+      },
+      {
+        "text": "Creates leylines of",
+        "x": 676.5,
+        "y": 396.5,
+        "width": 80.0,
+        "height": 11.0
+      },
+      {
+        "text": "lightning",
+        "x": 696.5,
+        "y": 408.0,
+        "width": 40.0,
+        "height": 11.0
+      },
+      {
+        "text": "Torchbearer",
+        "x": 838.5,
+        "y": 273.0,
+        "width": 53.0,
+        "height": 8.5
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 825.5,
+        "y": 393.0,
+        "width": 81.0,
+        "height": 11.0
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 824.5,
+        "y": 404.5,
+        "width": 82.5,
+        "height": 11.0
+      },
+      {
+        "text": "TITAN PLATE",
+        "x": 924.5,
+        "y": 314.0,
+        "width": 66.0,
+        "height": 9.0
+      },
+      {
+        "text": "\u2022WN.'I",
+        "x": 924.0,
+        "y": 392.0,
+        "width": 32.0,
+        "height": 7.5
+      },
+      {
+        "text": "B OF ALCHEMY",
+        "x": 924.0,
+        "y": 411.0,
+        "width": 76.5,
+        "height": 9.0
+      },
+      {
+        "text": "R PLATE \u2022",
+        "x": 924.5,
+        "y": 431.0,
+        "width": 46.5,
+        "height": 9.0
+      },
+      {
+        "text": "KINC.SMARCH (OPTIONAL)",
+        "x": 1074.5,
+        "y": 200.0,
+        "width": 131.5,
+        "height": 10.5
+      },
+      {
+        "text": "\u2022 Talk,to Johan in the Karui Shores",
+        "x": 1019.0,
+        "y": 213.0,
+        "width": 174.5,
+        "height": 11.0
+      },
+      {
+        "text": "THREADS OF THE ORIGINATOR",
+        "x": 1012.5,
+        "y": 228.0,
+        "width": 152.5,
+        "height": 8.5
+      },
+      {
+        "text": "Speak to Fagon in your Hideout",
+        "x": 1030.0,
+        "y": 240.5,
+        "width": 156.5,
+        "height": 11.5
+      },
+      {
+        "text": "THE MAVEN",
+        "x": 1012.5,
+        "y": 255.0,
+        "width": 61.0,
+        "height": 9.0
+      },
+      {
+        "text": "Collect Map Bosses in Tier 6\u2022 Maps (0/3)",
+        "x": 1030.0,
+        "y": 268.0,
+        "width": 197.0,
+        "height": 11.5
+      },
+      {
+        "text": "THE E\u00f6TER OF WORLDS",
+        "x": 1012.5,
+        "y": 282.5,
+        "width": 116.5,
+        "height": 10.0
+      },
+      {
+        "text": "Pursue The Eater of Worlds' influence in a",
+        "x": 1030.0,
+        "y": 295.0,
+        "width": 207.5,
+        "height": 9.5
+      },
+      {
+        "text": "Tier Map",
+        "x": 1029.0,
+        "y": 308.5,
+        "width": 59.0,
+        "height": 11.0
+      },
+      {
+        "text": "THE SEARING EXARCH*",
+        "x": 1012.5,
+        "y": 322.5,
+        "width": 116.0,
+        "height": 8.5
+      },
+      {
+        "text": "Pursue the Searing Exarch's influence in a",
+        "x": 1030.0,
+        "y": 336.0,
+        "width": 207.5,
+        "height": 12.0
+      },
+      {
+        "text": "Tier Map",
+        "x": 1029.0,
+        "y": 349.0,
+        "width": 59.0,
+        "height": 11.0
+      },
+      {
+        "text": "THE EtD\u00c9R",
+        "x": 1012.5,
+        "y": 361.0,
+        "width": 53.5,
+        "height": 10.0
+      },
+      {
+        "text": "TalL\u2022 Commander Kirac",
+        "x": 1029.0,
+        "y": 376.0,
+        "width": 127.0,
+        "height": 9.5
+      },
+      {
+        "text": "RANGER BOW \u2014",
+        "x": 1016.5,
+        "y": 389.0,
+        "width": 81.0,
+        "height": 9.0
+      },
+      {
+        "text": "DESERT BRIGANDINE",
+        "x": 1076.5,
+        "y": 408.5,
+        "width": 107.5,
+        "height": 9.5
+      },
+      {
+        "text": "AVE'",
+        "x": 783.5,
+        "y": 412.5,
+        "width": 23.5,
+        "height": 7.0
+      },
+      {
+        "text": "GARB \u2022",
+        "x": 775.0,
+        "y": 431.0,
+        "width": 33.0,
+        "height": 9.5
+      },
+      {
+        "text": "AMULET",
+        "x": 907.0,
+        "y": 475.0,
+        "width": 44.0,
+        "height": 9.5
+      },
+      {
+        "text": "PLATINUM SCEPTRE",
+        "x": 999.5,
+        "y": 449.0,
+        "width": 101.5,
+        "height": 10.0
+      },
+      {
+        "text": "EYE GOUGER (TIER 2) a",
+        "x": 998.0,
+        "y": 469.0,
+        "width": 118.0,
+        "height": 12.0
+      },
+      {
+        "text": "CONFIRM",
+        "x": 614.5,
+        "y": 486.5,
+        "width": 51.0,
+        "height": 8.5
+      },
+      {
+        "text": "TEMPERED FOIL :",
+        "x": 626.5,
+        "y": 550.0,
+        "width": 88.5,
+        "height": 9.0
+      },
+      {
+        "text": "ASTRAL PLATE a",
+        "x": 932.0,
+        "y": 495.0,
+        "width": 82.0,
+        "height": 9.5
+      },
+      {
+        "text": "EAGLE CLAW",
+        "x": 784.5,
+        "y": 511.5,
+        "width": 64.5,
+        "height": 10.0
+      },
+      {
+        "text": "FOSSILISED SPIRIT SHIELD",
+        "x": 783.0,
+        "y": 536.0,
+        "width": 133.0,
+        "height": 9.0
+      },
+      {
+        "text": "VAAL CLAW*",
+        "x": 730.0,
+        "y": 553.0,
+        "width": 79.5,
+        "height": 12.5
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 2
+}

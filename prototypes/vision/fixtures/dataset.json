@@ -1,0 +1,1045 @@
+{
+  "version": 1,
+  "annotationMethod": "Manual visual inspection; pixel boxes approximate to 2-4 px. Tier counts checked on enlarged feather crops, consistent with recorded merge sequence.",
+  "holdoutUnit": "DatModz/Octavian showcase scene; adjacent frames are correlated, not independent samples.",
+  "unknownPolicy": "Uncatalogued/obscured/desaturated symbols have null visualId. Presenter/tooltip regions are excluded only when explicitly listed.",
+  "images": [
+    {
+      "id": "press-offer-a",
+      "split": "reference",
+      "file": "images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceFile": "Fates_UI.png",
+      "sourceSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "sha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            550,
+            448,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            775,
+            448,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            1000,
+            448,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            1225,
+            448,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            593,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            631,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            818,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            857,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            1061,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            1267,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            1306,
+            665,
+            24,
+            24
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "press-offer-b",
+      "split": "reference",
+      "file": "images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceFile": "Fates_UI_2.png",
+      "sourceSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "sha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            550,
+            292,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            775,
+            292,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            1000,
+            292,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            1225,
+            272,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            887,
+            703,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            610,
+            509,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "silver-cluster",
+          "box": [
+            797,
+            509,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "orange-feathers",
+          "box": [
+            835,
+            509,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            874,
+            509,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "three-gems",
+          "box": [
+            1060,
+            509,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-axe",
+          "box": [
+            1285,
+            489,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            928,
+            916,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-ring",
+          "box": [
+            968,
+            916,
+            24,
+            24
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "merge-reference",
+      "split": "reference",
+      "file": "images/merge-reference.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11703s",
+      "sourceFile": "duplicates-after-03h15m03.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "b12a1daf53d8547a43886d42196c1568c85aa2d9eff0936a14e85563b0cc72e2",
+      "sha256": "ab978ea6215a623a15c9b2be9241da861d963e5d751574dbb170ef4584bf7363",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-3",
+          "box": [
+            571,
+            212,
+            28,
+            34
+          ],
+          "tier": 3
+        },
+        {
+          "family": "reward",
+          "visualId": "three-gems",
+          "box": [
+            536,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "three-gems",
+          "box": [
+            575,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "three-gems",
+          "box": [
+            614,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            653,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            693,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            732,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            771,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            1355,
+            476,
+            24,
+            24
+          ],
+          "note": "Desaturated combo state; not a supported colour template."
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "press-invoke",
+      "split": "validation",
+      "file": "images/press-invoke.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceFile": "InvokeFates_2.png",
+      "sourceSize": [
+        3840,
+        2160
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "57972b24ef9956122c27826c325ce6a950c742c325e76556ec93d38a47829d1f",
+      "sha256": "369c3c40260e8464b76a7026ce06bdf2b64520c476ace7efac399bf7315a0d7e",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            572,
+            213,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            886,
+            213,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            1201,
+            213,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            774,
+            644,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-axe",
+          "box": [
+            536,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            575,
+            476,
+            24,
+            24
+          ],
+          "note": "Currency Items tooltip points to this icon."
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            614,
+            476,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            1316,
+            476,
+            24,
+            24
+          ],
+          "note": "Desaturated ring."
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            1355,
+            476,
+            24,
+            24
+          ],
+          "note": "Desaturated orange-feather motif."
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            817,
+            862,
+            24,
+            24
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "orange-feathers",
+          "box": [
+            856,
+            862,
+            24,
+            24
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "showcase-before",
+      "split": "holdout",
+      "file": "images/showcase-before.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26691s",
+      "sourceFile": "showcase-before-07h24m51.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "677c8ac3dc9b2841bca0aa1a3042875d6bf6ffcaa42e7f2817a7fe92d2625c94",
+      "sha256": "40fdee48e30c22e3f9021bbb7c709ebf97df74604503b9a6370ae818c2766e8d",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            439,
+            429,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            589,
+            429,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            739,
+            429,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            456,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            482,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            508,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            632,
+            576,
+            16,
+            16
+          ],
+          "note": "Lower half covered by presenter window."
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            769,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            795,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "showcase-merged",
+      "split": "holdout",
+      "file": "images/showcase-merged.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26695s",
+      "sourceFile": "showcase-merged-07h24m55.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "9fd3ee5c6f8fdbb4a75b4e21a50f6f43a8834ce7485fc0ce1abbe43e1eb47bc5",
+      "sha256": "83ab25d310ec04fbfac879b8146a838cfc0a2d39e8df092aae36e33e6cfd48e4",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-3",
+          "box": [
+            380,
+            140,
+            19,
+            23
+          ],
+          "tier": 3
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            739,
+            429,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            357,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            383,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            409,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            461,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            487,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            513,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            435,
+            319,
+            16,
+            16
+          ],
+          "note": "Partly covered by cursor."
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            903,
+            319,
+            16,
+            16
+          ],
+          "note": "Desaturated combo state."
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            769,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            795,
+            576,
+            16,
+            16
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "showcase-third",
+      "split": "holdout",
+      "file": "images/showcase-third.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26700s",
+      "sourceFile": "showcase-third-card-07h25m00.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "97d622d718f46777f623435542b97c6850ee284db9efad2fb1df46d1e7912392",
+      "sha256": "ae150d9c823f09205beb4de4a03a20a4e98f59c54f12a9e0d7ec98b5cc691993",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-3",
+          "box": [
+            380,
+            140,
+            19,
+            23
+          ],
+          "tier": 3
+        },
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            800,
+            140,
+            19,
+            23
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            357,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-grid",
+          "box": [
+            383,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "gold-stack",
+          "box": [
+            409,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            435,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            461,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            487,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            513,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            539,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        },
+        {
+          "family": "reward",
+          "visualId": "blue-diamond",
+          "box": [
+            565,
+            319,
+            16,
+            16
+          ],
+          "note": ""
+        }
+      ],
+      "ignoreRegions": []
+    },
+    {
+      "id": "negative-gameplay",
+      "split": "holdout",
+      "file": "images/negative-gameplay.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26755s",
+      "sourceFile": "showcase-fated-07h25m55.png",
+      "sourceSize": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "sourceSha256": "f0cebc2117c7d14d1fbcedad63b77cd73f98a2a67df05d92dc14738afcbf18b5",
+      "sha256": "c66bedbeabe8657a69e60ee000a25073c3a0c2970a4ba82233e8a2d52a89a309",
+      "labels": [],
+      "ignoreRegions": []
+    },
+    {
+      "id": "unknown-exceptional",
+      "split": "validation",
+      "file": "images/unknown-exceptional.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11677s",
+      "sourceFile": "exceptional-tooltip-03h14m37.png",
+      "sourceSize": [
+        1920,
+        1080
+      ],
+      "size": [
+        1920,
+        1080
+      ],
+      "sourceSha256": "6c67e7b42791128ba20e07957d8831687ff5a85b11c212850736ec4f6f381f52",
+      "sha256": "e82aa5bab0bdb913ccb6640ef9fdb026e35af51fa75eb80464557cce2fc69b4c",
+      "labels": [
+        {
+          "family": "tier",
+          "visualId": "tier-2",
+          "box": [
+            886,
+            451,
+            28,
+            34
+          ],
+          "tier": 2
+        },
+        {
+          "family": "reward",
+          "visualId": null,
+          "box": [
+            948,
+            668,
+            24,
+            24
+          ],
+          "note": "Uncatalogued Exceptional Gem combo icon; cursor nearby."
+        }
+      ],
+      "ignoreRegions": []
+    }
+  ]
+}

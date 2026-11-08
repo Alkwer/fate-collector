@@ -1,0 +1,181 @@
+{
+  "kind": "fate-collector.ocr-fixture",
+  "schemaVersion": 1,
+  "file": "v2/images/invoke-fates.png",
+  "size": [
+    1920,
+    1080
+  ],
+  "sourceSha256": "dfa9b3f5683a2eb2fad127dacaeac6a4d77798447a969c90a4bb3b2e42940274",
+  "method": "Windows OCR via existing Export-FateCapture.ps1; 2x Lanczos below 1080p, coordinates mapped back. Text unedited.",
+  "ocr": {
+    "status": "ok",
+    "text": "0:04\nTempest\nCreates volatile orbs\nof lightning\nTorchbearer\nEmpowered Monster will create corpse bonfires nearby\nInvoke Fates\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice\nMIRM\nThese bonfires will periodically fire flaming mortars at enemies near them\nEmpowered Monster will gain 45% of Physical Damage as extra Fire\nTorchbearer\nCreates dangerous\nbonfires of corpses\nStormcaller\nCreates leylines of\nlightning\nMENU\nQ\nw",
+    "lines": [
+      {
+        "text": "0:04",
+        "x": 30,
+        "y": 74,
+        "width": 27,
+        "height": 12
+      },
+      {
+        "text": "Tempest",
+        "x": 617,
+        "y": 183,
+        "width": 58,
+        "height": 14
+      },
+      {
+        "text": "Creates volatile orbs",
+        "x": 578,
+        "y": 363,
+        "width": 138,
+        "height": 13
+      },
+      {
+        "text": "of lightning",
+        "x": 607,
+        "y": 381,
+        "width": 80,
+        "height": 16
+      },
+      {
+        "text": "Torchbearer",
+        "x": 301,
+        "y": 465,
+        "width": 121,
+        "height": 18
+      },
+      {
+        "text": "Empowered Monster will create corpse bonfires nearby",
+        "x": 303,
+        "y": 512,
+        "width": 477,
+        "height": 20
+      },
+      {
+        "text": "Invoke Fates",
+        "x": 898,
+        "y": 108,
+        "width": 124,
+        "height": 17
+      },
+      {
+        "text": "Houndmaster",
+        "x": 914,
+        "y": 182,
+        "width": 92,
+        "height": 12
+      },
+      {
+        "text": "Creates spectral",
+        "x": 908,
+        "y": 363,
+        "width": 106,
+        "height": 17
+      },
+      {
+        "text": "wolves which explode",
+        "x": 886,
+        "y": 381,
+        "width": 150,
+        "height": 16
+      },
+      {
+        "text": "into ice",
+        "x": 936,
+        "y": 399,
+        "width": 50,
+        "height": 12
+      },
+      {
+        "text": "MIRM",
+        "x": 946,
+        "y": 526,
+        "width": 54,
+        "height": 12
+      },
+      {
+        "text": "These bonfires will periodically fire flaming mortars at enemies near them",
+        "x": 301,
+        "y": 534,
+        "width": 641,
+        "height": 20
+      },
+      {
+        "text": "Empowered Monster will gain 45% of Physical Damage as extra Fire",
+        "x": 303,
+        "y": 556,
+        "width": 580,
+        "height": 20
+      },
+      {
+        "text": "Torchbearer",
+        "x": 582,
+        "y": 604,
+        "width": 82,
+        "height": 12
+      },
+      {
+        "text": "Creates dangerous",
+        "x": 562,
+        "y": 785,
+        "width": 124,
+        "height": 16
+      },
+      {
+        "text": "bonfires of corpses",
+        "x": 561,
+        "y": 802,
+        "width": 127,
+        "height": 17
+      },
+      {
+        "text": "Stormcaller",
+        "x": 809,
+        "y": 614,
+        "width": 78,
+        "height": 12
+      },
+      {
+        "text": "Creates leylines of",
+        "x": 787,
+        "y": 795,
+        "width": 125,
+        "height": 17
+      },
+      {
+        "text": "lightning",
+        "x": 818,
+        "y": 813,
+        "width": 62,
+        "height": 16
+      },
+      {
+        "text": "MENU",
+        "x": 241,
+        "y": 1041,
+        "width": 48,
+        "height": 14
+      },
+      {
+        "text": "Q",
+        "x": 1415,
+        "y": 1058,
+        "width": 10,
+        "height": 14
+      },
+      {
+        "text": "w",
+        "x": 1471,
+        "y": 1058,
+        "width": 14,
+        "height": 11
+      }
+    ],
+    "language": "en-US"
+  },
+  "helperVersion": "0.2.0",
+  "ocrResizeFactor": 1
+}

@@ -1,0 +1,302 @@
+{
+  "verifiedOn": "2026-11-08",
+  "source": {
+    "url": "https://www.youtube.com/watch?v=8CEAhCzmXJM",
+    "title": "ExileCon 2026 - Day 2 - Live Stream",
+    "channel": "Path of Exile",
+    "channelUrl": "https://www.youtube.com/channel/UCA7X5unt1JrIiVReQDUbl_A",
+    "channelVerified": true,
+    "track": "English automatic captions",
+    "format": "HLS WebVTT"
+  },
+  "method": {
+    "downloadedSequenceRange": [
+      1900,
+      2600
+    ],
+    "requestedSegments": 701,
+    "httpErrors": 0,
+    "emptyResponses": 38,
+    "closelyReadSequenceRange": [
+      2246,
+      2281
+    ],
+    "relevantSegmentCount": 36,
+    "relevantMissingOrEmpty": 0,
+    "timestampBasis": "X-TIMESTAMP-MAP MPEGTS / 90000; checked against video segment PTS and YouTube player",
+    "audioIndependentlyTranscribed": false,
+    "inGameMechanicsTested": false
+  },
+  "playerChecks": [
+    {
+      "playerSeconds": 11399.546206,
+      "result": "Displayed captions confirm tripling and discarding second-card rewards."
+    },
+    {
+      "playerSeconds": 11383.629313,
+      "result": "Displayed captions align with discussion of tier 3 obtained by combining cards."
+    }
+  ],
+  "videoCheck": {
+    "sequence": 2280,
+    "videoStartPtsSeconds": 11396.5852,
+    "frameInspected": true,
+    "result": "Panel with four seated participants; no in-game merge demonstrated in this frame."
+  },
+  "claims": [
+    {
+      "id": "rewards-independent-of-fate-name",
+      "sequences": [
+        2250,
+        2251,
+        2252,
+        2253,
+        2254,
+        2255
+      ],
+      "linkStartSeconds": 11250
+    },
+    {
+      "id": "boots-guaranteed-and-other-boots-affected",
+      "sequences": [
+        2256,
+        2257,
+        2258
+      ],
+      "linkStartSeconds": 11270
+    },
+    {
+      "id": "fated-label-spelling-not-visually-verified",
+      "sequences": [
+        2258,
+        2259,
+        2260,
+        2261
+      ],
+      "linkStartSeconds": 11285
+    },
+    {
+      "id": "guaranteed-physical-mod-high-tier-example",
+      "sequences": [
+        2261,
+        2262,
+        2263,
+        2264,
+        2265
+      ],
+      "linkStartSeconds": 11300
+    },
+    {
+      "id": "monster-rarity-affects-item-templates",
+      "sequences": [
+        2266,
+        2267,
+        2268,
+        2269
+      ],
+      "linkStartSeconds": 11325
+    },
+    {
+      "id": "two-tier-2-cards-combine-to-tier-3",
+      "sequences": [
+        2275,
+        2276,
+        2277,
+        2278
+      ],
+      "linkStartSeconds": 11370
+    },
+    {
+      "id": "first-rewards-tripled-second-discarded-reorder-possible",
+      "sequences": [
+        2278,
+        2279,
+        2280,
+        2281
+      ],
+      "linkStartSeconds": 11385
+    }
+  ],
+  "segments": [
+    {
+      "sequence": 2246,
+      "ptsSeconds": 11226.615,
+      "sha256Utf8": "43fc3c1f5afad0f465a7099c976857a62e066a8159827dbff0c10efe1d55ff4d"
+    },
+    {
+      "sequence": 2247,
+      "ptsSeconds": 11231.62,
+      "sha256Utf8": "6757719618c9456d36d2ad9a86d65f0890a9a4ff751baa23fb6a4a7fdea66381"
+    },
+    {
+      "sequence": 2248,
+      "ptsSeconds": 11236.625,
+      "sha256Utf8": "55d70b11d242cafc235c53d62738633e0fa6f73da9aeeb032642c6880b200159"
+    },
+    {
+      "sequence": 2249,
+      "ptsSeconds": 11241.63,
+      "sha256Utf8": "1967c0c98dd2650d271137752c9b7cb9c492959b82e2be9c7a45889a4272b822"
+    },
+    {
+      "sequence": 2250,
+      "ptsSeconds": 11246.635,
+      "sha256Utf8": "8ad72e50b4ab322365eb722553f93451fb8483c70b92d5b838495e5ac8a2fd2b"
+    },
+    {
+      "sequence": 2251,
+      "ptsSeconds": 11251.64,
+      "sha256Utf8": "851d27861fc5e9b0b2d1d5ba4dc4f7c8f4ca7c3cb6cfc14b78d4c632f78466d5"
+    },
+    {
+      "sequence": 2252,
+      "ptsSeconds": 11256.645,
+      "sha256Utf8": "6bf75949d6b346162ba1099624c8cd972cc007d4a5c2661218c3cfeac5302d72"
+    },
+    {
+      "sequence": 2253,
+      "ptsSeconds": 11261.584,
+      "sha256Utf8": "44fadfd2358cc5567195edf80e31f1df2dd19285c898c5cd1cbbda85ba13ee0c"
+    },
+    {
+      "sequence": 2254,
+      "ptsSeconds": 11266.589,
+      "sha256Utf8": "13db0b4183647e956da7ab2d8a3ed4f8c2d659275dca79dcafa8eee950f6e5e8"
+    },
+    {
+      "sequence": 2255,
+      "ptsSeconds": 11271.594,
+      "sha256Utf8": "0dc8b03287de7fb2cc81f2b00d43ce30aaacd49aa450e5c705ffe9ad4ab51ca1"
+    },
+    {
+      "sequence": 2256,
+      "ptsSeconds": 11276.599,
+      "sha256Utf8": "ddc9899895106032b739ab5cc1e2e8ac0d8b7a007ed73a633d7923f76d5ef518"
+    },
+    {
+      "sequence": 2257,
+      "ptsSeconds": 11281.604,
+      "sha256Utf8": "eefdf95164e6ecc6f6aced87bf3ce9674f84e0f6cc2ad7602c65fc43503d8746"
+    },
+    {
+      "sequence": 2258,
+      "ptsSeconds": 11286.609,
+      "sha256Utf8": "f08f6b87d822756bdf2d5ac318595131a60f4117163a1220cc2d6135a7353a36"
+    },
+    {
+      "sequence": 2259,
+      "ptsSeconds": 11291.614,
+      "sha256Utf8": "6f9030686170dce9ef62788a54e63d6aeea1dad51172e2d37be577de7f6487b7"
+    },
+    {
+      "sequence": 2260,
+      "ptsSeconds": 11296.619,
+      "sha256Utf8": "aafab6e157aaee2142ef27cac4dd50e8251e36c2705af98b698391ea37a4a76c"
+    },
+    {
+      "sequence": 2261,
+      "ptsSeconds": 11301.624,
+      "sha256Utf8": "549062a94dc36c7ba4a39752c0b87217b68df3592ed3e5f302e89bf932592018"
+    },
+    {
+      "sequence": 2262,
+      "ptsSeconds": 11306.629,
+      "sha256Utf8": "fa40c54584031961250a41ed75bf116f814c38170909d245b1b0cfafe9c53a74"
+    },
+    {
+      "sequence": 2263,
+      "ptsSeconds": 11311.634,
+      "sha256Utf8": "4d7faaabeb5724dbf1900839d78e016f94b3b2e6c0983cb5cd966e0fcbb107da"
+    },
+    {
+      "sequence": 2264,
+      "ptsSeconds": 11316.639,
+      "sha256Utf8": "fd302feb105cb6ebe2eec5295a757c0f49b9ae897515eebba4d107b473d144e9"
+    },
+    {
+      "sequence": 2265,
+      "ptsSeconds": 11321.644,
+      "sha256Utf8": "4ec3917a6db8624d0a87423ad2682a259eaddd4f9c34b8f2bf40bf2efe598109"
+    },
+    {
+      "sequence": 2266,
+      "ptsSeconds": 11326.582,
+      "sha256Utf8": "2e134fe98f2f25310d26e8b164892533d8028d8b17a0b7d6c9ab0d499a0f80a1"
+    },
+    {
+      "sequence": 2267,
+      "ptsSeconds": 11331.587,
+      "sha256Utf8": "d6ef64a382712ebb6540bec6280e291428d009059015095e57dff5c7fa2caff3"
+    },
+    {
+      "sequence": 2268,
+      "ptsSeconds": 11336.592,
+      "sha256Utf8": "c3f7ecfd50199b0a9e66e998778ef87aafaebcd1b3ac4ee92fdaa9bbb1dd7a81"
+    },
+    {
+      "sequence": 2269,
+      "ptsSeconds": 11341.597,
+      "sha256Utf8": "66fdd52157d68d21d14c4f2031f14a42be02e01c8cffe76ccc18eb54a8c8aff5"
+    },
+    {
+      "sequence": 2270,
+      "ptsSeconds": 11346.602,
+      "sha256Utf8": "c406b1ead1db62856b335cf9ba5f48ccf9e2e14541ff3294e7f41f2674f94b64"
+    },
+    {
+      "sequence": 2271,
+      "ptsSeconds": 11351.607,
+      "sha256Utf8": "4cdbb6f3af036bec3520b11ddad260d7024c1ad42d9e3f7bb6a6f3b3e25a04b4"
+    },
+    {
+      "sequence": 2272,
+      "ptsSeconds": 11356.612,
+      "sha256Utf8": "cc4cafb581cbfb21a66eb3d7fe0b8edca993ec9d747462a873a257d910de37f6"
+    },
+    {
+      "sequence": 2273,
+      "ptsSeconds": 11361.617,
+      "sha256Utf8": "a6189a87289b7a6bc2fece57ee01289177e0ae601c34fbea8b9ea987b46e2535"
+    },
+    {
+      "sequence": 2274,
+      "ptsSeconds": 11366.622,
+      "sha256Utf8": "4d443f6116b84dc508efb7a837fe37d5296925862edb8d4dd04cb66de527dc53"
+    },
+    {
+      "sequence": 2275,
+      "ptsSeconds": 11371.627,
+      "sha256Utf8": "0b53b841d67759b6110182c2e8b22d867d396bf60032f5f87e679e49799b7e85"
+    },
+    {
+      "sequence": 2276,
+      "ptsSeconds": 11376.632,
+      "sha256Utf8": "fcec287472542ecdf10bc2e05f273e40ac278dd94b910be70b8f0d532c8dac97"
+    },
+    {
+      "sequence": 2277,
+      "ptsSeconds": 11381.637,
+      "sha256Utf8": "2e57e251f867357f0602c0a3a4a317d5ca4f4fa1c038f30c8fedf5610a04959a"
+    },
+    {
+      "sequence": 2278,
+      "ptsSeconds": 11386.642,
+      "sha256Utf8": "226884d22291e4e6cf7b1f3852af7c00c568e9e7d858fc5c8c9026199055f393"
+    },
+    {
+      "sequence": 2279,
+      "ptsSeconds": 11391.647,
+      "sha256Utf8": "4ae70162891c4e662b412e56e52c543b07439bb055218ab293f44b47d7e661d7"
+    },
+    {
+      "sequence": 2280,
+      "ptsSeconds": 11396.585,
+      "sha256Utf8": "2bfd6cf5b6f7e01db833c0c658d1d75159fb720cb2ddec9524dd6ef375ebbad0"
+    },
+    {
+      "sequence": 2281,
+      "ptsSeconds": 11401.59,
+      "sha256Utf8": "b614a0f1f2130fd5ff1ae9bdd6716f4f8ba87bd7e7df26e8add3e7c640587a71"
+    }
+  ]
+}

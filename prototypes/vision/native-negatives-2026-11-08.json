@@ -1,0 +1,90 @@
+{
+  "version": "fate-offer-prototype-2",
+  "scope": "Six genuine local 2024 screenshots, newly tested at original 3840x2160 resolution. Negative scenes only; cannot establish Fate-panel recall.",
+  "images": [
+    {
+      "file": "screenshot-0002.png",
+      "sha256": "b5c4a85159a29f23ff3dfe8e6c9a4275c7ec7664e7c734620b58596890642e86",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-07-31T00:03:35+02:00"
+    },
+    {
+      "file": "screenshot-0003.png",
+      "sha256": "720aa89697546e5ad99eeef135bdd9a9d40fd0162357a653e788c842d0c8c0d8",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-07-31T16:16:41+02:00"
+    },
+    {
+      "file": "screenshot-0004.png",
+      "sha256": "17ee117bfb5789c94d59d46a1f2e502089d7e1b2ab98429cc77b560074504c9a",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-08-05T09:55:13+02:00"
+    },
+    {
+      "file": "screenshot-0005.png",
+      "sha256": "5dafad7da632017afe276f85d8075987c015b38b44b4bd1b066e1b6ac465b3fd",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-08-05T20:11:19+02:00"
+    },
+    {
+      "file": "screenshot-0006.png",
+      "sha256": "337fad45496b7ef4eed65995840daccee5214fab1a3b4f55bcac7ad77f0272e0",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-08-13T15:38:32+02:00"
+    },
+    {
+      "file": "screenshot-0007.png",
+      "sha256": "bd2226a13809f9ed6c99b41ec2cfd878a233b8181824a0f9e8223e8101eafe01",
+      "size": [
+        3840,
+        2160
+      ],
+      "ocrStatus": "ok",
+      "ocrResizeFactor": 1,
+      "mode": "unknown",
+      "cards": 0,
+      "acceptedSymbols": 0,
+      "fileModifiedAt": "2024-08-15T12:55:18+02:00"
+    }
+  ]
+}

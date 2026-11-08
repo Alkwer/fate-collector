@@ -1,0 +1,15 @@
+{
+  "version": "fate-visual-prototype-2",
+  "frozenAtUtc": "2026-11-08T13:42:34.030851+00:00",
+  "purpose": "Freeze before reading/running the new holdout; later ground-truth audit is permitted without algorithm changes.",
+  "files": {
+    "recognize.py": "3c51d3e39efff5ba22e6d01ba584e9917e1ce787c11c3153fc3f8a1ec8f1176b",
+    "fixtures/catalog.json": "5fe4927f731a8b2cc0ad4992bc7cb52c0564df11b10bd4ff1c14edd84a7cc4fe",
+    "evaluate.py": "2a66e1ec252d9d87604b75d1979f8b05e0e0d3963cb195851b1fd6a0665c5575",
+    "requirements.txt": "172e9ac1e2fee27cbad9a1ac0d62b903960e8c86e287f1c8f9851def49c70afd",
+    "test_vision.py": "a2908c05989973adaa4c92bcd7a3d3a4b141071428bb1a9a89f849caf99aa459",
+    "fixtures/holdout-v2.json": "fa16adb25f0ec33adef0061418dbd4de37e73e040939a2660e02cccfb4148da2"
+  },
+  "auditedDatasetSha256": "dd1c2e8cb7a61170ff29073ac1a988bfa39ae4ac022356e6b1a35e1ff410740c",
+  "annotationAudit": "Primary agent inspected all six full images after code freeze and before any model run; added one omitted desaturated glyph in InvokeFates_1, no other class changes."
+}

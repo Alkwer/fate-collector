@@ -1,0 +1,308 @@
+{
+  "verifiedOn": "2026-11-08",
+  "source": {
+    "url": "https://www.youtube.com/watch?v=8FKW2rKJyxA",
+    "title": "ExileCon 2026 - Day 1 - Live Stream",
+    "channel": "Path of Exile",
+    "channelUrl": "https://www.youtube.com/channel/UCA7X5unt1JrIiVReQDUbl_A",
+    "liveStatus": "was_live",
+    "durationSeconds": 34050,
+    "presentation": "DatModz and Octavian gameplay showcase",
+    "developmentClient": true
+  },
+  "method": {
+    "audioRangeVideoSeconds": [
+      25200,
+      26820
+    ],
+    "audioFormat": "Original YouTube HLS audio, decoded to mono 16 kHz PCM WAV",
+    "downloadedAudioSegments": 325,
+    "firstAudioSegmentStartSeconds": 25195.044709999805,
+    "audioLeadingTrimSeconds": 4.955290000194509,
+    "audioTranscription": "whisper.cpp 1.9.2, ggml-base.en, English, local CPU",
+    "transcriptReadInFull": true,
+    "youtubeCaptionsAvailableAtCheck": false,
+    "humanListeningCorrection": false,
+    "inspectedVideo": "720p original video frames; selection and invocation scenes; merge sequence sampled every second at approximately 07:24:51-07:25:00, plus final state around 07:25:05 and loot around 07:25:55",
+    "videoTimestampBasis": "Cumulative EXTINF durations from original VOD HLS playlist; local contiguous playlist for merge frames. Published frame timestamps rounded to seconds with 1-second tolerance.",
+    "inGameMechanicsTested": false,
+    "limitations": [
+      "Automatyczna transkrypcja zawiera błędy nazw i nie była niezależnie korygowana ze słuchu.",
+      "Wygląd slotu nie dowodzi jego dostępności ani niedostępności dla czwartej karty.",
+      "Pokaz nie zawiera trzeciej kopii tej samej karty ani scalania kart o różnych tierach.",
+      "Klatki w repozytorium to wybrane dowody; pełny plik audio i ASR pozostały w katalogu tymczasowym."
+    ],
+    "audioSha256": "3b65045b3ef5ec3b794cbca5eb8eedfd404b2e6ad84f830fae842ded3155f073",
+    "transcriptJsonSha256": "9a387f08bec1f167ad119f0628484871eb56f2f0a5b2ae3e9a7da5d2962dfd5e"
+  },
+  "frames": [
+    {
+      "file": "showcase-before-07h24m51.png",
+      "approximateVideoSeconds": 26691,
+      "timestampToleranceSeconds": 1,
+      "inspected": true,
+      "observation": "Trzy puste sloty przywołania; w kolekcji dwa Torchbearery i Tempest, każdy z dwoma piórami.",
+      "sha256": "677c8ac3dc9b2841bca0aa1a3042875d6bf6ffcaa42e7f2817a7fe92d2625c94"
+    },
+    {
+      "file": "showcase-merged-07h24m55.png",
+      "approximateVideoSeconds": 26695,
+      "timestampToleranceSeconds": 1,
+      "inspected": true,
+      "observation": "Torchbearer z trzema piórami w lewym slocie; środkowy zakryty czarnymi piórami; prawy pusty; Tempest nadal w kolekcji.",
+      "sha256": "9fd3ee5c6f8fdbb4a75b4e21a50f6f43a8834ce7485fc0ce1abbe43e1eb47bc5"
+    },
+    {
+      "file": "showcase-third-card-07h25m00.png",
+      "approximateVideoSeconds": 26700,
+      "timestampToleranceSeconds": 1,
+      "inspected": true,
+      "observation": "Torchbearer z trzema piórami po lewej i Tempest z dwoma po prawej; środkowy slot nadal zakryty; kolekcja pusta.",
+      "sha256": "97d622d718f46777f623435542b97c6850ee284db9efad2fb1df46d1e7912392"
+    },
+    {
+      "file": "showcase-fated-07h25m55.png",
+      "approximateVideoSeconds": 26755,
+      "timestampToleranceSeconds": 1,
+      "inspected": true,
+      "observation": "Tooltip Fated Apex Rapier, Unidentified (Tier 3); potwierdzenie pisowni Fated na przedmiocie.",
+      "sha256": "f0cebc2117c7d14d1fbcedad63b77cd73f98a2a67df05d92dc14738afcbf18b5"
+    }
+  ],
+  "claims": [
+    {
+      "id": "pair-first-rewards-tripled",
+      "status": "corroborates-existing-rule",
+      "speechVideoSeconds": [
+        [
+          26635.36,
+          26649.12
+        ],
+        [
+          26690.56,
+          26695.76
+        ]
+      ],
+      "observation": "Octavian opisuje dwa Torchbearery i potrojenie nagród pierwszego; odpowiada to widocznej sekwencji pary."
+    },
+    {
+      "id": "third-card-is-not-third-duplicate",
+      "status": "observed",
+      "speechVideoSeconds": [
+        26697.36,
+        26701.04
+      ],
+      "observation": "Wypowiedź o trzeciej karcie dotyczy Tempesta. Trzeciego Torchbearera nie ma w kolekcji ani w sekwencji."
+    },
+    {
+      "id": "same-tier-pair-and-mixed-result",
+      "status": "observed",
+      "videoSeconds": [
+        26691,
+        26700
+      ],
+      "observation": "Dwa Torchbearery z dwoma piórami dają jednego z trzema. Tempest zachowuje dwa pióra; nie jest z nim scalany."
+    },
+    {
+      "id": "three-inputs-two-active-cards",
+      "status": "observed",
+      "videoSeconds": [
+        26691,
+        26708
+      ],
+      "observation": "Trzy wejściowe karty dają dwie aktywne karty. Środkowy slot pozostaje zakryty do zatwierdzenia. Nie pokazano czwartego wejścia."
+    },
+    {
+      "id": "merge-may-preserve-input-cost",
+      "status": "hypothesis-only",
+      "videoSeconds": [
+        26695,
+        26708
+      ],
+      "observation": "Zakryty środkowy slot sugeruje zachowanie kosztu drugiej karty. Brak próby czwartego wejścia uniemożliwia ustalenie twardego limitu."
+    },
+    {
+      "id": "fated-spelling",
+      "status": "visually-confirmed",
+      "videoSeconds": [
+        26755
+      ],
+      "observation": "Na tooltipie wyraźnie widnieje Fated Apex Rapier; Tier 3 jest tierem przedmiotu."
+    }
+  ],
+  "relevantSpeechSegmentTimes": [
+    {
+      "fromVideoSeconds": 26596,
+      "toVideoSeconds": 26598.72
+    },
+    {
+      "fromVideoSeconds": 26599.04,
+      "toVideoSeconds": 26603.28
+    },
+    {
+      "fromVideoSeconds": 26603.52,
+      "toVideoSeconds": 26607.76
+    },
+    {
+      "fromVideoSeconds": 26607.76,
+      "toVideoSeconds": 26611.2
+    },
+    {
+      "fromVideoSeconds": 26611.36,
+      "toVideoSeconds": 26613.68
+    },
+    {
+      "fromVideoSeconds": 26613.68,
+      "toVideoSeconds": 26618
+    },
+    {
+      "fromVideoSeconds": 26618.24,
+      "toVideoSeconds": 26622.72
+    },
+    {
+      "fromVideoSeconds": 26623.12,
+      "toVideoSeconds": 26625.12
+    },
+    {
+      "fromVideoSeconds": 26626.64,
+      "toVideoSeconds": 26632.24
+    },
+    {
+      "fromVideoSeconds": 26632.24,
+      "toVideoSeconds": 26634.48
+    },
+    {
+      "fromVideoSeconds": 26635.36,
+      "toVideoSeconds": 26639.68
+    },
+    {
+      "fromVideoSeconds": 26639.68,
+      "toVideoSeconds": 26642.56
+    },
+    {
+      "fromVideoSeconds": 26643.12,
+      "toVideoSeconds": 26649.12
+    },
+    {
+      "fromVideoSeconds": 26649.76,
+      "toVideoSeconds": 26651.76
+    },
+    {
+      "fromVideoSeconds": 26652.16,
+      "toVideoSeconds": 26658.24
+    },
+    {
+      "fromVideoSeconds": 26658.24,
+      "toVideoSeconds": 26660.24
+    },
+    {
+      "fromVideoSeconds": 26660.56,
+      "toVideoSeconds": 26663.04
+    },
+    {
+      "fromVideoSeconds": 26663.44,
+      "toVideoSeconds": 26668.8
+    },
+    {
+      "fromVideoSeconds": 26668.96,
+      "toVideoSeconds": 26673.76
+    },
+    {
+      "fromVideoSeconds": 26674,
+      "toVideoSeconds": 26676.72
+    },
+    {
+      "fromVideoSeconds": 26677.12,
+      "toVideoSeconds": 26681.6
+    },
+    {
+      "fromVideoSeconds": 26683.04,
+      "toVideoSeconds": 26685.04
+    },
+    {
+      "fromVideoSeconds": 26685.76,
+      "toVideoSeconds": 26690.24
+    },
+    {
+      "fromVideoSeconds": 26690.56,
+      "toVideoSeconds": 26695.76
+    },
+    {
+      "fromVideoSeconds": 26695.76,
+      "toVideoSeconds": 26697.36
+    },
+    {
+      "fromVideoSeconds": 26697.36,
+      "toVideoSeconds": 26701.04
+    },
+    {
+      "fromVideoSeconds": 26701.44,
+      "toVideoSeconds": 26706
+    },
+    {
+      "fromVideoSeconds": 26706.24,
+      "toVideoSeconds": 26708.24
+    },
+    {
+      "fromVideoSeconds": 26708.88,
+      "toVideoSeconds": 26710.88
+    },
+    {
+      "fromVideoSeconds": 26711.92,
+      "toVideoSeconds": 26718.48
+    },
+    {
+      "fromVideoSeconds": 26719.52,
+      "toVideoSeconds": 26723.44
+    },
+    {
+      "fromVideoSeconds": 26724.88,
+      "toVideoSeconds": 26726.88
+    },
+    {
+      "fromVideoSeconds": 26728,
+      "toVideoSeconds": 26734.48
+    },
+    {
+      "fromVideoSeconds": 26734.56,
+      "toVideoSeconds": 26738.72
+    },
+    {
+      "fromVideoSeconds": 26739.04,
+      "toVideoSeconds": 26740.96
+    },
+    {
+      "fromVideoSeconds": 26740.96,
+      "toVideoSeconds": 26745.84
+    },
+    {
+      "fromVideoSeconds": 26745.92,
+      "toVideoSeconds": 26749.36
+    },
+    {
+      "fromVideoSeconds": 26749.68,
+      "toVideoSeconds": 26752.48
+    },
+    {
+      "fromVideoSeconds": 26752.88,
+      "toVideoSeconds": 26753.92
+    },
+    {
+      "fromVideoSeconds": 26753.92,
+      "toVideoSeconds": 26757.6
+    },
+    {
+      "fromVideoSeconds": 26757.6,
+      "toVideoSeconds": 26760.48
+    },
+    {
+      "fromVideoSeconds": 26760.56,
+      "toVideoSeconds": 26764.56
+    }
+  ],
+  "unresolved": [
+    "Trzecia kopia tej samej karty i kolejne mnożenie nagród.",
+    "Scalanie tej samej nazwy o różnych tierach, w tym dalsze łączenie z T3.",
+    "Możliwość zagrania czwartej lub kolejnych kart wejściowych po scaleniu."
+  ]
+}

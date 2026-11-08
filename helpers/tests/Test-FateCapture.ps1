@@ -29,7 +29,7 @@ function Read-FixtureBundle($Result, [guid]$Id) {
     Assert-True ((Get-Item -LiteralPath $path).Length -lt 12MB) 'Bundle exceeds the size limit.'
     $bundle = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-True ($bundle.kind -eq 'fate-collector.capture' -and $bundle.schemaVersion -eq 1) 'Incorrect bundle header.'
-    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.2.0') 'Incorrect producer metadata.'
+    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.3.0') 'Incorrect producer metadata.'
     Assert-True ($bundle.context.captureMode -eq 'fixture') 'The offline PNG was not marked as a fixture.'
     Assert-True ($bundle.captureId -eq $Id.ToString()) 'Incorrect capture ID.'
     Assert-True ([string]$bundle.capturedAt -match 'Z$' -or $bundle.capturedAt -is [DateTime]) 'Timestamp is not UTC ISO 8601.'
@@ -74,6 +74,18 @@ try {
                 ($line.x + $line.width) -le $bundle.image.width -and ($line.y + $line.height) -le $bundle.image.height) 'Invalid OCR line geometry.'
         }
         Write-Output 'PASS: OCR recognized both fixture lines with in-bounds coordinates.'
+        $normalizedId = [guid]::NewGuid()
+        $normalizedResult = Invoke-Export -Arguments @('-InputImage', $fixture, '-CaptureId', $normalizedId.ToString(), '-OcrMode', 'normalized')
+        $normalizedBundle = Read-FixtureBundle $normalizedResult $normalizedId
+        Assert-True ($normalizedResult.Code -eq 0 -and $normalizedBundle.ocr.lines.Count -eq 2 -and
+            $normalizedBundle.ocr.text -match 'FATE COLLECTOR' -and $normalizedBundle.ocr.text -match 'ITEM RARITY') 'Normalized Windows OCR did not retain both fixture lines.'
+        for ($lineIndex = 0; $lineIndex -lt 2; $lineIndex++) {
+            $rawLine = $bundle.ocr.lines[$lineIndex]; $normalizedLine = $normalizedBundle.ocr.lines[$lineIndex]
+            Assert-True ([Math]::Abs($rawLine.x - $normalizedLine.x) -lt 5 -and [Math]::Abs($rawLine.y - $normalizedLine.y) -lt 5 -and
+                $normalizedLine.x -ge 0 -and $normalizedLine.y -ge 0 -and
+                $normalizedLine.x + $normalizedLine.width -le 660 -and $normalizedLine.y + $normalizedLine.height -le 180) 'Normalized OCR geometry did not map back to the original screenshot.'
+        }
+        Write-Output 'PASS: real normalized OCR preserved PNG bytes, text and original-coordinate geometry.'
         # Refresh fixture time to keep this test deterministic on slower Windows runners.
         $previousPath = Join-Path $folder ("fate-" + $id + '.json')
         $bundle.capturedAt = [DateTime]::UtcNow.ToString('o')
