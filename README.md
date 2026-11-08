@@ -150,5 +150,11 @@ For a local dataset quality report, run `npm run research:stats -- path/to/expor
 The [report guide](docs/research-statistics.md) explains Markdown/JSON output,
 report consistency checks and why session counts or repeat hints are not independent encounters.
 
+## License
+
+Original Fate Collector code and documentation are licensed under [MIT](LICENSE).
+See [third-party notices](THIRD_PARTY_NOTICES.md) for the retained One More Map
+license and the scope of game and presentation materials.
+
 Independent community project. Not affiliated with Grinding Gear Games. Game names
 and content remain the property of their respective owners.
