@@ -2,6 +2,7 @@
 . (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
 $script:FateUploadGuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 $script:FateUploadUtf8 = [Text.UTF8Encoding]::new($false, $true)
+. (Join-Path $PSScriptRoot 'Consent.Common.ps1')
 
 function Get-FateUploadStateDirectory {
     Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'FateCollector'
@@ -69,6 +70,17 @@ function Read-FateUploadState([string]$Path) {
     }
 }
 
+function Write-FateUploadProtectedState([string]$Path, $Value) {
+    $temporary = "$Path.$([guid]::NewGuid().ToString('N')).part"
+    try {
+        # Windows PowerShell protects SecureString with DPAPI for the current user.
+        Export-Clixml -InputObject $Value -LiteralPath $temporary -ErrorAction Stop
+        $stream = [IO.File]::Open($temporary, 'Open', 'Write', 'None')
+        try { $stream.Flush($true) } finally { $stream.Dispose() }
+        Move-FateUploadAtomicFile $temporary $Path
+    } finally { [IO.File]::Delete($temporary) }
+}
+
 function ConvertTo-FateUploadTime($Value) {
     if ($Value -is [DateTime]) { return [DateTimeOffset]$Value }
     $time = [DateTimeOffset]::MinValue
@@ -83,23 +95,53 @@ function Get-FateUploadConfiguration([string]$StateDirectory = (Get-FateUploadSt
     $path = Join-Path $StateDirectory 'upload.clixml'
     if (![IO.File]::Exists($path)) { return }
     $configuration = Import-Clixml -LiteralPath $path
-    if ($configuration.Version -ne 1 -or $configuration.Scope -notmatch "\A${script:FateUploadGuid}\z" -or
-        $configuration.Revision -notmatch "\A${script:FateUploadGuid}\z" -or
+    if ($configuration.Version -eq 1) { return } # Old upload settings did not record explicit consent.
+    if ($configuration.Version -ne 2 -or $configuration.Scope -cnotmatch "\A${script:FateUploadGuid}\z" -or
+        $configuration.Revision -cnotmatch "\A${script:FateUploadGuid}\z" -or
         $configuration.Key -isnot [Security.SecureString]) {
         throw 'Cloud upload settings are invalid.'
     }
-    $configuration.Origin = Resolve-FateUploadOrigin $configuration.Origin -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
-    [void](ConvertTo-FateUploadTime $configuration.EnabledSince)
-    return $configuration
+    $consent = Get-FateCaptureConsent $StateDirectory $configuration.Scope -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
+    if (!$consent) { throw 'Cloud upload consent is missing.' }
+    [PSCustomObject]@{
+        Scope = $configuration.Scope
+        Revision = $configuration.Revision
+        Key = $configuration.Key
+        Origin = $consent.Origin
+        EnabledSince = $consent.AcceptedAt
+        Consent = $consent
+        WithdrawalPath = Get-FateConsentPath $StateDirectory $configuration.Scope 'withdrawal.json'
+    }
+}
+
+function Get-FateUploadSecretText([Security.SecureString]$Secret) {
+    $handle = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secret)
+    try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($handle) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($handle) }
 }
 
 function Assert-FateUploadKey([Security.SecureString]$Key) {
-    $handle = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Key)
-    try {
-        if ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($handle) -cnotmatch '\A[\x21-\x7e]{1,512}\z') {
-            throw 'Enter a valid upload key without spaces.'
+    if ((Get-FateUploadSecretText $Key) -cnotmatch '\A[\x21-\x7e]{1,512}\z') {
+        throw 'Enter a valid upload key without spaces.'
+    }
+}
+
+function Test-FateUploadConsentActive($Configuration, [string]$StateDirectory) {
+    !(Test-FateConsentWithdrawnLocally $StateDirectory $Configuration.Scope) -and
+        (Test-FateCaptureConsentCurrent $Configuration.Consent (Get-FateCaptureConsentPolicy $Configuration.Origin))
+}
+
+function Get-FateCurrentUploadGate($Configuration, [string]$StateDirectory) {
+    $paths = @(
+        Get-FateConsentPath $StateDirectory $Configuration.Scope 'gate.json'
+        Join-Path $StateDirectory "$($Configuration.Scope)/gate.json"
+    )
+    foreach ($path in $paths) {
+        $gate = Read-FateUploadState $path
+        if ($gate -and $gate.revision -ceq $Configuration.Revision -and $gate.status -in 'authorization', 'consent-required') {
+            return $gate.status
         }
-    } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($handle) }
+    }
 }
 
 function Set-FateUploadConfiguration {
@@ -107,9 +149,16 @@ function Set-FateUploadConfiguration {
         [string]$StateDirectory = (Get-FateUploadStateDirectory),
         [Parameter(Mandatory)][string]$Origin,
         [Parameter(Mandatory)][Security.SecureString]$Key,
+        [switch]$ConsentAccepted,
+        $DisplayedPolicy,
         [switch]$AllowLocalTestEndpoint
     )
+    if (!$ConsentAccepted) { throw 'Explicit consent is required to enable cloud upload.' }
     $Origin = Resolve-FateUploadOrigin $Origin -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
+    $policy = Get-FateCaptureConsentPolicy $Origin
+    if ($DisplayedPolicy -and ($DisplayedPolicy.Version -cne $policy.Version -or $DisplayedPolicy.Text -cne $policy.Text)) {
+        throw 'The policy changed. Read the new consent text.'
+    }
     Assert-FateUploadKey $Key
     $lock = Enter-FateUploadLock $StateDirectory
     if (!$lock) { throw 'The uploader is busy. Try again in a few seconds.' }
@@ -117,34 +166,26 @@ function Set-FateUploadConfiguration {
         # Broken settings can be replaced with a new configuration.
         $old = $null
         try { $old = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint } catch {}
-        $sameOrigin = $old -and $old.Origin -ceq $Origin
+        $reuseConsent = $old -and $old.Origin -ceq $Origin -and
+            (Test-FateUploadConsentActive $old $StateDirectory) -and
+            (Get-FateCurrentUploadGate $old $StateDirectory) -ne 'consent-required'
         $configuration = [PSCustomObject]@{
-            Version = 1
-            Origin = $Origin
+            Version = 2
             Key = $Key
-            Scope = if ($sameOrigin) { $old.Scope } else { [guid]::NewGuid().ToString() }
+            Scope = if ($reuseConsent) { $old.Scope } else { New-FateCaptureConsent $StateDirectory $Origin $policy }
             Revision = [guid]::NewGuid().ToString()
-            EnabledSince = if ($sameOrigin) { $old.EnabledSince } else { [DateTimeOffset]::UtcNow.ToString('o') }
         }
-        $path = Join-Path $StateDirectory 'upload.clixml'
-        $temporary = "$path.$([guid]::NewGuid().ToString('N')).part"
-        try {
-            # Windows PowerShell protects SecureString with DPAPI for the current user.
-            Export-Clixml -InputObject $configuration -LiteralPath $temporary -ErrorAction Stop
-            $stream = [IO.File]::Open($temporary, 'Open', 'Write', 'None')
-            try { $stream.Flush($true) } finally { $stream.Dispose() }
-            Move-FateUploadAtomicFile $temporary $path
-        } finally {
-            if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }
-        }
+        Write-FateUploadProtectedState (Join-Path $StateDirectory 'upload.clixml') $configuration
     } finally { $lock.Dispose() }
 }
 
-function Disable-FateUpload([string]$StateDirectory = (Get-FateUploadStateDirectory)) {
-    $lock = Enter-FateUploadLock $StateDirectory
-    if (!$lock) { throw 'The uploader is busy. Try again in a few seconds.' }
-    try { [IO.File]::Delete((Join-Path $StateDirectory 'upload.clixml')) }
-    finally { $lock.Dispose() }
+function Disable-FateUpload([string]$StateDirectory = (Get-FateUploadStateDirectory), [string]$ConsentId, [switch]$AllowLocalTestEndpoint) {
+    if (!$ConsentId) {
+        $configuration = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
+        if (!$configuration) { return }
+        $ConsentId = $configuration.Scope
+    }
+    Save-FateCaptureConsentWithdrawal $StateDirectory $ConsentId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
 }
 
 function Read-FateCaptureBundle([string]$Path) {
@@ -204,22 +245,31 @@ function ConvertTo-FateUploadPayload($Bundle, [string]$Id, [DateTimeOffset]$Enab
 }
 
 function Invoke-FateUploadRequest($Configuration, [string]$Payload) {
+    Invoke-FateCloudRequest -Origin $Configuration.Origin -Path '/api/captures' -Payload $Payload `
+        -Key $Configuration.Key -ConsentId $Configuration.Scope -ConsentToken $Configuration.Consent.Token `
+        -CancelIfExists $Configuration.WithdrawalPath
+}
+
+function Invoke-FateCloudRequest {
+    param([string]$Origin, [string]$Path, [string]$Payload, [Security.SecureString]$Key,
+        [string]$ConsentId, [Security.SecureString]$ConsentToken, [string]$CancelIfExists)
     Add-Type -AssemblyName System.Net.Http
     $handler = [Net.Http.HttpClientHandler]::new()
     $handler.AllowAutoRedirect = $false
     $handler.UseCookies = $false
-    if ($Configuration.Origin.StartsWith('http://')) { $handler.UseProxy = $false }
+    if ($Origin.StartsWith('http://')) { $handler.UseProxy = $false }
     $client = [Net.Http.HttpClient]::new($handler)
     try {
         $client.Timeout = [TimeSpan]::FromSeconds(5)
-        $request = [Net.Http.HttpRequestMessage]::new([Net.Http.HttpMethod]::Post, "$($Configuration.Origin)/api/captures")
+        $request = [Net.Http.HttpRequestMessage]::new([Net.Http.HttpMethod]::Post, "$Origin$Path")
         try {
-            $handle = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Configuration.Key)
-            try {
-                $request.Headers.Authorization = [Net.Http.Headers.AuthenticationHeaderValue]::new('Bearer',
-                    [Runtime.InteropServices.Marshal]::PtrToStringBSTR($handle))
-            } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($handle) }
+            if ($Key) {
+                $request.Headers.Authorization = [Net.Http.Headers.AuthenticationHeaderValue]::new('Bearer', (Get-FateUploadSecretText $Key))
+            }
+            if ($ConsentId) { $request.Headers.Add('X-Consent-Id', $ConsentId) }
+            if ($ConsentToken) { $request.Headers.Add('X-Consent-Token', (Get-FateUploadSecretText $ConsentToken)) }
             $request.Content = [Net.Http.StringContent]::new($Payload, $script:FateUploadUtf8, 'application/json')
+            if ($CancelIfExists -and [IO.File]::Exists($CancelIfExists)) { return }
             $response = $client.SendAsync($request, [Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
             try {
                 $status = [int]$response.StatusCode
@@ -230,8 +280,8 @@ function Invoke-FateUploadRequest($Configuration, [string]$Payload) {
                     elseif ($retryAfter.Date) { $retrySeconds = ($retryAfter.Date - [DateTimeOffset]::UtcNow).TotalSeconds }
                 }
                 $receipt = $null
-                if ($status -in 200, 201 -and ($null -eq $response.Content.Headers.ContentLength -or $response.Content.Headers.ContentLength -le 4096)) {
-                    $buffer = [byte[]]::new(4097)
+                if ($status -in 200, 201 -and ($null -eq $response.Content.Headers.ContentLength -or $response.Content.Headers.ContentLength -le 32KB)) {
+                    $buffer = [byte[]]::new(32KB + 1)
                     $length = 0
                     $deadline = [Diagnostics.Stopwatch]::StartNew()
                     $stream = $response.Content.ReadAsStreamAsync().GetAwaiter().GetResult()
@@ -259,6 +309,8 @@ function Get-FateCaptureUploadStatus {
     if ($CaptureId -cnotmatch "\A$script:FateUploadGuid\z") { throw 'Invalid feedback capture ID.' }
     $configuration = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
     if (!$configuration) { return 'local' }
+    if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) { return 'local' }
+    if (!(Test-FateUploadConsentActive $configuration $StateDirectory)) { return 'consent-required' }
     $scope = Join-Path $StateDirectory $configuration.Scope
     $state = Read-FateUploadState (Join-Path $scope "states/$CaptureId.json")
     if ($state) {
@@ -266,8 +318,15 @@ function Get-FateCaptureUploadStatus {
         if ($state.status -eq 'rejected') { return 'rejected' }
         if ($state.status -eq 'ignored') { return 'local' }
     }
-    $gate = Read-FateUploadState (Join-Path $scope 'gate.json')
-    if ($gate -and $gate.revision -ceq $configuration.Revision -and $gate.status -eq 'authorization') { return 'authorization' }
+    $pause = Get-FateCurrentUploadGate $configuration $StateDirectory
+    if ($pause) { return $pause }
+    if (!(Test-FateConsentReceipt (Read-FateUploadState (Get-FateConsentPath $StateDirectory $configuration.Scope 'recorded.json')) $configuration.Consent)) {
+        $consentGate = Read-FateUploadState (Get-FateConsentPath $StateDirectory $configuration.Scope 'gate.json')
+        if ($consentGate -and $consentGate.revision -ceq $configuration.Revision -and $consentGate.status -in 'offline', 'retry') {
+            return $consentGate.status
+        }
+        return 'consent-pending'
+    }
     if ($state -and $state.status -eq 'retry') {
         if ($state.httpStatus -eq 0) { return 'offline' }
         return 'retry'
@@ -280,7 +339,7 @@ function Write-FateCaptureUploadFeedback {
     $status = 'error'
     try {
         $status = Get-FateCaptureUploadStatus -StateDirectory $StateDirectory -CaptureId $CaptureId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
-        if ($Failed -and $status -notin 'uploaded', 'rejected', 'authorization') { $status = 'error' }
+        if ($Failed -and $status -notin 'uploaded', 'rejected', 'authorization', 'consent-required') { $status = 'error' }
     } catch { $status = 'error' } # A settings/read failure must be visible, never a false success.
     [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Path)))
     Write-FateUploadAtomicText $Path "$CaptureId`n$status"
@@ -292,14 +351,16 @@ function Invoke-FateCaptureUploads {
         [string]$StateDirectory = (Get-FateUploadStateDirectory),
         [switch]$AllowLocalTestEndpoint,
         [switch]$ForceRetry,
-        [scriptblock]$Transport = ${function:Invoke-FateUploadRequest}
+        [scriptblock]$Transport = ${function:Invoke-FateUploadRequest},
+        [scriptblock]$ConsentTransport = ${function:Invoke-FateConsentRequest}
     )
-    if (![IO.File]::Exists((Join-Path $StateDirectory 'upload.clixml'))) { return }
+    if (![IO.Directory]::Exists($StateDirectory)) { return }
     $lock = Enter-FateUploadLock $StateDirectory
     if (!$lock) { return }
     try {
+        Invoke-FatePendingWithdrawals $StateDirectory $ConsentTransport -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
         $configuration = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
-        if (!$configuration) { return }
+        if (!$configuration -or !(Test-FateUploadConsentActive $configuration $StateDirectory)) { return }
         $scope = Join-Path $StateDirectory $configuration.Scope
         $queue = Join-Path $scope 'queue'
         $states = Join-Path $scope 'states'
@@ -349,9 +410,10 @@ function Invoke-FateCaptureUploads {
         }
         $gate = Read-FateUploadState $gatePath
         if ($gate -and $gate.revision -ceq $configuration.Revision) {
-            if ($gate.status -eq 'authorization') { return }
+            if ($gate.status -in 'authorization', 'consent-required') { return }
             if (!$ForceRetry -and (ConvertTo-FateUploadTime $gate.retryAt) -gt [DateTimeOffset]::UtcNow) { return }
         }
+        if (!(Confirm-FateUploadConsent $configuration $StateDirectory $ConsentTransport -ForceRetry:$ForceRetry)) { return }
         $attempted = 0
         foreach ($path in [IO.Directory]::EnumerateFiles($queue, '*.json')) {
             $id = [IO.Path]::GetFileNameWithoutExtension($path)
@@ -368,6 +430,7 @@ function Invoke-FateCaptureUploads {
             $payload = [IO.File]::ReadAllText($path, $script:FateUploadUtf8)
             $attempted++
             $result = $null
+            if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) { return }
             try { $result = & $Transport $configuration $payload } catch {}
             $status = if ($result) { [int]$result.Status } else { 0 }
             $receipt = if ($result) { $result.Receipt }
@@ -382,8 +445,9 @@ function Invoke-FateCaptureUploads {
             } elseif ($status -in 400, 409, 413, 422) {
                 Write-FateUploadState $statePath @{ status = 'rejected'; httpStatus = $status; at = [DateTimeOffset]::UtcNow.ToString('o') }
                 Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-            } elseif ($status -in 401, 403) {
-                Write-FateUploadState $gatePath @{ status = 'authorization'; revision = $configuration.Revision }
+            } elseif ($status -in 401, 403, 428) {
+                $pause = if ($status -eq 401) { 'authorization' } else { 'consent-required' }
+                Write-FateUploadState $gatePath @{ status = $pause; revision = $configuration.Revision }
                 break
             } else {
                 # Unknown responses, including redirects and malformed receipts, never acknowledge a capture.

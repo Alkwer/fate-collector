@@ -1,3 +1,4 @@
+import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newOffer, newCard } from '../shared/offers'
@@ -91,8 +92,10 @@ test('reviewed live offer shares to local D1; retries are idempotent; evidence i
   await page.getByRole('button', { name: 'Save offer', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('saved on this device')
   await page.getByRole('button', { name: /Saved offers/ }).click()
-  await page.getByText('Shared research collection', { exact: false }).click()
   await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
+  await page.getByRole('button', { name: 'Accept data sharing', exact: true }).click()
+  await expect(page.getByText('Sharing consent active.', { exact: false })).toBeVisible()
   const submission = page.waitForRequest(r => r.url().endsWith('/api/observations') && r.method() === 'POST')
   await page.getByRole('button', { name: 'Share', exact: true }).click()
   const body = (await submission).postDataJSON() as object
@@ -100,7 +103,7 @@ test('reviewed live offer shares to local D1; retries are idempotent; evidence i
   expect(body).not.toHaveProperty('imageDataUrl'); expect(body).not.toHaveProperty('ocrText')
   await expect(page.getByRole('status')).toContainText('Reviewed offer shared')
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
-  const retry = await request.post('/api/observations', { headers: { Authorization: 'Bearer e2e-local-only' }, data: body })
+  const retry = await request.post('/api/observations', { headers: (await submission).headers(), data: body })
   expect(retry.status()).toBe(200)
   expect(await retry.json()).toMatchObject({ status: 'duplicate' })
 })
@@ -108,7 +111,10 @@ test('reviewed live offer shares to local D1; retries are idempotent; evidence i
 test('real Worker rejects unauthenticated writes and test data; security headers and helper package are served', async ({ request }) => {
   const offer = { ...newOffer(), reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Conjurer' }] }
   expect((await request.post('/api/observations', { data: offer })).status()).toBe(401)
-  expect((await request.post('/api/observations', { headers: { Authorization: 'Bearer e2e-local-only' }, data: offer })).status()).toBe(422)
+  expect((await request.post('/api/observations', { headers: { Authorization: 'Bearer e2e-local-only' }, data: offer })).status()).toBe(428)
+  const consent = { id: crypto.randomUUID(), token: 'a'.repeat(64), scope: 'observations', policyVersion: CONSENT_VERSION, acceptedAt: new Date().toISOString(), text: consentText('observations', 'http://127.0.0.1:8790') }
+  expect((await request.post('/api/consents', { headers: { Authorization: 'Bearer e2e-local-only' }, data: consent })).status()).toBe(201)
+  expect((await request.post('/api/observations', { headers: { Authorization: 'Bearer e2e-local-only', 'X-Consent-Id': consent.id, 'X-Consent-Token': consent.token }, data: offer })).status()).toBe(422)
   expect((await request.get('/api/not-real')).status()).toBe(404)
   const homepage = await request.get('/')
   expect(homepage.headers()['content-security-policy']).toContain("frame-ancestors 'none'")
@@ -222,8 +228,10 @@ test('pending corrections cannot share an older reviewed revision', async ({ pag
   await page.getByText('Edit details', { exact: true }).click()
   await page.getByLabel('Notes', { exact: true }).fill('Pending correction')
   await page.getByRole('button', { name: /Saved offers/ }).click()
-  await page.getByText('Shared research collection', { exact: false }).click()
   await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
+  await page.getByRole('button', { name: 'Accept data sharing', exact: true }).click()
+  await expect(page.getByText('Sharing consent active.', { exact: false })).toBeVisible()
   await expect(page.getByRole('cell', { name: 'Unsaved changes', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveAttribute('title', 'Save your changes before sharing this offer.')

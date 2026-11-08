@@ -1,0 +1,10 @@
+{
+  "version": "2026-11-08.1",
+  "operator": "Fate Collector — Alkwer",
+  "contactUrl": "https://github.com/Alkwer/fate-collector",
+  "common": "Operator: Fate Collector — Alkwer. Project contact: https://github.com/Alkwer/fate-collector. Data is sent to this collection's API and stored on Cloudflare to study Path of Exile Fate cards and improve recognition. Sharing is optional; local capture and review work without it. Do not include personal information in captures, OCR or notes. This consent covers only the selected sharing channel on this device and collection. You can withdraw it here at any time. Withdrawal stops new sends on this device immediately. When the server confirms withdrawal, data submitted under this consent is removed from the collection. Offline withdrawal is retried when a connection is available. Local copies are kept. Cloudflare recovery backups may retain deleted data temporarily. A minimal record of the consent text, dates and random identifier is retained to document your choice.",
+  "scopes": {
+    "captures": "I agree to automatic upload of new F9 captures: raw OCR text and line positions, image dimensions, capture time, helper version, session and repeat identifiers. Screenshot pixels and clipboard contents outside the capture are not uploaded. Only captures made after enabling this consent are eligible.",
+    "observations": "I agree to send reviewed offers when I click Share: card names, tiers, descriptions and rewards, map details, game version, chosen card, notes, capture time and identifiers. Screenshots and raw OCR bundles are not uploaded through this channel. Edits are not sent automatically."
+  }
+}

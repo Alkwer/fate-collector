@@ -1,5 +1,5 @@
 param(
-    [Parameter(Mandatory)][ValidateSet('Offline', 'Online', 'LostReceipt')][string]$Phase,
+    [Parameter(Mandatory)][ValidateSet('Offline', 'Online', 'LostReceipt', 'WithdrawOffline', 'WithdrawOnline')][string]$Phase,
     [Parameter(Mandatory)][string]$StateDirectory,
     [Parameter(Mandatory)][string]$Origin
 )
@@ -13,7 +13,7 @@ function Assert-Integration($Condition, [string]$Message) { if (!$Condition) { t
 if ($Phase -eq 'Offline') {
     [void][IO.Directory]::CreateDirectory($captures)
     $key = ConvertTo-SecureString 'e2e-local-capture' -AsPlainText -Force
-    try { Set-FateUploadConfiguration -StateDirectory $StateDirectory -Origin $Origin -Key $key -AllowLocalTestEndpoint }
+    try { Set-FateUploadConfiguration -StateDirectory $StateDirectory -Origin $Origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint }
     finally { $key.Dispose() }
     $config = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint
     $ocr = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'fixtures/presskit-ocr.json') | ConvertFrom-Json
@@ -26,7 +26,7 @@ if ($Phase -eq 'Offline') {
         $bundle = [ordered]@{
             kind = 'fate-collector.capture'; schemaVersion = 1; captureId = $id
             capturedAt = if ($mode -eq 'old') { [DateTimeOffset]::UtcNow.AddDays(-1).ToString('o') } else { [DateTimeOffset]::UtcNow.ToString('o') }
-            source = 'windows-helper'; helperVersion = '0.1.0'
+            source = 'windows-helper'; helperVersion = '0.2.0'
             context = @{ captureMode = if ($mode -eq 'fixture') { 'fixture' } else { 'game' } }
             # Only a transport fixture. No actual screen capture is performed in this test.
             image = @{ mimeType = 'image/png'; width = 3840; height = 2160; dataBase64 = 'LOCAL_IMAGE_SENTINEL' }
@@ -45,6 +45,7 @@ if ($Phase -eq 'Offline') {
 $config = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint
 $scope = Join-Path $StateDirectory $config.Scope
 $ids = Read-FateUploadState (Join-Path $StateDirectory 'test-ids.json')
+if ($Phase -eq 'WithdrawOffline') { Disable-FateUpload $StateDirectory -AllowLocalTestEndpoint }
 if ($Phase -eq 'LostReceipt') {
     foreach ($id in $ids[0..2]) {
         # Simulate a process crash after remote commit, before a durable local receipt.
@@ -61,16 +62,34 @@ if ($Phase -eq 'LostReceipt') {
 Assert-Integration ($LASTEXITCODE -eq 0) 'The uploader CLI failed.'
 $feedback = [IO.File]::ReadAllText((Join-Path $StateDirectory 'feedback.txt')) -split "`n"
 Assert-Integration ($feedback[0] -ceq $ids[0]) 'Feedback refers to a different capture.'
+if ($Phase -in 'WithdrawOffline', 'WithdrawOnline') {
+    $receipt = Read-FateUploadState (Get-FateConsentPath $StateDirectory $config.Scope 'withdrawn.json')
+    Assert-Integration ($feedback[1] -eq 'local') 'A locally withdrawn consent must immediately stop upload.'
+    Assert-Integration (Test-FateConsentWithdrawnLocally $StateDirectory $config.Scope) 'Withdrawal was not persisted.'
+    if ($Phase -eq 'WithdrawOffline') {
+        Assert-Integration (!$receipt) 'Withdrawal was confirmed while the collection was unreachable.'
+    } else {
+        Assert-Integration (Test-FateWithdrawalReceipt $receipt $config.Scope) 'The pending withdrawal was not confirmed after restart.'
+    }
+    foreach ($id in $ids) {
+        Assert-Integration ([IO.File]::Exists((Join-Path $captures "fate-$id.json"))) 'Withdrawal removed a local capture.'
+    }
+    Write-Host "Native uploader integration: $Phase passed."
+    return
+}
 $queued = @(Get-ChildItem -LiteralPath (Join-Path $scope 'queue') -Filter '*.json')
 if ($Phase -eq 'Offline') {
     Assert-Integration ($queued.Count -eq 3) 'All game captures, including possible repeat, must survive the outage.'
-    Assert-Integration ($feedback[1] -in 'offline', 'queued') 'Offline feedback incorrectly reports success.'
-    $attempts = @($ids[0..2] | ForEach-Object { Read-FateUploadState (Join-Path $scope "states/$_.json") })
-    Assert-Integration (@($attempts | Where-Object { $_.status -eq 'retry' -and $_.httpStatus -eq 0 }).Count -eq 1) 'Connection failure must schedule a retry.'
+    Assert-Integration ($feedback[1] -eq 'offline') 'Offline feedback incorrectly reports success.'
+    $gate = Read-FateUploadState (Get-FateConsentPath $StateDirectory $config.Scope 'gate.json')
+    Assert-Integration ($gate.status -eq 'offline') 'Connection failure must schedule a consent retry.'
+    Assert-Integration (@($ids[0..2] | ForEach-Object { Read-FateUploadState (Join-Path $scope "states/$_.json") }).Count -eq 0) 'Tried to send capture data without a consent receipt.'
     foreach ($file in $queued) {
         Assert-Integration (!(Get-Content -Raw -LiteralPath $file.FullName).Contains('LOCAL_IMAGE_SENTINEL')) 'An image leaked into the queue.'
     }
 } else {
+    $receipt = Read-FateUploadState (Get-FateConsentPath $StateDirectory $config.Scope 'recorded.json')
+    Assert-Integration (Test-FateConsentReceipt $receipt $config.Consent) 'Collection consent receipt was not persisted.'
     Assert-Integration ($queued.Count -eq 0) 'Confirmed uploads should leave no pending payloads.'
     Assert-Integration ($feedback[1] -eq 'uploaded') 'Confirmed online upload did not report Uploaded.'
     $expected = if ($Phase -eq 'Online') { 'accepted' } else { 'duplicate' }

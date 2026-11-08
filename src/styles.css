@@ -186,3 +186,13 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 /* Keep the test environment visible without changing the collector layout. */
 .environment-banner { padding: 10px 20px; text-align: center; background: var(--gold); color: var(--background); font-size: 14px; line-height: 1.5; }
 .environment-banner strong { margin-right: 12px; letter-spacing: .06em; }
+.sharing-consent { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.sharing-consent h3 { margin-top: 0; }
+.consent-copy { display: block; width: 100%; margin-block: 8px 16px; min-height: 180px; resize: vertical; font: inherit; line-height: 1.55; }
+.consent-check { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; line-height: 1.5; }
+.consent-check input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 2px; accent-color: var(--gold); }
+.consent-destination, .consent-snapshot { overflow-wrap: anywhere; }
+.consent-snapshot { white-space: pre-wrap; line-height: 1.6; }
+.consent-history { margin-top: 18px; }
+.consent-history article { padding: 12px 0; border-top: 1px solid var(--border); }
+.sharing-consent > button { margin: 8px 12px 8px 0; }

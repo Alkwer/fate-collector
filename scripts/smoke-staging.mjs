@@ -1,6 +1,7 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { newCard, newOffer } from '../shared/offers.ts'
+import policy from '../shared/consent-policy.json' with { type: 'json' }
 
 const STATUS = '/api/status'
 const CAPTURES = '/api/captures'
@@ -78,13 +79,26 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     throw new Error('Staging helper download did not return a nonempty ZIP archive.')
   }
   if (readOnly) return
+  if (status.consentRequired !== true || status.consentPolicyVersion !== policy.version) throw new Error('Staging must require the current consent policy.')
 
-  function post(path, operation, expectedStatus, payload, key) {
+  const grants = {}
+  function post(path, operation, expectedStatus, payload, key, extraHeaders = {}) {
+    const consent = grants[path]
     return request(path, operation, expectedStatus, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(key && { Authorization: `Bearer ${key}` }) },
+      headers: { 'Content-Type': 'application/json', ...(key && { Authorization: `Bearer ${key}` }), ...(consent && { 'X-Consent-Id': consent.id, 'X-Consent-Token': consent.token }), ...extraHeaders },
       body: JSON.stringify(payload),
     })
+  }
+  await post(CAPTURES, 'Capture without consent', 428, {}, captureKey)
+  await post(OBSERVATIONS, 'Observation without consent', 428, {}, ingestKey)
+  for (const [scope, key] of [['captures', captureKey], ['observations', ingestKey]]) {
+    const grant = { id: randomUUID(), token: randomBytes(32).toString('hex'), scope, policyVersion: policy.version, acceptedAt: new Date().toISOString(), text: `${policy.common}\n\n${policy.scopes[scope]}\n\nDestination: ${origin}` }
+    const response = await post('/api/consents', 'Register consent', 201, grant, key)
+    const receipt = await readJson(response, 'Register consent')
+    for (const field of ['id', 'scope', 'policyVersion', 'acceptedAt', 'text']) if (receipt[field] !== grant[field]) throw new Error(`Register consent returned an unexpected receipt ${field}.`)
+    if (receipt.withdrawnAt !== null || !Number.isFinite(Date.parse(receipt.recordedAt))) throw new Error('Register consent returned an invalid date or withdrawn receipt.')
+    grants[`/api/${scope}`] = grant
   }
 
   const capture = {
@@ -125,6 +139,13 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   await post(CAPTURES, 'Invalid capture schema', 400, { ...capture, image: { ...capture.image, width: 0 } }, captureKey)
   await post(CAPTURES, 'Capture with the ingestion key', 401, capture, ingestKey)
   await post(OBSERVATIONS, 'Observation with the capture key', 401, offer, captureKey)
+  for (const [path, key, payload] of [[CAPTURES, captureKey, capture], [OBSERVATIONS, ingestKey, offer]]) {
+    const grant = grants[path]
+    const response = await post(`/api/consents/${grant.id}/withdraw`, 'Withdraw consent', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Consent-Token': grant.token })
+    await verifyReceipt(response, 'Withdraw consent', { id: grant.id, status: 'withdrawn' })
+    await post(path, 'Upload after withdrawal', 403, payload, key)
+    await post('/api/consents', 'Reusing withdrawn consent', 403, grant, key)
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

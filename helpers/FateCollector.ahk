@@ -201,9 +201,8 @@ RunCloudUploader(*) {
         return
     }
     uploadRequested := false
-    ; No PowerShell process is needed until the user has opted in.
     localAppData := EnvGet("LOCALAPPDATA")
-    if !localAppData || !FileExist(localAppData "\FateCollector\upload.clixml") {
+    if !localAppData || !HasCloudUploadWork(localAppData "\FateCollector") {
         ShowUploadFeedback("local")
         return
     }
@@ -224,6 +223,18 @@ RunCloudUploader(*) {
     } catch {
         ShowUploadFeedback("error")
     }
+}
+
+HasCloudUploadWork(stateDir) {
+    if FileExist(stateDir "\upload.clixml")
+        return true
+    ; Withdrawal can be pending even when there is no active upload configuration.
+    Loop Files, stateDir "\consents\*.withdrawal.json", "F" {
+        id := SubStr(A_LoopFileName, 1, 36)
+        if !FileExist(stateDir "\consents\" id ".withdrawn.json")
+            return true
+    }
+    return false
 }
 
 CheckUploadFeedback() {
@@ -262,6 +273,8 @@ ShowUploadFeedback(status) {
         case "offline": message := "Queued - connection unavailable. Will retry."
         case "queued", "retry": message := "Queued - waiting to upload. Will retry."
         case "authorization": message := "Upload paused - check the upload key in Cloud upload settings."
+        case "consent-pending": message := "Queued - waiting for the collection to confirm consent."
+        case "consent-required": message := "Upload paused - review consent in Cloud upload settings."
         case "rejected": message := "Upload rejected. Capture kept locally."
         case "local": message := "Saved locally. Cloud upload is off or this capture is not eligible."
         default: message := "Upload status unavailable. Capture kept locally. Check Cloud upload settings."
