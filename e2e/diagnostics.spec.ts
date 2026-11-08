@@ -1,0 +1,111 @@
+import { expect, test, type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
+import { unzipSync, strFromU8 } from 'fflate'
+import { diagnosticReportSchema, diagnosticText } from '../shared/diagnostics'
+
+const agreement = 'I agree to send this diagnostic report to Fate Collector — Alkwer.'
+async function generate(page: Page) {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click()
+  await page.getByRole('button', { name: 'Generate diagnostic report' }).click()
+  return JSON.parse(await page.getByLabel('Diagnostic report preview').inputValue())
+}
+async function send(page: Page) {
+  await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: agreement }).check()
+  await page.getByRole('button', { name: 'Send diagnostic report', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Received by collection' })).toBeVisible()
+}
+
+test('diagnostic preview and ZIP contain only safe fields; upload needs a separate unchecked agreement', async ({ page, request }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('private-key', 'CANARY_API_KEY')
+    localStorage.setItem('raw-log', 'CANARY_OCR C:\\Users\\Private\\notes.txt user@example.com')
+    localStorage.setItem('fate-collector.diagnostic-events.v1', JSON.stringify([{ at: new Date().toISOString(), code: 'import', outcome: 'error', httpStatus: null, message: 'CANARY_EXCEPTION' }]))
+  })
+  const posts: string[] = []
+  page.on('request', req => { if (req.method() === 'POST') posts.push(req.url()) })
+  const report = await generate(page)
+  expect(diagnosticReportSchema.safeParse(report).success).toBe(true)
+  expect(JSON.stringify(report)).not.toMatch(/CANARY|Private|user@example/)
+  await expect(page.getByRole('checkbox', { name: agreement })).not.toBeChecked()
+  await expect(page.getByRole('button', { name: 'Send diagnostic report', exact: true })).toBeDisabled()
+  await expect(page.getByLabel('Diagnostic consent information')).toHaveValue(diagnosticText('http://127.0.0.1:8790'))
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download diagnostic ZIP' }).click()
+  const zip = unzipSync(new Uint8Array(await readFile(await (await download).path())))
+  expect(Object.keys(zip)).toEqual(['diagnostics.json'])
+  expect(JSON.parse(strFromU8(zip['diagnostics.json']))).toEqual(report)
+  expect(posts).toHaveLength(0)
+  const sent = page.waitForRequest(req => req.url().endsWith('/api/diagnostics'))
+  await send(page)
+  const original = await sent
+  await expect(page.getByLabel('Collection access key')).toHaveValue('')
+  expect(posts).toHaveLength(1)
+  await page.reload()
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click()
+  await expect(page.getByText(`Report number: ${report.id}`, { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
+  await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
+  expect((await request.post('/api/diagnostics', { headers: original.headers(), data: original.postDataJSON() })).status()).toBe(410)
+})
+test('failed delivery has no automatic retry, can be reviewed and retried with the same report ID', async ({ page }) => {
+  const report = await generate(page)
+  let attempts = 0
+  await page.route('**/api/diagnostics', route => { attempts++; return route.abort('internetdisconnected') })
+  await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: agreement }).check()
+  await page.getByRole('button', { name: 'Send diagnostic report', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Receipt not confirmed' })).toBeVisible()
+  await page.reload()
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click()
+  expect(attempts).toBe(1)
+  await page.getByRole('button', { name: 'Review and retry', exact: true }).click()
+  expect(JSON.parse(await page.getByLabel('Diagnostic report preview').inputValue()).id).toBe(report.id)
+  await expect(page.getByRole('checkbox', { name: agreement })).not.toBeChecked()
+  await page.unroute('**/api/diagnostics')
+  await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: agreement }).check()
+  await page.getByRole('button', { name: 'Retry sending this report' }).click()
+  await expect(page.getByRole('heading', { name: 'Received by collection' })).toBeVisible()
+  await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
+  await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
+})
+test('offline deletion persists across reload and retries without collection access key', async ({ page }) => {
+  await generate(page); await send(page)
+  await page.route('**/api/diagnostics/*/withdraw', route => route.abort('internetdisconnected'))
+  await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
+  await expect(page.getByRole('heading', { name: 'Deletion pending' })).toBeVisible()
+  await page.reload()
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Deletion pending' })).toBeVisible()
+  await page.unroute('**/api/diagnostics/*/withdraw')
+  await page.getByRole('button', { name: 'Retry report deletion' }).click()
+  await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
+})
+test('a misleading receipt never reports success and the lost-acknowledgement report can be deleted', async ({ page }) => {
+  await generate(page)
+  await page.route('**/api/diagnostics', async route => {
+    const response = await route.fetch()
+    await route.fulfill({ response, json: { ...await response.json(), id: crypto.randomUUID() } })
+  })
+  await page.getByLabel('Collection access key').fill('e2e-local-only')
+  await page.getByRole('checkbox', { name: agreement }).check()
+  await page.getByRole('button', { name: 'Send diagnostic report', exact: true }).click()
+  await expect(page.getByText('Unexpected diagnostic receipt.', { exact: false })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Received by collection' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
+  await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
+})
+test('generation resets the choice; diagnostic controls and long report receipts fit a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await generate(page)
+  await page.getByRole('checkbox', { name: agreement }).check()
+  await page.getByRole('button', { name: 'Generate diagnostic report' }).click()
+  await expect(page.getByRole('checkbox', { name: agreement })).not.toBeChecked()
+  await send(page)
+  await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
+  await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
+  await page.getByText('Accepted diagnostic consent', { exact: true }).click()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+})

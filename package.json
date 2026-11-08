@@ -24,7 +24,8 @@
     "test:upload": "node scripts/test-helper.mjs upload",
     "test:upload:integration": "node scripts/test-cloud-upload.mjs",
     "predev": "node scripts/stage-helper.mjs",
-    "prebuild": "node scripts/stage-helper.mjs"
+    "prebuild": "node scripts/stage-helper.mjs",
+    "test:diagnostics": "node scripts/test-helper.mjs diagnostics"
   },
   "dependencies": {
     "react": "19.3.1",

@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { newCard, newOffer } from '../shared/offers.ts'
 import policy from '../shared/consent-policy.json' with { type: 'json' }
+import { APP_VERSION, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticText, diagnosticReceiptSchema, diagnosticWithdrawalSchema } from '../shared/diagnostics.ts'
 
 const STATUS = '/api/status'
 const CAPTURES = '/api/captures'
@@ -80,6 +81,7 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   }
   if (readOnly) return
   if (status.consentRequired !== true || status.consentPolicyVersion !== policy.version) throw new Error('Staging must require the current consent policy.')
+  if (status.diagnosticsEnabled !== true) throw new Error('Staging diagnostics must be enabled.')
 
   const grants = {}
   function post(path, operation, expectedStatus, payload, key, extraHeaders = {}) {
@@ -146,6 +148,22 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     await post(path, 'Upload after withdrawal', 403, payload, key)
     await post('/api/consents', 'Reusing withdrawn consent', 403, grant, key)
   }
+  const report = {
+    kind: 'fate-collector.diagnostics', schemaVersion: 1, id: randomUUID(), generatedAt: new Date().toISOString(), source: 'website', appVersion: APP_VERSION, environment: 'staging',
+    runtime: { family: 'other', version: null, platform: 'other', online: true },
+    state: { storage: 'unknown', folderConnection: 'off', sharing: 'off', queue: { pending: 0, accepted: 0, rejected: 0, ignored: 0 } }, events: [],
+  }
+  const diagnostic = { report, consent: { version: DIAGNOSTIC_VERSION, text: diagnosticText(origin), acceptedAt: new Date().toISOString() }, token: randomBytes(32).toString('hex') }
+  await post('/api/diagnostics', 'Diagnostic without consent', 400, { report }, ingestKey)
+  await post('/api/diagnostics', 'Diagnostic without key', 401, diagnostic)
+  await post('/api/diagnostics', 'Diagnostic with raw log', 400, { ...diagnostic, report: { ...report, rawLog: 'SYNTHETIC_SECRET_MUST_BE_REJECTED' } }, ingestKey)
+  const received = diagnosticReceiptSchema.parse(await readJson(await post('/api/diagnostics', 'Diagnostic upload', 201, diagnostic, ingestKey), 'Diagnostic upload'))
+  if (received.id !== report.id || received.consent.text !== diagnostic.consent.text || received.consent.version !== diagnostic.consent.version || received.consent.acceptedAt !== diagnostic.consent.acceptedAt || received.consent.recordedAt !== received.receivedAt || Date.parse(received.expiresAt) - Date.parse(received.receivedAt) !== RETENTION_MS) throw new Error('Diagnostic receipt does not match the consent or retention.')
+  const duplicate = await readJson(await post('/api/diagnostics', 'Diagnostic retry', 200, diagnostic, ingestKey), 'Diagnostic retry')
+  if (JSON.stringify(duplicate) !== JSON.stringify(received)) throw new Error('Diagnostic retry changed the receipt.')
+  const deleted = diagnosticWithdrawalSchema.parse(await readJson(await post(`/api/diagnostics/${report.id}/withdraw`, 'Diagnostic withdrawal', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Diagnostic-Token': diagnostic.token }), 'Diagnostic withdrawal'))
+  if (deleted.id !== report.id) throw new Error('Diagnostic withdrawal returned a different ID.')
+  await post('/api/diagnostics', 'Diagnostic replay after withdrawal', 410, diagnostic, ingestKey)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

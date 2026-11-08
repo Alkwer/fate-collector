@@ -195,4 +195,16 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .consent-snapshot { white-space: pre-wrap; line-height: 1.6; }
 .consent-history { margin-top: 18px; }
 .consent-history article { padding: 12px 0; border-top: 1px solid var(--border); }
+.diagnostics-panel { padding: 22px; margin-bottom: 20px; }
+.diagnostics-panel > * + * { margin-top: 16px; }
+.diagnostics-panel > h2:not(:first-child) { margin-top: 32px; }
+.diagnostics-panel > p { max-width: 850px; }
+.diagnostic-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.diagnostic-preview { font: 13px/1.6 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 250px; }
+.diagnostic-receipt { border-top: 1px solid var(--border); padding-top: 18px; overflow-wrap: anywhere; }
+.diagnostic-receipt > * + * { margin-top: 10px; }
+.diagnostics-panel .consent-check { flex-direction: row; }
+.diagnostics-panel .consent-copy { font-weight: 400; }
+.diagnostic-message { padding: 12px; border-left: 2px solid var(--gold); }
+@media (max-width: 600px) { .diagnostics-panel { padding: 16px; } .diagnostic-actions > button { width: 100%; } }
 .sharing-consent > button { margin: 8px 12px 8px 0; }

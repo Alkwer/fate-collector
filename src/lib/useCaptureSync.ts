@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CaptureReader, directoryPicker, type CaptureDirectory, type CapturedEntry } from './capture-sync'
 import { getCaptureFolder, setCaptureFolder } from './storage'
+import { logDiagnostic } from './diagnostic-log'
 
 export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>) {
   const supported = typeof directoryPicker() === 'function' && window.isSecureContext
@@ -8,6 +9,7 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
   const [status, setStatus] = useState<'off' | 'connecting' | 'active' | 'permission' | 'error'>('off')
   const [problem, setProblem] = useState<string | null>(null)
   const [received, setReceived] = useState(0)
+  useEffect(() => { logDiagnostic('folder-connect', status === 'active' ? 'ok' : status === 'error' ? 'error' : status === 'permission' ? 'blocked' : 'pending') }, [status])
   const callback = useRef(onSaved)
   const actionVersion = useRef(0)
   useEffect(() => { callback.current = onSaved }, [onSaved])
@@ -37,11 +39,13 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
         const result = await reader.scan(folder, async entry => {
           if (stopped) return
           setReceived(count => count + 1)
+          logDiagnostic('folder-scan', 'ok')
           await callback.current(entry)
         }, () => stopped)
         if (!stopped) setProblem(result.invalidCount ? `${result.invalidCount} capture(s) could not be read. ${result.problem}` : null)
       } catch (error) {
         if (!stopped) {
+          logDiagnostic('folder-scan', 'error')
           setProblem(error instanceof Error ? error.message : 'Capture folder is unavailable.')
           setStatus(error instanceof DOMException && error.name === 'NotAllowedError' ? 'permission' : 'error')
         }
