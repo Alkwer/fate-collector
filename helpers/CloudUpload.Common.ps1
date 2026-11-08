@@ -1,4 +1,5 @@
 # Shared by the configuration dialog, the background uploader, and their tests.
+. (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
 $script:FateUploadGuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 $script:FateUploadUtf8 = [Text.UTF8Encoding]::new($false, $true)
 
@@ -196,7 +197,7 @@ function ConvertTo-FateUploadPayload($Bundle, [string]$Id, [DateTimeOffset]$Enab
         capturedAt = $capturedAt.UtcDateTime.ToString('o')
         source = 'windows-helper'
         helperVersion = $Bundle.helperVersion
-        context = [ordered]@{ captureMode = 'game' }
+        context = ConvertTo-FateCaptureContext $Bundle.context $Id
         image = [ordered]@{ width = $Bundle.image.width; height = $Bundle.image.height }
         ocr = [ordered]@{ status = $Bundle.ocr.status; text = $Bundle.ocr.text; lines = $lines; language = $Bundle.ocr.language }
     }
@@ -250,6 +251,39 @@ function Invoke-FateUploadRequest($Configuration, [string]$Payload) {
             } finally { $response.Dispose() }
         } finally { $request.Dispose() }
     } finally { $client.Dispose() }
+}
+
+# Read only durable uploader outcomes. An HTTP success without a validated receipt is never Uploaded.
+function Get-FateCaptureUploadStatus {
+    param([string]$StateDirectory, [string]$CaptureId, [switch]$AllowLocalTestEndpoint)
+    if ($CaptureId -cnotmatch "\A$script:FateUploadGuid\z") { throw 'Invalid feedback capture ID.' }
+    $configuration = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
+    if (!$configuration) { return 'local' }
+    $scope = Join-Path $StateDirectory $configuration.Scope
+    $state = Read-FateUploadState (Join-Path $scope "states/$CaptureId.json")
+    if ($state) {
+        if ($state.status -in 'accepted', 'duplicate') { return 'uploaded' }
+        if ($state.status -eq 'rejected') { return 'rejected' }
+        if ($state.status -eq 'ignored') { return 'local' }
+    }
+    $gate = Read-FateUploadState (Join-Path $scope 'gate.json')
+    if ($gate -and $gate.revision -ceq $configuration.Revision -and $gate.status -eq 'authorization') { return 'authorization' }
+    if ($state -and $state.status -eq 'retry') {
+        if ($state.httpStatus -eq 0) { return 'offline' }
+        return 'retry'
+    }
+    return 'queued'
+}
+
+function Write-FateCaptureUploadFeedback {
+    param([string]$StateDirectory, [string]$CaptureId, [string]$Path, [switch]$AllowLocalTestEndpoint, [switch]$Failed)
+    $status = 'error'
+    try {
+        $status = Get-FateCaptureUploadStatus -StateDirectory $StateDirectory -CaptureId $CaptureId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
+        if ($Failed -and $status -notin 'uploaded', 'rejected', 'authorization') { $status = 'error' }
+    } catch { $status = 'error' } # A settings/read failure must be visible, never a false success.
+    [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Path)))
+    Write-FateUploadAtomicText $Path "$CaptureId`n$status"
 }
 
 function Invoke-FateCaptureUploads {

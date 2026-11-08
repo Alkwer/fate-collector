@@ -21,7 +21,21 @@ original capture restores missing screenshot/OCR evidence without changing the
 offer revision, review status or existing corrections. Existing evidence is never
 replaced by another copy of the same capture.
 Another F9 press creates another ID, even if the screen has not changed. Capture
-each encounter once; visual duplicate detection is not implemented.
+each encounter once. Helper 0.2.0 adds optional `context.session` with a random UUID
+`id`, ISO `startedAt` and positive `sequence` (up to 1,000,000,000). A session lasts
+until helper restart or a different game process is captured. Sequence counts
+published captures only; it is independent of `encounterNumber` and game progression.
+Legacy files without these fields remain valid.
+
+Optional `context.possibleDuplicate` contains `ofCaptureId` and the fixed reason
+`same-ocr-within-15s`. It references the preceding published capture in that session
+when successful, nonempty OCR matches after whitespace/case normalization, dimensions
+match and elapsed time is between zero and 15 seconds inclusive. Recalibration
+clears the preceding comparison. Different modifiers, blank/failed OCR and different
+sessions are not evidence of a repeat. This hint does not delete, merge, review or
+exclude either record. It is not visual identity detection or proof of a duplicate.
+The source context is retained as optional `offer.captureContext`, including through
+reviewed corrections, export/import and the research view. Self-references are invalid.
 
 The imported source image and raw OCR are stored separately from edited card fields.
 Current extraction uses a small name dictionary and the topmost recognized card

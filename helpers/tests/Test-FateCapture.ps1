@@ -24,12 +24,12 @@ function Assert-True($Condition, [string]$Message) {
 }
 
 function Read-FixtureBundle($Result, [guid]$Id) {
-    Assert-True ($Result.Code -in 0, 10, 11) "Export failed ($($Result.Code)). $($Result.Output -join ' ')"
+    Assert-True ($Result.Code -in 0, 10, 11, 12) "Export failed ($($Result.Code)). $($Result.Output -join ' ')"
     $path = Join-Path $folder ("fate-" + $Id + '.json')
     Assert-True ((Get-Item -LiteralPath $path).Length -lt 12MB) 'Bundle exceeds the size limit.'
     $bundle = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-True ($bundle.kind -eq 'fate-collector.capture' -and $bundle.schemaVersion -eq 1) 'Incorrect bundle header.'
-    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.1.0') 'Incorrect producer metadata.'
+    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.2.0') 'Incorrect producer metadata.'
     Assert-True ($bundle.context.captureMode -eq 'fixture') 'The offline PNG was not marked as a fixture.'
     Assert-True ($bundle.captureId -eq $Id.ToString()) 'Incorrect capture ID.'
     Assert-True ([string]$bundle.capturedAt -match 'Z$' -or $bundle.capturedAt -is [DateTime]) 'Timestamp is not UTC ISO 8601.'
@@ -42,6 +42,7 @@ function Read-FixtureBundle($Result, [guid]$Id) {
 }
 
 try {
+    & (Join-Path $PSScriptRoot 'Test-CaptureContext.ps1')
     $image = [System.Drawing.Bitmap]::new(660, 180)
     $graphics = [System.Drawing.Graphics]::FromImage($image)
     $font = [System.Drawing.Font]::new('Arial', 38, [System.Drawing.FontStyle]::Bold)
@@ -57,8 +58,13 @@ try {
     }
 
     $id = [guid]::NewGuid()
-    $result = Invoke-Export -Arguments @('-InputImage', $fixture, '-CaptureId', $id.ToString(), '-Verbose')
+    $sessionId = [guid]::NewGuid().ToString()
+    $sessionStartedAt = [DateTime]::UtcNow.AddSeconds(-1).ToString('yyyyMMddHHmmss')
+    $result = Invoke-Export -Arguments @('-InputImage', $fixture, '-CaptureId', $id.ToString(), '-Verbose',
+        '-SessionId', $sessionId, '-SessionStartedAt', $sessionStartedAt, '-CaptureSequence', '1')
     $bundle = Read-FixtureBundle $result $id
+    Assert-True ($bundle.context.session.id -ceq $sessionId -and $bundle.context.session.sequence -eq 1 -and
+        [DateTimeOffset]::Parse($bundle.context.session.startedAt) -le [DateTimeOffset]::Parse($bundle.capturedAt)) 'Exporter lost automatic session context.'
     if ($bundle.ocr.status -eq 'ok') {
         Assert-True ($result.Code -eq 0) 'Successful OCR should exit with code 0.'
         Assert-True ($bundle.ocr.text -match 'FATE COLLECTOR' -and $bundle.ocr.text -match 'ITEM RARITY') "Fixture text was not recognized. $($bundle.ocr.text)"
@@ -68,6 +74,17 @@ try {
                 ($line.x + $line.width) -le $bundle.image.width -and ($line.y + $line.height) -le $bundle.image.height) 'Invalid OCR line geometry.'
         }
         Write-Output 'PASS: OCR recognized both fixture lines with in-bounds coordinates.'
+        # Refresh fixture time to keep this test deterministic on slower Windows runners.
+        $previousPath = Join-Path $folder ("fate-" + $id + '.json')
+        $bundle.capturedAt = [DateTime]::UtcNow.ToString('o')
+        $bundle | ConvertTo-Json -Depth 6 -Compress | Set-Content -LiteralPath $previousPath -Encoding UTF8
+        $repeatId = [guid]::NewGuid()
+        $repeatResult = Invoke-Export -Arguments @('-InputImage', $fixture, '-CaptureId', $repeatId.ToString(),
+            '-SessionId', $sessionId, '-SessionStartedAt', $sessionStartedAt, '-CaptureSequence', '2', '-PreviousCapturePath', $previousPath)
+        $repeatBundle = Read-FixtureBundle $repeatResult $repeatId
+        Assert-True ($repeatResult.Code -eq 12 -and $repeatBundle.context.session.sequence -eq 2 -and
+            $repeatBundle.context.possibleDuplicate.ofCaptureId -ceq $id.ToString() -and (Test-Path -LiteralPath $previousPath)) 'Exporter lost repeat flag or original evidence.'
+        Write-Output 'PASS: repeated OCR produces a second bundle, session sequence and repeat exit code for the helper.'
     } else {
         Assert-True (!$RequireOcr) "Fixture OCR was $($bundle.ocr.status). $($result.Output -join ' ')"
         Write-Output "SKIP: fixture OCR was $($bundle.ocr.status). Use -RequireOcr to require live OCR."
@@ -78,6 +95,7 @@ try {
     $bundle = Read-FixtureBundle $result $id
     Assert-True ($result.Code -eq 10 -and $bundle.ocr.status -eq 'unavailable' -and !$bundle.ocr.text -and
         $bundle.ocr.lines.Count -eq 0 -and $null -eq $bundle.ocr.language) 'Unavailable OCR did not preserve an image-only bundle.'
+    Assert-True (!$bundle.context.PSObject.Properties['session']) 'Standalone legacy export invented a helper session.'
     Write-Output 'PASS: unavailable OCR preserved the original PNG and empty OCR.'
 
     $image = [System.Drawing.Bitmap]::new(8193, 1)

@@ -68,15 +68,20 @@ try {
   await new Promise(resolveListen => relay.listen(port, '127.0.0.1', resolveListen))
   await phase('Online', origin)
   await phase('LostReceipt', origin)
-  assert.equal(requests, 4, 'Exactly two accepted uploads and two idempotent retries expected.')
+  assert.equal(requests, 6, 'Exactly three accepted uploads and three idempotent retries expected.')
   const ids = JSON.parse(await readFile(join(state, 'test-ids.json'), 'utf8'))
   const query = spawnSync(process.execPath, [wrangler, 'd1', 'execute', 'fate-collector', '--local', ...persist, '--json', '--command', 'SELECT id, payload_json, parsed_offer_json FROM capture_uploads ORDER BY id'], { encoding: 'utf8', windowsHide: true })
   assert.equal(query.status, 0, query.stderr)
   const rows = JSON.parse(query.stdout)[0].results
-  assert.deepEqual(rows.map(row => row.id).sort(), ids.slice(0, 2).sort())
+  assert.deepEqual(rows.map(row => row.id).sort(), ids.slice(0, 3).sort())
   assert(rows.some(row => JSON.parse(row.payload_json).ocr.status === 'error'), 'Failed OCR must reach D1.')
   assert(rows.every(row => JSON.parse(row.parsed_offer_json).reviewed === false))
-  console.log('Direct helper → Worker → D1 passed: offline queue, restart, no images, no browser, duplicate retry, failed OCR and fixture exclusion.')
+  assert(rows.every(row => JSON.parse(row.payload_json).context.session.id))
+  const repeated = rows.find(row => row.id === ids[2])
+  assert.equal(JSON.parse(repeated.payload_json).context.possibleDuplicate.ofCaptureId, ids[0])
+  assert.equal(JSON.parse(repeated.parsed_offer_json).captureContext.session.sequence, 3)
+  assert.equal(JSON.parse(repeated.parsed_offer_json).captureContext.possibleDuplicate.ofCaptureId, ids[0])
+  console.log('Direct helper → Worker → D1 passed: session/repeat metadata, receipt feedback, offline queue, restart, no images, no browser, duplicate retry, failed OCR and fixture exclusion.')
 } finally {
   if (relay?.listening) await new Promise(resolveClose => relay.close(resolveClose))
   if (worker?.pid && worker.exitCode === null) {

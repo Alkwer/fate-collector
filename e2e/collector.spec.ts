@@ -2,27 +2,33 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newOffer, newCard } from '../shared/offers'
 
-async function helperCapture(page: Page) {
-  return page.evaluate(() => {
+async function helperCapture(page: Page, possibleRepeat = false) {
+  return page.evaluate(possibleRepeat => {
     const canvas = document.createElement('canvas'); canvas.width = 1000; canvas.height = 600
     const context = canvas.getContext('2d')!
     context.fillStyle = '#191c19'; context.fillRect(0, 0, 1000, 600)
     context.fillStyle = '#eee9dc'; context.font = '26px sans-serif'
     context.fillText('Alchemist', 40, 80); context.fillText('Sanguine', 400, 80)
-    return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', context: { captureMode: 'fixture' },
+    const capturedAt = new Date().toISOString()
+    const captureContext = possibleRepeat ? {
+      session: { id: crypto.randomUUID(), startedAt: capturedAt, sequence: 2 },
+      possibleDuplicate: { ofCaptureId: crypto.randomUUID(), reason: 'same-ocr-within-15s' },
+    } : {}
+    return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt, source: 'windows-helper', helperVersion: '0.1.0', context: { captureMode: 'fixture', ...captureContext },
       image: { width: 1000, height: 600, mimeType: 'image/png', dataBase64: canvas.toDataURL('image/png').split(',')[1] },
       ocr: { status: 'ok', text: 'Alchemist\nSanguine', language: 'en-US', lines: [{ text: 'Alchemist', x: 40, y: 55, width: 140, height: 30 }, { text: 'Sanguine', x: 400, y: 55, width: 140, height: 30 }] } }
-  })
+  }, possibleRepeat)
 }
 
 test('helper import auto-fills text, saves evidence, survives reload, and avoids duplicate imports', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
   await page.goto('/')
-  const bundle = await helperCapture(page)
+  const bundle = await helperCapture(page, true)
   const file = { name: 'capture.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) }
   await page.getByLabel('Import capture file').setInputFiles(file)
   await expect(page.getByRole('heading', { name: 'Alchemist', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Sanguine', exact: true })).toBeVisible()
+  await expect(page.getByText('Session capture #2 · Possible repeat (matching OCR)', { exact: true })).toBeVisible()
   await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await expect(page.getByAltText('Captured Fate offer')).toBeVisible()
   await page.getByRole('button', { name: 'Enlarge source screenshot' }).focus()
@@ -49,7 +55,7 @@ test('helper import auto-fills text, saves evidence, survives reload, and avoids
   const exported = await download
   expect(exported.suggestedFilename()).toBe('fate-collector-export.json')
   const archive = JSON.parse(await readFile((await exported.path())!, 'utf8'))
-  expect(archive.offers[0].offer).toMatchObject({ reviewed: true, completeness: 'complete' })
+  expect(archive.offers[0].offer).toMatchObject({ reviewed: true, completeness: 'complete', captureContext: bundle.context, encounterNumber: 1 })
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   expect(errors).toEqual([])
@@ -159,8 +165,9 @@ test('a helper capture can be confirmed in one click without completing fields; 
 test('phone review puts extracted Fates before the compact source and keeps source zoom accessible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  const bundle = await helperCapture(page)
+  const bundle = await helperCapture(page, true)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'capture.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) })
+  await expect(page.getByText('Session capture #2 · Possible repeat (matching OCR)', { exact: true })).toBeInViewport()
   await expect(page.getByRole('heading', { name: 'Alchemist', exact: true })).toBeInViewport()
   const fate = await page.getByRole('heading', { name: 'Offered Fates' }).boundingBox()
   const source = await page.getByRole('heading', { name: 'Your capture', exact: true }).boundingBox()

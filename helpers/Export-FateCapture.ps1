@@ -11,11 +11,16 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Window')][int]$Height,
     [string]$OutputDirectory = (Join-Path $PSScriptRoot 'captures'),
     [guid]$CaptureId = [guid]::NewGuid(),
-    [string]$OcrLanguage
+    [string]$OcrLanguage,
+    [string]$SessionId,
+    [string]$SessionStartedAt,
+    [int]$CaptureSequence,
+    [string]$PreviousCapturePath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
 
 # CopyFromScreen, WinRT OCR, and line geometry adapted from One More Map.
 # See README.md and LICENSE.one-more-map.txt.
@@ -253,16 +258,27 @@ try {
     }
     $ocr = Get-OcrResult -Png $png -ImageWidth $Width -ImageHeight $Height
     $captureMode = if ($PSCmdlet.ParameterSetName -eq 'Window') { 'game' } else { 'fixture' }
+    $previous = $null
+    if ($PreviousCapturePath -and [IO.File]::Exists($PreviousCapturePath)) {
+        try {
+            $previousFile = [IO.FileInfo]::new($PreviousCapturePath)
+            if ($previousFile.Length -le 12MB -and !($previousFile.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                $previous = [IO.File]::ReadAllText($PreviousCapturePath) | ConvertFrom-Json
+            }
+        } catch { $previous = $null } # Optional evidence must not prevent a new capture.
+    }
+    $context = New-FateCaptureContext -Mode $captureMode -CaptureId $CaptureId.ToString() -CapturedAt ([DateTimeOffset]::Parse($capturedAt)) `
+        -SessionId $SessionId -SessionStartedAt $SessionStartedAt -Sequence $CaptureSequence -Ocr $ocr -Width $Width -Height $Height -Previous $previous
     $bundle = [ordered]@{
         kind = 'fate-collector.capture'
         schemaVersion = 1
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.1.0'
+        helperVersion = '0.2.0'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
-        context = [ordered]@{ captureMode = $captureMode }
+        context = $context
     }
     $json = $bundle | ConvertTo-Json -Depth 6 -Compress
     $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($json)
@@ -284,6 +300,7 @@ try {
     Write-Output $outputPath
     if ($ocr.status -eq 'unavailable') { exit 10 }
     if ($ocr.status -eq 'error') { exit 11 }
+    if ($context.Contains('possibleDuplicate')) { exit 12 }
     exit 0
 } catch {
     [Console]::Error.WriteLine($_.Exception.Message)

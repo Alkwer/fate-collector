@@ -47,7 +47,7 @@ async function receiveCapture(body: unknown, database: D1Database): Promise<Resp
   // Hash the validated raw input, not parser output (which may change later).
   const payload = JSON.stringify(capture)
   const hash = await digest(payload)
-  const candidate = offerSchema.parse({ ...newOffer(), id: capture.captureId, captureId: capture.captureId,
+  const candidate = offerSchema.parse({ ...newOffer(), id: capture.captureId, captureId: capture.captureId, captureContext: capture.context,
     source: 'windows-helper', origin: 'live', gameVersion: 'unknown',
     capturedAt: capture.capturedAt, updatedAt: capture.capturedAt,
     cards: extractCards(capture).cards.slice(0, 30), reviewed: false, completeness: 'unverified' })

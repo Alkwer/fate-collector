@@ -18,7 +18,9 @@ if ($Phase -eq 'Offline') {
     $config = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint
     $ocr = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'fixtures/presskit-ocr.json') | ConvertFrom-Json
     $ids = @()
-    foreach ($mode in 'ok', 'error', 'fixture', 'old') {
+    $sessionId = [guid]::NewGuid().ToString()
+    $startedAt = [DateTimeOffset]::UtcNow.ToString('o')
+    foreach ($mode in 'ok', 'error', 'repeat', 'fixture', 'old') {
         $id = [guid]::NewGuid().ToString()
         $ids += $id
         $bundle = [ordered]@{
@@ -30,6 +32,12 @@ if ($Phase -eq 'Offline') {
             image = @{ mimeType = 'image/png'; width = 3840; height = 2160; dataBase64 = 'LOCAL_IMAGE_SENTINEL' }
             ocr = if ($mode -eq 'error') { @{ status = 'error'; text = ''; lines = @(); language = $null } } else { $ocr }
         }
+        if ($mode -in 'ok', 'error', 'repeat') {
+            $bundle.context.session = @{ id = $sessionId; startedAt = $startedAt; sequence = $ids.Count }
+        }
+        if ($mode -eq 'repeat') {
+            $bundle.context.possibleDuplicate = @{ ofCaptureId = $ids[0]; reason = 'same-ocr-within-15s' }
+        }
         Write-FateUploadAtomicText (Join-Path $captures "fate-$id.json") ($bundle | ConvertTo-Json -Depth 8 -Compress)
     }
     Write-FateUploadState (Join-Path $StateDirectory 'test-ids.json') $ids
@@ -38,7 +46,7 @@ $config = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint
 $scope = Join-Path $StateDirectory $config.Scope
 $ids = Read-FateUploadState (Join-Path $StateDirectory 'test-ids.json')
 if ($Phase -eq 'LostReceipt') {
-    foreach ($id in $ids[0..1]) {
+    foreach ($id in $ids[0..2]) {
         # Simulate a process crash after remote commit, before a durable local receipt.
         $bundle = Read-FateCaptureBundle (Join-Path $captures "fate-$id.json") | ConvertFrom-Json
         $payload = ConvertTo-FateUploadPayload $bundle $id (ConvertTo-FateUploadTime $config.EnabledSince)
@@ -48,26 +56,31 @@ if ($Phase -eq 'LostReceipt') {
 }
 # Launch the actual one-shot CLI in a separate Windows PowerShell process.
 & "$PSHOME/powershell.exe" -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'helpers/Upload-FateCaptures.ps1') `
-    -CapturesDirectory $captures -StateDirectory $StateDirectory -AllowLocalTestEndpoint -ForceRetry
+    -CapturesDirectory $captures -StateDirectory $StateDirectory -AllowLocalTestEndpoint -ForceRetry `
+    -FeedbackCaptureId $ids[0] -FeedbackPath (Join-Path $StateDirectory 'feedback.txt')
 Assert-Integration ($LASTEXITCODE -eq 0) 'The uploader CLI failed.'
+$feedback = [IO.File]::ReadAllText((Join-Path $StateDirectory 'feedback.txt')) -split "`n"
+Assert-Integration ($feedback[0] -ceq $ids[0]) 'Feedback refers to a different capture.'
 $queued = @(Get-ChildItem -LiteralPath (Join-Path $scope 'queue') -Filter '*.json')
 if ($Phase -eq 'Offline') {
-    Assert-Integration ($queued.Count -eq 2) 'Both game captures must survive the outage in the queue.'
-    $attempts = @($ids[0..1] | ForEach-Object { Read-FateUploadState (Join-Path $scope "states/$_.json") })
+    Assert-Integration ($queued.Count -eq 3) 'All game captures, including possible repeat, must survive the outage.'
+    Assert-Integration ($feedback[1] -in 'offline', 'queued') 'Offline feedback incorrectly reports success.'
+    $attempts = @($ids[0..2] | ForEach-Object { Read-FateUploadState (Join-Path $scope "states/$_.json") })
     Assert-Integration (@($attempts | Where-Object { $_.status -eq 'retry' -and $_.httpStatus -eq 0 }).Count -eq 1) 'Connection failure must schedule a retry.'
     foreach ($file in $queued) {
         Assert-Integration (!(Get-Content -Raw -LiteralPath $file.FullName).Contains('LOCAL_IMAGE_SENTINEL')) 'An image leaked into the queue.'
     }
 } else {
     Assert-Integration ($queued.Count -eq 0) 'Confirmed uploads should leave no pending payloads.'
+    Assert-Integration ($feedback[1] -eq 'uploaded') 'Confirmed online upload did not report Uploaded.'
     $expected = if ($Phase -eq 'Online') { 'accepted' } else { 'duplicate' }
-    foreach ($id in $ids[0..1]) {
+    foreach ($id in $ids[0..2]) {
         $receipt = Read-FateUploadState (Join-Path $scope "states/$id.json")
         Assert-Integration ($receipt.status -eq $expected) "Expected a $expected receipt."
         Assert-Integration ([IO.File]::Exists((Join-Path $captures "fate-$id.json"))) 'The original capture must remain local.'
     }
 }
-foreach ($id in $ids[2..3]) {
+foreach ($id in $ids[3..4]) {
     Assert-Integration ((Read-FateUploadState (Join-Path $scope "states/$id.json")).status -eq 'ignored') 'Fixtures and older captures must stay local.'
 }
 Write-Host "Native uploader integration: $Phase passed."

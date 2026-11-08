@@ -1,8 +1,13 @@
 import type { Offer } from '../../shared/schema'
 
 export function OfferPreview({ offer, saved = false, automatic = false }: { offer: Offer; saved?: boolean; automatic?: boolean }) {
+  const sequence = offer.captureContext?.session?.sequence
+  const possibleRepeat = Boolean(offer.captureContext?.possibleDuplicate)
   return <section className="panel offer-preview" aria-labelledby="preview-heading">
     <div className="section-heading"><h2 id="preview-heading">Offered Fates</h2>{offer.cards.length > 0 && <span className="muted">{offer.cards.length} {offer.cards.length === 1 ? 'card' : 'cards'}</span>}</div>
+    {(sequence !== undefined || possibleRepeat) && <p className="hint">
+      {sequence !== undefined ? `Session capture #${sequence}` : ''}{sequence !== undefined && possibleRepeat ? ' · ' : ''}{possibleRepeat ? 'Possible repeat (matching OCR)' : ''}
+    </p>}
     {offer.cards.length ? <>
       <ul className="fate-list">{offer.cards.map((card, index) => <li key={card.id}>
         <div className="fate-title"><h3>{card.name || `Unread card ${index + 1}`}</h3>{card.tier !== null && <span className="muted">Tier {card.tier}</span>}</div>

@@ -19,6 +19,7 @@ export function exampleOffer(): Offer {
 export function captureToDraft(capture: Capture): { offer: Offer; evidence: Evidence } {
   return {
     offer: { ...newOffer(), id: capture.captureId, captureId: capture.captureId, capturedAt: capture.capturedAt, source: 'windows-helper',
+      ...(capture.context && { captureContext: capture.context }),
       origin: capture.context?.captureMode === 'game' ? 'live' : 'test', gameVersion: capture.context?.captureMode === 'game' ? 'unknown' : '3.30 preview' },
     evidence: { id: capture.captureId, imageDataUrl: `data:image/png;base64,${capture.image.dataBase64}`, ocrText: capture.ocr.text,
       ocrLines: capture.ocr.lines, ocrStatus: capture.ocr.status, helperVersion: capture.helperVersion },

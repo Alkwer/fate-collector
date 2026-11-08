@@ -11,6 +11,13 @@ capturing := false
 cancelled := false
 uploaderPid := 0
 settingsPid := 0
+captureSession := 0
+feedbackCaptureId := ""
+feedbackRepeat := false
+feedbackOcr := ""
+feedbackSeen := ""
+uploadRequested := false
+feedbackFile := A_ScriptDir "\captures\.feedback\" NewCaptureId() ".txt"
 DirCreate A_ScriptDir "\captures"
 A_TrayMenu.Add "Open capture folder", (*) => Run('explorer.exe "' A_ScriptDir '\captures"')
 A_TrayMenu.Add "Cloud upload settings", ConfigureCloudUpload
@@ -70,12 +77,14 @@ VerifyCalibration() {
 }
 
 CalibrateTopLeft() {
-    global calibration, capturing
+    global calibration, capturing, captureSession
     if capturing
         return
     try {
         poe := GetForegroundPoe()
         calibration := {window: poe, first: GetClientPointer(poe), last: 0}
+        if captureSession
+            captureSession.lastFile := ""
         Notice("Upper-left corner saved. Move to the lower-right corner and press F7.")
     } catch as err {
         Notice(err.Message)
@@ -99,7 +108,8 @@ CalibrateBottomRight() {
 }
 
 CapturePanel() {
-    global calibration, capturing, cancelled
+    global calibration, capturing, cancelled, captureSession
+    global feedbackCaptureId, feedbackRepeat, feedbackOcr, feedbackSeen
     if capturing
         return
     capturing := true
@@ -114,6 +124,8 @@ CapturePanel() {
         height := calibration.last.y - top + 1
 
         captureId := NewCaptureId()
+        if !captureSession || captureSession.pid != poe.pid || captureSession.sequence >= 1000000000
+            captureSession := {id: NewCaptureId(), startedAt: A_NowUTC, pid: poe.pid, sequence: 0, lastFile: ""}
         captureDir := A_ScriptDir "\captures"
         ; Publish to the watched folder only after cancellation has been checked.
         outputDir := captureDir "\.pending"
@@ -129,6 +141,10 @@ CapturePanel() {
             . ' -WindowHandle ' poe.hwnd ' -WindowPid ' poe.pid
             . ' -ClientWidth ' poe.width ' -ClientHeight ' poe.height
             . ' -X ' left ' -Y ' top ' -Width ' width ' -Height ' height
+            . ' -SessionId ' captureSession.id ' -SessionStartedAt ' captureSession.startedAt
+            . ' -CaptureSequence ' (captureSession.sequence + 1)
+        if captureSession.lastFile
+            command .= ' -PreviousCapturePath "' captureSession.lastFile '"'
         SetTimer ClearNotice, 0
         ToolTip
         code := RunWait(command, A_ScriptDir, "Hide")
@@ -138,17 +154,22 @@ CapturePanel() {
             if FileExist(outputFile)
                 FileDelete outputFile
             Notice("Capture canceled. Repeat F6 and F7.")
-        } else if FileExist(outputFile) && (code = 0 || code = 10 || code = 11) {
-            suffix := code = 0 ? "" : code = 10 ? " (OCR unavailable)" : " (OCR failed)"
+        } else if FileExist(outputFile) && (code = 0 || code = 10 || code = 11 || code = 12) {
+            suffix := code = 10 ? " (OCR unavailable)" : code = 11 ? " (OCR failed)" : ""
             if FileGetSize(outputFile) > 12 * 1024 * 1024
                 throw Error("Capture exceeds the supported size limit.")
             readyFile := captureDir "\fate-" captureId ".json"
             FileMove outputFile, readyFile
+            captureSession.sequence += 1
+            captureSession.lastFile := readyFile
+            feedbackCaptureId := captureId
+            feedbackRepeat := code = 12
+            feedbackOcr := suffix
+            feedbackSeen := ""
             SetTimer RunCloudUploader, -100
             try {
                 A_Clipboard := FileRead(readyFile, "UTF-8")
-                Notice("Capture saved" suffix ". Cloud upload runs in the background when enabled."
-                    . "`nManual fallback: paste with Ctrl+V.")
+                Notice("Capture saved" suffix ". Checking upload..." (feedbackRepeat ? "`nPossible repeat - both captures are kept." : ""))
             } catch {
                 Notice("Clipboard unavailable. Import the file saved in helpers\captures" suffix ".")
             }
@@ -172,18 +193,84 @@ WindowsPowerShellPath() {
 }
 
 RunCloudUploader(*) {
-    global uploaderPid
-    if uploaderPid && ProcessExist(uploaderPid)
+    global uploaderPid, uploadRequested, feedbackCaptureId, feedbackFile, capturing
+    if capturing
         return
+    if uploaderPid && ProcessExist(uploaderPid) {
+        uploadRequested := true
+        return
+    }
+    uploadRequested := false
     ; No PowerShell process is needed until the user has opted in.
     localAppData := EnvGet("LOCALAPPDATA")
-    if !localAppData || !FileExist(localAppData "\FateCollector\upload.clixml")
+    if !localAppData || !FileExist(localAppData "\FateCollector\upload.clixml") {
+        ShowUploadFeedback("local")
         return
+    }
     powershell := WindowsPowerShellPath()
     script := A_ScriptDir "\Upload-FateCaptures.ps1"
-    if FileExist(powershell) && FileExist(script)
-        try Run('"' powershell '" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File "' script '"',
-            A_ScriptDir, "Hide", &uploaderPid)
+    if !FileExist(powershell) || !FileExist(script) {
+        ShowUploadFeedback("error")
+        return
+    }
+    try {
+        if FileExist(feedbackFile)
+            FileDelete feedbackFile
+        command := '"' powershell '" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File "' script '"'
+        if feedbackCaptureId
+            command .= ' -FeedbackCaptureId ' feedbackCaptureId ' -FeedbackPath "' feedbackFile '"'
+        Run(command, A_ScriptDir, "Hide", &uploaderPid)
+        SetTimer CheckUploadFeedback, 250
+    } catch {
+        ShowUploadFeedback("error")
+    }
+}
+
+CheckUploadFeedback() {
+    global uploaderPid, uploadRequested, feedbackCaptureId, feedbackFile, capturing
+    if uploaderPid && ProcessExist(uploaderPid)
+        return
+    ; Avoid covering the selected panel while the exporter is capturing it.
+    if capturing
+        return
+    SetTimer CheckUploadFeedback, 0
+    uploaderPid := 0
+    if uploadRequested {
+        RunCloudUploader()
+        return
+    }
+    if !feedbackCaptureId
+        return
+    try {
+        if FileGetSize(feedbackFile) > 256
+            throw Error("Invalid upload feedback.")
+        fields := StrSplit(Trim(FileRead(feedbackFile, "UTF-8")), "`n", "`r")
+        if fields.Length != 2 || fields[1] != feedbackCaptureId
+            throw Error("Stale upload feedback.")
+        ShowUploadFeedback(fields[2])
+    } catch {
+        ShowUploadFeedback("error")
+    }
+}
+
+ShowUploadFeedback(status) {
+    global feedbackCaptureId, feedbackRepeat, feedbackOcr, feedbackSeen
+    if !feedbackCaptureId
+        return
+    switch status {
+        case "uploaded": message := "Uploaded."
+        case "offline": message := "Queued - connection unavailable. Will retry."
+        case "queued", "retry": message := "Queued - waiting to upload. Will retry."
+        case "authorization": message := "Upload paused - check the upload key in Cloud upload settings."
+        case "rejected": message := "Upload rejected. Capture kept locally."
+        case "local": message := "Saved locally. Cloud upload is off or this capture is not eligible."
+        default: message := "Upload status unavailable. Capture kept locally. Check Cloud upload settings."
+    }
+    signature := feedbackCaptureId ":" status
+    if signature = feedbackSeen
+        return
+    feedbackSeen := signature
+    Notice(message feedbackOcr (feedbackRepeat ? "`nPossible repeat - both captures are kept." : ""))
 }
 
 ConfigureCloudUpload(*) {

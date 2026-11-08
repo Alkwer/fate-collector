@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { expect, test } from 'vitest'
 import { newOffer, exampleOffer } from '../shared/offers'
+import { importJson } from '../src/lib/imports'
 import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence } from '../src/lib/storage'
 import type { Evidence } from '../shared/schema'
 
@@ -88,6 +89,19 @@ test('archive import restores missing images for existing IDs and preserves loca
   expect(await importOffers([{ offer, evidence }])).toBe(0)
   expect((await getOffer(offer.id))?.offer).toEqual(saved.offer)
   expect(await getEvidence(offer.id)).toEqual(evidence)
+  await deleteOffer(offer.id)
+})
+
+test('archive import retains session and possible repeat metadata on a reviewed correction', async () => {
+  const { offer } = captureEntry()
+  const corrected = { ...offer, revision: 2, reviewed: true, completeness: 'partial', notes: 'Reviewed correction', captureContext: {
+    captureMode: 'game', session: { id: crypto.randomUUID(), startedAt: offer.capturedAt, sequence: 2 },
+    possibleDuplicate: { ofCaptureId: crypto.randomUUID(), reason: 'same-ocr-within-15s' },
+  } }
+  const archive = { kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer: corrected, evidence: null }] }
+  const { entries } = await importJson(JSON.stringify(archive))
+  expect(await importOffers(entries)).toBe(1)
+  expect((await getOffer(offer.id))?.offer).toEqual(corrected)
   await deleteOffer(offer.id)
 })
 

@@ -91,6 +91,30 @@ test('automatic retries deduplicate immutable input and reject conflicting OCR',
   expect(databases[0].prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(1)
   expect(databases[0].prepare('SELECT parsed_offer_json FROM capture_uploads').get()?.parsed_offer_json).toBe(original)
 })
+test('possible repeats remain distinct observations and preserve context through review', async () => {
+  const bindings = env()
+  const first = upload()
+  const session = { id: crypto.randomUUID(), startedAt: first.capturedAt, sequence: 1 }
+  first.context.session = session
+  const second: CaptureUpload = { ...first, captureId: crypto.randomUUID(), capturedAt: new Date(Date.parse(first.capturedAt) + 500).toISOString(),
+    context: { captureMode: 'game', session: { ...session, sequence: 2 }, possibleDuplicate: { ofCaptureId: first.captureId, reason: 'same-ocr-within-15s' } } }
+  expect((await worker.fetch(capturePost(first), bindings)).status).toBe(201)
+  const receipt = await worker.fetch(capturePost(second), bindings)
+  expect(receipt.status).toBe(201)
+  expect(await receipt.json()).toEqual({ id: second.captureId, status: 'accepted', reviewed: false })
+  const db = databases[0]
+  expect(db.prepare('SELECT count(*) AS n FROM research_observations').get()?.n).toBe(2)
+  const raw = db.prepare('SELECT payload_json, parsed_offer_json FROM capture_uploads WHERE id = ?').get(second.captureId)!
+  expect(JSON.parse(raw.payload_json as string)).toEqual(second)
+  const candidate = offerSchema.parse(JSON.parse(raw.parsed_offer_json as string))
+  expect(candidate).toMatchObject({ captureContext: second.context, encounterNumber: 1 })
+  expect((await worker.fetch(post({ ...candidate, revision: 2, notes: 'Reviewed card correction', reviewed: true, completeness: 'partial' }), bindings)).status).toBe(201)
+  expect(db.prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(2)
+  expect(db.prepare('SELECT count(*) AS n FROM research_observations').get()?.n).toBe(2)
+  const corrected = db.prepare('SELECT offer_json, reviewed FROM research_observations WHERE id = ?').get(second.captureId)!
+  expect(corrected.reviewed).toBe(1)
+  expect(JSON.parse(corrected.offer_json as string)).toMatchObject({ captureContext: second.context, revision: 2, notes: 'Reviewed card correction' })
+})
 test('rejects screenshots, fixtures, missing provenance and oversized uploads', async () => {
   const bindings = env(); const sample = upload()
   expect((await worker.fetch(capturePost({ ...sample, image: { ...sample.image, dataBase64: 'AAAA' } }), bindings)).status).toBe(400)

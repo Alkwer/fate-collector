@@ -1,6 +1,6 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { zipSync } from 'fflate'
-const files = ['FateCollector.ahk', 'Export-FateCapture.ps1', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.one-more-map.txt']
+const files = ['FateCollector.ahk', 'Export-FateCapture.ps1', 'CaptureContext.Common.ps1', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.one-more-map.txt']
 const archive = {}
 for (const name of files) {
   const data = await readFile(new URL(`../helpers/${name}`, import.meta.url))

@@ -69,6 +69,8 @@ The helper reuses capture, game-window checks and Windows OCR techniques from
 - IndexedDB evidence and history, correction revisions, JSON export/import.
 - Direct helper uploads, encrypted Windows credentials, durable queue, offline retry
   and duplicate receipts, without an open browser.
+- Receipt-backed upload feedback, automatic session/capture sequence, and possible-repeat
+  hints for matching OCR within 15 seconds. Both records remain available; no extra fields.
 - Cloudflare Worker API and D1 migrations; separate automatic/raw and reviewed
   collection, bounded payloads and a combined view that avoids double-counting corrections.
 - GitHub validation and a manual production deployment workflow.

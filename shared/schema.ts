@@ -7,6 +7,28 @@ const timestamp = z.string().datetime({ offset: true })
 const shortText = z.string().max(160)
 const coordinate = z.number().finite().min(0).max(16384)
 
+const captureContextSchema = z.object({
+  captureMode: z.enum(['game', 'fixture']),
+  session: z.object({
+    id: uuid,
+    startedAt: timestamp,
+    sequence: z.number().int().min(1).max(1_000_000_000),
+  }).strict().optional(),
+  possibleDuplicate: z.object({
+    ofCaptureId: uuid,
+    reason: z.literal('same-ocr-within-15s'),
+  }).strict().optional(),
+}).strict()
+
+function validateCaptureContext(context: z.infer<typeof captureContextSchema> | undefined, captureId: string | null, ctx: z.RefinementCtx, field: string) {
+  if (!context) return
+  if (!captureId) {
+    ctx.addIssue({ code: 'custom', message: 'Capture context requires a capture ID.', path: [field] })
+  } else if (context.possibleDuplicate?.ofCaptureId.toLowerCase() === captureId.toLowerCase()) {
+    ctx.addIssue({ code: 'custom', message: 'A possible repeat must refer to a different capture.', path: [field, 'possibleDuplicate', 'ofCaptureId'] })
+  }
+}
+
 export const rewardSchema = z.object({
   id: uuid,
   label: z.string().max(160),
@@ -32,6 +54,7 @@ export const offerSchema = z.object({
   capturedAt: timestamp,
   updatedAt: timestamp,
   captureId: uuid.nullable(),
+  captureContext: captureContextSchema.optional(),
   source: z.enum(['manual', 'screenshot', 'windows-helper', 'example']),
   origin: z.enum(['test', 'live']),
   gameVersion: z.string().max(64),
@@ -44,6 +67,7 @@ export const offerSchema = z.object({
   selectedCardId: uuid.nullable(),
   notes: z.string().max(4000),
 }).strict().superRefine((offer, ctx) => {
+  validateCaptureContext(offer.captureContext, offer.captureId, ctx, 'captureContext')
   if (new Set(offer.cards.map(c => c.id)).size !== offer.cards.length) {
     ctx.addIssue({ code: 'custom', message: 'Card IDs must be unique.', path: ['cards'] })
   }
@@ -70,7 +94,7 @@ export const captureSchema = z.object({
   capturedAt: timestamp,
   source: z.literal('windows-helper'),
   helperVersion: z.string().min(1).max(40),
-  context: z.object({ captureMode: z.enum(['game', 'fixture']) }).strict().optional(),
+  context: captureContextSchema.optional(),
   image: z.object({
     mimeType: z.literal('image/png'),
     width: z.number().int().positive().max(8192),
@@ -83,7 +107,7 @@ export const captureSchema = z.object({
     lines: z.array(z.object({ text: z.string().max(2000), x: coordinate, y: coordinate, width: coordinate, height: coordinate }).strict()).max(500),
     language: z.string().max(40).nullable(),
   }).strict(),
-}).strict()
+}).strict().superRefine((capture, ctx) => validateCaptureContext(capture.context, capture.captureId, ctx, 'context'))
 
 // Network-only projection of a helper capture. Image bytes are deliberately absent.
 export const captureUploadSchema = z.object({
@@ -93,13 +117,13 @@ export const captureUploadSchema = z.object({
   capturedAt: timestamp,
   source: z.literal('windows-helper'),
   helperVersion: captureSchema.shape.helperVersion,
-  context: z.object({ captureMode: z.enum(['game', 'fixture']) }).strict(),
+  context: captureContextSchema,
   image: z.object({
     width: z.number().int().positive().max(8192),
     height: z.number().int().positive().max(8192),
   }).strict().refine(i => i.width * i.height <= 16_777_216, 'The image is too large.'),
   ocr: captureSchema.shape.ocr,
-}).strict()
+}).strict().superRefine((capture, ctx) => validateCaptureContext(capture.context, capture.captureId, ctx, 'context'))
 
 export const evidenceSchema = z.object({
   id: uuid,

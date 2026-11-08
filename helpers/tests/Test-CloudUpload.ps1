@@ -42,7 +42,7 @@ function Invoke-Upload([switch]$ForceRetry) {
 function Write-TestCapture {
     param([string]$Mode = 'game', [string]$Directory = $capturesDirectory,
         [DateTime]$CapturedAt = [DateTime]::UtcNow, [string]$Id = ([Guid]::NewGuid().ToString()),
-        [switch]$MismatchedId, [switch]$OversizedOcr, [string]$Text = 'Test OCR', [string]$OcrStatus = 'ok')
+        [switch]$MismatchedId, [switch]$OversizedOcr, [string]$Text = 'Test OCR', [string]$OcrStatus = 'ok', [switch]$WithContext)
     [void][IO.Directory]::CreateDirectory($Directory)
     $lines = @([ordered]@{ text = $Text; x = 1.25; y = 1; width = 78.5; height = 5; extra = 'LOCAL ONLY' })
     if ($OversizedOcr) {
@@ -59,6 +59,10 @@ function Write-TestCapture {
             [ordered]@{ status = 'ok'; text = $Text; language = 'en-US'; lines = $lines }
         } else { [ordered]@{ status = $OcrStatus; text = ''; language = $null; lines = @() } }
     }
+    if ($WithContext) {
+        $value.context.session = @{ id = [guid]::NewGuid().ToString(); startedAt = $CapturedAt.AddMinutes(-1).ToString('o'); sequence = 2; extra = 'LOCAL ONLY' }
+        $value.context.possibleDuplicate = @{ ofCaptureId = [guid]::NewGuid().ToString(); reason = 'same-ocr-within-15s'; extra = 'LOCAL ONLY' }
+    }
     $path = Join-Path $Directory "fate-$Id.json"
     [IO.File]::WriteAllText($path, (ConvertTo-Json -InputObject $value -Depth 6), [Text.UTF8Encoding]::new($false))
     # Exercise the capturedAt filter even for old backups copied after enabling upload.
@@ -68,6 +72,9 @@ function Write-TestCapture {
 
 function Get-TestState([string]$Id) {
     Read-FateUploadState (Join-Path (Join-Path $scope 'states') "$Id.json")
+}
+function Get-Feedback([string]$Id) {
+    Get-FateCaptureUploadStatus -StateDirectory $stateDirectory -CaptureId $Id -AllowLocalTestEndpoint
 }
 
 try {
@@ -83,6 +90,7 @@ try {
     $old = Write-TestCapture -CapturedAt ([DateTime]::UtcNow.AddDays(-1))
     Invoke-Upload -ForceRetry
     Assert-True ($requests.Count -eq 0) 'Sent a capture before opt-in.'
+    Assert-True ((Get-Feedback $old) -eq 'local') 'Disabled upload did not report local-only capture.'
 
     Set-FateUploadConfiguration -StateDirectory $stateDirectory -Origin $origin -Key $key -AllowLocalTestEndpoint
     $initial = Get-FateUploadConfiguration $stateDirectory -AllowLocalTestEndpoint
@@ -102,12 +110,13 @@ try {
     $stream = [IO.File]::Create($largePath)
     try { $stream.SetLength(12MB + 1) } finally { $stream.Dispose() }
 
-    $id = Write-TestCapture
+    $id = Write-TestCapture -WithContext
     $response.Offline = $true
     Invoke-Upload
     Assert-True ($requests.Count -eq 1) 'Expected one eligible upload attempt.'
     $attempt = Get-TestState $id
     Assert-True ($attempt.status -eq 'retry' -and $attempt.attempt -eq 1 -and $attempt.httpStatus -eq 0) 'Network failure did not schedule retry.'
+    Assert-True ((Get-Feedback $id) -eq 'offline') 'Offline capture was not reported as queued/offline.'
     $queuedPath = Join-Path (Join-Path $scope 'queue') "$id.json"
     $original = [IO.File]::ReadAllText($queuedPath)
     $payload = ConvertFrom-Json -InputObject $original
@@ -115,6 +124,7 @@ try {
         $payload.image.width -eq 150 -and $payload.image.height -eq 100 -and $payload.ocr.lines.Count -eq 1 -and
         $payload.ocr.lines[0].x -eq 1.25 -and $payload.ocr.language -eq 'en-US') 'Incorrect projected transport data.'
     Assert-True ($original -notmatch 'dataBase64|DO-NOT-SEND|mimeType|LOCAL ONLY') 'The payload contains local image data or extra fields.'
+    Assert-True ($payload.context.session.sequence -eq 2 -and $payload.context.possibleDuplicate.reason -ceq 'same-ocr-within-15s') 'Upload lost session/repeat metadata.'
     Assert-True ((Get-TestState $fixture).status -eq 'ignored' -and (Get-TestState $old).status -eq 'ignored' -and
         $null -eq (Get-TestState $pending) -and (Get-TestState $wrongId).status -eq 'rejected' -and
         (Get-TestState $largeFile).status -eq 'rejected' -and (Get-TestState $largePayload).status -eq 'rejected') 'Invalid, old, staged, or fixture filtering failed.'
@@ -135,6 +145,7 @@ try {
     $response.Receipt = [PSCustomObject]@{ id = $id; status = 'accepted'; reviewed = $true }
     Invoke-Upload -ForceRetry
     Assert-True ((Get-TestState $id).status -eq 'retry' -and [IO.File]::Exists($queuedPath)) 'Accepted a receipt with invalid review state.'
+    Assert-True ((Get-Feedback $id) -eq 'retry') 'Invalid success receipt incorrectly displayed Uploaded.'
     $response.Receipt = [PSCustomObject]@{ id = [Guid]::NewGuid().ToString(); status = 'accepted'; reviewed = $false }
     Invoke-Upload -ForceRetry
     Assert-True ((Get-TestState $id).status -eq 'retry') 'Accepted a receipt with the wrong capture ID.'
@@ -142,6 +153,10 @@ try {
     $response.Status = 200
     Invoke-Upload -ForceRetry
     Assert-True ((Get-TestState $id).status -eq 'duplicate' -and ![IO.File]::Exists($queuedPath)) 'Duplicate receipt did not finalize the upload.'
+    Assert-True ((Get-Feedback $id) -eq 'uploaded') 'Validated duplicate receipt did not display Uploaded.'
+    $feedbackPath = Join-Path $testDirectory 'feedback.txt'
+    Write-FateCaptureUploadFeedback -StateDirectory $stateDirectory -CaptureId $id -Path $feedbackPath -AllowLocalTestEndpoint
+    Assert-True ([IO.File]::ReadAllText($feedbackPath) -ceq "$id`nuploaded") 'Feedback is not bound to the confirmed capture ID.'
     # Simulate a process dying after saving the receipt but before removing the queued payload.
     [IO.File]::WriteAllText($queuedPath, $original)
     Invoke-Upload -ForceRetry
@@ -153,6 +168,8 @@ try {
     $response.Status = 401
     Invoke-Upload -ForceRetry
     Assert-True ($requests.Count -eq 6 -and $null -eq (Get-TestState $auth)) 'Auth error marked the capture as processed.'
+    Assert-True ((Get-Feedback $auth) -eq 'authorization') 'Auth pause was not surfaced to the helper.'
+    Assert-True ((Get-Feedback $id) -eq 'uploaded') 'An unrelated auth failure overwrote a confirmed capture status.'
     Assert-True ((ConvertFrom-Json -InputObject $requests[5]).ocr.status -eq 'error') 'The exporter OCR error status was not preserved.'
     Invoke-Upload -ForceRetry
     Assert-True ($requests.Count -eq 6) 'Repeated an unauthorized upload before reconfiguration.'
@@ -170,6 +187,7 @@ try {
         Invoke-Upload
         $rejection = Get-TestState $invalid
         Assert-True ($rejection.status -eq 'rejected' -and $rejection.httpStatus -eq $code) "HTTP $code was not permanently rejected."
+        Assert-True ((Get-Feedback $invalid) -eq 'rejected') 'Permanent rejection was not surfaced.'
     }
     Invoke-Upload -ForceRetry
     Assert-True ($requests.Count -eq 11) 'Resent a permanent rejection.'
