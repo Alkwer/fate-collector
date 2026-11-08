@@ -203,6 +203,10 @@ the request and server dates, deletes capture/observation rows attached to that
 consent in the same statement through a trigger, and rejects late writes.
 Another consent's data and local files are preserved. Only the minimal consent
 audit remains; Cloudflare recovery backups may retain deleted data temporarily.
+Unknown consent IDs have an atomic limit of 100 new withdrawal records per UTC
+day, returning 429 with Retry-After until the next day. Deleting known consents
+and repeating existing withdrawals do not consume this allowance. Both clients
+persist the retry time while keeping sharing disabled locally.
 
 The website's **Saved offers → Shared research collection** contains the consent
 text, acceptance time, one-click **Withdraw consent**, history, accepted text and

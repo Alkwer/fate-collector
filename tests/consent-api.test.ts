@@ -85,6 +85,34 @@ test('withdrawal before a lost grant acknowledgement prevents delayed registrati
   const fresh = grant(); expect((await register(fresh, env)).status).toBe(201)
   expect((await data(fresh, env)).status).toBe(201)
 })
+
+test('unknown withdrawals have an atomic daily quota without blocking known consent deletion or retries', async () => {
+  const { db, env } = setup(); const known = grant(); await register(known, env)
+  expect((await data(known, env)).status).toBe(201)
+  const unknown = Array.from({ length: 105 }, () => grant())
+  const responses = await Promise.all(unknown.map(g => withdraw(g, env)))
+  expect(responses.filter(response => response.status === 200)).toHaveLength(100)
+  expect(responses.filter(response => response.status === 429)).toHaveLength(5)
+  const limited = responses.find(response => response.status === 429)!
+  expect(Number(limited.headers.get('Retry-After'))).toBeGreaterThan(0)
+  expect(Number(limited.headers.get('Retry-After'))).toBeLessThanOrEqual(86400)
+  const accepted = unknown[responses.findIndex(response => response.status === 200)]
+  expect((await withdraw(accepted, env)).status).toBe(200)
+  expect((await withdraw(accepted, env, '0'.repeat(64))).status).toBe(401)
+  expect((await register(accepted, env)).status).toBe(403)
+  expect((await withdraw(known, { ...env, COLLECTOR_CAPTURE_KEY: undefined })).status).toBe(200)
+  expect(db.prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(0)
+  expect(db.prepare('SELECT count(*) AS n FROM consent_withdrawals').get()?.n).toBe(101)
+})
+
+test('previous-day tombstones and known withdrawals do not consume the unknown withdrawal quota', async () => {
+  const { db, env } = setup(); const known = grant(); await register(known, env); await withdraw(known, env)
+  const old = new Date(Date.now() - 86400000).toISOString()
+  for (let i = 0; i < 100; i++) db.prepare('INSERT INTO consent_withdrawals VALUES (?, ?, ?, ?)').run(crypto.randomUUID(), 'hash', old, old)
+  const responses = await Promise.all(Array.from({ length: 100 }, () => withdraw(grant(), env)))
+  expect(responses.every(response => response.status === 200)).toBe(true)
+  expect((await withdraw(grant(), env)).status).toBe(429)
+})
 test.each(['captures', 'observations'] as const)('withdrawal racing a %s insert cannot leave a late row', async scope => {
   const { db, env, hook } = setup(); const g = grant(scope); await register(g, env)
   hook.beforeWrite = sql => {

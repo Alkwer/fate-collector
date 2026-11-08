@@ -360,7 +360,17 @@ function Invoke-FateCaptureUploads {
     try {
         Invoke-FatePendingWithdrawals $StateDirectory $ConsentTransport -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
         $configuration = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
-        if (!$configuration -or !(Test-FateUploadConsentActive $configuration $StateDirectory)) { return }
+        if (!$configuration) { return }
+        if (!(Test-FateUploadConsentActive $configuration $StateDirectory)) {
+            $receipt = Read-FateUploadState (Get-FateConsentPath $StateDirectory $configuration.Scope 'withdrawn.json')
+            if ((Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) -and
+                (Test-FateWithdrawalReceipt $receipt $configuration.Scope)) {
+                # The uploader lock also excludes settings changes. Remove only the
+                # current, confirmed-withdrawn configuration so the tray timer can stop.
+                [IO.File]::Delete((Join-Path $StateDirectory 'upload.clixml'))
+            }
+            return
+        }
         $scope = Join-Path $StateDirectory $configuration.Scope
         $queue = Join-Path $scope 'queue'
         $states = Join-Path $scope 'states'
