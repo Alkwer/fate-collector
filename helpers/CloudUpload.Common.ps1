@@ -370,6 +370,10 @@ function Invoke-FateCaptureUploads {
         if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) {
             $withdrawn = Read-FateUploadState (Get-FateConsentPath $StateDirectory $configuration.Scope 'withdrawn.json')
             $sharing = if (Test-FateWithdrawalReceipt $withdrawn $configuration.Scope) { 'off' } else { 'withdrawal-pending' }
+            if ($sharing -eq 'off') {
+                # Settings changes share this lock; keep pending withdrawals durable.
+                [IO.File]::Delete((Join-Path $StateDirectory 'upload.clixml'))
+            }
             return
         }
         if (!(Test-FateUploadConsentActive $configuration $StateDirectory)) { return }

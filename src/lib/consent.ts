@@ -6,7 +6,7 @@ const prefix = 'fate-collector.consent.observations.'
 const activeKey = `${prefix}active`
 const changedEvent = 'fate-consent-change'
 const date = z.string().datetime({ offset: true }).nullable()
-const recordSchema = consentGrantSchema.extend({ recordedAt: date, withdrawnAt: date, withdrawalConfirmedAt: date, blocked: z.boolean() })
+const recordSchema = consentGrantSchema.extend({ recordedAt: date, withdrawnAt: date, withdrawalConfirmedAt: date, blocked: z.boolean(), withdrawalRetryAt: z.string().datetime({ offset: true }).optional() })
 export type LocalConsent = z.infer<typeof recordSchema>
 let sessionBlocked = false
 export function consentRecords(): LocalConsent[] {
@@ -36,7 +36,7 @@ function save(record: LocalConsent) {
   const previous = localStorage.getItem(prefix + record.id)
   const saved = previous ? recordSchema.parse(JSON.parse(previous)) : null
   // A delayed registration response cannot undo a withdrawal from another tab.
-  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt }
+  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt, withdrawalRetryAt: record.withdrawalRetryAt || saved.withdrawalRetryAt }
   localStorage.setItem(prefix + record.id, JSON.stringify(recordSchema.parse(record)))
   window.dispatchEvent(new Event(changedEvent))
 }
@@ -87,9 +87,15 @@ export async function withdrawConsent(id: string): Promise<void> {
 export async function retryWithdrawals(): Promise<void> {
   let failure: unknown
   for (const record of consentRecords().filter(item => item.withdrawnAt && !item.withdrawalConfirmedAt)) {
+    if (record.withdrawalRetryAt && Date.parse(record.withdrawalRetryAt) > Date.now()) continue
     try {
       const response = await fetch(`/api/consents/${record.id}/withdraw`, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Consent-Token': record.token }, body: JSON.stringify({ withdrawnAt: record.withdrawnAt }), signal: AbortSignal.timeout(10000) })
       logDiagnostic('consent-withdraw', response.ok ? 'ok' : 'error', response.status)
+      if (response.status === 429) {
+        const seconds = Number(response.headers.get('Retry-After'))
+        const delay = Number.isFinite(seconds) && seconds >= 1 ? Math.min(seconds, 86400) : 60
+        save({ ...record, withdrawalRetryAt: new Date(Date.now() + delay * 1000).toISOString() })
+      }
       if (!response.ok) throw new Error('Sharing is off locally. Server withdrawal is pending; it will retry when connected.')
       const receipt = await response.json() as { id?: string; status?: string; withdrawnAt?: string }
       if (receipt.id !== record.id || receipt.status !== 'withdrawn' || !z.string().datetime({ offset: true }).safeParse(receipt.withdrawnAt).success) throw new Error('Sharing is off locally. Server withdrawal has not been confirmed.')

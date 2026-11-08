@@ -279,6 +279,7 @@ try {
     Disable-FateUpload $stateDirectory -AllowLocalTestEndpoint
     [void](Write-TestCapture)
     Invoke-Upload -ForceRetry
+    Assert-True (![IO.File]::Exists($configPath)) 'Confirmed withdrawal left a configuration that keeps the tray uploader running.'
     Set-FateUploadConfiguration -StateDirectory $stateDirectory -Origin 'http://127.0.0.1:9798' -Key $key -ConsentAccepted -AllowLocalTestEndpoint
     $enabledAgain = Get-FateUploadConfiguration $stateDirectory -AllowLocalTestEndpoint
     Invoke-Upload -ForceRetry
@@ -326,6 +327,29 @@ try {
         Assert-True ([IO.File]::Exists((Join-Path $capturesDirectory "fate-$raceId.json"))) 'A race with withdrawal removed a local capture.'
     }
     Write-Output 'PASS: withdrawal during an in-flight request blocks the rest of the queue.'
+
+    $limitedState = Join-Path $testDirectory 'withdrawal-limits'
+    Set-FateUploadConfiguration -StateDirectory $limitedState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+    $limitedConfig = Get-FateUploadConfiguration $limitedState -AllowLocalTestEndpoint
+    Disable-FateUpload $limitedState -AllowLocalTestEndpoint
+    $withdrawalCalls = [Collections.Generic.List[object]]::new()
+    $limitedTransport = {
+        param($Consent, [Security.SecureString]$Key, $Withdrawal)
+        $withdrawalCalls.Add($Consent.Id)
+        Assert-True (!$Key -and $Withdrawal) 'Withdrawal sent a collection key or lost its marker.'
+        return @{ Status = 429; RetrySeconds = 3600; Receipt = $null }
+    }
+    Invoke-FateCaptureUploads -CapturesDirectory $capturesDirectory -StateDirectory $limitedState -ConsentTransport $limitedTransport -AllowLocalTestEndpoint
+    $retryPath = Get-FateConsentPath $limitedState $limitedConfig.Scope 'withdrawal-retry.json'
+    $retry = Read-FateUploadState $retryPath
+    Assert-True (((ConvertTo-FateUploadTime $retry.retryAt) - [DateTimeOffset]::UtcNow).TotalSeconds -gt 3500) 'Withdrawal ignored Retry-After.'
+    Invoke-FateCaptureUploads -CapturesDirectory $capturesDirectory -StateDirectory $limitedState -ConsentTransport $limitedTransport -AllowLocalTestEndpoint -ForceRetry
+    Assert-True ($withdrawalCalls.Count -eq 1 -and [IO.File]::Exists((Join-Path $limitedState 'upload.clixml'))) 'A retry bypassed the limit or discarded pending withdrawal settings.'
+    Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o') }
+    Invoke-FateCaptureUploads -CapturesDirectory $capturesDirectory -StateDirectory $limitedState -ConsentTransport $consentTransport -AllowLocalTestEndpoint
+    Assert-True (![IO.File]::Exists((Join-Path $limitedState 'upload.clixml')) -and
+        (Test-FateWithdrawalReceipt (Read-FateUploadState (Get-FateConsentPath $limitedState $limitedConfig.Scope 'withdrawn.json')) $limitedConfig.Scope)) 'Withdrawal did not resume and clear only the confirmed configuration.'
+    Write-Output 'PASS: durable withdrawal Retry-After and cleanup of confirmed inactive settings.'
 } finally {
     $key.Dispose()
     $resolved = [IO.Path]::GetFullPath($testDirectory)

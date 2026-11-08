@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { evidenceSchema, offerSchema, type Evidence, type Offer } from '../../shared/schema'
+import { sharingConsent } from './consent'
 
 const recordSchema = z.object({ offer: offerSchema, uploadedRevision: z.number().int().nullable(), uploadedAt: z.string().nullable(), uploadedConsentId: z.string().uuid().optional() }).strict()
 export type SavedOffer = z.infer<typeof recordSchema>
@@ -124,7 +125,13 @@ export async function markUploaded(id: string, revision: number, consentId?: str
   const done = complete(transaction)
   const store = transaction.objectStore('offers')
   const record = await value(store.get(id)) as SavedOffer | undefined
-  if (record) store.put({ ...record, uploadedRevision: Math.max(record.uploadedRevision ?? 0, revision), uploadedAt: new Date().toISOString(), ...(consentId ? { uploadedConsentId: consentId } : {}) })
+  // A response from an earlier consent may arrive after a new consent was selected.
+  if (record && (consentId ? sharingConsent()?.id === consentId : !record.uploadedConsentId)) {
+    const sameConsent = record.uploadedConsentId === consentId
+    if (!sameConsent || revision >= (record.uploadedRevision ?? 0)) {
+      store.put({ ...record, uploadedRevision: revision, uploadedAt: new Date().toISOString(), ...(consentId ? { uploadedConsentId: consentId } : {}) })
+    }
+  }
   await done
 }
 export async function deleteOffer(id: string): Promise<void> {

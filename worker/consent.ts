@@ -10,6 +10,7 @@ export interface ConsentRecord {
 const withdrawalSchema = z.object({ withdrawnAt: z.string().datetime({ offset: true }) }).strict()
 const tokenPattern = /^[a-f0-9]{64}$/
 const idPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
+const DAILY_UNKNOWN_WITHDRAWAL_LIMIT = 100
 const unavailable = () => json({ error: 'Consent service is unavailable. No new data can be shared.' }, 503)
 const revoked = () => json({ error: 'Consent is missing, withdrawn or outdated. Review the sharing consent before sending data.', code: 'consent-required' }, 403)
 
@@ -44,15 +45,25 @@ export async function handleConsent(request: Request, env: ConsentEnv): Promise<
       if (!idPattern.test(id) || !tokenPattern.test(token) || !parsed.success) return json({ error: 'Invalid withdrawal request.' }, 400)
       const tokenHash = await digest(token)
       const now = new Date().toISOString()
+      const dayStart = now.slice(0, 10) + 'T00:00:00.000Z'
       // A tombstone also covers a grant whose acknowledgement was lost or which
       // arrives after withdrawal. A different token cannot revoke an existing ID.
       await env.DB.prepare(`INSERT INTO consent_withdrawals (id, token_hash, requested_at, withdrawn_at)
         SELECT ?, ?, ?, ?
         WHERE NOT EXISTS (SELECT 1 FROM data_consents WHERE id = ? AND token_hash <> ?)
           AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE id = ? AND token_hash <> ?)
-        ON CONFLICT(id) DO NOTHING`).bind(id, tokenHash, parsed.data.withdrawnAt, now, id, tokenHash, id, tokenHash).run()
+          AND (EXISTS (SELECT 1 FROM data_consents WHERE id = ?) OR EXISTS (SELECT 1 FROM consent_withdrawals WHERE id = ?)
+            OR (SELECT count(*) FROM consent_withdrawals WHERE withdrawn_at >= ?
+              AND NOT EXISTS (SELECT 1 FROM data_consents WHERE id = consent_withdrawals.id)) < ?)
+        ON CONFLICT(id) DO NOTHING`).bind(id, tokenHash, parsed.data.withdrawnAt, now, id, tokenHash, id, tokenHash, id, id, dayStart, DAILY_UNKNOWN_WITHDRAWAL_LIMIT).run()
       const saved = await env.DB.prepare('SELECT withdrawn_at FROM consent_withdrawals WHERE id = ? AND token_hash = ?').bind(id, tokenHash).first<{ withdrawn_at: string }>()
-      if (!saved) return json({ error: 'The consent credential does not match.' }, 401)
+      if (!saved) {
+        const existing = await env.DB.prepare('SELECT id FROM data_consents WHERE id = ? UNION ALL SELECT id FROM consent_withdrawals WHERE id = ? LIMIT 1').bind(id, id).first()
+        if (existing) return json({ error: 'The consent credential does not match.' }, 401)
+        const response = json({ error: 'Too many unknown consent withdrawals. Sharing remains off locally; deletion will retry later.' }, 429)
+        response.headers.set('Retry-After', String(Math.max(1, Math.ceil((Date.parse(dayStart) + 86400000 - Date.parse(now)) / 1000))))
+        return response
+      }
       return json({ id, status: 'withdrawn', withdrawnAt: saved.withdrawn_at })
     }
     if (url.pathname !== '/api/consents') return json({ error: 'Not found.' }, 404)

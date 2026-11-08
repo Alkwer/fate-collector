@@ -132,6 +132,9 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
         $receiptPath = Get-FateConsentPath $StateDirectory $id 'withdrawn.json'
         try {
             if (Test-FateWithdrawalReceipt (Read-FateUploadState $receiptPath) $id) { continue }
+            $retryPath = Get-FateConsentPath $StateDirectory $id 'withdrawal-retry.json'
+            $retry = Read-FateUploadState $retryPath
+            if ($retry -and (ConvertTo-FateUploadTime $retry.retryAt) -gt [DateTimeOffset]::UtcNow) { continue }
             $consent = Get-FateCaptureConsent $StateDirectory $id -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
             if (!$consent) { continue }
             $withdrawal = Read-FateUploadState $path
@@ -139,6 +142,9 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
             $result = & $Transport $consent $null $withdrawal
             if ($result -and $result.Status -eq 200 -and (Test-FateWithdrawalReceipt $result.Receipt $id)) {
                 Write-FateUploadState $receiptPath @{ id = $id; status = 'withdrawn'; withdrawnAt = $result.Receipt.withdrawnAt }
+            } elseif ($result -and $result.Status -eq 429) {
+                $delay = if ($result.RetrySeconds) { [Math]::Max(30, [Math]::Min(86400, [double]$result.RetrySeconds)) } else { 60 }
+                Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds($delay).ToString('o') }
             }
         } catch {
             # A failed attempt stays pending. Other collections and local capture remain available.
