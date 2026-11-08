@@ -1,4 +1,5 @@
 import { CONSENT_VERSION, consentText } from '../shared/consent'
+import { RETENTION_MS, diagnosticSubmissionSchema, diagnosticText } from '../shared/diagnostics'
 import { expect, it, vi } from 'vitest'
 import { submissionProblem } from '../shared/offers'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
@@ -12,7 +13,7 @@ const captureKey = 'capture-test-key'
 const ingestKey = 'ingest-test-key'
 const status = {
   environment: 'staging', revision: expectedRevision, releaseId: expectedReleaseId,
-  ingestionEnabled: true, captureIngestionEnabled: true, consentRequired: true, consentPolicyVersion: CONSENT_VERSION,
+  ingestionEnabled: true, captureIngestionEnabled: true, consentRequired: true, consentPolicyVersion: CONSENT_VERSION, diagnosticsEnabled: true,
 }
 const options = { url, expectedRevision, expectedReleaseId, captureKey, ingestKey }
 
@@ -20,6 +21,7 @@ function mockStaging(override?: (path: string, method: string, init?: RequestIni
   const uploads = new Set<string>()
   const grants = new Map<string, { id: string; token: string; scope: string }>()
   const withdrawn = new Set<string>()
+  const diagnostics = new Map<string, { token: string; receipt: unknown }>()
   return vi.fn<typeof fetch>(async (input, init) => {
     const path = new URL(String(input)).pathname
     const method = init?.method ?? 'GET'
@@ -39,9 +41,24 @@ function mockStaging(override?: (path: string, method: string, init?: RequestIni
       const { token: _secret, ...receipt } = grant
       return Response.json({ ...receipt, recordedAt: new Date().toISOString(), withdrawnAt: null }, { status: 201 })
     }
+    if (method === 'POST' && path === '/api/diagnostics') {
+      if (new Headers(init?.headers).get('Authorization') !== 'Bearer ' + ingestKey) return new Response(null, { status: 401 })
+      const parsed = diagnosticSubmissionSchema.safeParse(JSON.parse(String(init?.body)))
+      if (!parsed.success) return new Response(null, { status: 400 })
+      const { report, consent, token } = parsed.data
+      expect(consent.text).toBe(diagnosticText(url))
+      if (withdrawn.has(report.id)) return new Response(null, { status: 410 })
+      const existing = diagnostics.get(report.id)
+      if (existing) return Response.json(existing.receipt)
+      const receivedAt = new Date().toISOString()
+      const receipt = { id: report.id, status: 'received', receivedAt, expiresAt: new Date(Date.parse(receivedAt) + RETENTION_MS).toISOString(), consent: { ...consent, recordedAt: receivedAt } }
+      diagnostics.set(report.id, { token, receipt })
+      return Response.json(receipt, { status: 201 })
+    }
     if (method === 'POST' && path.endsWith('/withdraw')) {
       const id = path.split('/')[3]
-      expect(new Headers(init?.headers).get('X-Consent-Token')).toBe(grants.get(id)?.token)
+      if (path.startsWith('/api/diagnostics/')) expect(new Headers(init?.headers).get('X-Diagnostic-Token')).toBe(diagnostics.get(id)?.token)
+      else expect(new Headers(init?.headers).get('X-Consent-Token')).toBe(grants.get(id)?.token)
       withdrawn.add(id)
       return Response.json({ id, status: 'withdrawn', withdrawnAt: new Date().toISOString() })
     }
@@ -133,7 +150,7 @@ it('requires consent, uploads both channels, and rejects reuse after withdrawing
   expect(submissionProblem(observation)).toBeNull()
   expect(captures[1][1]?.body).toBe(captures[0][1]?.body)
   expect(observations[1][1]?.body).toBe(observations[0][1]?.body)
-  expect(posts.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(2)
+  expect(posts.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(3)
   for (const [, init] of fetch.mock.calls) expect(init).toMatchObject({ redirect: 'error', signal: expect.any(AbortSignal) })
 })
 

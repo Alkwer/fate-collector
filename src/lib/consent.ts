@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CONSENT_VERSION, consentGrantSchema, consentText, type ConsentReceipt } from '../../shared/consent'
+import { logDiagnostic } from './diagnostic-log'
 
 const prefix = 'fate-collector.consent.observations.'
 const activeKey = `${prefix}active`
@@ -59,6 +60,7 @@ export async function registerConsent(accessKey: string): Promise<void> {
   if (!isCurrentConsent(record) || !accessKey.trim()) throw new Error('A current local consent and collection key are required.')
   const grant = consentGrantSchema.parse({ id: record.id, scope: record.scope, policyVersion: record.policyVersion, acceptedAt: record.acceptedAt, text: record.text, token: record.token })
   const response = await fetch('/api/consents', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessKey}` }, body: JSON.stringify(grant), signal: AbortSignal.timeout(10000) })
+  logDiagnostic('consent-register', response.ok ? 'ok' : 'error', response.status)
   if (!response.ok) {
     if ([403, 409].includes(response.status)) save({ ...record, blocked: true })
     throw new Error(`Consent could not be confirmed (${response.status}). Sharing remains off.`)
@@ -87,6 +89,7 @@ export async function retryWithdrawals(): Promise<void> {
   for (const record of consentRecords().filter(item => item.withdrawnAt && !item.withdrawalConfirmedAt)) {
     try {
       const response = await fetch(`/api/consents/${record.id}/withdraw`, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Consent-Token': record.token }, body: JSON.stringify({ withdrawnAt: record.withdrawnAt }), signal: AbortSignal.timeout(10000) })
+      logDiagnostic('consent-withdraw', response.ok ? 'ok' : 'error', response.status)
       if (!response.ok) throw new Error('Sharing is off locally. Server withdrawal is pending; it will retry when connected.')
       const receipt = await response.json() as { id?: string; status?: string; withdrawnAt?: string }
       if (receipt.id !== record.id || receipt.status !== 'withdrawn' || !z.string().datetime({ offset: true }).safeParse(receipt.withdrawnAt).success) throw new Error('Sharing is off locally. Server withdrawal has not been confirmed.')

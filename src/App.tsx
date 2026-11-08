@@ -11,11 +11,15 @@ import * as storage from './lib/storage'
 import { collectionInfo, collectionStatus, submitOffer } from './lib/api'
 import { useCaptureSync } from './lib/useCaptureSync'
 import { CaptureConnection } from './components/CaptureConnection'
+import { Diagnostics, useDiagnosticWithdrawals } from './components/Diagnostics'
+import { installDiagnosticLog, logDiagnostic } from './lib/diagnostic-log'
 
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Your draft is still open.'
 export default function App() {
   const consentState = useSharingConsent()
-  const [tab, setTab] = useState<'collector' | 'saved'>('collector')
+  useDiagnosticWithdrawals()
+  useEffect(installDiagnosticLog, [])
+  const [tab, setTab] = useState<'collector' | 'saved' | 'diagnostics'>('collector')
   const [draft, setDraft] = useState<Offer>(() => newOffer())
   const [evidence, setEvidence] = useState<Evidence | null>(null)
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
@@ -107,7 +111,7 @@ export default function App() {
   async function loadFile(file: File) {
     if (busy || !canReplace()) return
     setBusy(true)
-    try { await acceptImport(await importFile(file)) } catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+    try { await acceptImport(await importFile(file)); logDiagnostic('import', 'ok') } catch (error) { logDiagnostic('import', 'error'); announce(errorText(error), true) } finally { setBusy(false) }
   }
   useEffect(() => {
     const paste = (event: ClipboardEvent) => {
@@ -131,8 +135,8 @@ export default function App() {
     const parsed = offerSchema.safeParse(candidate)
     if (!parsed.success) { announce(formatValidationError(parsed.error), true); return }
     setBusy(true)
-    try { const saved = await storage.saveOffer(parsed.data, evidence); setDraft(saved.offer); setDirty(false); await refresh(); announce('Offer saved on this device. This save did not upload any changes.') }
-    catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
+    try { const saved = await storage.saveOffer(parsed.data, evidence); setDraft(saved.offer); setDirty(false); await refresh(); logDiagnostic('local-save', 'ok'); announce('Offer saved on this device. This save did not upload any changes.') }
+    catch (error) { logDiagnostic('local-save', 'error'); announce(errorText(error), true) } finally { setBusy(false) }
   }
   async function open(id: string) {
     if (!canReplace()) return
@@ -165,7 +169,7 @@ export default function App() {
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
     {environment === 'staging' && <div className="environment-banner" role="status"><strong>STAGING</strong> Test collection. Uploads go to the test database.</div>}
-    <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button></nav></div></header>
+    <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button><button className={tab === 'diagnostics' ? 'active' : ''} aria-current={tab === 'diagnostics' ? 'page' : undefined} onClick={() => setTab('diagnostics')}>Diagnostics</button></nav></div></header>
     <main id="main" className="workspace" tabIndex={-1}>
       {notice && <div className={`notice ${notice.error ? 'error' : ''}`} role={notice.error ? 'alert' : 'status'}><span>{notice.text}</span><button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}
       {tab === 'collector' ? <>
@@ -187,7 +191,7 @@ export default function App() {
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
         </div></details>
         <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : dirty ? 'Changes pending…' : 'Saved locally'}</span> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
-      </> : <SavedOffers consentState={consentState} records={records} busy={busy} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
+      </> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} busy={busy} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
         try { downloadArchive(records.map(r => ({ offer: r.offer, evidence: null })), 'fate-collector-data.json') } catch (error) { announce(errorText(error), true) }
       }} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       <input ref={fileInput} className="file-input" type="file" accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = '' }} />

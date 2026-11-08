@@ -1,6 +1,8 @@
 import { json, digest, authorized, boundedText } from './http'
 import { handleConsent, uploadConsent, activeConsent, type ConsentRecord } from './consent'
 import { CONSENT_VERSION } from '../shared/consent'
+import { APP_VERSION } from '../shared/diagnostics'
+import { expireDiagnostics, handleDiagnostics } from './diagnostics'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
 import { newOffer, submissionProblem } from '../shared/offers'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
@@ -37,6 +39,10 @@ async function receiveCapture(body: unknown, database: D1Database, consent: Cons
 }
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    if (!env.DB) throw new Error('Diagnostic cleanup database is unavailable.')
+    await expireDiagnostics(env.DB)
+  },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
     if (!url.pathname.startsWith('/api/')) {
@@ -47,9 +53,10 @@ export default {
       return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
     }
     if (url.pathname === '/api/status' && request.method === 'GET') {
-      return json({ schemaVersion: 1, version: '0.2.0', consentRequired: true, consentPolicyVersion: CONSENT_VERSION, environment: env.APP_ENV || 'local', revision: env.RELEASE_REVISION || 'local', releaseId: env.RELEASE_ID || 'local', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
+      return json({ schemaVersion: 1, version: APP_VERSION, diagnosticsEnabled: Boolean(env.DB && env.DIAGNOSTIC_RATE_LIMITER && (env.COLLECTOR_INGEST_KEY || env.COLLECTOR_CAPTURE_KEY)), consentRequired: true, consentPolicyVersion: CONSENT_VERSION, environment: env.APP_ENV || 'local', revision: env.RELEASE_REVISION || 'local', releaseId: env.RELEASE_ID || 'local', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
     }
     if (url.pathname === '/api/consents' || /^\/api\/consents\/[^/]+\/withdraw$/.test(url.pathname)) return handleConsent(request, env)
+    if (url.pathname === '/api/diagnostics' || /^\/api\/diagnostics\/[^/]+\/withdraw$/.test(url.pathname)) return handleDiagnostics(request, env)
     const isCapture = url.pathname === '/api/captures'
     if (!isCapture && url.pathname !== '/api/observations') return json({ error: 'Not found.' }, 404)
     if (request.method !== 'POST') return json({ error: 'Use POST to submit data.' }, 405)

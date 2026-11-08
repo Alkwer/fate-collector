@@ -11,6 +11,7 @@ capturing := false
 cancelled := false
 uploaderPid := 0
 settingsPid := 0
+diagnosticsPid := 0
 captureSession := 0
 feedbackCaptureId := ""
 feedbackRepeat := false
@@ -21,6 +22,8 @@ feedbackFile := A_ScriptDir "\captures\.feedback\" NewCaptureId() ".txt"
 DirCreate A_ScriptDir "\captures"
 A_TrayMenu.Add "Open capture folder", (*) => Run('explorer.exe "' A_ScriptDir '\captures"')
 A_TrayMenu.Add "Cloud upload settings", ConfigureCloudUpload
+A_TrayMenu.Add "Report a problem", ReportProblem
+RecordDiagnosticEvent("app-start", "ok")
 SetTimer () => RunCloudUploader(), 30000
 SetTimer RunCloudUploader, -200
 
@@ -160,6 +163,7 @@ CapturePanel() {
                 throw Error("Capture exceeds the supported size limit.")
             readyFile := captureDir "\fate-" captureId ".json"
             FileMove outputFile, readyFile
+            RecordDiagnosticEvent("capture", "ok")
             captureSession.sequence += 1
             captureSession.lastFile := readyFile
             feedbackCaptureId := captureId
@@ -174,13 +178,17 @@ CapturePanel() {
                 Notice("Clipboard unavailable. Import the file saved in helpers\captures" suffix ".")
             }
         } else if code = 2 {
+            RecordDiagnosticEvent("capture", "blocked")
             Notice("The selection is too large. Use F6 and F7 to select a smaller panel.")
         } else if code = 3 {
+            RecordDiagnosticEvent("capture", "blocked")
             Notice("Keep the game in front and the panel visible, then press F9 again.")
         } else {
+            RecordDiagnosticEvent("capture", "error")
             Notice("Capture failed. Check write permissions and the Windows PowerShell execution policy.")
         }
     } catch as err {
+        RecordDiagnosticEvent("capture", "error")
         Notice(err.Message)
     } finally {
         capturing := false
@@ -190,6 +198,28 @@ CapturePanel() {
 WindowsPowerShellPath() {
     launcherDir := A_Is64bitOS && A_PtrSize = 4 ? "Sysnative" : "System32"
     return A_WinDir "\" launcherDir "\WindowsPowerShell\v1.0\powershell.exe"
+}
+
+RecordDiagnosticEvent(code, outcome) {
+    ; Only fixed codes and the UTC timestamp are stored. Never save exception text or capture data.
+    if !(code = "app-start" && outcome = "ok" || code = "capture" && (outcome = "ok" || outcome = "blocked" || outcome = "error"))
+        return
+    localAppData := EnvGet("LOCALAPPDATA")
+    if !localAppData
+        return
+    directory := localAppData "\FateCollector\diagnostic-events"
+    path := directory "\" code "." outcome ".json"
+    temporary := path ".part"
+    try {
+        DirCreate directory
+        now := FormatTime(A_NowUTC, "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        eventFile := FileOpen(temporary, "w", "UTF-8-RAW")
+        try eventFile.Write('{"at":"' now '","code":"' code '","outcome":"' outcome '","httpStatus":null}')
+        finally eventFile.Close()
+        FileMove temporary, path, 1
+    } catch {
+        ; Capture and the tray remain available when local diagnostic storage fails.
+    }
 }
 
 RunCloudUploader(*) {
@@ -229,10 +259,14 @@ HasCloudUploadWork(stateDir) {
     if FileExist(stateDir "\upload.clixml")
         return true
     ; Withdrawal can be pending even when there is no active upload configuration.
-    Loop Files, stateDir "\consents\*.withdrawal.json", "F" {
-        id := SubStr(A_LoopFileName, 1, 36)
-        if !FileExist(stateDir "\consents\" id ".withdrawn.json")
-            return true
+    for folder in ["consents", "diagnostics"] {
+        Loop Files, stateDir "\" folder "\*.withdrawal.json", "F" {
+            if RegExMatch(A_LoopFileName, "^[0-9a-f-]{36}\.withdrawal\.json$") {
+                id := SubStr(A_LoopFileName, 1, 36)
+                if !FileExist(stateDir "\" folder "\" id ".withdrawn.json")
+                    return true
+            }
+        }
     }
     return false
 }
@@ -300,6 +334,24 @@ ConfigureCloudUpload(*) {
         A_ScriptDir, "Hide", &settingsPid)
     catch {
         MsgBox "Could not open the cloud upload settings.", "Fate Collector", "Icon!"
+    }
+}
+
+ReportProblem(*) {
+    global diagnosticsPid
+    if diagnosticsPid && ProcessExist(diagnosticsPid)
+        return
+    powershell := WindowsPowerShellPath()
+    script := A_ScriptDir "\Report-Problem.ps1"
+    if !FileExist(powershell) || !FileExist(script) {
+        MsgBox "Windows PowerShell or the diagnostic dialog is missing.", "Fate Collector", "Icon!"
+        return
+    }
+    ; Let PowerShell hide its console so the dialog itself is visible.
+    try Run('"' powershell '" -WindowStyle Hidden -NoLogo -NoProfile -NonInteractive -STA -ExecutionPolicy RemoteSigned -File "' script '"',
+        A_ScriptDir, , &diagnosticsPid)
+    catch {
+        MsgBox "Could not open the diagnostic dialog.", "Fate Collector", "Icon!"
     }
 }
 

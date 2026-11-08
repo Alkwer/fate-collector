@@ -19,6 +19,8 @@ if (process.argv[2] === 'verify') {
   await cp('migrations', resolve(directory, 'migrations'), { recursive: true })
   const runtime = { compatibility_date: config.compatibility_date, assets: { ...config.assets, directory: './assets' }, observability: config.observability }
   if (config.compatibility_flags) runtime.compatibility_flags = config.compatibility_flags
+  if (config.triggers) runtime.triggers = config.triggers
+  if (config.ratelimits) runtime.ratelimits = config.ratelimits
   await writeFile(resolve(directory, 'runtime.json'), JSON.stringify(runtime, null, 2) + '\n')
   const files = await releaseFiles(directory)
   await writeFile(resolve(directory, 'release.json'), JSON.stringify({ schemaVersion: 1, revision, releaseId: releaseId(revision, files), files }, null, 2) + '\n')

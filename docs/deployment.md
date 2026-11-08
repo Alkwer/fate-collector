@@ -62,6 +62,7 @@ is reused by the staging workflow. It runs:
 
 - TypeScript, unit/integration tests and the frontend build;
 - browser flows against a local Worker and local D1;
+- diagnostic privacy, explicit consent, deletion and 30-day retention;
 - Windows capture and upload queue tests;
 - the real Windows helper-to-local-Worker upload integration test.
 
@@ -86,6 +87,14 @@ The test records separate capture and reviewed-offer consents, verifies uploads 
 blocked without them, then withdraws both and verifies that replay is blocked.
 Successful smoke tests remove their own submitted data; the minimal consent audit
 stays in staging. Failed runs may leave synthetic records for diagnosis.
+The smoke test also verifies a diagnostic report's independent consent, strict
+privacy schema, duplicate receipt, 30-day expiry and deletion/replay denial.
+Migration `0004_diagnostics.sql` stores reports separately from research data.
+The immutable release includes the `*/15 * * * *` Worker schedule for expiry
+cleanup. Verify that schedule after deployment and monitor Cron failures.
+It also includes `DIAGNOSTIC_RATE_LIMITER` (20 requests/minute per source and
+operation). Environment-specific keys isolate staging counters from production.
+Migration `0005_diagnostic_limits.sql` supports the atomic daily creation limits.
 A failed smoke test makes the run ineligible for promotion; staging is left available
 for diagnosis and the previous production stays active.
 

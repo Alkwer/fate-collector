@@ -49,6 +49,21 @@ The helper captures only on **F9**. It reads the selected screen region, replace
 - If a restored metadata backup has no screenshot, import the original helper file again. Missing screenshot/OCR evidence is restored while existing card corrections and review status are preserved.
 - If cloud upload is waiting for a connection, leave the helper running or restart it later. If the key was rejected, re-enter a valid capture key in **Cloud upload settings**. A rejected invalid/conflicting capture stays in the local capture folder; it is not marked as uploaded. Local browser capacity does not limit the cloud queue.
 
+## Report a problem without sharing captures
+
+Choose **Report a problem** from the helper's tray menu. Generate the diagnostic
+report and inspect its exact contents. You can save a ZIP locally, or accept the
+separate diagnostic consent and send the report to the collection. This does not
+enable gameplay upload. Keep the returned report number and use it when contacting
+Fate Collector — Alkwer through the project repository.
+
+Diagnostics contain predefined technical states/codes and bounded counts; they do
+not include keys, raw errors, paths, usernames, screenshots or OCR. Use the report
+history to withdraw consent and delete the remote report. Offline deletion is
+retried while the helper runs and after restart. Keep helper settings until it is
+confirmed. Reports expire after 30 days and are cleaned within the following
+15 minutes. See [diagnostic contents and retention](diagnostics.md).
+
 ## Offline PNG and fixture test
 
 From the repository root, use the following commands in Windows PowerShell 5.1. The first creates the same bundle from an existing PNG. The optional `-OcrLanguage` argument accepts an installed Windows OCR language tag such as `en-US`. The second exercises the exporter against an image generated locally by the test.
