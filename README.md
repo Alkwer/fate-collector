@@ -96,6 +96,9 @@ the website and API run together on Cloudflare. No GitHub Pages service is requi
 
 [Data contract](docs/data-contract.md) describes provenance, revisions and dataset
 limitations. [Architecture](docs/architecture.md) maps the modules and trust boundaries.
+The [repository audit and implementation status](docs/AUDYT_REPO_2026-11-09.md)
+tracks priorities, completed fixes and remaining native validation. Reproducible
+[scan measurements](docs/scan-performance.md) cover 1,000 and 10,000 capture files.
 
 ## Verification
 
@@ -126,7 +129,8 @@ Windows picker/permission prompt and live F9 capture need manual validation.
 
 The prerelease OCR fixture verifies four offered cards against GGG's showcase
 image. Live PoE capture, HDR and different UI scales still need validation. The
-current helper uses GDI for SDR and Windows Graphics Capture for detected HDR in
+current helper uses guarded GDI for SDR and window-targeted Windows Graphics Capture
+for detected HDR or intersecting SDR windows in
 windowed/borderless mode. Native WGC tests cover SDR and float16 fixture capture;
 real HDR/game coverage remains unvalidated. Plain image imports are
 preserved but do not run browser OCR. Unknown names may be missing from suggestions;

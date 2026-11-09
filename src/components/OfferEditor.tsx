@@ -7,6 +7,8 @@ interface Props { offer: Offer; onChange: (patch: Partial<Offer>) => void }
 export function OfferEditor({ offer, onChange }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
+  const modifierProblem = selected?.modifiers.length > 40 ? 'Use at most 40 modifier lines.'
+    : selected?.modifiers.some(line => line.length > 1000) ? `Modifier line ${selected.modifiers.findIndex(line => line.length > 1000) + 1} exceeds 1,000 characters. Shorten that line to save.` : ''
   useEffect(() => { setSelectedId(null) }, [offer.id])
   function updateCard(patch: Partial<FateCard>) {
     if (selected) onChange({ cards: offer.cards.map(c => c.id === selected.id ? { ...c, ...patch } : c) })
@@ -30,7 +32,8 @@ export function OfferEditor({ offer, onChange }: Props) {
           <label>Tier<input type="number" min={1} max={100} value={selected.tier ?? ''} placeholder="Unknown" onChange={e => updateCard({ tier: e.target.value ? Number(e.target.value) : null })} /></label></div>
         <datalist id="fate-names">{KNOWN_FATE_NAMES.map(name => <option key={name} value={name} />)}</datalist>
         <details className="card-details"><summary>Modifiers & rewards <span className="muted">Optional corrections</span></summary>
-          <label>Modifiers<textarea rows={3} maxLength={12000} value={selected.modifiers.join('\n')} placeholder="One visible modifier per line" onChange={e => updateCard({ modifiers: e.target.value.split('\n') })} /></label>
+          <label>Modifiers<textarea rows={3} value={selected.modifiers.join('\n')} placeholder="One visible modifier per line" aria-invalid={!!modifierProblem} aria-describedby="modifier-help" onChange={e => updateCard({ modifiers: e.target.value.split('\n') })} /></label>
+          <p id="modifier-help" className={modifierProblem ? 'field-error' : 'hint'} role={modifierProblem ? 'alert' : undefined}>{modifierProblem || 'Up to 40 lines, 1,000 characters per line. Corrections save after validation.'}</p>
           <div className="section-heading reward-heading"><h3>Rewards</h3><button className="text-button" disabled={selected.rewards.length >= 30} onClick={() => updateCard({ rewards: [...selected.rewards, newReward()] })}>Add reward</button></div>
           <p className="hint">Keep unknown icons unidentified. An empty list means rewards were not read, not that the card has no rewards.</p>
           {selected.rewards.map((reward, index) => <fieldset className="reward-editor" key={reward.id}><legend>Reward {index + 1}</legend>

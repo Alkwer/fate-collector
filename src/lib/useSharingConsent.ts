@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { consentRecords, onConsentChange, retryWithdrawals, selectedConsent, sharingConsent, type LocalConsent } from './consent'
+import { consentHistory, onConsentChange, retryWithdrawals, selectedConsent, sharingConsent, type LocalConsent } from './consent'
 
 export function useSharingConsent() {
-  const [state, setState] = useState<{ current: LocalConsent | null; active: LocalConsent | null; records: LocalConsent[]; error: string }>({ current: null, active: null, records: [], error: '' })
+  const [state, setState] = useState<{ current: LocalConsent | null; active: LocalConsent | null; records: LocalConsent[]; error: string; warning: string }>({ current: null, active: null, records: [], error: '', warning: '' })
   useEffect(() => {
     function refresh() {
-      try { setState({ current: selectedConsent(), active: sharingConsent(), records: consentRecords(), error: '' }) }
-      catch { setState({ current: null, active: null, records: [], error: 'Consent history could not be read. Sharing is disabled.' }) }
+      try {
+        const history = consentHistory()
+        setState({ current: selectedConsent(), active: sharingConsent(), records: history.records, error: '', warning: history.unreadableCount ? `${history.unreadableCount} consent record(s) could not be read and were preserved for recovery. Valid withdrawals continue. Do not clear site data.` : '' })
+      } catch { setState({ current: null, active: null, records: [], warning: '', error: 'Consent history could not be read. Sharing is disabled.' }) }
     }
     refresh()
     const unsubscribe = onConsentChange(refresh)

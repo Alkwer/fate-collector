@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest'
 import { newOffer, exampleOffer } from '../shared/offers'
 import { importJson } from '../src/lib/imports'
 import * as consent from '../src/lib/consent'
-import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence, OfferRevisionConflictError } from '../src/lib/storage'
+import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence, OfferRevisionConflictError, OfferDeletedError } from '../src/lib/storage'
 import type { Evidence } from '../shared/schema'
 
 test('corrections use one local offer with increasing revisions and retry receipts do not hide unsent changes', async () => {
@@ -84,6 +84,20 @@ test('concurrent edits of one revision have exactly one winner', async () => {
   await deleteOffer(first.offer.id)
 })
 
+test('deleted offers reject stale writes, including manual offers, but explicit restoration is allowed', async () => {
+  for (const entry of [{ offer: exampleOffer(), evidence: null }, captureEntry()]) {
+    const first = await saveOffer(entry.offer, entry.evidence)
+    await deleteOffer(first.offer.id)
+    await expect(saveOffer({ ...first.offer, notes: 'Stale tab' }, entry.evidence)).rejects.toBeInstanceOf(OfferDeletedError)
+    expect(await getOffer(first.offer.id)).toBeUndefined()
+    expect(await getEvidence(first.offer.captureId)).toBeNull()
+    await importOffers([{ offer: first.offer, evidence: entry.evidence }])
+    const corrected = await saveOffer({ ...first.offer, notes: 'Explicitly restored' }, entry.evidence)
+    expect(corrected.offer.revision).toBe(2)
+    await deleteOffer(first.offer.id)
+  }
+})
+
 test('bulk imports preserve corrections and reject overflowing archives without a partial import', async () => {
   const existing = newOffer()
   await saveOffer({ ...existing, notes: 'Keep my correction' }, null)
@@ -105,15 +119,15 @@ function captureEntry() {
 test('automatic delivery is atomic across readers, preserves corrections and does not resurrect deletions', async () => {
   const { offer, evidence } = captureEntry()
   const results = await Promise.all([receiveCapture(offer, evidence), receiveCapture(offer, evidence)])
-  expect(results.sort()).toEqual([false, true])
+  expect(results.map(result => result.status).sort()).toEqual(['created', 'unchanged'])
   expect((await getOffer(offer.id))?.offer).toMatchObject({ reviewed: false, completeness: 'unverified', revision: 1 })
   expect(await getEvidence(offer.id)).toEqual(evidence)
   await saveOffer({ ...offer, notes: 'Keep my correction' }, evidence)
-  expect(await receiveCapture(offer, evidence)).toBe(false)
+  expect((await receiveCapture(offer, evidence)).status).toBe('unchanged')
   expect((await getOffer(offer.id))?.offer.notes).toBe('Keep my correction')
   await deleteOffer(offer.id)
   expect(await hasCaptureReceipt(offer.id)).toBe(true)
-  expect(await receiveCapture(offer, evidence)).toBe(false)
+  expect((await receiveCapture(offer, evidence)).status).toBe('unchanged')
   expect(await getOffer(offer.id)).toBeUndefined()
 })
 test('storage-full delivery remains retryable and does not acknowledge an unsaved capture', async () => {
@@ -123,7 +137,7 @@ test('storage-full delivery remains retryable and does not acknowledge an unsave
   await expect(receiveCapture(offer, evidence)).rejects.toThrow('Auto-save paused')
   expect(await hasCaptureReceipt(offer.id)).toBe(false)
   await deleteOffer(entries[0].offer.id)
-  expect(await receiveCapture(offer, evidence)).toBe(true)
+  expect((await receiveCapture(offer, evidence)).status).toBe('created')
   await Promise.all(entries.slice(1).map(entry => deleteOffer(entry.offer.id)))
   await deleteOffer(offer.id)
 })
@@ -168,10 +182,11 @@ test('folder intake repairs missing evidence on restored metadata, including an 
   await receiveCapture(offer, evidence)
   await deleteOffer(offer.id)
   expect(await hasCaptureReceipt(offer.id)).toBe(true)
-  expect(await receiveCapture(offer, evidence)).toBe(false)
-  const saved = await saveOffer({ ...offer, notes: 'Restored correction' }, null)
+  expect((await receiveCapture(offer, evidence)).status).toBe('unchanged')
+  await importOffers([{ offer: { ...offer, notes: 'Restored correction' }, evidence: null }])
+  const saved = (await getOffer(offer.id))!
   expect(await hasCaptureReceipt(offer.id)).toBe(false)
-  expect(await receiveCapture(offer, evidence)).toBe(false)
+  expect((await receiveCapture(offer, evidence)).status).toBe('restored')
   expect((await getOffer(offer.id))?.offer).toEqual(saved.offer)
   expect(await getEvidence(offer.id)).toEqual(evidence)
   expect(await hasCaptureReceipt(offer.id)).toBe(true)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
-import { diagnosticHistory, downloadDiagnostic, generateDiagnostic, onDiagnosticChange, retryDiagnosticWithdrawals, sendDiagnostic, withdrawDiagnostic, type DiagnosticRecord } from '../lib/diagnostics'
+import { diagnosticHistoryState, downloadDiagnostic, downloadDiagnosticReceipt, forgetDiagnostic, generateDiagnostic, onDiagnosticChange, retryDiagnosticWithdrawals, sendDiagnostic, withdrawDiagnostic, type DiagnosticRecord } from '../lib/diagnostics'
 import { clearDiagnosticLog } from '../lib/diagnostic-log'
 
 interface Props { environment: string; folderConnection: DiagnosticReport['state']['folderConnection']; sharing: DiagnosticReport['state']['sharing'] }
@@ -12,8 +12,15 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [storageError, setStorageError] = useState('')
+  const [historyWarning, setHistoryWarning] = useState('')
   useEffect(() => {
-    const refresh = () => { try { setRecords(diagnosticHistory()); setStorageError('') } catch { setStorageError('Diagnostic receipts cannot be read. Sending is disabled; you can still download a report.') } }
+    const refresh = () => {
+      try {
+        const history = diagnosticHistoryState()
+        setRecords(history.records); setStorageError('')
+        setHistoryWarning(history.unreadableCount ? `${history.unreadableCount} diagnostic record(s) could not be read and were preserved for recovery. Valid deletions continue. Do not clear site data.` : '')
+      } catch { setStorageError('Diagnostic receipts cannot be read. Sending is disabled; you can still download a report.') }
+    }
     refresh(); return onDiagnosticChange(refresh)
   }, [])
   async function act(action: () => Promise<void>) {
@@ -39,6 +46,7 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
         <button disabled={!agreed || !key.trim() || busy || !!storageError || !!selected?.receipt || !!selected?.withdrawnAt} onClick={() => void act(async () => { await sendDiagnostic(report, key, agreed); setAgreed(false); setKey(''); setMessage('Diagnostic report received. Keep its report number for your problem report.') })}>{selected && !selected.receipt ? 'Retry sending this report' : 'Send diagnostic report'}</button>
       </>}
       {(message || storageError) && <p role="status" className="diagnostic-message">{storageError || message}</p>}
+      {historyWarning && <p role="alert">{historyWarning}</p>}
     </section>
     <section className="panel diagnostics-panel"><h2>Report history</h2><p>A report expires after 30 days. Use its number when contacting the operator through the <a href="https://github.com/Alkwer/fate-collector" target="_blank" rel="noreferrer">project repository</a>. Keep site data until deletion is confirmed.</p>
       {!records.length && <p>No diagnostic submissions on this device.</p>}
@@ -53,6 +61,9 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
         {!record.receipt && !record.withdrawnAt && <button disabled={busy} onClick={() => { setReport(record.report); setAgreed(false); setMessage('Review this report and tick the checkbox to retry. No automatic diagnostic upload occurs.') }}>Review and retry</button>}
         {!record.withdrawnAt && <button className="text-button danger" onClick={() => void act(() => withdrawDiagnostic(record.report.id))}>Withdraw consent and delete report</button>}
         {record.withdrawnAt && !record.withdrawalConfirmedAt && <><p>Sending is stopped. Deletion retries when connected or after reopening this site.</p><button onClick={() => void act(retryDiagnosticWithdrawals)}>Retry report deletion</button></>}
+        {record.withdrawalConfirmedAt && <div className="diagnostic-actions"><button onClick={() => downloadDiagnosticReceipt(record)}>Download deletion receipt</button><button className="text-button" disabled={busy} onClick={() => {
+          if (window.confirm('Server deletion is confirmed. Remove this local receipt? Download it first if you want to keep a copy.')) void act(async () => { forgetDiagnostic(record.report.id); if (report?.id === record.report.id) { setReport(null); setAgreed(false) } setMessage('Closed receipt removed. Your offers and pending reports are preserved.') })
+        }}>Remove local receipt</button></div>}
       </article>)}
     </section>
   </>

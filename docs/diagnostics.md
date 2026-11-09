@@ -126,6 +126,17 @@ See [Cloudflare rate-limiter accuracy and locality](https://developers.cloudflar
 
 ## Validation
 
+The browser reads each consent/diagnostic history entry independently. A malformed
+entry is preserved and reported, while valid entries and pending deletions continue
+to work. A malformed active consent never enables sharing. Storage access failures
+remain fatal rather than being mistaken for an empty history.
+
+After the server confirms deletion, **Download deletion receipt** exports a
+token-free record. **Remove local receipt** then frees one of the 50 history slots.
+Pending, active and merely expired reports cannot be removed this way. A lightweight
+local tombstone prevents a delayed acknowledgement from recreating the receipt or
+resending its report ID. Clearing all browser site data clears this protection too.
+
 `npm run check`, `npx playwright test`, `npm run test:diagnostics`, and the existing
 Windows upload integration cover privacy canaries, exact consent, false/lost
 receipts, duplicate submission, offline deletion, late-write prevention and

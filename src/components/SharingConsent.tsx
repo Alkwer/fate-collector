@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { consentText } from '../../shared/consent'
 import { acceptConsent, exportConsentRecords, isCurrentConsent, registerConsent, retryWithdrawals, withdrawConsent, type LocalConsent } from '../lib/consent'
 
-interface Props { accessKey: string; current: LocalConsent | null; active: LocalConsent | null; records: LocalConsent[]; error: string }
-export function SharingConsent({ accessKey, current, active, records, error }: Props) {
+interface Props { accessKey: string; current: LocalConsent | null; active: LocalConsent | null; records: LocalConsent[]; error: string; warning: string }
+export function SharingConsent({ accessKey, current, active, records, error, warning }: Props) {
   const [agreed, setAgreed] = useState(false)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
@@ -21,6 +21,7 @@ export function SharingConsent({ accessKey, current, active, records, error }: P
     {!active && isCurrentConsent(current) && <><p>Consent saved on this device. Server confirmation is pending.</p><button disabled={!accessKey.trim() || pending} onClick={() => void act(() => registerConsent(accessKey))}>Retry consent confirmation</button></>}
     {current && !current.withdrawnAt && <button className="text-button danger" onClick={() => void act(() => withdrawConsent(current.id))}>Withdraw consent</button>}
     {(message || error) && <p role="alert">{error || message}</p>}
+    {warning && <p role="alert">{warning}</p>}
     {records.some(record => record.withdrawnAt && !record.withdrawalConfirmedAt) && <p role="status">Sharing stopped locally. Server withdrawal is pending and will retry when connected. <button className="text-button" onClick={() => void act(retryWithdrawals)}>Retry withdrawal</button></p>}
     <p className="hint">This controls website sharing only. Manage automatic OCR uploads separately in the Windows helper. Withdrawing does not remove your local offers or screenshots.</p>
     {!!records.length && <details className="consent-history"><summary>Consent history ({records.length})</summary><button onClick={exportConsentRecords}>Export consent history</button>{records.map(record => <article key={record.id}><p><strong>{record.withdrawalConfirmedAt ? 'Withdrawn on server' : record.withdrawnAt ? 'Withdrawal pending' : record.recordedAt ? 'Recorded consent' : 'Confirmation pending'}</strong> · Version {record.policyVersion}</p><p>Accepted: <time dateTime={record.acceptedAt}>{new Date(record.acceptedAt).toLocaleString()}</time>{record.recordedAt && <> · Server recorded: {new Date(record.recordedAt).toLocaleString()}</>}{record.withdrawnAt && <> · Withdrawal requested: {new Date(record.withdrawnAt).toLocaleString()}</>}{record.withdrawalConfirmedAt && <> · Server confirmed: {new Date(record.withdrawalConfirmedAt).toLocaleString()}</>}</p><details><summary>Accepted text</summary><p className="consent-snapshot">{record.text}</p></details>{!record.withdrawnAt && record.id !== current?.id && <button className="text-button danger" onClick={() => void act(() => withdrawConsent(record.id))}>Withdraw this consent</button>}</article>)}</details>}

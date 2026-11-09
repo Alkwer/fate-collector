@@ -22,6 +22,8 @@ PoE visible panel
 | `src/lib/storage.ts` | Local evidence, revisions and atomic archive imports |
 | `src/lib/capture-sync.ts` | Bounded folder intake and duplicate-safe delivery |
 | `src/lib/useCaptureSync.ts` | Persistent connection, permissions, polling and resume |
+| `src/lib/useOfferDraft.ts` | Draft sessions, edits, save acknowledgements and conflict preservation |
+| `src/lib/local-history.ts` | Per-record decoding and corruption isolation for local receipts |
 | `src/components/` | Source inspection, optional corrections and saved history |
 | `worker/index.ts` | Authenticated bounded ingestion and idempotency |
 | `migrations/` | D1 schema and latest-revision view |
@@ -58,12 +60,19 @@ those adapters against real screenshots at several resolutions before claiming
 automatic coverage. The reward advisor should follow a verified mechanics model
 and an assessed dataset, not inferred card-name-to-reward mappings.
 
-Helper 0.3.0 uses Windows Graphics Capture for HDR and compares multiple OCR passes.
+Helper 0.3.1 uses window-targeted Windows Graphics Capture for HDR and for detected
+SDR desktop occlusion, with guarded GDI otherwise. It compares multiple OCR passes.
 Both OCR passes come from one original screenshot. Only one pass is emitted, with
 geometry mapped to original pixels; capture/upload v1 contracts stay unchanged.
 Calibration ratios are restored after process restarts, while a resolution change
 requires preview and an aspect-ratio change requires new corners. The helper
 captures evidence without automating game input.
+
+IndexedDB v3 retains deletion tombstones so stale editors cannot recreate removed
+offers. Explicit archive restoration clears the corresponding tombstone atomically
+and invalidates folder-reader caches, allowing missing evidence to return during
+the same connection. Warm scans preload receipt IDs without reading image blobs.
+See [scan measurements](scan-performance.md).
 
 `scripts/research-corpus-stats.mjs` validates exported archives using the shared
 schema and produces separate live/test quality counts. Future advice still needs

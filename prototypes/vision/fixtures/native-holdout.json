@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    { "id": "1080p-sdr-default", "size": [1920, 1080], "displayMode": "SDR", "uiScale": "default" },
+    { "id": "1440p-sdr-alternate", "size": [2560, 1440], "displayMode": "SDR", "uiScale": "alternate" },
+    { "id": "4k-hdr-default", "size": [3840, 2160], "displayMode": "HDR", "uiScale": "default" },
+    { "id": "ultrawide-sdr-default", "size": [3440, 1440], "displayMode": "SDR", "uiScale": "default" }
+  ],
+  "images": []
+}

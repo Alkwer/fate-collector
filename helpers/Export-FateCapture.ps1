@@ -47,8 +47,6 @@ public static class FateCaptureWindow {
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out Rect rect);
     [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref Point point);
-    [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(Point point);
-    [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
 
     public static Point GetCrop(IntPtr hwnd, uint expectedPid, int clientWidth, int clientHeight,
@@ -66,16 +64,6 @@ public static class FateCaptureWindow {
             throw new InvalidOperationException("The foreground Path of Exile window or client size changed.");
         }
 
-        int right = origin.X + width - 1, bottom = origin.Y + height - 1;
-        var samples = new[] {
-            origin, new Point(right, origin.Y), new Point(origin.X, bottom), new Point(right, bottom),
-            new Point(origin.X + width / 2, origin.Y + height / 2)
-        };
-        foreach (var point in samples) {
-            if (GetAncestor(WindowFromPoint(point), 2) != hwnd) {
-                throw new InvalidOperationException("The selected panel is covered or outside the display.");
-            }
-        }
         return origin;
     }
 }
@@ -144,18 +132,23 @@ try {
         if ($useWgc) {
             $failureCode = 4
             # Do not silently downgrade an HDR capture to washed-out GDI pixels.
-            $png = [FateScreenCapture]::CaptureRegion($origin.X, $origin.Y, $Width, $Height, $false)
+            $png = [FateScreenCapture]::CaptureWindowRegion([IntPtr]$WindowHandle, $origin.X, $origin.Y, $Width, $Height, $false)
         } else {
             $failureCode = 1
-            $bitmap = [System.Drawing.Bitmap]::new($Width, $Height, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
             try {
-                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-                try { $graphics.CopyFromScreen($origin.X, $origin.Y, 0, 0, $bitmap.Size) }
-                finally { $graphics.Dispose() }
-                $memory = [IO.MemoryStream]::new()
-                try { $bitmap.Save($memory, [System.Drawing.Imaging.ImageFormat]::Png); $png = $memory.ToArray() }
-                finally { $memory.Dispose() }
-            } finally { $bitmap.Dispose() }
+                $png = [FateScreenCapture]::CaptureDesktopRegion([IntPtr]$WindowHandle, $origin.X, $origin.Y, $Width, $Height)
+            } catch [FateCaptureOccludedException] {
+                if ($CaptureBackend -eq 'gdi') {
+                    $failureCode = 3
+                    throw
+                }
+                # The desktop crop is unsafe. Capture the verified window itself instead.
+                $failureCode = 3
+                $verified = [FateCaptureWindow]::GetCrop([IntPtr]$WindowHandle, $WindowPid, $ClientWidth, $ClientHeight, $X, $Y, $Width, $Height)
+                if ($origin.X -ne $verified.X -or $origin.Y -ne $verified.Y) { throw 'The game window moved during the capture.' }
+                $failureCode = 4
+                $png = [FateScreenCapture]::CaptureWindowRegion([IntPtr]$WindowHandle, $origin.X, $origin.Y, $Width, $Height, $false)
+            }
         }
         $failureCode = 3
         $afterCopy = [FateCaptureWindow]::GetCrop([IntPtr]$WindowHandle, $WindowPid, $ClientWidth, $ClientHeight, $X, $Y, $Width, $Height)
@@ -186,7 +179,7 @@ try {
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.3.0'
+        helperVersion = '0.3.1'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context

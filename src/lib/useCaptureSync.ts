@@ -38,7 +38,7 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
       try {
         const result = await reader.scan(folder, async entry => {
           if (stopped) return
-          setReceived(count => count + 1)
+          if (!entry.restored) setReceived(count => count + 1)
           logDiagnostic('folder-scan', 'ok')
           await callback.current(entry)
         }, () => stopped)

@@ -156,6 +156,18 @@ checks with a direct Wrangler deployment.
 
 ## Local validation and dry runs
 
+The [native recognition validation record](recognition-validation.md) defines the
+independent game/HDR/UI-scale coverage still required before broader release.
+Synthetic WGC float16 tests on an SDR display do not complete that gate. Run
+`npm run test:capture-backend -- -RequireCleanGdi` on an unobstructed interactive
+release desktop; the default fixture suite reports a skip if a system layer
+prevents a clean GDI measurement.
+
+Migration `0007_canonical_capture_observations.sql` retains all submitted rows,
+adds a capture-conflict inspection view and changes research counting to one
+canonical reviewed offer per capture. Inspect `observation_capture_conflicts`
+on staging before promoting; corrections must retain their original capture ID.
+
 ```sh
 npm ci
 npm run check

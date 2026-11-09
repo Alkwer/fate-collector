@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { CONSENT_VERSION, consentGrantSchema, consentText, type ConsentReceipt } from '../../shared/consent'
 import { logDiagnostic } from './diagnostic-log'
+import { readLocalHistory } from './local-history'
 
 const prefix = 'fate-collector.consent.observations.'
 const activeKey = `${prefix}active`
@@ -9,15 +10,12 @@ const date = z.string().datetime({ offset: true }).nullable()
 const recordSchema = consentGrantSchema.extend({ recordedAt: date, withdrawnAt: date, withdrawalConfirmedAt: date, blocked: z.boolean(), withdrawalRetryAt: z.string().datetime({ offset: true }).optional() })
 export type LocalConsent = z.infer<typeof recordSchema>
 let sessionBlocked = false
-export function consentRecords(): LocalConsent[] {
-  const records: LocalConsent[] = []
-  for (let index = 0; index < localStorage.length; index++) {
-    const key = localStorage.key(index)!
-    if (!key.startsWith(prefix) || key === activeKey) continue
-    records.push(recordSchema.parse(JSON.parse(localStorage.getItem(key)!)))
-  }
-  return records.sort((a, b) => b.acceptedAt.localeCompare(a.acceptedAt))
+export function consentHistory() {
+  const history = readLocalHistory(prefix, value => recordSchema.parse(value), [activeKey])
+  history.records.sort((a, b) => b.acceptedAt.localeCompare(a.acceptedAt))
+  return history
 }
+export function consentRecords(): LocalConsent[] { return consentHistory().records }
 export function selectedConsent(): LocalConsent | null {
   if (sessionBlocked) return null
   const id = localStorage.getItem(activeKey)

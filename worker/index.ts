@@ -84,12 +84,18 @@ export default {
         SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM data_consents WHERE id = ? AND policy_version = ?)
         AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE id = ?)
         AND NOT EXISTS (SELECT 1 FROM observations WHERE id = ? AND (consent_id IS NULL OR consent_id <> ?))
+        AND (EXISTS (SELECT 1 FROM observations WHERE id = ? AND lower(json_extract(payload_json, '$.captureId')) = lower(?))
+          OR NOT EXISTS (SELECT 1 FROM observations WHERE id <> ? AND ? IS NOT NULL
+            AND lower(json_extract(payload_json, '$.captureId')) = lower(?)))
+        AND NOT EXISTS (SELECT 1 FROM observations WHERE id = ?
+          AND coalesce(lower(json_extract(payload_json, '$.captureId')), '') <> coalesce(lower(?), ''))
         ON CONFLICT(id, revision) DO NOTHING`)
-        .bind(offer.id, offer.revision, hash, payload, offer.gameVersion, offer.completeness, offer.capturedAt, consent.id, consent.id, CONSENT_VERSION, consent.id, offer.id, consent.id).run()
+        .bind(offer.id, offer.revision, hash, payload, offer.gameVersion, offer.completeness, offer.capturedAt, consent.id, consent.id, CONSENT_VERSION, consent.id, offer.id, consent.id,
+          offer.id, offer.captureId, offer.id, offer.captureId, offer.captureId, offer.id, offer.captureId).run()
       if (!insert.meta.changes) {
         if (!await activeConsent(env.DB, consent.id)) return json({ error: 'Consent has been withdrawn. Sharing stopped.', code: 'consent-required' }, 403)
         const previous = await env.DB.prepare('SELECT content_hash, consent_id FROM observations WHERE id = ? AND revision = ?').bind(offer.id, offer.revision).first<{ content_hash: string; consent_id: string }>()
-        if (previous?.content_hash !== hash || previous.consent_id !== consent.id) return json({ error: 'This offer or revision already exists under different data or consent.' }, 409)
+        if (previous?.content_hash !== hash || previous.consent_id !== consent.id) return json({ error: 'This offer, revision or capture already belongs to different data or consent. Keep the original offer ID and capture reference when correcting it.' }, 409)
         return json({ id: offer.id, revision: offer.revision, status: 'duplicate' })
       }
       return json({ id: offer.id, revision: offer.revision, status: 'accepted' }, 201)
