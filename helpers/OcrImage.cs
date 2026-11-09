@@ -1,4 +1,4 @@
-// Contrast stretching and scaled OCR inspired by One More Map (MIT).
+// Contrast stretching and scaled OCR. Component attribution: THIRD_PARTY_NOTICES.md.
 // Fate retains the original PNG and maps every OCR rectangle back to its pixels.
 using System;
 using System.Drawing;

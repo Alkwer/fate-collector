@@ -24,8 +24,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
 
-# CopyFromScreen, WinRT OCR, and line geometry adapted from One More Map.
-# See README.md and LICENSE.one-more-map.txt.
+# Screen capture, Windows OCR and positioned text export.
+# Component attribution: THIRD_PARTY_NOTICES.md and LICENSE.third-party.txt.
 
 . (Join-Path $PSScriptRoot 'Ocr.Common.ps1')
 

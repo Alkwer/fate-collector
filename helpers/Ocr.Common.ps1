@@ -1,4 +1,4 @@
-# Adapted WinRT OCR and multi-pass approach from One More Map (MIT).
+# Windows OCR with multiple passes. Component attribution: THIRD_PARTY_NOTICES.md.
 # Exact candidate text is retained; this module never fills in names, tiers or rewards.
 $script:FateOcrDirectory = $PSScriptRoot
 

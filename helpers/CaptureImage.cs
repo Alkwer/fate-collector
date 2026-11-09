@@ -1,7 +1,5 @@
-// Adapted from One More Map public/voyage-import.ahk, commit
-// 9f704ce8c2b9cb2187c16586f0169227aad72266 (MIT).
-// Copyright (c) 2026 one-more-map and contributors.
-// See LICENSE.one-more-map.txt. Fate changes: in-memory PNG and strict crop bounds.
+// Screen-region capture with in-memory PNG output and strict crop bounds.
+// Component attribution and copyright: THIRD_PARTY_NOTICES.md and LICENSE.third-party.txt.
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;

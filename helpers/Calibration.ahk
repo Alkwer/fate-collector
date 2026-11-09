@@ -1,4 +1,4 @@
-; Client-ratio calibration inspired by One More Map (MIT), see README.md.
+; Client-relative panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 ; Pure file/geometry functions are kept separate from hotkeys for native tests.
 ReadFateCalibration(path) {
     if !FileExist(path)
