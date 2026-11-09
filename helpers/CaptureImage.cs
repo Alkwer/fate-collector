@@ -1,9 +1,15 @@
 // Screen-region capture with in-memory PNG output and strict crop bounds.
 // Component attribution and copyright: THIRD_PARTY_NOTICES.md and LICENSE.third-party.txt.
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+
+public sealed class FateCaptureOccludedException : InvalidOperationException
+{
+    public FateCaptureOccludedException() : base("The selected panel may be covered by another window.") { }
+}
 
 // Windows.Graphics.Capture at the raw WinRT ABI level (issue #33). GDI's
 // CopyFromScreen returns washed-out, non-tone-mapped pixels when Windows
@@ -28,6 +34,15 @@ public static class FateScreenCapture
 
     [DllImport("combase.dll")]
     private static extern int RoGetActivationFactory(IntPtr activatableClassId, ref Guid iid, out IntPtr factory);
+
+    [DllImport("user32.dll")] private static extern IntPtr GetTopWindow(IntPtr parent);
+    [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd, uint command);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern bool IsIconic(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT bounds);
+    [DllImport("dwmapi.dll")] private static extern int DwmFlush();
+    [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, uint attribute, out RECT value, int size);
+    [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, uint attribute, out uint value, int size);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
@@ -378,20 +393,76 @@ public static class FateScreenCapture
         catch { }
     }
 
-    // Capture a screen region through Windows.Graphics.Capture. On HDR
-    // monitors the frame is read as float16 scRGB and tone-mapped against
-    // the SDR white level, which is exactly what GDI's CopyFromScreen fails
-    // to do (issue #33). Returns a PNG in memory; no desktop image is written to a temporary file.
-    public static byte[] CaptureRegion(int left, int top, int width, int height, bool forceHdrPath)
+    private static void CheckCaptureDimensions(int width, int height)
     {
         if (width <= 0 || height <= 0 || width > 8192 || height > 8192 || (long)width * height > 16777216)
             throw new ArgumentOutOfRangeException("width", "Invalid capture dimensions.");
+    }
+
+    private static IEnumerable<IntPtr> OccludingWindows(IntPtr hwnd, int left, int top, int width, int height)
+    {
+        var visited = new HashSet<IntPtr>();
+        for (IntPtr candidate = GetTopWindow(IntPtr.Zero); candidate != IntPtr.Zero && visited.Add(candidate);
+             candidate = GetWindow(candidate, 2)) // GW_HWNDNEXT
+        {
+            if (candidate == hwnd) yield break;
+            if (!IsWindowVisible(candidate) || IsIconic(candidate)) continue;
+            uint cloaked;
+            if (DwmGetWindowAttribute(candidate, 14, out cloaked, sizeof(uint)) == 0 && cloaked != 0) continue; // DWMWA_CLOAKED
+            RECT bounds;
+            if (!GetWindowRect(candidate, out bounds))
+                throw new InvalidOperationException("Could not verify a visible window's bounds.");
+            if (bounds.Left < (long)left + width && bounds.Right > left &&
+                bounds.Top < (long)top + height && bounds.Bottom > top)
+                yield return candidate;
+        }
+        throw new InvalidOperationException("Could not verify the game's position in the desktop window order.");
+    }
+
+    private static void AssertUnoccluded(IntPtr hwnd, int left, int top, int width, int height)
+    {
+        foreach (IntPtr candidate in OccludingWindows(hwnd, left, top, width, height))
+            throw new FateCaptureOccludedException();
+    }
+
+    public static byte[] CaptureDesktopRegion(IntPtr hwnd, int left, int top, int width, int height)
+    {
+        CheckCaptureDimensions(width, height);
+        MonitorForRegion(left, top, width, height);
+        using (var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb))
+        using (var graphics = Graphics.FromImage(bitmap))
+        {
+            // Wait for prior compositor work, then minimize the gap between the checks and pixel copy.
+            CheckHr(DwmFlush(), "DwmFlush");
+            AssertUnoccluded(hwnd, left, top, width, height);
+            graphics.CopyFromScreen(left, top, 0, 0, bitmap.Size, CopyPixelOperation.SourceCopy);
+            AssertUnoccluded(hwnd, left, top, width, height);
+            using (var stream = new System.IO.MemoryStream())
+            {
+                bitmap.Save(stream, ImageFormat.Png);
+                return stream.ToArray();
+            }
+        }
+    }
+
+    private static RECT WindowFrame(IntPtr hwnd)
+    {
+        RECT frame;
+        // DWMWA_EXTENDED_FRAME_BOUNDS is in physical screen pixels and omits invisible resize borders.
+        CheckHr(DwmGetWindowAttribute(hwnd, 9, out frame, Marshal.SizeOf(typeof(RECT))), "DwmGetWindowAttribute");
+        return frame;
+    }
+
+    // Target the window itself so unrelated desktop windows do not become part of the frame.
+    // Float16 scRGB from an HDR monitor is tone-mapped against that monitor's SDR white level.
+    public static byte[] CaptureWindowRegion(IntPtr hwnd, int left, int top, int width, int height, bool forceHdrPath)
+    {
+        CheckCaptureDimensions(width, height);
+        if (hwnd == IntPtr.Zero) throw new ArgumentException("Missing capture window.", "hwnd");
         IntPtr hmon = MonitorForRegion(left, top, width, height);
-        MONITORINFOEX monInfo = new MONITORINFOEX();
-        monInfo.Size = Marshal.SizeOf(typeof(MONITORINFOEX));
-        if (!GetMonitorInfoW(hmon, ref monInfo)) { throw new Exception("GetMonitorInfo failed"); }
-        int cropX = left - monInfo.Monitor.Left;
-        int cropY = top - monInfo.Monitor.Top;
+        RECT bounds = WindowFrame(hwnd);
+        int cropX = left - bounds.Left;
+        int cropY = top - bounds.Top;
         bool hdr = forceHdrPath || IsHdrEnabled(hmon);
         int pixelFormat = hdr ? 10 : 87; // R16G16B16A16Float : B8G8R8A8UIntNormalized
         int bytesPerPixel = hdr ? 8 : 4;
@@ -430,11 +501,14 @@ public static class FateScreenCapture
             IGraphicsCaptureItemInterop interop = (IGraphicsCaptureItemInterop)Marshal.GetObjectForIUnknown(factoryPtr);
             Marshal.Release(factoryPtr);
             Guid itemIid = new Guid("79C3F95B-31F7-4EC2-A464-632EF5D30760");
-            itemPtr = interop.CreateForMonitor(hmon, ref itemIid);
-            Marshal.ReleaseComObject(interop);
+            try { itemPtr = interop.CreateForWindow(hwnd, ref itemIid); }
+            finally { Marshal.ReleaseComObject(interop); }
             SizeInt32 itemSize;
             FnOutSize getSize = (FnOutSize)VtableFn(itemPtr, 7, typeof(FnOutSize));
             CheckHr(getSize(itemPtr, out itemSize), "GraphicsCaptureItem.Size");
+            if (itemSize.Width != bounds.Right - bounds.Left || itemSize.Height != bounds.Bottom - bounds.Top ||
+                cropX < 0 || cropY < 0 || (long)cropX + width > itemSize.Width || (long)cropY + height > itemSize.Height)
+                throw new InvalidOperationException("The capture frame does not match the game window bounds.");
             WindowsDeleteString(classId);
             classId = IntPtr.Zero;
 
@@ -488,6 +562,12 @@ public static class FateScreenCapture
             }
             if (framePtr == IntPtr.Zero) { throw new Exception("Windows.Graphics.Capture produced no frame within 5 seconds."); }
 
+            SizeInt32 contentSize;
+            FnOutSize getContentSize = (FnOutSize)VtableFn(framePtr, 8, typeof(FnOutSize));
+            CheckHr(getContentSize(framePtr, out contentSize), "Direct3D11CaptureFrame.ContentSize");
+            if (contentSize.Width != itemSize.Width || contentSize.Height != itemSize.Height || !bounds.Equals(WindowFrame(hwnd)))
+                throw new InvalidOperationException("The capture window moved or changed size.");
+
             FnOutPtr getSurface = (FnOutPtr)VtableFn(framePtr, 6, typeof(FnOutPtr));
             CheckHr(getSurface(framePtr, out surfacePtr), "Direct3D11CaptureFrame.Surface");
 
@@ -497,8 +577,6 @@ public static class FateScreenCapture
             Guid textureIid = new Guid("6F15AAF2-D208-4E89-9AB4-489535D34F9C");
             CheckHr(getInterface(accessPtr, ref textureIid, out texturePtr), "IDirect3DDxgiInterfaceAccess.GetInterface");
 
-            if (cropX < 0 || cropY < 0 || (long)cropX + width > itemSize.Width || (long)cropY + height > itemSize.Height)
-                throw new Exception("Keep the complete capture region on one monitor.");
             int cropW = width;
             int cropH = height;
 

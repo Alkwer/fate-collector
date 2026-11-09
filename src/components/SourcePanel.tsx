@@ -12,7 +12,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
       <details><summary>What's new and how to update</summary>
-        <p>Saved panel calibration, HDR capture and an extra OCR pass. Your saved capture stays unchanged.</p>
+        <p>Safer capture around overlapping windows, recovery of damaged upload state and faster checks of large capture folders.</p>
         <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
       </details>
     </aside>}

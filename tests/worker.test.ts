@@ -59,6 +59,39 @@ test('retries are idempotent, conflicting revisions are rejected, corrections ar
   expect(databases[0].prepare('SELECT count(*) AS n FROM latest_observations').get()?.n).toBe(1)
   expect(databases[0].prepare('SELECT revision FROM latest_observations').get()?.revision).toBe(2)
 })
+
+test('one capture belongs to one reviewed offer ID and corrections cannot move its reference', async () => {
+  const bindings = env(), captureId = crypto.randomUUID()
+  const samples = [offer(), offer()].map(value => ({ ...value, captureId }))
+  const responses = await Promise.all(samples.map(value => worker.fetch(post(value), bindings)))
+  expect(responses.map(response => response.status).sort()).toEqual([201, 409])
+  const winner = samples[responses.findIndex(response => response.status === 201)]
+  expect((await worker.fetch(post({ ...winner, revision: 2 }), bindings)).status).toBe(201)
+  expect((await worker.fetch(post({ ...offer(), captureId: captureId.toUpperCase() }), bindings)).status).toBe(409)
+  expect((await worker.fetch(post({ ...winner, revision: 3, captureId: crypto.randomUUID() }), bindings)).status).toBe(409)
+  expect((await worker.fetch(post({ ...winner, revision: 3, captureId: null }), bindings)).status).toBe(409)
+  expect(databases[0].prepare('SELECT count(*) AS n FROM research_observations').get()?.n).toBe(1)
+})
+
+test('canonical research view preserves conflicting historical records while counting their capture once', async () => {
+  const bindings = env(), captureId = crypto.randomUUID()
+  const first = { ...offer(), captureId }, duplicate = { ...offer(), captureId: captureId.toUpperCase() }
+  await worker.fetch(post(first), bindings)
+  const db = databases[0]
+  db.prepare('UPDATE observations SET received_at = ?').run('2020-01-01T00:00:00.000Z')
+  db.prepare('INSERT INTO observations (id, revision, content_hash, payload_json, game_version, completeness, captured_at) VALUES (?,1,?,?,?,?,?)')
+    .run(duplicate.id, 'legacy', JSON.stringify(duplicate), duplicate.gameVersion, duplicate.completeness, duplicate.capturedAt)
+  await worker.fetch(post({ ...first, revision: 2 }), bindings)
+  expect(db.prepare('SELECT count(*) AS n FROM observations').get()?.n).toBe(3)
+  expect(db.prepare('SELECT id, revision FROM research_observations').all()).toEqual([{ id: first.id, revision: 2 }])
+  expect(db.prepare('SELECT offer_count FROM observation_capture_conflicts').get()?.offer_count).toBe(2)
+  // Older clients could change a capture reference. Do not hide the remaining
+  // owner of the old capture when that first owner's latest revision moved away.
+  const moved = { ...first, revision: 3, captureId: crypto.randomUUID() }
+  db.prepare('INSERT INTO observations (id, revision, content_hash, payload_json, game_version, completeness, captured_at) VALUES (?,3,?,?,?,?,?)')
+    .run(moved.id, 'legacy-moved', JSON.stringify(moved), moved.gameVersion, moved.completeness, moved.capturedAt)
+  expect(db.prepare('SELECT id FROM research_observations ORDER BY id').all()).toEqual([first.id, duplicate.id].sort().map(id => ({ id })))
+})
 test('enforces body size without trusting Content-Length', async () => {
   const response = await worker.fetch(post({ padding: 'x'.repeat(130 * 1024) }), env())
   expect(response.status).toBe(413)

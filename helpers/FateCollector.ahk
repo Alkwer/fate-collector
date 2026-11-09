@@ -317,6 +317,7 @@ RunCloudUploader(*) {
 }
 
 HasCloudUploadWork(stateDir) {
+    static lastConsentCheck := 0
     if FileExist(stateDir "\upload.clixml")
         return true
     ; Withdrawal can be pending even when there is no active upload configuration.
@@ -326,6 +327,11 @@ HasCloudUploadWork(stateDir) {
                 id := SubStr(A_LoopFileName, 1, 36)
                 if !FileExist(stateDir "\" folder "\" id ".withdrawn.json")
                     return true
+                ; Only PowerShell can validate the receipt. Recheck old ones periodically.
+                if folder = "consents" && (!lastConsentCheck || A_TickCount < lastConsentCheck || A_TickCount - lastConsentCheck >= 600000) {
+                    lastConsentCheck := A_TickCount
+                    return true
+                }
             }
         }
     }
@@ -370,6 +376,7 @@ ShowUploadFeedback(status) {
         case "authorization": message := "Upload paused - check the upload key in Cloud upload settings."
         case "consent-pending": message := "Queued - waiting for the collection to confirm consent."
         case "consent-required": message := "Upload paused - review consent in Cloud upload settings."
+        case "settings-damaged": message := "Upload paused - review consent and enable upload again in Cloud upload settings."
         case "rejected": message := "Upload rejected. Capture kept locally."
         case "local": message := "Saved locally. Cloud upload is off or this capture is not eligible."
         default: message := "Upload status unavailable. Capture kept locally. Check Cloud upload settings."

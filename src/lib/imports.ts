@@ -67,3 +67,28 @@ export function downloadArchive(entries: Archive['offers'], filename = 'fate-col
   link.href = url; link.download = filename; link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+// Every part uses the existing import contract; a large journal never requires
+// raising the decoder limit or opening each individual offer to back it up.
+export function archiveParts(entries: Archive['offers']): { filename: string; json: string; offers: number }[] {
+  const archive = exportSchema.parse({ kind: 'fate-collector.export', schemaVersion: 1, offers: entries })
+  const prefix = '{"kind":"fate-collector.export","schemaVersion":1,"offers":['
+  const suffix = ']}'
+  const encoder = new TextEncoder()
+  const overhead = encoder.encode(prefix + suffix).byteLength
+  const parts: { filename: string; json: string; offers: number }[] = []
+  let values: string[] = [], size = overhead
+  const flush = () => {
+    parts.push({ filename: `fate-collector-data-${String(parts.length + 1).padStart(3, '0')}.json`, json: prefix + values.join(',') + suffix, offers: values.length })
+    values = []; size = overhead
+  }
+  for (const entry of archive.offers) {
+    const text = JSON.stringify(entry)
+    const bytes = encoder.encode(text).byteLength
+    if (bytes + overhead > MAX_IMPORT_BYTES) throw new Error('One offer exceeds the backup part limit. Export its metadata separately from its evidence.')
+    if (size + bytes + (values.length ? 1 : 0) > MAX_IMPORT_BYTES) flush()
+    size += bytes + (values.length ? 1 : 0); values.push(text)
+  }
+  if (values.length) flush()
+  return parts
+}

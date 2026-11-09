@@ -57,8 +57,9 @@ size, schema and decoded-image checks apply as for manual import.
 Intake saves the offer, evidence and receipt in one IndexedDB transaction. Concurrent
 tabs and repeated polling cannot create another copy or replace corrected data.
 Deletion retains a receipt, so reconnecting does not resurrect the observation.
-If the user explicitly restores that offer from a metadata backup, reconnecting
-can recover its missing evidence from the original helper file.
+If the user explicitly restores that offer from a metadata backup, the current
+connection recovers its missing evidence from the original helper file on a later
+scan, without changing corrections or counting it as a new capture.
 A failed/full save does not acknowledge the file; it can be retried. Deletion receipts
 are lightweight local IDs and are not included in exports. Clearing browser site
 data clears these receipts and the saved connection too.
@@ -136,13 +137,27 @@ captures initially use version `unknown`; exclude that cohort from version-speci
 statistics until corrected. No area or patch metadata is read from the game yet.
 
 Local saves update one offer and increment its revision. D1 retains immutable
-submitted revisions. Use `latest_observations`, not all rows, when counting offers.
+submitted revisions. Use `research_observations` for encounter counts;
+`latest_observations` alone can contain historical capture collisions.
 Higher revisions represent corrections, not additional encounters. First write wins
 for the same ID and revision; identical retries succeed without another record.
 Local edits must also match the currently stored revision. A stale editor cannot
 overwrite a newer save from another tab; its draft remains available for export
 before reopening the latest offer. Auto-save retains text typed during its own
 pending write and uses that write's committed revision for the next save.
+
+Deletion also stores a local tombstone. A stale manual or automatic save fails
+without replacing the draft. Explicit backup import can restore the offer and
+clear that tombstone; ordinary saves cannot.
+
+Migration `0007` preserves historical rows and exposes collisions through
+`observation_capture_conflicts`. `canonical_observations` selects the latest
+revision of the first submitted offer still referencing each capture. The research
+view uses that canonical row instead of counting several reviewed IDs for one
+capture. Manual offers without a capture remain independent. New submissions
+cannot claim another offer's capture or change an existing capture reference.
+Capture UUID comparisons are case-insensitive. Historical collision owners can
+still submit corrections with the same reference; no history is silently deleted.
 
 ## Export and limits
 
@@ -157,7 +172,12 @@ This allows a previously shared revision to be retried unchanged under the same
 consent. A subsequent edit creates the next revision. New screenshots and helper
 captures still open as drafts when imported manually.
 
-JSON imports/exports are limited to 12 MiB. Images are limited to 8192 pixels per
+Each JSON import/export file is limited to 12 MiB. **Export all data** splits a
+large journal into numbered, independently importable files and shows a download
+link for every part. Download all parts; history backups contain no image blobs.
+The editor accepts at most 40 modifier lines per card and 1,000 characters per
+line, shows the invalid line, and preserves the draft until corrected.
+Images are limited to 8192 pixels per
 edge and 16,777,216 pixels overall. API bodies are limited to 128 KiB. Reviewed
 `/api/observations` accepts an offer only and rejects image/raw OCR fields;
 `/api/captures` accepts the text-only upload contract. The app checks actual

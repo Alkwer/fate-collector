@@ -19,6 +19,10 @@ native holdout is still missing. Use `offers.py` for that layer; `recognize.py`
 below remains the unchanged V2 visual baseline. [Whole-offer V1](OFFERS.md) remains
 available as a historical report.
 
+The [native recognition validation plan](../../docs/recognition-validation.md)
+defines the release evidence for F9 and the separate whole-offer holdout. Use
+`evaluate_native_holdout.py --require-coverage` to list gaps in the native corpus.
+
 ## Run
 
 Use Python 3.12+ in an optional virtual environment; the app itself still needs

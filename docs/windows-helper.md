@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.0 adds saved calibration, a second OCR pass and automatic HDR detection. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.1 strengthens overlay checks, recovers damaged upload metadata and scans large archives faster. Saved calibration, the second OCR pass and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Direct cloud upload: no browser required
 
@@ -69,7 +69,7 @@ confirmed. Reports expire after 30 days and are cleaned within the following
 
 ### Capture and OCR methods
 
-SDR uses GDI; when Windows reports HDR on the target monitor, the helper uses Windows Graphics Capture with float16 scRGB pixels converted against that monitor's SDR white level. The screenshot stays in memory until the normal capture bundle is saved. Foreground/window/coverage checks run before and after capture. A region spanning monitors is rejected by the WGC path. The native integration test has verified WGC's normal and float16 paths on an **SDR** display; actual HDR monitors and live PoE still need validation.
+Automatic SDR uses guarded GDI and falls back to window-targeted Windows Graphics Capture (WGC) when another window intersects the crop. The fallback rechecks the game identity, foreground and geometry; unrelated backend errors stop capture. When Windows reports HDR on the target monitor, WGC uses float16 scRGB pixels converted against that monitor's SDR white level. The screenshot stays in memory until the normal capture bundle is saved. Foreground/window/coverage checks run before and after capture. A region spanning monitors is rejected. Native tests verify WGC's normal and float16 paths on an **SDR** display, including ordinary and translucent overlays. Real HDR monitors and live PoE still need validation. GDI cannot exclude a transient overlay appearing and disappearing entirely between its checks; select WGC explicitly when window isolation is required.
 
 Advanced troubleshooting can set `Backend=auto`, `gdi` or `wgc` under `[capture]` in `fate-collector.ini`, or pass `-CaptureBackend` to the exporter. `auto` is the default. Forcing `gdi` with Windows HDR enabled can distort colors.
 

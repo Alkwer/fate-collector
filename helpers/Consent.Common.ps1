@@ -107,6 +107,18 @@ function Test-FateWithdrawalReceipt($Receipt, [string]$Id) {
     return $true
 }
 
+function Read-FateConsentReceipt([string]$StateDirectory, $Consent) {
+    Read-FateUploadMetadata (Get-FateConsentPath $StateDirectory $Consent.Id 'recorded.json') {
+        Test-FateConsentReceipt $args[0] $Consent
+    }
+}
+
+function Read-FateWithdrawalReceipt([string]$StateDirectory, [string]$Id) {
+    Read-FateUploadMetadata (Get-FateConsentPath $StateDirectory $Id 'withdrawn.json') {
+        Test-FateWithdrawalReceipt $args[0] $Id
+    }
+}
+
 function Invoke-FateConsentRequest($Consent, [Security.SecureString]$Key, $Withdrawal) {
     if ($Withdrawal) {
         return Invoke-FateCloudRequest -Origin $Consent.Origin -Path "/api/consents/$($Consent.Id)/withdraw" `
@@ -134,21 +146,37 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
         $receiptPath = Get-FateConsentPath $StateDirectory $id 'withdrawn.json'
         $consent = $null
         try {
-            if (Test-FateWithdrawalReceipt (Read-FateUploadState $receiptPath) $id) { continue }
+            $receipt = Read-FateWithdrawalReceipt $StateDirectory $id
+            if ($receipt.Value) { continue }
             $retryPath = Get-FateConsentPath $StateDirectory $id 'withdrawal-retry.json'
-            $retry = Read-FateUploadState $retryPath
-            if ($retry -and (ConvertTo-FateUploadTime $retry.retryAt) -gt [DateTimeOffset]::UtcNow) { continue }
+            $retry = Read-FateUploadMetadata $retryPath {
+                param($Entry)
+                if (!$Entry.PSObject.Properties['retryAt'] -or
+                    ($Entry.PSObject.Properties['attempt'] -and ($Entry.attempt -isnot [int] -or $Entry.attempt -notin 1..10))) { return $false }
+                try { [void](ConvertTo-FateUploadTime $Entry.retryAt) } catch { return $false }
+                return $true
+            }
+            if ($retry.Value -and (ConvertTo-FateUploadTime $retry.Value.retryAt) -gt [DateTimeOffset]::UtcNow) { continue }
             $consent = Get-FateCaptureConsent $StateDirectory $id -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
             if (!$consent) { continue }
-            $withdrawal = Read-FateUploadState $path
-            [void](ConvertTo-FateUploadTime $withdrawal.withdrawnAt)
+            $marker = Read-FateUploadMetadata $path {
+                param($Entry)
+                if (!$Entry.PSObject.Properties['withdrawnAt']) { return $false }
+                try { [void](ConvertTo-FateUploadTime $Entry.withdrawnAt) } catch { return $false }
+                return $true
+            }
+            if (!$marker.Value) { continue }
+            $withdrawal = @{ withdrawnAt = $marker.Value.withdrawnAt }
             $attempted++
             $result = $null
             try { $result = & $Transport $consent $null $withdrawal } catch {}
             if ($result -and $result.Status -eq 200 -and (Test-FateWithdrawalReceipt $result.Receipt $id)) {
-                Write-FateUploadState $receiptPath @{ id = $id; status = 'withdrawn'; withdrawnAt = $result.Receipt.withdrawnAt }
+                Write-FateUploadState $receiptPath @{ id = $id; status = 'withdrawn'; withdrawnAt = $result.Receipt.withdrawnAt } -PreserveExisting:$receipt.Damaged
+                if ($retry.Damaged) {
+                    [IO.File]::Move($retryPath, "$retryPath.$([guid]::NewGuid().ToString('N')).corrupt")
+                }
             } else {
-                Write-FateWithdrawalRetry $retryPath $result
+                Write-FateWithdrawalRetry $retryPath $result -Previous $retry.Value -PreserveExisting:$retry.Damaged
             }
         } catch {
             # A failed attempt stays pending. Other collections and local capture remain available.
@@ -161,10 +189,13 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
 function Confirm-FateUploadConsent($Configuration, [string]$StateDirectory, [scriptblock]$Transport, [switch]$ForceRetry) {
     $consent = $Configuration.Consent
     if (Test-FateConsentWithdrawnLocally $StateDirectory $consent.Id) { return $false }
-    $receiptPath = Get-FateConsentPath $StateDirectory $consent.Id 'recorded.json'
-    if (Test-FateConsentReceipt (Read-FateUploadState $receiptPath) $consent) { return $true }
     $gatePath = Get-FateConsentPath $StateDirectory $consent.Id 'gate.json'
-    $gate = Read-FateUploadState $gatePath
+    $metadata = Read-FateUploadGate $gatePath -ConsentGate
+    if ($metadata.Damaged) { return $false }
+    $receiptPath = Get-FateConsentPath $StateDirectory $consent.Id 'recorded.json'
+    $receipt = Read-FateConsentReceipt $StateDirectory $consent
+    if ($receipt.Value) { return $true }
+    $gate = $metadata.Value
     if ($gate -and $gate.revision -ceq $Configuration.Revision) {
         if ($gate.status -in 'authorization', 'consent-required') { return $false }
         if (!$ForceRetry -and (ConvertTo-FateUploadTime $gate.retryAt) -gt [DateTimeOffset]::UtcNow) { return $false }
@@ -180,7 +211,7 @@ function Confirm-FateUploadConsent($Configuration, [string]$StateDirectory, [scr
             text = $consent.Text
             recordedAt = $result.Receipt.recordedAt
             withdrawnAt = $null
-        }
+        } -PreserveExisting:$receipt.Damaged
         return $true
     }
     $status = if (!$result) { 'offline' }

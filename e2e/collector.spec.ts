@@ -27,6 +27,26 @@ async function helperCapture(page: Page, possibleRepeat = false) {
   }, possibleRepeat)
 }
 
+test('a stale manual editor preserves its draft after another tab deletes the offer', async ({ page, context }) => {
+  await page.goto('/')
+  const sample = { ...newOffer(), cards: [{ ...newCard(), name: 'Delete regression' }] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'offer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(sample)) })
+  await page.getByText('Edit details', { exact: true }).click()
+  const other = await context.newPage()
+  other.on('dialog', dialog => dialog.accept())
+  await other.goto('/')
+  await other.getByRole('button', { name: /Saved offers/ }).click()
+  await other.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(other.getByRole('heading', { name: 'No offers here yet.' })).toBeVisible()
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep this draft')
+  await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('deleted in another tab')
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep this draft')
+  await other.reload()
+  await other.getByRole('button', { name: /Saved offers/ }).click()
+  await expect(other.getByRole('heading', { name: 'No offers here yet.' })).toBeVisible()
+})
+
 test('helper import auto-fills text, saves evidence, survives reload, and avoids duplicate imports', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
   await page.goto('/')

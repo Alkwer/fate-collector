@@ -2,21 +2,22 @@ import { z } from 'zod'
 import { zipSync, strToU8 } from 'fflate'
 import { APP_VERSION, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticReportSchema, diagnosticSubmissionSchema, diagnosticReceiptSchema, diagnosticWithdrawalSchema, diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
 import { diagnosticEvents, logDiagnostic } from './diagnostic-log'
+import { readLocalHistory } from './local-history'
 
 const prefix = 'fate-collector.diagnostic-report.'
+const removedPrefix = 'fate-collector.diagnostic-removed.'
 const changed = 'fate-diagnostic-change'
 const localDate = z.string().datetime({ offset: true })
 const localSchema = diagnosticSubmissionSchema.extend({ receipt: diagnosticReceiptSchema.nullable(), withdrawnAt: localDate.nullable(), withdrawalConfirmedAt: localDate.nullable(), retryAt: localDate.optional(), deletionRetryAt: localDate.optional() }).strict()
 export type DiagnosticRecord = z.infer<typeof localSchema>
-export function diagnosticHistory(): DiagnosticRecord[] {
-  const result: DiagnosticRecord[] = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)!
-    if (key.startsWith(prefix)) result.push(localSchema.parse(JSON.parse(localStorage.getItem(key)!)))
-  }
-  return result.sort((a, b) => b.consent.acceptedAt.localeCompare(a.consent.acceptedAt))
+export function diagnosticHistoryState() {
+  const history = readLocalHistory(prefix, value => localSchema.parse(value))
+  history.records.sort((a, b) => b.consent.acceptedAt.localeCompare(a.consent.acceptedAt))
+  return history
 }
+export function diagnosticHistory(): DiagnosticRecord[] { return diagnosticHistoryState().records }
 function save(record: DiagnosticRecord) {
+  if (localStorage.getItem(removedPrefix + record.report.id)) return
   const previous = localStorage.getItem(prefix + record.report.id)
   if (previous) {
     const old = localSchema.parse(JSON.parse(previous))
@@ -58,11 +59,12 @@ export function downloadDiagnostic(report: DiagnosticReport) {
 export async function sendDiagnostic(report: DiagnosticReport, key: string, agreed: boolean) {
   if (!agreed || !key.trim()) throw new Error('Read the report and consent, tick the checkbox and enter a collection access key.')
   report = diagnosticReportSchema.parse(report)
+  if (localStorage.getItem(removedPrefix + report.id)) throw new Error('This report was deleted. Generate a new report.')
   let record = diagnosticHistory().find(item => item.report.id === report.id)
   if (record && (record.withdrawnAt || JSON.stringify(record.report) !== JSON.stringify(report))) throw new Error('This report was changed or withdrawn. Generate a new report.')
   if (record?.retryAt && Date.parse(record.retryAt) > Date.now()) throw new Error(`Diagnostic limit reached. Try again after ${new Date(record.retryAt).toLocaleTimeString()}. Your report stays local.`)
   if (!record) {
-    if (diagnosticHistory().length >= 50) throw new Error('Local diagnostic history is full. Keep your receipts and contact the operator before clearing site data.')
+    if (diagnosticHistory().length >= 50) throw new Error('Local diagnostic history is full. Download and remove receipts with confirmed deletion from Report history. Pending reports must be kept.')
     record = { report, consent: { version: DIAGNOSTIC_VERSION, text: diagnosticText(location.origin), acceptedAt: new Date().toISOString() }, token: [...crypto.getRandomValues(new Uint8Array(32))].map(byte => byte.toString(16).padStart(2, '0')).join(''), receipt: null, withdrawnAt: null, withdrawalConfirmedAt: null }
     save(record) // Persist the deletion credential before the first network write.
   }
@@ -94,13 +96,27 @@ export async function retryDiagnosticWithdrawals() {
       if (response.status === 429) { save({ ...record, deletionRetryAt: retryDate(response) }); throw new Error('Deletion rate limited.') }
       const receipt = diagnosticWithdrawalSchema.safeParse(await response.json())
       if (response.status !== 200 || !receipt.success || receipt.data.id !== record.report.id) throw new Error('Deletion is pending. Keep the saved receipt; retry when connected.')
-      const latest = diagnosticHistory().find(item => item.report.id === record.report.id)!
+      const latest = diagnosticHistory().find(item => item.report.id === record.report.id)
+      if (!latest || localStorage.getItem(removedPrefix + record.report.id)) continue
       localStorage.setItem(prefix + record.report.id, JSON.stringify({ ...latest, withdrawalConfirmedAt: receipt.data.withdrawnAt }))
       window.dispatchEvent(new Event(changed))
       logDiagnostic('diagnostics-withdraw', 'ok')
     } catch { failure = new Error('Deletion is pending. It will retry when connected or when you reopen this site.') }
   }
   if (failure) throw failure
+}
+export function forgetDiagnostic(id: string) {
+  const record = diagnosticHistory().find(item => item.report.id === id)
+  if (!record?.withdrawalConfirmedAt) throw new Error('Confirm server deletion before removing its local receipt. Expiry alone is not deletion confirmation.')
+  localStorage.setItem(removedPrefix + id, record.withdrawalConfirmedAt)
+  localStorage.removeItem(prefix + id)
+  window.dispatchEvent(new Event(changed))
+}
+export function downloadDiagnosticReceipt(record: DiagnosticRecord) {
+  const { token: _token, report, ...receipt } = localSchema.parse(record)
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ reportId: report.id, ...receipt }, null, 2)], { type: 'application/json' }))
+  const link = document.createElement('a'); link.href = url; link.download = `fate-diagnostic-receipt-${report.id}.json`; link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 function retryDate(response: Response): string {
   const seconds = Number(response.headers.get('Retry-After'))

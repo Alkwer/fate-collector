@@ -212,3 +212,9 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .helper-update { margin-bottom: 16px; padding: 14px 16px; border-left: 2px solid var(--gold); background: var(--surface); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .helper-update p { margin: 6px 0; }
 .helper-update a { display: inline-block; padding-block: 6px; }
+.backup-dialog { width: min(36rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1.5rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); }
+.backup-dialog p { line-height: 1.6; }
+.backup-dialog li { margin-block: .9rem; overflow-wrap: anywhere; }
+.backup-dialog a { display: inline-block; padding-block: .4rem; }
+.backup-dialog::backdrop { background: rgb(0 0 0 / .7); }
+.field-error { color: #f2aaa0; font-size: .875rem; }

@@ -1,12 +1,12 @@
 import { useSharingConsent } from './lib/useSharingConsent'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { offerSchema, formatValidationError, type Offer, type Evidence } from '../shared/schema'
+import { offerSchema, formatValidationError, type Offer } from '../shared/schema'
 import { newOffer, exampleOffer, submissionProblem } from '../shared/offers'
 import { SourcePanel, CaptureDetails } from './components/SourcePanel'
 import { OfferEditor } from './components/OfferEditor'
 import { OfferPreview } from './components/OfferPreview'
 import { SavedOffers } from './components/SavedOffers'
-import { importFile, importJson, downloadArchive, type Imported } from './lib/imports'
+import { importFile, importJson, downloadArchive, archiveParts, type Imported } from './lib/imports'
 import * as storage from './lib/storage'
 import { collectionInfo, collectionStatus, submitOffer } from './lib/api'
 import { useCaptureSync } from './lib/useCaptureSync'
@@ -14,53 +14,33 @@ import { CaptureConnection } from './components/CaptureConnection'
 import { Diagnostics, useDiagnosticWithdrawals } from './components/Diagnostics'
 import { installDiagnosticLog, logDiagnostic } from './lib/diagnostic-log'
 
-const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Your draft is still open.'
+import { errorText, useOfferDraft } from './lib/useOfferDraft'
+import { BackupDownload } from './components/BackupDownload'
+
 export default function App() {
   const consentState = useSharingConsent()
   useDiagnosticWithdrawals()
   useEffect(installDiagnosticLog, [])
   const [tab, setTab] = useState<'collector' | 'saved' | 'diagnostics'>('collector')
-  const [draft, setDraft] = useState<Offer>(() => newOffer())
-  const [evidence, setEvidence] = useState<Evidence | null>(null)
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
-  const [dirty, setDirtyState] = useState(false)
-  const [busy, setBusyState] = useState(false)
-  const dirtyRef = useRef(false)
-  const busyRef = useRef(false)
-  const draftSession = useRef(0)
-  const editVersion = useRef(0)
-  const [failedAutoSave, setFailedAutoSave] = useState<{ session: number; version: number; conflict: boolean } | null>(null)
   const detailsPanel = useRef<HTMLDetailsElement>(null)
-  function setDirty(value: boolean) { dirtyRef.current = value; setDirtyState(value) }
-  function setBusy(value: boolean) { busyRef.current = value; setBusyState(value) }
-  function loadDraft(offer: Offer, source: Evidence | null, changed = false) {
-    draftSession.current++
-    setFailedAutoSave(null)
-    setDraft(offer); setEvidence(source); setDirty(changed)
-  }
-  const [autoSaving, setAutoSaving] = useState(false)
+  const [backup, setBackup] = useState<ReturnType<typeof archiveParts> | null>(null)
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
   const [accessKey, setAccessKey] = useState('')
   const [connected, setConnected] = useState(false)
   const [environment, setEnvironment] = useState('unknown')
   const fileInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<HTMLDetailsElement>(null)
-  const savedLocally = records.some(record => record.offer.id === draft.id)
-  const canConfirm = !!evidence && draft.cards.length > 0 && draft.cards.every(card => card.name.trim())
-  const needsConfirmation = canConfirm && !draft.reviewed
-  const canSave = !busy && !autoSaving && (!!evidence || draft.cards.length > 0 || dirty) && (!savedLocally || dirty || needsConfirmation)
   function closeActions() { if (moreActions.current) moreActions.current.open = false }
-  const announce = (text: string, error = false) => setNotice({ text, error })
+  const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
   const refresh = useCallback(async () => setRecords(await storage.listOffers()), [])
   const sync = useCaptureSync(async entry => {
     await refresh()
-    // Captures still enter history while the user edits or imports another offer.
-    if (!dirtyRef.current && !busyRef.current && !detailsPanel.current?.open) {
-      loadDraft(entry.offer, entry.evidence)
-    }
+    editor.receive(entry, !!detailsPanel.current?.open)
   })
-  const automatic = sync.status === 'active' && savedLocally
-  const autoSaveFailure = dirty && failedAutoSave?.session === draftSession.current && failedAutoSave.version === editVersion.current ? failedAutoSave : null
+  const editor = useOfferDraft({ records, connected: sync.status === 'active', refresh, announce })
+  const { draft, evidence, dirty, busy, autoSaving, dirtyRef, setBusy, loadDraft, change, canReplace, save,
+    savedLocally, automatic, canConfirm, needsConfirmation, canSave, autoSaveFailure, retryAutoSave } = editor
   const savedCurrent = savedLocally && !dirty
   const reviewMessage = draft.reviewed
     ? draft.completeness === 'partial' ? 'Reviewed · some cards are missing.' : 'Reviewed · all offered cards are included.'
@@ -75,49 +55,7 @@ export default function App() {
     : savedCurrent ? 'Capture saved. You can check the details later.'
     : evidence || draft.cards.length ? 'Save on this device. You can check the details later.'
     : 'Capture an offer to start reviewing.'
-  useEffect(() => {
-    if (!automatic || !dirty || busy || autoSaving) return
-    const session = draftSession.current
-    const version = editVersion.current
-    if (failedAutoSave?.session === session && failedAutoSave.version === version) return
-    const timer = window.setTimeout(() => {
-      const parsed = offerSchema.safeParse(draft)
-      if (!parsed.success) { announce(`Changes are not saved yet. ${formatValidationError(parsed.error)}`, true); return }
-      setAutoSaving(true)
-      void storage.saveOffer(parsed.data, evidence).then(async saved => {
-        if (session === draftSession.current) {
-          setFailedAutoSave(null)
-          if (version === editVersion.current) { setDraft(saved.offer); setDirty(false) }
-          else {
-            // Keep edits typed during this save, but base their next save on our
-            // committed revision. Never rebase a different editor session.
-            setDraft(current => ({ ...current, revision: saved.offer.revision, updatedAt: saved.offer.updatedAt }))
-          }
-        }
-        await refresh()
-      }).catch(error => {
-        if (session === draftSession.current) {
-          setFailedAutoSave({ session, version, conflict: error instanceof storage.OfferRevisionConflictError })
-          announce(errorText(error), true)
-        }
-      }).finally(() => setAutoSaving(false))
-    }, 700)
-    return () => window.clearTimeout(timer)
-  }, [automatic, dirty, busy, autoSaving, failedAutoSave, draft, evidence, refresh])
   useEffect(() => { void refresh().catch(e => announce(errorText(e), true)); void collectionInfo().then(info => { setConnected(info.ingestionEnabled); setEnvironment(info.environment) }).catch(() => setConnected(false)) }, [refresh])
-  useEffect(() => {
-    if (!dirty) return
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [dirty])
-  function canReplace(): boolean { return !dirty || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
-  function change(patch: Partial<Offer>) {
-    editVersion.current++
-    setDraft(current => ({ ...current, ...patch, reviewed: patch.reviewed ?? false,
-      completeness: patch.completeness ?? (patch.reviewed !== true && current.completeness === 'complete' ? 'unverified' : current.completeness) }))
-    setDirty(true)
-  }
   async function acceptImport(result: Imported) {
     if (result.mode === 'restore') {
       const imported = await storage.importOffers(result.entries)
@@ -165,16 +103,6 @@ export default function App() {
     window.addEventListener('paste', paste)
     return () => window.removeEventListener('paste', paste)
   })
-  async function save(mode: 'current' | 'confirm' | 'later' = 'current') {
-    const candidate = mode === 'confirm' && canConfirm
-      ? { ...draft, reviewed: true, completeness: draft.completeness === 'partial' ? 'partial' : 'complete' }
-      : mode === 'later' ? { ...draft, reviewed: false, completeness: 'unverified' } : draft
-    const parsed = offerSchema.safeParse(candidate)
-    if (!parsed.success) { announce(formatValidationError(parsed.error), true); return }
-    setBusy(true)
-    try { const saved = await storage.saveOffer(parsed.data, evidence); setDraft(saved.offer); setDirty(false); await refresh(); logDiagnostic('local-save', 'ok'); announce('Offer saved on this device. This save did not upload any changes.') }
-    catch (error) { logDiagnostic('local-save', 'error'); announce(errorText(error), true) } finally { setBusy(false) }
-  }
   async function open(id: string) {
     if (!canReplace()) return
     setBusy(true)
@@ -229,11 +157,12 @@ export default function App() {
         </div></details>
         <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <div className="auto-save-actions">
           <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : autoSaveFailure ? autoSaveFailure.conflict ? 'Save conflict' : 'Save failed' : dirty ? 'Changes pending…' : 'Saved locally'}</span>
-          {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); setFailedAutoSave(null) }}>Retry save</button>}
+          {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); retryAutoSave() }}>Retry save</button>}
         </div> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
       </> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} busy={busy || autoSaving} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
-        try { downloadArchive(records.map(r => ({ offer: r.offer, evidence: null })), 'fate-collector-data.json') } catch (error) { announce(errorText(error), true) }
+        try { setBackup(archiveParts(records.map(r => ({ offer: r.offer, evidence: null })))) } catch (error) { announce(errorText(error), true) }
       }} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
+      {backup && <BackupDownload parts={backup} onClose={() => setBackup(null)} />}
       <input ref={fileInput} className="file-input" type="file" accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = '' }} />
       <details className="setup-help"><summary>How to capture from Path of Exile</summary><p>Run the Windows helper. Select the panel with F6 and F7 once; the helper remembers it. F8 previews the saved frame. Press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. The helper uses GDI for SDR and Windows Graphics Capture for HDR. Live game and HDR monitor compatibility still need validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></details>
     </main>

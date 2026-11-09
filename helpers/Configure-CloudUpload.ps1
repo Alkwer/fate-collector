@@ -94,8 +94,8 @@ function Update-ConsentStatus {
         $accepted = (ConvertTo-FateUploadTime $consent.AcceptedAt).ToLocalTime().ToString('g')
         $detail = "Accepted $accepted  |  Policy version $($consent.PolicyVersion)"
         if (Test-FateConsentWithdrawnLocally $StateDirectory $consent.Id) {
-            $receipt = Read-FateUploadState (Get-FateConsentPath $StateDirectory $consent.Id 'withdrawn.json')
-            $summary = if (Test-FateWithdrawalReceipt $receipt $consent.Id) {
+            $receipt = Read-FateWithdrawalReceipt $StateDirectory $consent.Id
+            $summary = if ($receipt.Value) {
                 'Withdrawal confirmed by the collection. Local copies are kept.'
             } else { 'Withdrawn on this device. Waiting for confirmation from the collection.' }
         } else {
@@ -108,9 +108,10 @@ function Update-ConsentStatus {
                 switch ([string](Get-FateCurrentUploadGate $script:saved $StateDirectory)) {
                     'authorization' { 'Upload paused. Enter a valid upload key to resume.' }
                     'consent-required' { 'Upload paused. The collection did not accept this consent.' }
+                    'settings-damaged' { 'Upload paused. Review the policy and enable upload again. Existing captures stay local.' }
                     default {
-                        $receipt = Read-FateUploadState (Get-FateConsentPath $StateDirectory $consent.Id 'recorded.json')
-                        if (Test-FateConsentReceipt $receipt $consent) { 'Cloud upload is enabled.' }
+                        $receipt = Read-FateConsentReceipt $StateDirectory $consent
+                        if ($receipt.Value) { 'Cloud upload is enabled.' }
                         else { 'Consent saved on this device. Waiting for confirmation before uploading.' }
                     }
                 }

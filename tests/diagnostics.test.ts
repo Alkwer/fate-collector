@@ -5,7 +5,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { unzipSync, strFromU8 } from 'fflate'
 import worker, { type Env } from '../worker'
 import { APP_VERSION, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticReportSchema, diagnosticText, type DiagnosticReport } from '../shared/diagnostics'
-import { diagnosticZip, generateDiagnostic, sendDiagnostic, retryDiagnosticWithdrawals, withdrawDiagnostic } from '../src/lib/diagnostics'
+import { diagnosticZip, diagnosticHistory, diagnosticHistoryState, forgetDiagnostic, generateDiagnostic, sendDiagnostic, retryDiagnosticWithdrawals, withdrawDiagnostic } from '../src/lib/diagnostics'
 import { clearDiagnosticLog, diagnosticEvents, logDiagnostic } from '../src/lib/diagnostic-log'
 
 const open: DatabaseSync[] = []
@@ -178,4 +178,39 @@ test('client honors Retry-After for explicit sending and automatic deletion acro
   await expect(withdrawDiagnostic(value.id)).rejects.toThrow('Deletion is pending')
   await retryDiagnosticWithdrawals()
   expect(fetch).toHaveBeenCalledTimes(2)
+})
+
+test('a damaged diagnostic receipt does not block another deletion; only confirmed deletions can be forgotten', async () => {
+  const storage = browserState(), value = report()
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })))
+  await expect(sendDiagnostic(value, 'key', true)).rejects.toThrow('not confirmed')
+  expect(() => forgetDiagnostic(value.id)).toThrow('Confirm server deletion')
+  storage.setItem('fate-collector.diagnostic-report.corrupt', '{broken')
+  expect(diagnosticHistoryState().unreadableCount).toBe(1)
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ id: value.id, status: 'withdrawn', withdrawnAt: new Date().toISOString() })))
+  await withdrawDiagnostic(value.id)
+  expect(diagnosticHistory()[0].withdrawalConfirmedAt).toBeTruthy()
+  forgetDiagnostic(value.id)
+  expect(diagnosticHistory()).toHaveLength(0)
+  expect(storage.getItem('fate-collector.diagnostic-report.corrupt')).toBe('{broken')
+  await expect(sendDiagnostic(value, 'key', true)).rejects.toThrow('was deleted')
+})
+
+test('removing closed receipts frees the 50-report limit without deleting pending reports', async () => {
+  const storage = browserState()
+  const seed = report()
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })))
+  await expect(sendDiagnostic(seed, 'key', true)).rejects.toThrow('not confirmed')
+  const pending = diagnosticHistory()[0]
+  for (let index = 0; index < 49; index++) {
+    const id = crypto.randomUUID()
+    storage.setItem(`fate-collector.diagnostic-report.${id}`, JSON.stringify({ ...pending,
+      report: { ...pending.report, id }, withdrawnAt: new Date().toISOString(), withdrawalConfirmedAt: new Date().toISOString() }))
+  }
+  await expect(sendDiagnostic(report(), 'key', true)).rejects.toThrow('history is full')
+  const closed = diagnosticHistory().find(item => item.withdrawalConfirmedAt)!
+  forgetDiagnostic(closed.report.id)
+  expect(diagnosticHistory().find(item => item.report.id === seed.id)).toEqual(pending)
+  await expect(sendDiagnostic(report(), 'key', true)).rejects.toThrow('not confirmed')
+  expect(diagnosticHistory()).toHaveLength(50)
 })

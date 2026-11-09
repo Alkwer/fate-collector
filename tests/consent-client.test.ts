@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { acceptConsent, consentRecords, retryWithdrawals, sharingConsent, withdrawConsent } from '../src/lib/consent'
+import { acceptConsent, consentHistory, consentRecords, retryWithdrawals, sharingConsent, withdrawConsent } from '../src/lib/consent'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 
@@ -27,6 +27,9 @@ test('withdrawal persists Retry-After and blocks local sharing while retrying la
   expect(consentRecords()[0].withdrawalRetryAt).toBe('2026-11-08T13:00:00.000Z')
   await retryWithdrawals()
   expect(transport).toHaveBeenCalledTimes(2)
+  // A damaged unrelated credential stays on disk, but cannot stop this valid deletion.
+  values.set('fate-collector.consent.observations.corrupt', '{broken')
+  expect(consentHistory().unreadableCount).toBe(1)
   vi.setSystemTime(new Date('2026-11-08T13:00:01Z'))
   transport.mockImplementation(async (_url: string, options: RequestInit) => {
     expect(new Headers(options.headers).has('Authorization')).toBe(false)
@@ -35,4 +38,7 @@ test('withdrawal persists Retry-After and blocks local sharing while retrying la
   await retryWithdrawals()
   expect(consentRecords()[0].withdrawalConfirmedAt).toBe('2026-11-08T13:00:01.000Z')
   expect(transport).toHaveBeenCalledTimes(3)
+  expect(values.get('fate-collector.consent.observations.corrupt')).toBe('{broken')
+  values.set('fate-collector.consent.observations.active', 'corrupt')
+  expect(sharingConsent()).toBeNull()
 })

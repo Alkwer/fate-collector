@@ -65,5 +65,17 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Set up AutoHotkey v2
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'AutoHotkey_2.0.31.zip'
+          $install = Join-Path $env:RUNNER_TEMP 'AutoHotkey_2.0.31'
+          Invoke-WebRequest 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.31/AutoHotkey_2.0.31.zip' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne 'CA1A595ACA4528755D8D4CD7FED23D497A37BD9A0B6892072612D68DEE1BD00A') {
+            throw 'Unexpected AutoHotkey release checksum.'
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $install
+          "AUTOHOTKEY_EXE=$(Join-Path $install 'AutoHotkey64.exe')" >> $env:GITHUB_ENV
+      - run: npm run test:calibration
       - run: npm run build
       - run: npm run test:upload:integration

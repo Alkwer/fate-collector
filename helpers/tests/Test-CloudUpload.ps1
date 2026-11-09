@@ -438,6 +438,121 @@ try {
             (Test-FateWithdrawalReceipt (Read-FateUploadState (Get-FateConsentPath $batchState $batchId 'withdrawn.json')) $batchId)) 'A withdrawal marker or receipt is missing.'
     }
     Write-Output 'PASS: consent withdrawals are bounded, back off durably after a timeout or 503, and resume without sending captures.'
+
+    $damagedConsentState = Join-Path $testDirectory 'damaged-consent-state'
+    $damagedConsentCaptures = Join-Path $testDirectory 'damaged-consent-captures'
+    $metadataParams = @{
+        CapturesDirectory = $damagedConsentCaptures; StateDirectory = $damagedConsentState
+        AllowLocalTestEndpoint = $true; Transport = $transport; ConsentTransport = $consentTransport
+    }
+    $consentResponse.Status = 200
+    Set-FateUploadConfiguration -StateDirectory $damagedConsentState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+    $config = Get-FateUploadConfiguration $damagedConsentState -AllowLocalTestEndpoint
+    $recordedPath = Get-FateConsentPath $damagedConsentState $config.Scope 'recorded.json'
+    [IO.File]::WriteAllText($recordedPath, '{"recordedAt":')
+    $repairCaptureId = Write-TestCapture -Directory $damagedConsentCaptures
+    $requestStart = $requests.Count
+    $consentStart = $consentRequests.Count
+    $busy = [IO.File]::Open($recordedPath, 'Open', 'ReadWrite', 'None')
+    try {
+        Assert-Throws { Invoke-FateCaptureUploads @metadataParams } 'An unreadable receipt was treated as missing or corrupt.'
+        Assert-True ($requests.Count -eq $requestStart -and $consentRequests.Count -eq $consentStart) 'A locked receipt allowed a request.'
+    } finally { $busy.Dispose() }
+    $consentResponse.Offline = $true
+    Invoke-FateCaptureUploads @metadataParams
+    Assert-True ($requests.Count -eq $requestStart -and
+        (Get-FateCaptureUploadStatus $damagedConsentState $repairCaptureId -AllowLocalTestEndpoint) -eq 'offline') 'A corrupt receipt let unconfirmed data through or hid the retry status.'
+    $consentResponse.Offline = $false
+    Invoke-FateCaptureUploads @metadataParams -ForceRetry
+    $recordedBackups = @([IO.Directory]::EnumerateFiles([IO.Path]::GetDirectoryName($recordedPath), "$($config.Scope).recorded.json.*.corrupt"))
+    $replayed = $consentRequests[$consentRequests.Count - 1].Consent
+    Assert-True ($requests.Count -eq ($requestStart + 1) -and $replayed.Id -ceq $config.Scope -and
+        (Get-FateUploadSecretText $replayed.Token) -ceq (Get-FateUploadSecretText $config.Consent.Token) -and
+        (Test-FateConsentReceipt (Read-FateUploadState $recordedPath) $config.Consent) -and
+        $recordedBackups.Count -eq 1 -and [IO.File]::ReadAllText($recordedBackups[0]) -ceq '{"recordedAt":') 'The corrupt receipt was not recovered idempotently.'
+
+    foreach ($isConsentGate in @($true, $false)) {
+        $gatePath = if ($isConsentGate) { Get-FateConsentPath $damagedConsentState $config.Scope 'gate.json' }
+            else { Join-Path $damagedConsentState "$($config.Scope)/gate.json" }
+        $damagedGate = if ($isConsentGate) { '{"revision":' } else { '{"status":"throttle","retryAt":"invalid"}' }
+        [IO.File]::WriteAllText($gatePath, $damagedGate)
+        $captureId = Write-TestCapture -Directory $damagedConsentCaptures
+        $requestStart = $requests.Count
+        Invoke-FateCaptureUploads @metadataParams -ForceRetry
+        Assert-True ($requests.Count -eq $requestStart -and
+            (Get-FateCaptureUploadStatus $damagedConsentState $captureId -AllowLocalTestEndpoint) -eq 'settings-damaged') 'A corrupt gate did not fail closed with a repair status.'
+        Set-FateUploadConfiguration -StateDirectory $damagedConsentState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+        $previousScope = $config.Scope
+        $config = Get-FateUploadConfiguration $damagedConsentState -AllowLocalTestEndpoint
+        Invoke-FateCaptureUploads @metadataParams
+        Assert-True ($config.Scope -cne $previousScope -and [IO.File]::ReadAllText($gatePath) -ceq $damagedGate -and
+            $requests.Count -eq $requestStart) 'Reconfiguration reused a damaged scope, discarded evidence or sent its earlier captures.'
+    }
+    [void](Write-TestCapture -Directory $damagedConsentCaptures)
+    Invoke-FateCaptureUploads @metadataParams
+    Assert-True ($requests.Count -eq ($requestStart + 1)) 'New captures did not resume under repaired settings.'
+    Write-Output 'PASS: damaged consent receipts replay the same consent before sending; damaged gates require fresh opt-in.'
+
+    Disable-FateUpload $damagedConsentState -AllowLocalTestEndpoint
+    $withdrawalMarker = $config.WithdrawalPath
+    $withdrawalTokenPath = Get-FateConsentPath $damagedConsentState $config.Scope 'clixml'
+    $withdrawalReceipt = Get-FateConsentPath $damagedConsentState $config.Scope 'withdrawn.json'
+    $withdrawalRetry = Get-FateConsentPath $damagedConsentState $config.Scope 'withdrawal-retry.json'
+    [IO.File]::Delete((Join-Path $damagedConsentState 'upload.clixml'))
+    [IO.File]::WriteAllText($withdrawalReceipt, '{"status":')
+    $invalidBytes = [byte[]]@(0xef, 0xbb, 0xbf, 0xff)
+    [IO.File]::WriteAllBytes($withdrawalRetry, $invalidBytes)
+    $consentStart = $consentRequests.Count
+    $consentResponse.Offline = $true
+    Invoke-FateCaptureUploads @metadataParams
+    Assert-True ($consentRequests.Count -eq ($consentStart + 1) -and
+        (Read-FateUploadState $withdrawalRetry).attempt -eq 1) 'Corrupt withdrawal retry prevented replay and durable backoff.'
+    $consentResponse.Offline = $false
+    Invoke-FateCaptureUploads @metadataParams -ForceRetry
+    Assert-True ($consentRequests.Count -eq ($consentStart + 1)) 'Recovery bypassed a newly persisted withdrawal backoff.'
+    Write-FateUploadState $withdrawalRetry @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o'); attempt = 1 }
+    Invoke-FateCaptureUploads @metadataParams
+    $withdrawalAttempt = $consentRequests[$consentRequests.Count - 1]
+    $backupDirectory = [IO.Path]::GetDirectoryName($withdrawalReceipt)
+    $receiptBackups = @([IO.Directory]::EnumerateFiles($backupDirectory, "$($config.Scope).withdrawn.json.*.corrupt"))
+    $retryBackups = @([IO.Directory]::EnumerateFiles($backupDirectory, "$($config.Scope).withdrawal-retry.json.*.corrupt"))
+    Assert-True ($consentRequests.Count -eq ($consentStart + 2) -and $requests.Count -eq ($requestStart + 1) -and
+        !$withdrawalAttempt.HasKey -and $withdrawalAttempt.Consent.Id -ceq $config.Scope -and
+        $withdrawalAttempt.Withdrawal.withdrawnAt -ceq (Read-FateUploadState $withdrawalMarker).withdrawnAt -and
+        (Test-FateWithdrawalReceipt (Read-FateUploadState $withdrawalReceipt) $config.Scope) -and
+        [IO.File]::Exists($withdrawalTokenPath) -and $receiptBackups.Count -eq 1 -and
+        [IO.File]::ReadAllText($receiptBackups[0]) -ceq '{"status":' -and $retryBackups.Count -eq 1 -and
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($retryBackups[0])) -ceq [Convert]::ToBase64String($invalidBytes)) 'Damaged withdrawal metadata did not recover without the active settings or lost evidence.'
+    Write-Output 'PASS: corrupt withdrawal receipt and UTF-8 retry are preserved and reconstructed without sending captures.'
+
+    Set-FateUploadConfiguration -StateDirectory $damagedConsentState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+    $config = Get-FateUploadConfiguration $damagedConsentState -AllowLocalTestEndpoint
+    $brokenId = Write-TestCapture -Directory $damagedConsentCaptures
+    $lockedId = Write-TestCapture -Directory $damagedConsentCaptures
+    $otherId = Write-TestCapture -Directory $damagedConsentCaptures
+    $consentResponse.Offline = $true
+    Invoke-FateCaptureUploads @metadataParams
+    $consentResponse.Offline = $false
+    $statePath = Join-Path $damagedConsentState "$($config.Scope)/states/$brokenId.json"
+    $lockedPath = Join-Path $damagedConsentState "$($config.Scope)/states/$lockedId.json"
+    $queuedPath = Join-Path $damagedConsentState "$($config.Scope)/queue/$brokenId.json"
+    $originalPayload = [IO.File]::ReadAllText($queuedPath)
+    [IO.File]::WriteAllBytes($statePath, $invalidBytes)
+    [IO.File]::WriteAllText($queuedPath, $originalPayload.Insert(1, '"unexpected":"LOCAL_IMAGE_SENTINEL",'))
+    $requestStart = $requests.Count
+    $busy = [IO.File]::Open($lockedPath, 'CreateNew', 'ReadWrite', 'None')
+    try {
+        Invoke-FateCaptureUploads @metadataParams -ForceRetry
+        Assert-True ($requests.Count -eq ($requestStart + 1) -and
+            (ConvertFrom-Json -InputObject $requests[$requestStart]).captureId -ceq $otherId) 'Invalid UTF-8 or a locked state blocked a valid entry or let altered data through.'
+        [IO.File]::WriteAllText($queuedPath, $originalPayload)
+        Invoke-FateCaptureUploads @metadataParams
+        Assert-True ($requests.Count -eq ($requestStart + 2) -and $requests[$requestStart + 1] -ceq $originalPayload) 'An invalid UTF-8 state did not recover the verified payload.'
+    } finally { $busy.Dispose() }
+    $stateBackups = @([IO.Directory]::EnumerateFiles([IO.Path]::GetDirectoryName($statePath), "$brokenId.json.*.corrupt"))
+    Assert-True ((Read-FateUploadState $statePath).status -ceq 'accepted' -and $stateBackups.Count -eq 1 -and
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($stateBackups[0])) -ceq [Convert]::ToBase64String($invalidBytes)) 'Recovery did not keep the damaged bytes and the new receipt.'
+    Write-Output 'PASS: invalid UTF-8 is recoverable, while a sharing violation leaves its position untouched.'
 } finally {
     $key.Dispose()
     $resolved = [IO.Path]::GetFullPath($testDirectory)
