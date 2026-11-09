@@ -35,8 +35,10 @@ export default function App() {
   const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
   const refresh = useCallback(async () => setRecords(await storage.listOffers()), [])
   const sync = useCaptureSync(async entry => {
-    await refresh()
+    // Apply delivery to this editor session before an asynchronous history read
+    // allows the user to switch drafts underneath this callback.
     editor.receive(entry, !!detailsPanel.current?.open)
+    await refresh()
   })
   const editor = useOfferDraft({ records, connected: sync.status === 'active', refresh, announce })
   const { draft, evidence, dirty, busy, autoSaving, dirtyRef, setBusy, loadDraft, change, canReplace, save,
