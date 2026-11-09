@@ -8,6 +8,10 @@ updates:
       time: "09:00"
       timezone: "Europe/Warsaw"
     open-pull-requests-limit: 5
+    # Match package.json engines and the Node 24 runtime used in CI.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-and-patch:
         patterns: ["*"]
