@@ -56,9 +56,8 @@ you want to inspect or correct captures. Direct upload does not download cloud
 history into the website; local review and reviewed sharing remain separate.
 
 See the [Windows guide](docs/windows-helper.md) for prerequisites and limitations.
-The helper reuses capture, game-window checks and Windows OCR techniques from
-[One More Map](https://github.com/Alkwer/one-more-map.github.io), with the upstream
-[MIT notice retained](helpers/LICENSE.one-more-map.txt). No game actions are automated.
+The helper captures the selected game region and runs OCR locally. No game actions
+are automated.
 
 ## What is implemented
 
@@ -153,8 +152,8 @@ report consistency checks and why session counts or repeat hints are not indepen
 ## License
 
 Original Fate Collector code and documentation are licensed under [MIT](LICENSE).
-See [third-party notices](THIRD_PARTY_NOTICES.md) for the retained One More Map
-license and the scope of game and presentation materials.
+See [third-party notices](THIRD_PARTY_NOTICES.md) for component licenses and the
+scope of game and presentation materials.
 
 Independent community project. Not affiliated with Grinding Gear Games. Game names
 and content remain the property of their respective owners.

@@ -2,7 +2,7 @@
 #SingleInstance Force
 #Include Calibration.ahk
 
-; Window checks and calibration adapted from One More Map. See README.md and LICENSE.one-more-map.txt.
+; Game-window checks and panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
 CoordMode "Mouse", "Screen"
 CoordMode "ToolTip", "Screen"

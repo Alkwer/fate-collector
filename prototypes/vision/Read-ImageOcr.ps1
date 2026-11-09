@@ -1,6 +1,6 @@
 # Local OCR-only adapter. No capture bundle, upload or game input.
 # OCR functions copied from helpers/Export-FateCapture.ps1 (helper 0.2.0).
-# See ../../helpers/LICENSE.one-more-map.txt for upstream attribution.
+# See ../../THIRD_PARTY_NOTICES.md for component attribution.
 param([Parameter(Mandatory)][string]$InputImage,
       [Parameter(Mandatory)][string]$OutputJson,
       [string]$OcrLanguage)

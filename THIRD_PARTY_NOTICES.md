@@ -7,9 +7,13 @@ game text, data, names or trademarks. Those materials retain their owners' right
 ## One More Map
 
 The Windows helper adapts capture, game-window checks and Windows OCR techniques
-from [One More Map](https://github.com/Alkwer/one-more-map.github.io).
+from [One More Map](https://github.com/Alkwer/one-more-map.github.io),
+`public/voyage-import.ahk` at commit `9f704ce8c2b9cb2187c16586f0169227aad72266`.
+The adapted components cover PowerShell/WOW64 handling, foreground game validation,
+client-relative calibration, GDI/Windows Graphics Capture including float16 HDR,
+Windows Runtime OCR and multi-pass contrast processing.
 Its MIT copyright and license notice is retained verbatim in
-[helpers/LICENSE.one-more-map.txt](helpers/LICENSE.one-more-map.txt) and included
+[helpers/LICENSE.third-party.txt](helpers/LICENSE.third-party.txt) and included
 in the downloadable helper alongside this notice and the Fate Collector license.
 
 ## Path of Exile and presentation material
