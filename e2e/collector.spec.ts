@@ -11,6 +11,7 @@ async function helperCapture(page: Page, possibleRepeat = false) {
     context.fillStyle = '#191c19'; context.fillRect(0, 0, 1000, 600)
     context.fillStyle = '#eee9dc'; context.font = '26px sans-serif'
     context.fillText('Alchemist', 40, 80); context.fillText('Sanguine', 400, 80)
+    context.fillText('Fates', 450, 25); context.fillText('CONFIRM', 450, 525)
     const capturedAt = new Date().toISOString()
     const captureContext = possibleRepeat ? {
       session: { id: crypto.randomUUID(), startedAt: capturedAt, sequence: 2 },
@@ -18,7 +19,11 @@ async function helperCapture(page: Page, possibleRepeat = false) {
     } : {}
     return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt, source: 'windows-helper', helperVersion: '0.1.0', context: { captureMode: 'fixture', ...captureContext },
       image: { width: 1000, height: 600, mimeType: 'image/png', dataBase64: canvas.toDataURL('image/png').split(',')[1] },
-      ocr: { status: 'ok', text: 'Alchemist\nSanguine', language: 'en-US', lines: [{ text: 'Alchemist', x: 40, y: 55, width: 140, height: 30 }, { text: 'Sanguine', x: 400, y: 55, width: 140, height: 30 }] } }
+      ocr: { status: 'ok', text: 'Fates\nAlchemist\nSanguine\nCONFIRM', language: 'en-US', lines: [
+        { text: 'Fates', x: 450, y: 5, width: 80, height: 20 },
+        { text: 'Alchemist', x: 40, y: 55, width: 140, height: 30 }, { text: 'Sanguine', x: 400, y: 55, width: 140, height: 30 },
+        { text: 'CONFIRM', x: 450, y: 500, width: 130, height: 25 },
+      ] } }
   }, possibleRepeat)
 }
 
@@ -245,4 +250,36 @@ test('pending corrections cannot share an older reviewed revision', async ({ pag
   await expect(page.getByRole('status')).toContainText('saved on this device')
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeEnabled()
+})
+
+test('a stale tab preserves its draft and cannot overwrite another tab', async ({ page, context }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.goto('/')
+  await page.getByText('More actions', { exact: true }).click()
+  await page.getByRole('button', { name: 'Load example' }).click()
+  await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('saved on this device')
+  const other = await context.newPage()
+  other.on('pageerror', error => errors.push(error.message))
+  await other.goto('/')
+  await other.getByRole('button', { name: /Saved offers/ }).click()
+  await other.getByRole('button', { name: 'Open', exact: true }).click()
+  await other.getByText('Edit details', { exact: true }).click()
+  await page.getByText('Edit details', { exact: true }).click()
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep the newer correction')
+  await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeDisabled()
+  await other.getByLabel('Area', { exact: true }).fill('Unsaved second-tab area')
+  await other.getByRole('button', { name: 'Save offer', exact: true }).click()
+  await expect(other.getByRole('alert')).toContainText('changed in another tab')
+  await expect(other.getByLabel('Area', { exact: true })).toHaveValue('Unsaved second-tab area')
+  await page.reload()
+  await page.getByRole('button', { name: /Saved offers/ }).click()
+  await expect(page.getByText('Revision 2', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Open', exact: true }).click()
+  await page.getByText('Edit details', { exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep the newer correction')
+  await expect(page.getByLabel('Area', { exact: true })).toHaveValue('')
+  expect(errors).toEqual([])
 })

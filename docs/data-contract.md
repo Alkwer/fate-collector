@@ -38,8 +38,12 @@ The source context is retained as optional `offer.captureContext`, including thr
 reviewed corrections, export/import and the research view. Self-references are invalid.
 
 The imported source image and raw OCR are stored separately from edited card fields.
-Current extraction uses a small name dictionary and the topmost recognized card
-row. It may miss unknown names or misassign text at unsupported scales/layouts.
+Current extraction first requires a unique `Fates`/`Select a Fate` heading and
+`Confirm` button to bound the offered area, then looks up names in its first text
+row. Unknown headers retain their column space; cards below `Confirm` are excluded.
+Missing or ambiguous boundaries produce no candidates, including tightly cropped
+captures without these controls. Raw evidence remains available for manual review.
+The small name dictionary may miss unknown names or misassign text at unsupported scales/layouts.
 The app never automatically claims the offer is complete or reviewed.
 
 ## Automatic folder intake

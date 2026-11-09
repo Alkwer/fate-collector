@@ -15,9 +15,14 @@ async function bundle(page: Page) {
     const context = canvas.getContext('2d')!
     context.fillStyle = '#191c19'; context.fillRect(0, 0, 800, 500)
     context.fillStyle = '#eee9dc'; context.font = '24px sans-serif'; context.fillText('Alchemist', 30, 70)
+    context.fillText('Fates', 350, 25); context.fillText('CONFIRM', 350, 420)
     return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', context: { captureMode: 'fixture' },
       image: { width: 800, height: 500, mimeType: 'image/png', dataBase64: canvas.toDataURL('image/png').split(',')[1] },
-      ocr: { status: 'ok', text: 'Alchemist', language: 'en-US', lines: [{ text: 'Alchemist', x: 30, y: 45, width: 140, height: 30 }] } }
+      ocr: { status: 'ok', text: 'Fates\nAlchemist\nCONFIRM', language: 'en-US', lines: [
+        { text: 'Fates', x: 350, y: 5, width: 70, height: 20 },
+        { text: 'Alchemist', x: 30, y: 45, width: 140, height: 30 },
+        { text: 'CONFIRM', x: 350, y: 400, width: 120, height: 20 },
+      ] } }
   })
 }
 async function writeFile(page: Page, name: string, text: string) {
@@ -113,6 +118,27 @@ test('revoked folder permission pauses intake and can be resumed', async ({ page
   await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
 })
 
+test('an unread offered row saves its evidence without promoting a collected card', async ({ page }) => {
+  await setup(page)
+  const capture = await bundle(page)
+  capture.ocr.lines = capture.ocr.lines.map(entry => entry.text === 'Alchemist' ? { ...entry, text: 'Unrecognized header' } : entry)
+  capture.ocr.lines.push({ text: 'Torchbearer', x: 300, y: 450, width: 140, height: 30 })
+  capture.ocr.text = capture.ocr.lines.map(entry => entry.text).join('\n')
+  await writeFile(page, `fate-${capture.captureId}.json`, JSON.stringify(capture))
+  await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
+  await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Your capture is saved.', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(0)
+  await page.reload()
+  await page.getByRole('button', { name: /Saved offers/ }).click()
+  await expect(page.getByRole('cell', { name: 'unverified Needs review', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Open', exact: true }).click()
+  await expect(page.getByRole('img', { name: 'Captured Fate offer', exact: true })).toBeVisible()
+  await page.getByText('Edit details', { exact: true }).click()
+  await page.getByText('Original OCR text', { exact: true }).click()
+  await expect(page.locator('.ocr-text')).toHaveText(capture.ocr.text)
+})
+
 test('an unavailable folder can be disconnected and replaced without clearing browser data', async ({ page }) => {
   await setup(page)
   await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
@@ -148,3 +174,128 @@ test('long capture-folder names and paused controls fit a narrow phone', async (
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Connect folder', exact: true })).toBeVisible()
 })
+
+test('edits typed during an in-flight auto-save use its committed revision without losing text', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await setup(page)
+  const capture = await bundle(page)
+  await writeFile(page, `fate-${capture.captureId}.json`, JSON.stringify(capture))
+  await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
+  await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+  await page.getByText('Edit details', { exact: true }).click()
+  // Hold a real IndexedDB writer open, so the first auto-save waits while the
+  // user keeps typing. Releasing it exercises the delayed commit acknowledgement.
+  await page.evaluate(id => new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open('fate-collector')
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => {
+      const database = request.result
+      const transaction = database.transaction('offers', 'readwrite')
+      transaction.oncomplete = () => database.close()
+      let released = false
+      Reflect.set(window, 'releaseTestWriter', () => { released = true })
+      const keepAlive = () => {
+        const read = transaction.objectStore('offers').get(id)
+        read.onsuccess = () => { if (!released) keepAlive() }
+      }
+      keepAlive(); resolve()
+    }
+  }), capture.captureId)
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('First correction')
+  await expect(page.locator('.auto-save-state')).toHaveText('Saving changes…')
+  await page.getByLabel('Area', { exact: true }).fill('Typed while saving')
+  await page.evaluate(() => Reflect.get(window, 'releaseTestWriter')())
+  await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await page.reload()
+  await page.getByRole('button', { name: /Saved offers/ }).click()
+  await expect(page.getByText('Revision 3', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Open', exact: true }).click()
+  await page.getByText('Edit details', { exact: true }).click()
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('First correction')
+  await expect(page.getByLabel('Area', { exact: true })).toHaveValue('Typed while saving')
+  expect(errors).toEqual([])
+})
+
+test('automatic corrections from a stale tab stay pending and preserve the newer stored revision', async ({ page, context }) => {
+  await setup(page)
+  const capture = await bundle(page)
+  await writeFile(page, `fate-${capture.captureId}.json`, JSON.stringify(capture))
+  await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
+  await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+  await page.getByText('Edit details', { exact: true }).click()
+  const other = await context.newPage()
+  await setup(other)
+  await expect(other.getByText('Local review connected', { exact: true })).toBeVisible()
+  await other.getByRole('button', { name: /Saved offers/ }).click()
+  await other.getByRole('button', { name: 'Open', exact: true }).click()
+  await other.getByText('Edit details', { exact: true }).click()
+  await other.getByRole('textbox', { name: 'Notes', exact: true }).fill('Newer auto-saved correction')
+  await expect(other.getByText('Saved locally', { exact: true })).toBeVisible()
+  await page.getByLabel('Area', { exact: true }).fill('Stale auto-save')
+  await expect(page.getByRole('alert')).toContainText('changed in another tab')
+  await expect(page.locator('.auto-save-state')).toHaveText('Save conflict')
+  await expect(page.getByRole('button', { name: 'Retry save', exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Area', { exact: true })).toHaveValue('Stale auto-save')
+  await other.reload()
+  await other.getByRole('button', { name: /Saved offers/ }).click()
+  await expect(other.getByText('Revision 2', { exact: true })).toBeVisible()
+  await other.getByRole('button', { name: 'Open', exact: true }).click()
+  await other.getByText('Edit details', { exact: true }).click()
+  await expect(other.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Newer auto-saved correction')
+  await expect(other.getByLabel('Area', { exact: true })).toHaveValue('')
+})
+
+for (const width of [1440, 390]) {
+  test(`a failed automatic save can retry unchanged corrections at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    const errors: string[] = [], uploads: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('request', request => { if (request.url().endsWith('/api/observations')) uploads.push(request.url()) })
+    await setup(page)
+    const capture = await bundle(page)
+    await writeFile(page, `fate-${capture.captureId}.json`, JSON.stringify(capture))
+    await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
+    await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+    await page.getByText('Edit details', { exact: true }).click()
+    // Abort real write transactions twice: the initial save and the first retry.
+    // Reads still work, and no offer/evidence write in these transactions commits.
+    await page.evaluate(() => {
+      const original = IDBObjectStore.prototype.put
+      let attempts = 0
+      Reflect.set(window, 'testSaveAttempts', () => attempts)
+      IDBObjectStore.prototype.put = function (...args) {
+        if (this.name === 'offers') {
+          attempts++
+          if (attempts <= 2) { const request = original.apply(this, args); this.transaction.abort(); return request }
+          IDBObjectStore.prototype.put = original
+        }
+        return original.apply(this, args)
+      }
+    })
+    await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep this exact correction')
+    const retry = page.getByRole('button', { name: 'Retry save', exact: true })
+    await expect(retry).toBeVisible()
+    await expect(page.locator('.auto-save-state')).toHaveText('Save failed')
+    await page.getByRole('button', { name: 'Dismiss message' }).click()
+    await expect(retry).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await retry.click()
+    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(retry).toBeVisible()
+    expect(await page.evaluate(() => Reflect.get(window, 'testSaveAttempts')())).toBe(2)
+    await retry.click()
+    await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
+    await expect(retry).toHaveCount(0)
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await page.reload()
+    await page.getByRole('button', { name: /Saved offers/ }).click()
+    await expect(page.getByText('Revision 2', { exact: true })).toBeVisible()
+    await expect(page.getByRole('cell', { name: 'unverified Needs review', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Open', exact: true }).click()
+    await page.getByText('Edit details', { exact: true }).click()
+    await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep this exact correction')
+    expect(errors).toEqual([]); expect(uploads).toEqual([])
+  })
+}

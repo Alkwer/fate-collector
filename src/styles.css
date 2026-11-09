@@ -60,6 +60,7 @@ nav button.active { color: var(--gold); border-color: #7c6c40; background: #2629
 .connection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .capture-connection .connection-problem { flex-basis: 100%; color: #e0b8a8; overflow-wrap: anywhere; }
 .auto-save-state { font-size: 14px; white-space: nowrap; }
+.auto-save-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .privacy-note { font-size: 13px; color: var(--muted); margin-top: 10px; white-space: nowrap; }
 .import-toolbar { display: flex; align-items: center; gap: 25px; margin-bottom: 23px; }
 .outline-button { color: var(--gold); border-color: var(--gold); padding: 10px 22px; font-weight: 600; }
