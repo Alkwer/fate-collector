@@ -452,7 +452,9 @@ function Invoke-FateDiagnosticWithdrawals {
     $directory = Join-Path $StateDirectory 'diagnostics'
     if (![IO.Directory]::Exists($directory)) { return }
     $pattern = if ($Id) { [IO.Path]::GetFileName((Get-FateDiagnosticPath $StateDirectory $Id 'withdrawal.json')) } else { '*.withdrawal.json' }
+    $attempted = 0
     foreach ($path in [IO.Directory]::EnumerateFiles($directory, $pattern)) {
+        if ($attempted -ge $script:FateWithdrawalBatchSize) { break }
         if ([IO.Path]::GetFileName($path) -cnotmatch "\A($script:FateUploadGuid)\.withdrawal\.json\z") { continue }
         $reportId = $Matches[1]
         $receiptPath = Get-FateDiagnosticPath $StateDirectory $reportId 'withdrawn.json'
@@ -466,7 +468,9 @@ function Invoke-FateDiagnosticWithdrawals {
             $record = Read-FateDiagnosticRecord $StateDirectory $reportId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
             if (!$record) { continue }
             $body = ConvertTo-Json -Compress -InputObject @{ withdrawnAt = $withdrawnAt }
-            $result = & $Transport $record $null $body $null
+            $attempted++
+            $result = $null
+            try { $result = & $Transport $record $null $body $null } catch {}
             $status = Get-FateDiagnosticField $result 'Status'
             $receipt = Get-FateDiagnosticField $result 'Receipt'
             if ($status -eq 200 -and (Test-FateWithdrawalReceipt $receipt $reportId)) {
@@ -474,7 +478,7 @@ function Invoke-FateDiagnosticWithdrawals {
                 Write-FateDiagnosticEvent $StateDirectory 'diagnostics-withdraw' 'ok' $status
             } else {
                 Write-FateDiagnosticEvent $StateDirectory 'diagnostics-withdraw' 'pending' $status
-                if ($status -eq 429) { Write-FateDiagnosticRetryTime $retryPath $result }
+                Write-FateWithdrawalRetry $retryPath $result
             }
         } catch {
             Write-FateDiagnosticEvent $StateDirectory 'diagnostics-withdraw' 'pending'

@@ -9,8 +9,7 @@ async function openSharing(page: Page, withOffer = true) {
   if (withOffer) {
     const offer = { ...newOffer(), origin: 'live', gameVersion: 'consent-e2e', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Consent test' }] }
     await page.getByLabel('Import capture file').setInputFiles({ name: 'reviewed.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-    await page.getByRole('button', { name: 'Save offer', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('saved on this device')
+    await expect(page.getByRole('status')).toContainText('restored on this device')
   }
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await page.getByLabel('Collection access key').fill('e2e-local-only')

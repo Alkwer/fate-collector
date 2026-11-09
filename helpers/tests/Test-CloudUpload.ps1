@@ -266,9 +266,12 @@ try {
     $response.Status = 201
     $consentResponse.Offline = $false
     $consentResponse.BadWithdrawal = $true
+    $retryPath = Get-FateConsentPath $stateDirectory $initial.Scope 'withdrawal-retry.json'
+    Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o') }
     Invoke-Upload -ForceRetry
     Assert-True ($other.Scope -ne $initial.Scope -and $requests.Count -eq 12 -and ![IO.File]::Exists($receiptPath)) 'Changing endpoint forwarded old captures or accepted a malformed withdrawal receipt.'
     $consentResponse.BadWithdrawal = $false
+    Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o') }
     $configurationBackup = "$configPath.test"
     [IO.File]::Move($configPath, $configurationBackup)
     try { Invoke-Upload -ForceRetry } finally { [IO.File]::Move($configurationBackup, $configPath) }
@@ -350,6 +353,91 @@ try {
     Assert-True (![IO.File]::Exists((Join-Path $limitedState 'upload.clixml')) -and
         (Test-FateWithdrawalReceipt (Read-FateUploadState (Get-FateConsentPath $limitedState $limitedConfig.Scope 'withdrawn.json')) $limitedConfig.Scope)) 'Withdrawal did not resume and clear only the confirmed configuration.'
     Write-Output 'PASS: durable withdrawal Retry-After and cleanup of confirmed inactive settings.'
+
+    $repairState = Join-Path $testDirectory 'repair-state'
+    $repairCaptures = Join-Path $testDirectory 'repair-captures'
+    Set-FateUploadConfiguration -StateDirectory $repairState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+    $repairConfig = Get-FateUploadConfiguration $repairState -AllowLocalTestEndpoint
+    $repairScope = Join-Path $repairState $repairConfig.Scope
+    $repairParams = @{ CapturesDirectory = $repairCaptures; StateDirectory = $repairState; AllowLocalTestEndpoint = $true
+        Transport = $transport; ConsentTransport = $consentTransport }
+    [void](Write-TestCapture -Directory $repairCaptures)
+    [void](Write-TestCapture -Directory $repairCaptures)
+    $response.WithdrawDuringSend = $false
+    $consentResponse.Offline = $true
+    Invoke-FateCaptureUploads @repairParams
+    $queuedFiles = @([IO.Directory]::EnumerateFiles((Join-Path $repairScope 'queue'), '*.json'))
+    Assert-True ($queuedFiles.Count -eq 2) 'The test could not prepare two queued captures.'
+    $firstQueued = $queuedFiles[0]
+    $firstId = [IO.Path]::GetFileNameWithoutExtension($firstQueued)
+    $secondId = [IO.Path]::GetFileNameWithoutExtension($queuedFiles[1])
+    $firstState = Join-Path $repairScope "states/$firstId.json"
+    $originalPayload = [IO.File]::ReadAllText($firstQueued)
+    $changedPayload = $originalPayload.Insert(1, '"unexpected":"LOCAL_IMAGE_SENTINEL",')
+    $damagedState = '{"status":'
+    [IO.File]::WriteAllText($firstState, $damagedState)
+    [IO.File]::WriteAllText($firstQueued, $changedPayload)
+    $consentResponse.Offline = $false
+    $requestStart = $requests.Count
+    Invoke-FateCaptureUploads @repairParams -ForceRetry
+    Assert-True ($requests.Count -eq ($requestStart + 1) -and
+        (ConvertFrom-Json -InputObject $requests[$requestStart]).captureId -ceq $secondId) 'The bad entry blocked or was sent before the valid entry.'
+    Assert-True ([IO.File]::ReadAllText($firstState) -ceq $damagedState -and
+        [IO.File]::ReadAllText($firstQueued) -ceq $changedPayload) 'A damaged entry was overwritten or removed.'
+    [IO.File]::WriteAllText($firstQueued, $originalPayload)
+    Invoke-FateCaptureUploads @repairParams
+    $preserved = @([IO.Directory]::EnumerateFiles((Join-Path $repairScope 'states'), "$firstId.json.*.corrupt"))
+    Assert-True ($requests.Count -eq ($requestStart + 2) -and
+        $requests[$requestStart + 1] -ceq $originalPayload) 'A verified original payload was not retried unchanged.'
+    Assert-True ((Read-FateUploadState $firstState).status -ceq 'accepted') 'The recovered request did not record the new receipt.'
+    Assert-True ($preserved.Count -eq 1 -and [IO.File]::ReadAllText($preserved[0]) -ceq $damagedState) 'Recovery did not preserve the damaged state.'
+    Write-Output 'PASS: a corrupt state cannot block other uploads or send altered data, and a verified payload can recover.'
+
+    $batchState = Join-Path $testDirectory 'withdrawal-batch'
+    $batchCaptures = Join-Path $testDirectory 'withdrawal-batch-captures'
+    $blockedCapture = $null
+    $batchIds = @(foreach ($entry in 1..4) {
+        Set-FateUploadConfiguration -StateDirectory $batchState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
+        (Get-FateUploadConfiguration $batchState -AllowLocalTestEndpoint).Scope
+        if ($entry -eq 4) { $blockedCapture = Write-TestCapture -Directory $batchCaptures }
+        Disable-FateUpload $batchState -AllowLocalTestEndpoint
+    })
+    $batchCalls = [Collections.Generic.List[string]]::new()
+    $standardConsentTransport = $consentTransport
+    $batchTransport = {
+        param($Consent, [Security.SecureString]$Key, $Withdrawal)
+        $batchCalls.Add($Consent.Id)
+        if ($batchCalls.Count -eq 1) { throw [TimeoutException]::new('Test timeout.') }
+        if ($batchCalls.Count -eq 2) { return @{ Status = 503; RetrySeconds = 120; Receipt = $null } }
+        & $standardConsentTransport $Consent $Key $Withdrawal
+    }
+    $batchParams = @{ CapturesDirectory = $batchCaptures; StateDirectory = $batchState; AllowLocalTestEndpoint = $true
+        Transport = $transport; ConsentTransport = $batchTransport }
+    $requestStart = $requests.Count
+    Invoke-FateCaptureUploads @batchParams
+    Assert-True ($batchCalls.Count -eq 2) 'One cycle exceeded the consent withdrawal batch size.'
+    $retryPaths = @($batchCalls | ForEach-Object { Get-FateConsentPath $batchState $_ 'withdrawal-retry.json' })
+    $retries = @($retryPaths | ForEach-Object { Read-FateUploadState $_ })
+    $now = [DateTimeOffset]::UtcNow
+    Assert-True ($retries.Count -eq 2 -and $retries[0].attempt -eq 1 -and
+        ((ConvertTo-FateUploadTime $retries[0].retryAt) - $now).TotalSeconds -gt 20 -and
+        ((ConvertTo-FateUploadTime $retries[1].retryAt) - $now).TotalSeconds -gt 110) 'Timeout or HTTP 503 Retry-After was not recorded.'
+    Invoke-FateCaptureUploads @batchParams -ForceRetry
+    Assert-True ($batchCalls.Count -eq 4 -and @($batchCalls | Select-Object -Unique).Count -eq 4) 'Backoff was bypassed or later withdrawals were starved.'
+    Invoke-FateCaptureUploads @batchParams -ForceRetry
+    Assert-True ($batchCalls.Count -eq 4 -and $requests.Count -eq $requestStart) 'An unexpired withdrawal or a withdrawn scope was retried.'
+    for ($index = 0; $index -lt $retryPaths.Count; $index++) {
+        $retries[$index].retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o')
+        Write-FateUploadState $retryPaths[$index] $retries[$index]
+    }
+    Invoke-FateCaptureUploads @batchParams
+    Assert-True ($batchCalls.Count -eq 6 -and $requests.Count -eq $requestStart -and
+        [IO.File]::Exists((Join-Path $batchCaptures "fate-$blockedCapture.json"))) 'Expired withdrawal retries did not resume without sending or removing the capture.'
+    foreach ($batchId in $batchIds) {
+        Assert-True ((Test-FateConsentWithdrawnLocally $batchState $batchId) -and
+            (Test-FateWithdrawalReceipt (Read-FateUploadState (Get-FateConsentPath $batchState $batchId 'withdrawn.json')) $batchId)) 'A withdrawal marker or receipt is missing.'
+    }
+    Write-Output 'PASS: consent withdrawals are bounded, back off durably after a timeout or 503, and resume without sending captures.'
 } finally {
     $key.Dispose()
     $resolved = [IO.Path]::GetFullPath($testDirectory)

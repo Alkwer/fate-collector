@@ -119,6 +119,20 @@ export default function App() {
     setDirty(true)
   }
   async function acceptImport(result: Imported) {
+    if (result.mode === 'restore') {
+      const imported = await storage.importOffers(result.entries)
+      await refresh()
+      if (result.entries.length === 1) {
+        const saved = await storage.getOffer(result.entries[0].offer.id)
+        if (!saved) throw new Error('This offer no longer exists on this device.')
+        loadDraft(saved.offer, await storage.getEvidence(saved.offer.captureId))
+        setTab('collector')
+        announce(imported ? 'Offer restored on this device with its original revision. Nothing was uploaded.' : 'This offer is already saved. Available missing evidence was restored; your existing corrections were preserved.')
+      } else {
+        setTab('saved'); announce(`Imported ${imported} new offers and restored available missing evidence. Existing corrections were preserved.`)
+      }
+      return
+    }
     if (result.entries.length === 1) {
       const entry = result.entries[0]
       const existing = await storage.getOffer(entry.offer.id)
@@ -130,8 +144,6 @@ export default function App() {
       setTab('collector')
       return
     }
-    const imported = await storage.importOffers(result.entries)
-    await refresh(); setTab('saved'); announce(`Imported ${imported} new offers and restored available missing evidence. Existing corrections were preserved.`)
   }
   async function loadFile(file: File) {
     if (busy || !canReplace()) return

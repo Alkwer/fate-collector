@@ -211,8 +211,7 @@ test('reimporting a helper file restores a missing screenshot without overwritin
   const bundle = await helperCapture(page)
   const offer = { ...newOffer(), id: bundle.captureId, captureId: bundle.captureId, source: 'windows-helper', reviewed: true, completeness: 'complete', cards: [{ ...newCard(), name: 'Preserved correction' }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'metadata.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-  await page.getByRole('button', { name: 'Save offer', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('saved on this device')
+  await expect(page.getByRole('status')).toContainText('restored on this device')
   await expect(page.getByAltText('Captured Fate offer')).toHaveCount(0)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'original.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) })
   await expect(page.getByRole('status')).toContainText('screenshot and OCR restored')
@@ -231,8 +230,7 @@ test('pending corrections cannot share an older reviewed revision', async ({ pag
   await page.goto('/')
   const offer = { ...newOffer(), origin: 'live', gameVersion: 'local-e2e-test', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Conjurer' }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'reviewed.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-  await page.getByRole('button', { name: 'Save offer', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('saved on this device')
+  await expect(page.getByRole('status')).toContainText('restored on this device')
   await page.getByText('Edit details', { exact: true }).click()
   await page.getByLabel('Notes', { exact: true }).fill('Pending correction')
   await page.getByRole('button', { name: /Saved offers/ }).click()
@@ -283,3 +281,43 @@ test('a stale tab preserves its draft and cannot overwrite another tab', async (
   await expect(page.getByLabel('Area', { exact: true })).toHaveValue('')
   expect(errors).toEqual([])
 })
+
+for (const format of ['offer', 'archive'] as const) {
+  test(`restoring a single ${format} preserves a shared revision and edits create the next revision`, async ({ page, request }) => {
+    const offer = { ...newOffer(), revision: 7, updatedAt: '2026-01-01T00:00:00.000Z', origin: 'live', gameVersion: 'backup-e2e', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Conjurer' }] }
+    await page.goto('/')
+    await page.getByRole('button', { name: /Saved offers/ }).click()
+    await page.getByLabel('Collection access key').fill('e2e-local-only')
+    await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
+    const grantRequest = page.waitForRequest(r => r.url().endsWith('/api/consents'))
+    await page.getByRole('button', { name: 'Accept data sharing', exact: true }).click()
+    await expect(page.getByText('Sharing consent active.', { exact: false })).toBeVisible()
+    const grant = (await grantRequest).postDataJSON()
+    const headers = { Authorization: 'Bearer e2e-local-only', 'X-Consent-Id': grant.id, 'X-Consent-Token': grant.token }
+    expect((await request.post('/api/observations', { headers, data: offer })).status()).toBe(201)
+    const backup = format === 'offer' ? offer : { kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer, evidence: null }] }
+    await page.getByLabel('Import capture file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
+    await expect(page.getByRole('status')).toContainText('restored on this device')
+    await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeDisabled()
+    await page.getByRole('button', { name: /Saved offers/ }).click()
+    const duplicateResponse = page.waitForResponse(r => r.url().endsWith('/api/observations'))
+    await page.getByRole('button', { name: 'Share', exact: true }).click()
+    const duplicate = await duplicateResponse
+    expect(duplicate.status()).toBe(200)
+    expect(await duplicate.json()).toMatchObject({ status: 'duplicate', revision: 7 })
+    expect(duplicate.request().postDataJSON()).toEqual(offer)
+    await expect(page.getByRole('status')).toContainText('Reviewed offer shared')
+    await page.getByRole('button', { name: 'Open', exact: true }).click()
+    await page.getByText('Edit details', { exact: true }).click()
+    await page.getByLabel('Notes', { exact: true }).fill('Correction after restoring')
+    await page.getByRole('combobox', { name: 'Review status', exact: true }).selectOption('partial')
+    await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+    await page.getByRole('button', { name: /Saved offers/ }).click()
+    const correctedResponse = page.waitForResponse(r => r.url().endsWith('/api/observations'))
+    await page.getByRole('button', { name: 'Share', exact: true }).click()
+    const corrected = await correctedResponse
+    expect(corrected.status()).toBe(201)
+    expect(corrected.request().postDataJSON()).toMatchObject({ revision: 8, notes: 'Correction after restoring' })
+    await expect(page.getByRole('status')).toContainText('Reviewed offer shared')
+  })
+}

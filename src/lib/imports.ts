@@ -2,7 +2,7 @@ import { captureSchema, exportSchema, offerSchema, MAX_IMPORT_BYTES, formatValid
 import { captureToDraft, newOffer } from '../../shared/offers'
 import { extractCards } from '../../shared/recognition'
 
-export interface Imported { entries: { offer: Offer; evidence: Evidence | null }[]; message: string }
+export interface Imported { mode: 'draft' | 'restore'; entries: { offer: Offer; evidence: Evidence | null }[]; message: string }
 export async function verifyImage(dataUrl: string, expected?: { width: number; height: number }): Promise<void> {
   const comma = dataUrl.indexOf(',')
   const raw = atob(dataUrl.slice(comma + 1))
@@ -27,17 +27,17 @@ export async function importJson(text: string, captureOnly = false): Promise<Imp
     await verifyImage(entry.evidence.imageDataUrl, parsed.data.image)
     const recognition = extractCards(parsed.data)
     entry.offer.cards = recognition.cards
-    return { entries: [entry], message: recognition.message }
+    return { mode: 'draft', entries: [entry], message: recognition.message }
   }
   if (kind === 'fate-collector.offer') {
     const parsed = offerSchema.safeParse(body)
     if (!parsed.success) throw new Error(formatValidationError(parsed.error))
-    return { entries: [{ offer: parsed.data, evidence: null }], message: 'Offer imported. Check the data before saving.' }
+    return { mode: 'restore', entries: [{ offer: parsed.data, evidence: null }], message: 'Offer read from the backup.' }
   }
   const parsed = exportSchema.safeParse(body)
   if (!parsed.success) throw new Error(kind === 'fate-collector.export' ? formatValidationError(parsed.error) : 'Unsupported file. Use a Fate Collector capture or export.')
   for (const entry of parsed.data.offers) if (entry.evidence) await verifyImage(entry.evidence.imageDataUrl)
-  return { entries: parsed.data.offers, message: `${parsed.data.offers.length} offer(s) read from the export.` }
+  return { mode: 'restore', entries: parsed.data.offers, message: `${parsed.data.offers.length} offer(s) read from the export.` }
 }
 export async function importFile(file: File): Promise<Imported> {
   if (file.size > MAX_IMPORT_BYTES) throw new Error('File exceeds 12 MiB. Crop the screenshot to the Fate panel.')
@@ -53,7 +53,7 @@ export async function importFile(file: File): Promise<Imported> {
     const offer = newOffer()
     offer.source = 'screenshot'
     offer.captureId = offer.id
-    return { entries: [{ offer, evidence: { id: offer.id, imageDataUrl: dataUrl, ocrText: '', ocrLines: [], ocrStatus: 'not-run', helperVersion: null } }],
+    return { mode: 'draft', entries: [{ offer, evidence: { id: offer.id, imageDataUrl: dataUrl, ocrText: '', ocrLines: [], ocrStatus: 'not-run', helperVersion: null } }],
       message: 'Screenshot preserved. Use the Windows helper to read card text automatically, or save this capture for later.' }
   }
   return importJson(await file.text())

@@ -2,6 +2,7 @@
 . (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
 $script:FateUploadGuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 $script:FateUploadUtf8 = [Text.UTF8Encoding]::new($false, $true)
+$script:FateWithdrawalBatchSize = 2
 . (Join-Path $PSScriptRoot 'Consent.Common.ps1')
 . (Join-Path $PSScriptRoot 'Diagnostics.Common.ps1')
 
@@ -61,14 +62,19 @@ function Write-FateUploadState([string]$Path, $Value) {
     Write-FateUploadAtomicText $Path (ConvertTo-Json -InputObject $Value -Compress -Depth 6)
 }
 
-function Read-FateUploadState([string]$Path) {
+function Read-FateUploadStateText([string]$Path) {
     if ([IO.File]::Exists($Path)) {
         $stream = [IO.File]::Open($Path, 'Open', 'Read', ([IO.FileShare]::Read -bor [IO.FileShare]::Delete))
         try {
             $reader = [IO.StreamReader]::new($stream, $script:FateUploadUtf8)
-            try { ConvertFrom-Json -InputObject $reader.ReadToEnd() } finally { $reader.Dispose() }
+            try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
         } finally { $stream.Dispose() }
     }
+}
+
+function Read-FateUploadState([string]$Path) {
+    $source = Read-FateUploadStateText $Path
+    if ($null -ne $source) { ConvertFrom-Json -InputObject $source }
 }
 
 function Write-FateUploadProtectedState([string]$Path, $Value) {
@@ -245,6 +251,31 @@ function ConvertTo-FateUploadPayload($Bundle, [string]$Id, [DateTimeOffset]$Enab
     }
 }
 
+function Get-FateSerializedUploadPayload([string]$Source, [string]$Id, [DateTimeOffset]$EnabledSince) {
+    if (!$Source) { throw 'Missing or oversized bundle.' }
+    $bundle = ConvertFrom-Json -InputObject $Source
+    $payload = ConvertTo-FateUploadPayload $bundle $Id $EnabledSince
+    if ($payload) {
+        $serialized = ConvertTo-Json -InputObject $payload -Compress -Depth 6
+        if ($script:FateUploadUtf8.GetByteCount($serialized) -gt 128KB) { throw 'Oversized upload.' }
+        return $serialized
+    }
+}
+
+function Write-FateWithdrawalRetry([string]$Path, $Result) {
+    $previous = Read-FateDiagnosticJson $Path
+    $attempt = Get-FateDiagnosticField $previous 'attempt'
+    $attempt = if ($attempt -is [int] -and $attempt -in 1..10) { [Math]::Min(10, $attempt + 1) } else { 1 }
+    $delay = [Math]::Min(900, 30 * [Math]::Pow(2, $attempt - 1))
+    $seconds = Get-FateDiagnosticField $Result 'RetrySeconds'
+    if ($seconds -is [ValueType] -and $seconds -gt 0) {
+        $delay = [Math]::Max($delay, [Math]::Min(86400, [double]$seconds))
+    } elseif ((Get-FateDiagnosticField $Result 'Status') -eq 429) {
+        $delay = [Math]::Max($delay, 60)
+    }
+    Write-FateUploadState $Path @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds($delay).ToString('o'); attempt = $attempt }
+}
+
 function Invoke-FateUploadRequest($Configuration, [string]$Payload) {
     Invoke-FateCloudRequest -Origin $Configuration.Origin -Path '/api/captures' -Payload $Payload `
         -Key $Configuration.Key -ConsentId $Configuration.Scope -ConsentToken $Configuration.Consent.Token `
@@ -406,20 +437,14 @@ function Invoke-FateCaptureUploads {
                 catch [Text.DecoderFallbackException] {}
                 $examined++
                 try {
-                    if (!$source) { throw 'Missing or oversized bundle.' }
-                    $bundle = ConvertFrom-Json -InputObject $source
-                    $payload = ConvertTo-FateUploadPayload $bundle $id $since
-                    if ($payload) {
-                        $serialized = ConvertTo-Json -InputObject $payload -Compress -Depth 6
-                        if ($script:FateUploadUtf8.GetByteCount($serialized) -gt 128KB) { throw 'Oversized upload.' }
-                    }
+                    $serialized = Get-FateSerializedUploadPayload $source $id $since
                 } catch {
                     Write-FateUploadState $statePath @{ status = 'rejected'; reason = 'invalid-local-capture' }
                     Write-FateDiagnosticEvent $StateDirectory 'upload' 'blocked'
                     if ($examined -ge 32) { break }
                     continue
                 }
-                if ($payload) {
+                if ($serialized) {
                     Write-FateUploadAtomicText $queuedPath $serialized
                 } else {
                     Write-FateUploadState $statePath @{ status = 'ignored' }
@@ -439,15 +464,46 @@ function Invoke-FateCaptureUploads {
             $id = [IO.Path]::GetFileNameWithoutExtension($path)
             if ($id -notmatch "\A$script:FateUploadGuid\z") { continue }
             $statePath = Join-Path $states "$id.json"
-            $state = Read-FateUploadState $statePath
-            if ($state) {
-                if ($state.status -ne 'retry') {
-                    Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-                    continue
-                }
-                if (!$ForceRetry -and (ConvertTo-FateUploadTime $state.retryAt) -gt [DateTimeOffset]::UtcNow) { continue }
+            $state = $null
+            $damagedState = $false
+            if ([IO.File]::Exists($statePath)) {
+                try { $stateSource = Read-FateUploadStateText $statePath } catch { continue }
+                try {
+                    $state = ConvertFrom-Json -InputObject $stateSource -ErrorAction Stop
+                    if ($state -isnot [PSCustomObject] -or $state.status -cnotin 'accepted', 'duplicate', 'rejected', 'ignored', 'retry') {
+                        throw 'Invalid queue state.'
+                    }
+                    if ($state.status -ne 'retry') {
+                        if ($state.status -in 'accepted', 'duplicate') { [void](ConvertTo-FateUploadTime $state.at) }
+                        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+                        continue
+                    }
+                    if ($state.attempt -isnot [int] -or $state.attempt -notin 1..10 -or $state.httpStatus -isnot [int]) {
+                        throw 'Invalid retry state.'
+                    }
+                    $retryAt = ConvertTo-FateUploadTime $state.retryAt
+                    if (!$ForceRetry -and $retryAt -gt [DateTimeOffset]::UtcNow) { continue }
+                } catch { $damagedState = $true }
             }
-            $payload = [IO.File]::ReadAllText($path, $script:FateUploadUtf8)
+            try {
+                $payload = [IO.File]::ReadAllText($path, $script:FateUploadUtf8)
+                if ($damagedState) {
+                    # A lost receipt can be retried only with the original eligible request.
+                    $original = [IO.FileInfo]::new((Join-Path $CapturesDirectory "fate-$id.json"))
+                    if (!$original.Exists -or ($original.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                        throw 'Original capture is unavailable.'
+                    }
+                    $expectedPayload = Get-FateSerializedUploadPayload (Read-FateCaptureBundle $original.FullName) $id $since
+                    if (!$expectedPayload -or ![string]::Equals($payload, $expectedPayload, [StringComparison]::Ordinal)) {
+                        throw 'Cannot verify queued payload against original capture.'
+                    }
+                    [IO.File]::Move($statePath, "$statePath.$([guid]::NewGuid().ToString('N')).corrupt")
+                    $state = $null
+                }
+            } catch {
+                Write-FateDiagnosticEvent $StateDirectory 'upload' 'blocked'
+                continue
+            }
             $attempted++
             $result = $null
             if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) { return }
