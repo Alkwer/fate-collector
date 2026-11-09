@@ -4,6 +4,12 @@ import { sharingConsent } from './consent'
 
 const recordSchema = z.object({ offer: offerSchema, uploadedRevision: z.number().int().nullable(), uploadedAt: z.string().nullable(), uploadedConsentId: z.string().uuid().optional() }).strict()
 export type SavedOffer = z.infer<typeof recordSchema>
+export class OfferRevisionConflictError extends Error {
+  constructor() {
+    super('This offer changed in another tab. Your draft is still open. Export it to keep your edits, then reopen the offer from Saved offers.')
+    this.name = 'OfferRevisionConflictError'
+  }
+}
 const DB_NAME = 'fate-collector'
 let connection: Promise<IDBDatabase> | undefined
 function db(): Promise<IDBDatabase> {
@@ -76,9 +82,13 @@ export async function saveOffer(draft: Offer, evidence: Evidence | null): Promis
   const done = complete(transaction)
   const store = transaction.objectStore('offers')
   const existing = await value(store.get(draft.id)) as SavedOffer | undefined
+  if (existing && existing.offer.revision !== draft.revision) {
+    transaction.abort(); await done.catch(() => {})
+    throw new OfferRevisionConflictError()
+  }
   const count = await value(store.count())
   if (!existing && count >= 250) { transaction.abort(); await done.catch(() => {}); throw new Error('Local storage is limited to 250 offers. Export and remove older offers first.') }
-  const offer = offerSchema.parse({ ...draft, revision: existing ? Math.max(existing.offer.revision + 1, draft.revision) : draft.revision, updatedAt: new Date().toISOString() })
+  const offer = offerSchema.parse({ ...draft, revision: existing ? existing.offer.revision + 1 : draft.revision, updatedAt: new Date().toISOString() })
   const record = { offer, uploadedRevision: existing?.uploadedRevision ?? null, uploadedAt: existing?.uploadedAt ?? null, ...(existing?.uploadedConsentId ? { uploadedConsentId: existing.uploadedConsentId } : {}) }
   store.put(record)
   if (evidence) await addMissingEvidence(transaction.objectStore('evidence'), evidence)

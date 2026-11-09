@@ -7,6 +7,7 @@ import worker, { type Env } from '../worker'
 import { newOffer, newCard } from '../shared/offers'
 import { offerSchema, type Offer, type CaptureUpload } from '../shared/schema'
 import presskitOcr from './fixtures/presskit-ocr.json'
+import { PARSER_VERSION } from '../shared/recognition'
 
 const databases: DatabaseSync[] = []
 const consentIds = { captures: '11111111-1111-4111-8111-111111111111', observations: '22222222-2222-4222-8222-222222222222' }
@@ -110,6 +111,17 @@ test('automatic retries deduplicate immutable input and reject conflicting OCR',
   expect((await worker.fetch(capturePost({ ...sample, ocr: { ...sample.ocr, text: 'Changed' } }), bindings)).status).toBe(409)
   expect(databases[0].prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(1)
   expect(databases[0].prepare('SELECT parsed_offer_json FROM capture_uploads').get()?.parsed_offer_json).toBe(original)
+})
+
+test('unread offered names preserve raw OCR without storing collected cards as candidates', async () => {
+  const bindings = env(); const sample = upload()
+  sample.ocr.lines = sample.ocr.lines.filter(entry => entry.y < 479 || entry.y > 523)
+  sample.ocr.text = sample.ocr.lines.map(entry => entry.text).join('\n')
+  expect((await worker.fetch(capturePost(sample), bindings)).status).toBe(201)
+  const stored = databases[0].prepare('SELECT payload_json, parsed_offer_json, parser_version FROM capture_uploads').get()!
+  expect(JSON.parse(stored.payload_json as string)).toEqual(sample)
+  expect(JSON.parse(stored.parsed_offer_json as string)).toMatchObject({ cards: [], reviewed: false, completeness: 'unverified' })
+  expect(stored.parser_version).toBe(PARSER_VERSION)
 })
 test('possible repeats remain distinct observations and preserve context through review', async () => {
   const bindings = env()

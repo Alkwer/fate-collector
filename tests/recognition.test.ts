@@ -6,6 +6,7 @@ const line = (text: string, x: number, y: number) => ({ text, x, y, width: 100, 
 const base: Capture = { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', image: { width: 1000, height: 800, mimeType: 'image/png', dataBase64: 'eA==' }, ocr: { status: 'ok', text: '', language: 'en-US', lines: [] } }
 test('extracts the offered row, allows a raised selected card, excludes the collected deck', () => {
   const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
+    line('Fates', 450, 0), line('CONFIRM', 450, 450),
     line('Alchemist', 30, 100), line('Sanguine', 300, 100), line('Houndmaster', 650, 70),
     line('Creates boiling', 30, 250), line('cauldrons of blood', 30, 275), line('Creates spectral wolves', 650, 250),
     line('Torchbearer', 400, 600), line('Creates dangerous bonfires', 400, 700),
@@ -24,4 +25,56 @@ test('reads four offered cards from real Windows OCR of the GGG pre-release scre
   expect(result.cards.map(c => c.name)).toEqual(['Torchbearer', 'Tempest', 'Stormcaller', 'Houndmaster'])
   expect(result.cards[0].modifiers).toEqual(['Creates dangerous bonfires of corpses'])
   expect(result.cards[3].modifiers).toEqual(['Creates spectral wolves which explode into ice'])
+})
+
+test('does not promote a collected card when the offered name is unknown and panel boundaries are absent', () => {
+  const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
+    line('Unknown offered fate', 30, 100), line('Torchbearer', 400, 600),
+  ] } })
+  expect(result.cards).toEqual([])
+})
+
+test.each(['unknown', 'missing'])('keeps the owned Torchbearer out when all offered names are %s in real OCR geometry', mode => {
+  const lines = pressKitOcr.lines.flatMap(entry => {
+    if (entry.y >= 479 && entry.y <= 523) return mode === 'missing' ? [] : [{ ...entry, text: 'Unrecognized header' }]
+    return [entry]
+  })
+  const result = extractCards({ ...base, image: { ...base.image, width: 3840, height: 2160 }, ocr: { ...pressKitOcr, status: 'ok', lines } })
+  expect(result.cards).toEqual([])
+})
+
+test.each(['Fates', 'CONFIRM'])('abstains if the %s boundary is unreadable', marker => {
+  const result = extractCards({ ...base, image: { ...base.image, width: 3840, height: 2160 }, ocr: {
+    ...pressKitOcr, status: 'ok', lines: pressKitOcr.lines.filter(entry => entry.text !== marker),
+  } })
+  expect(result.cards).toEqual([])
+})
+
+test('keeps partial recognition and descriptions within the offered area, including unknown header slots', () => {
+  const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
+    line('Select a Fate', 450, 0), line('CONFIRM', 450, 450),
+    line('Alchemist', 30, 100), line('New unknown Fate', 300, 70), line('Sanguine', 650, 100),
+    line('First description', 30, 250), line('Unknown card description', 300, 250), line('Third description', 650, 250),
+    line('Torchbearer', 300, 600), line('Collected card description', 300, 700),
+  ].reverse() } })
+  expect(result.cards.map(card => ({ name: card.name, modifiers: card.modifiers }))).toEqual([
+    { name: 'Alchemist', modifiers: ['First description'] }, { name: 'Sanguine', modifiers: ['Third description'] },
+  ])
+})
+
+test.each([
+  [line('Fates', 450, 0), line('CONFIRM', 450, 450), line('CONFIRM', 450, 750)],
+  [line('Fates', 450, 0), line('Fates', 450, 50), line('CONFIRM', 450, 450)],
+  [line('Fates', 450, 500), line('CONFIRM', 450, 450)],
+  [line('Invoke Fates', 450, 0), line('CONFIRM', 450, 450)],
+].map(controls => ({ controls })))('does not guess an offer from ambiguous or non-offer controls (%#)', ({ controls }) => {
+  const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [...controls, line('Alchemist', 30, 100)] } })
+  expect(result.cards).toEqual([])
+})
+
+test.each([0.5, 1, 1.5])('preserves the real offered row at %sx scale', scale => {
+  const result = extractCards({ image: { width: 3840 * scale, height: 2160 * scale }, ocr: { ...pressKitOcr, status: 'ok',
+    lines: pressKitOcr.lines.map(entry => ({ ...entry, x: entry.x * scale, y: entry.y * scale, width: entry.width * scale, height: entry.height * scale })),
+  } })
+  expect(result.cards.map(card => card.name)).toEqual(['Torchbearer', 'Tempest', 'Stormcaller', 'Houndmaster'])
 })

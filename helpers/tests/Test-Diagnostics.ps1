@@ -147,9 +147,19 @@ try {
     Save-FateDiagnosticWithdrawal $state $unconfirmed.id -AllowLocalTestEndpoint
     Assert-Diagnostic ([IO.File]::ReadAllText($markerPath) -ceq $marker) 'Local withdrawal timestamp changed on retry.'
     $response.Mode = 'wrong'
+    foreach ($item in $unconfirmed, $report) {
+        Write-FateUploadState (Get-FateDiagnosticPath $state $item.id 'withdrawal-retry.json') @{
+            retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o')
+        }
+    }
     Invoke-FateCaptureUploads -CapturesDirectory $captures -StateDirectory $state -AllowLocalTestEndpoint -DiagnosticTransport $transport
     Assert-Diagnostic ((Get-TestDiagnosticStatus $unconfirmed) -eq 'withdrawal-pending') 'Invalid deletion receipt confirmed withdrawal.'
     $response.Mode = 'ok'
+    foreach ($item in $unconfirmed, $report) {
+        Write-FateUploadState (Get-FateDiagnosticPath $state $item.id 'withdrawal-retry.json') @{
+            retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o')
+        }
+    }
     Invoke-FateCaptureUploads -CapturesDirectory $captures -StateDirectory $state -AllowLocalTestEndpoint -DiagnosticTransport $transport
     Assert-Diagnostic ((Get-TestDiagnosticStatus $unconfirmed) -eq 'withdrawn' -and (Get-TestDiagnosticStatus $report) -eq 'withdrawn') 'Restart retry without gameplay settings failed.'
     foreach ($request in ($requests | Where-Object { !$_.HasKey })) {
@@ -179,6 +189,43 @@ try {
     Invoke-FateCaptureUploads -CapturesDirectory $captures -StateDirectory $state -AllowLocalTestEndpoint -DiagnosticTransport $transport
     Assert-Diagnostic ((Get-TestDiagnosticStatus $limited) -eq 'withdrawn' -and $requests.Count -eq ($count + 2)) 'Withdrawal did not resume after Retry-After.'
     Write-Output 'PASS: HTTP 429 prevents send and automatic withdrawal retries until the collection asks us to retry.'
+
+    $batch = @(foreach ($entry in 1..4) {
+        $item = New-FateDiagnosticReport $state $captures $origin
+        Assert-Diagnostic ((Send-TestDiagnostic $item -ConsentAccepted) -eq 'received') 'Could not create a report for withdrawal batch.'
+        Save-FateDiagnosticWithdrawal $state $item.id -AllowLocalTestEndpoint
+        $item
+    })
+    $batchCalls = [Collections.Generic.List[string]]::new()
+    $standardDiagnosticTransport = $transport
+    $batchTransport = {
+        param($Record, $Key, $Body, $WithdrawalPath)
+        $batchCalls.Add($Record.Id)
+        if ($batchCalls.Count -eq 1) { throw [TimeoutException]::new('Test timeout.') }
+        if ($batchCalls.Count -eq 2) { return @{ Status = 503; RetrySeconds = 120; Receipt = $null } }
+        & $standardDiagnosticTransport $Record $Key $Body $WithdrawalPath
+    }
+    $batchParams = @{ CapturesDirectory = $captures; StateDirectory = $state; AllowLocalTestEndpoint = $true; DiagnosticTransport = $batchTransport }
+    Invoke-FateCaptureUploads @batchParams
+    Assert-Diagnostic ($batchCalls.Count -eq 2) 'One cycle exceeded the diagnostic withdrawal batch size.'
+    $retryPaths = @($batchCalls | ForEach-Object { Get-FateDiagnosticPath $state $_ 'withdrawal-retry.json' })
+    $now = [DateTimeOffset]::UtcNow
+    Assert-Diagnostic (((Get-FateDiagnosticRetryTime $retryPaths[0]) - $now).TotalSeconds -gt 20 -and
+        ((Get-FateDiagnosticRetryTime $retryPaths[1]) - $now).TotalSeconds -gt 110) 'Timeout or HTTP 503 Retry-After was not recorded.'
+    Invoke-FateCaptureUploads @batchParams
+    Assert-Diagnostic ($batchCalls.Count -eq 4 -and @($batchCalls | Select-Object -Unique).Count -eq 4) 'Backoff was bypassed or later withdrawals were starved.'
+    Invoke-FateCaptureUploads @batchParams
+    Assert-Diagnostic ($batchCalls.Count -eq 4) 'A pending diagnostic withdrawal retried before its deadline.'
+    foreach ($retryPath in $retryPaths) {
+        Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o') }
+    }
+    Invoke-FateCaptureUploads @batchParams
+    Assert-Diagnostic ($batchCalls.Count -eq 6) 'Expired diagnostic withdrawal retries did not resume.'
+    foreach ($item in $batch) {
+        Assert-Diagnostic ((Get-TestDiagnosticStatus $item) -eq 'withdrawn' -and
+            [IO.File]::Exists((Get-FateDiagnosticPath $state $item.id 'withdrawal.json'))) 'A diagnostic withdrawal marker or receipt is missing.'
+    }
+    Write-Output 'PASS: diagnostic withdrawals are bounded, back off after a timeout or 503, and resume after the deadline.'
 } finally {
     $key.Dispose()
     $resolved = [IO.Path]::GetFullPath($testDirectory)

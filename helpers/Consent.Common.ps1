@@ -126,10 +126,13 @@ function Invoke-FateConsentRequest($Consent, [Security.SecureString]$Key, $Withd
 function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Transport, [switch]$AllowLocalTestEndpoint) {
     $directory = Join-Path $StateDirectory 'consents'
     if (![IO.Directory]::Exists($directory)) { return }
+    $attempted = 0
     foreach ($path in [IO.Directory]::EnumerateFiles($directory, '*.withdrawal.json')) {
+        if ($attempted -ge $script:FateWithdrawalBatchSize) { break }
         if ([IO.Path]::GetFileName($path) -cnotmatch "\A($script:FateUploadGuid)\.withdrawal\.json\z") { continue }
         $id = $Matches[1]
         $receiptPath = Get-FateConsentPath $StateDirectory $id 'withdrawn.json'
+        $consent = $null
         try {
             if (Test-FateWithdrawalReceipt (Read-FateUploadState $receiptPath) $id) { continue }
             $retryPath = Get-FateConsentPath $StateDirectory $id 'withdrawal-retry.json'
@@ -139,15 +142,18 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
             if (!$consent) { continue }
             $withdrawal = Read-FateUploadState $path
             [void](ConvertTo-FateUploadTime $withdrawal.withdrawnAt)
-            $result = & $Transport $consent $null $withdrawal
+            $attempted++
+            $result = $null
+            try { $result = & $Transport $consent $null $withdrawal } catch {}
             if ($result -and $result.Status -eq 200 -and (Test-FateWithdrawalReceipt $result.Receipt $id)) {
                 Write-FateUploadState $receiptPath @{ id = $id; status = 'withdrawn'; withdrawnAt = $result.Receipt.withdrawnAt }
-            } elseif ($result -and $result.Status -eq 429) {
-                $delay = if ($result.RetrySeconds) { [Math]::Max(30, [Math]::Min(86400, [double]$result.RetrySeconds)) } else { 60 }
-                Write-FateUploadState $retryPath @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds($delay).ToString('o') }
+            } else {
+                Write-FateWithdrawalRetry $retryPath $result
             }
         } catch {
             # A failed attempt stays pending. Other collections and local capture remain available.
+        } finally {
+            if ($consent) { $consent.Token.Dispose() }
         }
     }
 }

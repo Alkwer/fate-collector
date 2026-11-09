@@ -46,6 +46,13 @@ $config = Get-FateUploadConfiguration $StateDirectory -AllowLocalTestEndpoint
 $scope = Join-Path $StateDirectory $config.Scope
 $ids = Read-FateUploadState (Join-Path $StateDirectory 'test-ids.json')
 if ($Phase -eq 'WithdrawOffline') { Disable-FateUpload $StateDirectory -AllowLocalTestEndpoint }
+if ($Phase -eq 'WithdrawOnline') {
+    $retryPath = Get-FateConsentPath $StateDirectory $config.Scope 'withdrawal-retry.json'
+    $retry = Read-FateUploadState $retryPath
+    Assert-Integration ($retry.attempt -eq 1) 'The offline withdrawal did not persist a retry.'
+    $retry.retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o')
+    Write-FateUploadState $retryPath $retry
+}
 if ($Phase -eq 'LostReceipt') {
     foreach ($id in $ids[0..2]) {
         # Simulate a process crash after remote commit, before a durable local receipt.

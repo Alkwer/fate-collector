@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest'
 import { newOffer, exampleOffer } from '../shared/offers'
 import { importJson } from '../src/lib/imports'
 import * as consent from '../src/lib/consent'
-import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence } from '../src/lib/storage'
+import { saveOffer, getOffer, listOffers, markUploaded, deleteOffer, importOffers, receiveCapture, hasCaptureReceipt, getEvidence, restoreEvidence, OfferRevisionConflictError } from '../src/lib/storage'
 import type { Evidence } from '../shared/schema'
 
 test('corrections use one local offer with increasing revisions and retry receipts do not hide unsent changes', async () => {
@@ -57,6 +57,31 @@ test('unread captures can be saved for later review', async () => {
   expect(saved.offer.cards).toEqual([])
   expect(saved.offer.reviewed).toBe(false)
   await deleteOffer(draft.id)
+})
+
+test('a stale editor cannot overwrite a newer revision or its upload receipt', async () => {
+  const first = await saveOffer(exampleOffer(), null)
+  const latest = await saveOffer({ ...first.offer, notes: 'Correction from tab A' }, null)
+  await markUploaded(first.offer.id, latest.offer.revision)
+  await expect(saveOffer({ ...first.offer, area: 'Stale tab B' }, null)).rejects.toBeInstanceOf(OfferRevisionConflictError)
+  expect(await getOffer(first.offer.id)).toMatchObject({ offer: latest.offer, uploadedRevision: latest.offer.revision })
+  const next = await saveOffer({ ...latest.offer, area: 'Reopened latest revision' }, null)
+  expect(next.offer).toMatchObject({ revision: 3, notes: 'Correction from tab A', area: 'Reopened latest revision' })
+  await deleteOffer(first.offer.id)
+})
+
+test('concurrent edits of one revision have exactly one winner', async () => {
+  const first = await saveOffer(exampleOffer(), null)
+  const results = await Promise.allSettled([
+    saveOffer({ ...first.offer, notes: 'Tab A' }, null),
+    saveOffer({ ...first.offer, notes: 'Tab B' }, null),
+  ])
+  expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+  expect(results.filter(result => result.status === 'rejected')).toHaveLength(1)
+  const winner = results.find(result => result.status === 'fulfilled')!
+  expect((await getOffer(first.offer.id))?.offer).toEqual(winner.value.offer)
+  expect(winner.value.offer.revision).toBe(2)
+  await deleteOffer(first.offer.id)
 })
 
 test('bulk imports preserve corrections and reject overflowing archives without a partial import', async () => {

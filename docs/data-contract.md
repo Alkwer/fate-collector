@@ -38,8 +38,12 @@ The source context is retained as optional `offer.captureContext`, including thr
 reviewed corrections, export/import and the research view. Self-references are invalid.
 
 The imported source image and raw OCR are stored separately from edited card fields.
-Current extraction uses a small name dictionary and the topmost recognized card
-row. It may miss unknown names or misassign text at unsupported scales/layouts.
+Current extraction first requires a unique `Fates`/`Select a Fate` heading and
+`Confirm` button to bound the offered area, then looks up names in its first text
+row. Unknown headers retain their column space; cards below `Confirm` are excluded.
+Missing or ambiguous boundaries produce no candidates, including tightly cropped
+captures without these controls. Raw evidence remains available for manual review.
+The small name dictionary may miss unknown names or misassign text at unsupported scales/layouts.
 The app never automatically claims the offer is complete or reviewed.
 
 ## Automatic folder intake
@@ -135,6 +139,10 @@ Local saves update one offer and increment its revision. D1 retains immutable
 submitted revisions. Use `latest_observations`, not all rows, when counting offers.
 Higher revisions represent corrections, not additional encounters. First write wins
 for the same ID and revision; identical retries succeed without another record.
+Local edits must also match the currently stored revision. A stale editor cannot
+overwrite a newer save from another tab; its draft remains available for export
+before reopening the latest offer. Auto-save retains text typed during its own
+pending write and uses that write's committed revision for the next save.
 
 ## Export and limits
 
@@ -143,6 +151,11 @@ include local evidence. History exports contain metadata only. Metadata imports
 cannot reconstruct missing screenshots on their own. Existing offer fields are kept
 unchanged during import, including corrections; matching missing evidence can be restored.
 Multi-offer imports are atomic and reject a storage-cap overflow before writing.
+Offer and archive imports, including single-offer backups, restore directly to
+local storage without changing the saved revision, timestamp or review status.
+This allows a previously shared revision to be retried unchanged under the same
+consent. A subsequent edit creates the next revision. New screenshots and helper
+captures still open as drafts when imported manually.
 
 JSON imports/exports are limited to 12 MiB. Images are limited to 8192 pixels per
 edge and 16,777,216 pixels overall. API bodies are limited to 128 KiB. Reviewed
