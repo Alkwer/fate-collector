@@ -152,6 +152,7 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('heading', { name: 'Provisional preference: Tempest', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
     await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeVisible()
 
     // A separate synthetic offer exercises a manual tooltip correction; it is
     // not represented as an independent game capture or recognition sample.

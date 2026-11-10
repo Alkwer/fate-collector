@@ -48,6 +48,8 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
    map's draft or include it in advice. An explicit **Use this offer in current map**
    transfer is available only after saving corrections and confirming the map.
    Use it only if the archived capture belongs to the currently played instance.
+   If both editors show the same offer, clean copies follow each successful save.
+   Pending corrections remain untouched and retain conflict protection.
 
 ## Rules and uncertainty
 

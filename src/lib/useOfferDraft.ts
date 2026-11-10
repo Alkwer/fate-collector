@@ -51,6 +51,15 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
   }
   function canReplace() { return !dirtyRef.current || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
   useEffect(() => {
+    // Map/archive editors can hold the same saved offer. Refresh a clean copy
+    // after another editor saves it, without rebasing pending or in-flight edits.
+    if (dirtyRef.current || busyRef.current || autoSaving) return
+    const saved = records.find(record => record.offer.id === draft.id)
+    if (!saved || saved.offer.revision <= draft.revision) return
+    setDraft(current => !dirtyRef.current && !busyRef.current && current.id === saved.offer.id
+      && current.revision < saved.offer.revision ? saved.offer : current)
+  }, [records, draft.id, draft.revision, dirty, busy, autoSaving])
+  useEffect(() => {
     if (!dirty) return
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
     window.addEventListener('beforeunload', warn)
