@@ -1,0 +1,931 @@
+{
+  "checkedAt": "2026-11-10",
+  "helperVersion": "0.3.3",
+  "note": "Fresh Windows en-US OCR in auto mode from unchanged presentation PNGs. Crop frameHeight is known source height for calibrated-capture simulation. Text and coordinates are unedited.",
+  "cases": {
+    "offer-a": {
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "crop": null,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "frameHeight": 1080
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "SELECT A FATE\nAlchemist\nCreates boiling\ncauldrons of blood\nFates\nSanguine\nCreates a deadly ring\nof boiling blood\nCONFIRM\nButcher\nFlings projectiles\nwhich open sores in\nthe earth on hit\nGravewalker\nCreates fissures of\nbloated corpses",
+        "lines": [
+          {
+            "text": "SELECT A FATE",
+            "x": 458,
+            "y": 120,
+            "width": 110,
+            "height": 14
+          },
+          {
+            "text": "Alchemist",
+            "x": 590,
+            "y": 415,
+            "width": 67,
+            "height": 13
+          },
+          {
+            "text": "Creates boiling",
+            "x": 574,
+            "y": 597,
+            "width": 102,
+            "height": 16
+          },
+          {
+            "text": "cauldrons of blood",
+            "x": 561,
+            "y": 614,
+            "width": 128,
+            "height": 13
+          },
+          {
+            "text": "Fates",
+            "x": 937,
+            "y": 326,
+            "width": 48,
+            "height": 15
+          },
+          {
+            "text": "Sanguine",
+            "x": 818,
+            "y": 416,
+            "width": 61,
+            "height": 15
+          },
+          {
+            "text": "Creates a deadly ring",
+            "x": 779,
+            "y": 597,
+            "width": 142,
+            "height": 16
+          },
+          {
+            "text": "of boiling blood",
+            "x": 796,
+            "y": 614,
+            "width": 108,
+            "height": 17
+          },
+          {
+            "text": "CONFIRM",
+            "x": 920,
+            "y": 730,
+            "width": 81,
+            "height": 12
+          },
+          {
+            "text": "Butcher",
+            "x": 1048,
+            "y": 415,
+            "width": 51,
+            "height": 13
+          },
+          {
+            "text": "Flings projectiles",
+            "x": 1018,
+            "y": 597,
+            "width": 113,
+            "height": 16
+          },
+          {
+            "text": "which open sores in",
+            "x": 1005,
+            "y": 614,
+            "width": 137,
+            "height": 17
+          },
+          {
+            "text": "the earth on hit",
+            "x": 1021,
+            "y": 632,
+            "width": 107,
+            "height": 13
+          },
+          {
+            "text": "Gravewalker",
+            "x": 1256,
+            "y": 415,
+            "width": 85,
+            "height": 13
+          },
+          {
+            "text": "Creates fissures of",
+            "x": 1237,
+            "y": 597,
+            "width": 125,
+            "height": 13
+          },
+          {
+            "text": "bloated corpses",
+            "x": 1247,
+            "y": 614,
+            "width": 105,
+            "height": 17
+          }
+        ],
+        "language": "en-US"
+      }
+    },
+    "offer-b": {
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "crop": null,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "frameHeight": 1080
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "0:13\n0:06\nMENU\nFates\nTorchbearer\nCreates dangerous\nbonfires of corpses\nTempest\nCreates volatile orbs ,\nof lightning\n_ SFkE9T A FS'\nStormcaller\nCreates leylines of\nlightning\nCONFIRM\nTorchbearer\nCreates dangerous\nbonfires of corpses\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice\nQ\nw",
+        "lines": [
+          {
+            "text": "0:13",
+            "x": 30,
+            "y": 74,
+            "width": 26,
+            "height": 12
+          },
+          {
+            "text": "0:06",
+            "x": 176,
+            "y": 73,
+            "width": 26,
+            "height": 12
+          },
+          {
+            "text": "MENU",
+            "x": 241,
+            "y": 1041,
+            "width": 48,
+            "height": 14
+          },
+          {
+            "text": "Fates",
+            "x": 936,
+            "y": 171,
+            "width": 49,
+            "height": 16
+          },
+          {
+            "text": "Torchbearer",
+            "x": 582,
+            "y": 260,
+            "width": 82,
+            "height": 12
+          },
+          {
+            "text": "Creates dangerous",
+            "x": 562,
+            "y": 441,
+            "width": 124,
+            "height": 17
+          },
+          {
+            "text": "bonfires of corpses",
+            "x": 561,
+            "y": 459,
+            "width": 127,
+            "height": 16
+          },
+          {
+            "text": "Tempest",
+            "x": 819,
+            "y": 261,
+            "width": 57,
+            "height": 15
+          },
+          {
+            "text": "Creates volatile orbs ,",
+            "x": 780,
+            "y": 441,
+            "width": 147,
+            "height": 17
+          },
+          {
+            "text": "of lightning",
+            "x": 809,
+            "y": 459,
+            "width": 80,
+            "height": 16
+          },
+          {
+            "text": "_ SFkE9T A FS'",
+            "x": 1106,
+            "y": 230,
+            "width": 111,
+            "height": 22
+          },
+          {
+            "text": "Stormcaller",
+            "x": 1034,
+            "y": 260,
+            "width": 78,
+            "height": 12
+          },
+          {
+            "text": "Creates leylines of",
+            "x": 1012,
+            "y": 441,
+            "width": 125,
+            "height": 17
+          },
+          {
+            "text": "lightning",
+            "x": 1043,
+            "y": 459,
+            "width": 62,
+            "height": 16
+          },
+          {
+            "text": "CONFIRM",
+            "x": 919,
+            "y": 574,
+            "width": 79,
+            "height": 12
+          },
+          {
+            "text": "Torchbearer",
+            "x": 918,
+            "y": 668,
+            "width": 82,
+            "height": 12
+          },
+          {
+            "text": "Creates dangerous",
+            "x": 899,
+            "y": 849,
+            "width": 124,
+            "height": 17
+          },
+          {
+            "text": "bonfires of corpses",
+            "x": 898,
+            "y": 867,
+            "width": 127,
+            "height": 16
+          },
+          {
+            "text": "Houndmaster",
+            "x": 1252,
+            "y": 240,
+            "width": 92,
+            "height": 12
+          },
+          {
+            "text": "Creates spectral",
+            "x": 1245,
+            "y": 421,
+            "width": 106,
+            "height": 17
+          },
+          {
+            "text": "wolves which explode",
+            "x": 1224,
+            "y": 439,
+            "width": 149,
+            "height": 16
+          },
+          {
+            "text": "into ice",
+            "x": 1274,
+            "y": 457,
+            "width": 50,
+            "height": 12
+          },
+          {
+            "text": "Q",
+            "x": 1415,
+            "y": 1058,
+            "width": 10,
+            "height": 14
+          },
+          {
+            "text": "w",
+            "x": 1471,
+            "y": 1058,
+            "width": 14,
+            "height": 11
+          }
+        ],
+        "language": "en-US"
+      }
+    },
+    "offer-a-panel": {
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "crop": {
+        "x": 490,
+        "y": 285,
+        "width": 950,
+        "height": 495
+      },
+      "image": {
+        "width": 950,
+        "height": 495,
+        "frameHeight": 1080
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "Alchemist\nCreates boiling\ncauldrons of blood\nFates\nSanguine\nCreates a deadly ring\nof boiling blood\nCONFIRM\nButcher\nFlings projectiles\nwhich open sores in\nthe earth on hit\nGravewalker\nCreates fissures of\nbloated corpses",
+        "lines": [
+          {
+            "text": "Alchemist",
+            "x": 100,
+            "y": 130,
+            "width": 67,
+            "height": 12
+          },
+          {
+            "text": "Creates boiling",
+            "x": 84,
+            "y": 312,
+            "width": 102,
+            "height": 16
+          },
+          {
+            "text": "cauldrons of blood",
+            "x": 71,
+            "y": 329,
+            "width": 128,
+            "height": 13
+          },
+          {
+            "text": "Fates",
+            "x": 447,
+            "y": 41,
+            "width": 48,
+            "height": 16
+          },
+          {
+            "text": "Sanguine",
+            "x": 328,
+            "y": 131,
+            "width": 61,
+            "height": 15
+          },
+          {
+            "text": "Creates a deadly ring",
+            "x": 289,
+            "y": 312,
+            "width": 142,
+            "height": 16
+          },
+          {
+            "text": "of boiling blood",
+            "x": 306,
+            "y": 329,
+            "width": 108,
+            "height": 17
+          },
+          {
+            "text": "CONFIRM",
+            "x": 430,
+            "y": 445,
+            "width": 81,
+            "height": 12
+          },
+          {
+            "text": "Butcher",
+            "x": 558,
+            "y": 130,
+            "width": 51,
+            "height": 12
+          },
+          {
+            "text": "Flings projectiles",
+            "x": 528,
+            "y": 312,
+            "width": 113,
+            "height": 16
+          },
+          {
+            "text": "which open sores in",
+            "x": 516,
+            "y": 329,
+            "width": 136,
+            "height": 17
+          },
+          {
+            "text": "the earth on hit",
+            "x": 531,
+            "y": 347,
+            "width": 107,
+            "height": 13
+          },
+          {
+            "text": "Gravewalker",
+            "x": 766,
+            "y": 130,
+            "width": 85,
+            "height": 12
+          },
+          {
+            "text": "Creates fissures of",
+            "x": 747,
+            "y": 312,
+            "width": 125,
+            "height": 13
+          },
+          {
+            "text": "bloated corpses",
+            "x": 757,
+            "y": 329,
+            "width": 105,
+            "height": 17
+          }
+        ],
+        "language": "en-US"
+      }
+    },
+    "offer-b-panel": {
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "crop": {
+        "x": 475,
+        "y": 145,
+        "width": 980,
+        "height": 520
+      },
+      "image": {
+        "width": 980,
+        "height": 520,
+        "frameHeight": 1080
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "Torchbearer\nCreates dangerous\nbonfires of corpses\nTempest\nCreates volatile orbs\nof lightning\nFates\nSF,kE A\nStormcaller\nCreates leylines of\nlightning\nCONFIRM\nHoundmaster\nCreates spectral\nwolves which explode\ninto ice",
+        "lines": [
+          {
+            "text": "Torchbearer",
+            "x": 106,
+            "y": 114,
+            "width": 83,
+            "height": 14
+          },
+          {
+            "text": "Creates dangerous",
+            "x": 86,
+            "y": 296,
+            "width": 125,
+            "height": 17
+          },
+          {
+            "text": "bonfires of corpses",
+            "x": 85,
+            "y": 314,
+            "width": 128,
+            "height": 16
+          },
+          {
+            "text": "Tempest",
+            "x": 344,
+            "y": 116,
+            "width": 57,
+            "height": 15
+          },
+          {
+            "text": "Creates volatile orbs",
+            "x": 304,
+            "y": 296,
+            "width": 139,
+            "height": 13
+          },
+          {
+            "text": "of lightning",
+            "x": 334,
+            "y": 314,
+            "width": 80,
+            "height": 16
+          },
+          {
+            "text": "Fates",
+            "x": 460,
+            "y": 26,
+            "width": 50,
+            "height": 16
+          },
+          {
+            "text": "SF,kE A",
+            "x": 642,
+            "y": 87,
+            "width": 69,
+            "height": 20
+          },
+          {
+            "text": "Stormcaller",
+            "x": 558,
+            "y": 114,
+            "width": 79,
+            "height": 14
+          },
+          {
+            "text": "Creates leylines of",
+            "x": 536,
+            "y": 296,
+            "width": 126,
+            "height": 17
+          },
+          {
+            "text": "lightning",
+            "x": 568,
+            "y": 314,
+            "width": 62,
+            "height": 16
+          },
+          {
+            "text": "CONFIRM",
+            "x": 444,
+            "y": 430,
+            "width": 80,
+            "height": 12
+          },
+          {
+            "text": "Houndmaster",
+            "x": 776,
+            "y": 94,
+            "width": 93,
+            "height": 13
+          },
+          {
+            "text": "Creates spectral",
+            "x": 770,
+            "y": 276,
+            "width": 106,
+            "height": 16
+          },
+          {
+            "text": "wolves which explode",
+            "x": 748,
+            "y": 294,
+            "width": 150,
+            "height": 16
+          },
+          {
+            "text": "into ice",
+            "x": 798,
+            "y": 312,
+            "width": 51,
+            "height": 12
+          }
+        ],
+        "language": "en-US"
+      }
+    },
+    "exceptional": {
+      "source": "research/evidence/exceptional-combo-03h14m42.png",
+      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
+      "crop": null,
+      "image": {
+        "width": 1920,
+        "height": 1080,
+        "frameHeight": 1080
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "Bloodthirsty\nFires volleys of bone\nprojecti les\nEmpowered Monster will drop an additional Exceptional Gem\nDryad\nSpawns vengeful vines\nMENU\nInvoke Fates\nSanguine\nCreates a deadly ring\nof boiling blood\nCONFIRM\nDeathbringer\nCauses beams of\nviscera and gore",
+        "lines": [
+          {
+            "text": "Bloodthirsty",
+            "x": 606,
+            "y": 182,
+            "width": 82,
+            "height": 16
+          },
+          {
+            "text": "Fires volleys of bone",
+            "x": 579,
+            "y": 363,
+            "width": 137,
+            "height": 17
+          },
+          {
+            "text": "projecti les",
+            "x": 613,
+            "y": 381,
+            "width": 69,
+            "height": 16
+          },
+          {
+            "text": "Empowered Monster will drop an additional Exceptional Gem",
+            "x": 283,
+            "y": 439,
+            "width": 528,
+            "height": 20
+          },
+          {
+            "text": "Dryad",
+            "x": 604,
+            "y": 614,
+            "width": 39,
+            "height": 16
+          },
+          {
+            "text": "Spawns vengeful vines",
+            "x": 548,
+            "y": 795,
+            "width": 153,
+            "height": 17
+          },
+          {
+            "text": "MENU",
+            "x": 241,
+            "y": 1040,
+            "width": 51,
+            "height": 15
+          },
+          {
+            "text": "Invoke Fates",
+            "x": 898,
+            "y": 108,
+            "width": 124,
+            "height": 17
+          },
+          {
+            "text": "Sanguine",
+            "x": 929,
+            "y": 183,
+            "width": 61,
+            "height": 15
+          },
+          {
+            "text": "Creates a deadly ring",
+            "x": 890,
+            "y": 363,
+            "width": 143,
+            "height": 17
+          },
+          {
+            "text": "of boiling blood",
+            "x": 907,
+            "y": 381,
+            "width": 109,
+            "height": 16
+          },
+          {
+            "text": "CONFIRM",
+            "x": 920,
+            "y": 526,
+            "width": 80,
+            "height": 12
+          },
+          {
+            "text": "Deathbringer",
+            "x": 1230,
+            "y": 181,
+            "width": 88,
+            "height": 17
+          },
+          {
+            "text": "Causes beams of",
+            "x": 1219,
+            "y": 363,
+            "width": 113,
+            "height": 13
+          },
+          {
+            "text": "viscera and gore",
+            "x": 1220,
+            "y": 381,
+            "width": 110,
+            "height": 16
+          }
+        ],
+        "language": "en-US"
+      }
+    },
+    "duplicates": {
+      "source": "research/evidence/showcase-before-07h24m51.png",
+      "sourceSha256": "677c8ac3dc9b2841bca0aa1a3042875d6bf6ffcaa42e7f2817a7fe92d2625c94",
+      "crop": null,
+      "image": {
+        "width": 1280,
+        "height": 720,
+        "frameHeight": 720
+      },
+      "ocr": {
+        "status": "ok",
+        "text": "Invoke\nFates\n¯frt••\nARVA \"AS\nAREA HAS DESECRATED c.ROUND\nAREA\n60% INCREASED O' MONSTERS\nAREA •S THE SIIAPER\nINCREASED DROPS AREA\nINCREASED QUANTITY OF F0UNn •N\nINCREASED Rum,' OF F0UNn AREA\nINCREASED Pux\n(OPTIONAL)\n\" Talk to Johan in the Karui Shores\nTHREADS OF THE ORIGINATOR\nSpeak to Eagon in your Hideout\nTHE MAVEN\nEATER WORLDS\n• pursue The Fazer Of Worlds' influence in a\nTier g• Map\nSEARING EXARCH\n\" Pursue the Searing in a\nTier Map\nTalk 'o Commander Kirac\nCreates dange\nt»nfires of cormes\nCreates dange\nt»nfires of cormes\nCreate volatile Of\nlightning",
+        "lines": [
+          {
+            "text": "Invoke",
+            "x": 599,
+            "y": 72,
+            "width": 43,
+            "height": 12
+          },
+          {
+            "text": "Fates",
+            "x": 649,
+            "y": 73,
+            "width": 32,
+            "height": 11
+          },
+          {
+            "text": "¯frt••",
+            "x": 421,
+            "y": 409,
+            "width": 19,
+            "height": 14
+          },
+          {
+            "text": "ARVA \"AS",
+            "x": 1105,
+            "y": 184,
+            "width": 41,
+            "height": 8
+          },
+          {
+            "text": "AREA HAS DESECRATED c.ROUND",
+            "x": 1087,
+            "y": 197,
+            "width": 189,
+            "height": 7
+          },
+          {
+            "text": "AREA",
+            "x": 1141,
+            "y": 209,
+            "width": 22,
+            "height": 7
+          },
+          {
+            "text": "60% INCREASED O' MONSTERS",
+            "x": 1080,
+            "y": 221,
+            "width": 196,
+            "height": 7
+          },
+          {
+            "text": "AREA •S THE SIIAPER",
+            "x": 1117,
+            "y": 233,
+            "width": 159,
+            "height": 7
+          },
+          {
+            "text": "INCREASED DROPS AREA",
+            "x": 1112,
+            "y": 245,
+            "width": 164,
+            "height": 8
+          },
+          {
+            "text": "INCREASED QUANTITY OF F0UNn •N",
+            "x": 1048,
+            "y": 257,
+            "width": 181,
+            "height": 10
+          },
+          {
+            "text": "INCREASED Rum,' OF F0UNn AREA",
+            "x": 1063,
+            "y": 269,
+            "width": 213,
+            "height": 8
+          },
+          {
+            "text": "INCREASED Pux",
+            "x": 1185,
+            "y": 281,
+            "width": 71,
+            "height": 8
+          },
+          {
+            "text": "(OPTIONAL)",
+            "x": 1147,
+            "y": 310,
+            "width": 59,
+            "height": 11
+          },
+          {
+            "text": "\" Talk to Johan in the Karui Shores",
+            "x": 1017,
+            "y": 323,
+            "width": 176,
+            "height": 12
+          },
+          {
+            "text": "THREADS OF THE ORIGINATOR",
+            "x": 1012,
+            "y": 339,
+            "width": 152,
+            "height": 8
+          },
+          {
+            "text": "Speak to Eagon in your Hideout",
+            "x": 1030,
+            "y": 351,
+            "width": 156,
+            "height": 12
+          },
+          {
+            "text": "THE MAVEN",
+            "x": 1013,
+            "y": 366,
+            "width": 60,
+            "height": 8
+          },
+          {
+            "text": "EATER WORLDS",
+            "x": 1037,
+            "y": 393,
+            "width": 92,
+            "height": 9
+          },
+          {
+            "text": "• pursue The Fazer Of Worlds' influence in a",
+            "x": 1019,
+            "y": 406,
+            "width": 219,
+            "height": 10
+          },
+          {
+            "text": "Tier g• Map",
+            "x": 1029,
+            "y": 420,
+            "width": 59,
+            "height": 11
+          },
+          {
+            "text": "SEARING EXARCH",
+            "x": 1037,
+            "y": 433,
+            "width": 86,
+            "height": 9
+          },
+          {
+            "text": "\" Pursue the Searing in a",
+            "x": 1017,
+            "y": 446,
+            "width": 220,
+            "height": 12
+          },
+          {
+            "text": "Tier Map",
+            "x": 1029,
+            "y": 460,
+            "width": 59,
+            "height": 11
+          },
+          {
+            "text": "Talk 'o Commander Kirac",
+            "x": 1029,
+            "y": 486,
+            "width": 127,
+            "height": 10
+          },
+          {
+            "text": "Creates dange",
+            "x": 450,
+            "y": 530,
+            "width": 61,
+            "height": 11
+          },
+          {
+            "text": "t»nfires of cormes",
+            "x": 449,
+            "y": 541,
+            "width": 83,
+            "height": 11
+          },
+          {
+            "text": "Creates dange",
+            "x": 600,
+            "y": 530,
+            "width": 61,
+            "height": 11
+          },
+          {
+            "text": "t»nfires of cormes",
+            "x": 599,
+            "y": 541,
+            "width": 83,
+            "height": 11
+          },
+          {
+            "text": "Create volatile Of",
+            "x": 740,
+            "y": 529,
+            "width": 101,
+            "height": 10
+          },
+          {
+            "text": "lightning",
+            "x": 770,
+            "y": 541,
+            "width": 41,
+            "height": 11
+          }
+        ],
+        "language": "en-US"
+      }
+    }
+  }
+}

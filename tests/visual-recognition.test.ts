@@ -6,6 +6,7 @@ import type { Capture } from '../shared/schema'
 import { analyzeVisualCapture, type VisualBox } from '../shared/visual-recognition'
 import catalog from '../shared/visual-templates.json'
 import presskitOcr from './fixtures/presskit-ocr.json'
+import presentationOcr from './fixtures/presentation-ocr.json'
 
 const fixture = (path: string) => new URL(`../prototypes/vision/fixtures/${path}`, import.meta.url)
 const digest = (contents: Buffer) => createHash('sha256').update(contents).digest('hex')
@@ -66,6 +67,20 @@ function cropImage(image: Image, { x, y, width, height }: VisualBox): Image {
   }
   return { width, height, data }
 }
+
+test.each(['offer-a', 'offer-b', 'offer-a-panel', 'offer-b-panel'] as const)('matches presentation pixels with fresh OCR: %s', name => {
+  const capture = presentationOcr.cases[name]
+  expect(digest(readFileSync(new URL(`../${capture.source}`, import.meta.url)))).toBe(capture.sourceSha256)
+  const full = loadFixture(`images/press-${name.startsWith('offer-a') ? 'offer-a' : 'offer-b'}.png`)
+  const image = capture.crop ? cropImage(full, capture.crop) : full
+  expect([image.width, image.height]).toEqual([capture.image.width, capture.image.height])
+  const result = analyzeVisualCapture({ ...image, frameHeight: capture.image.frameHeight, ocr: { ...capture.ocr, status: 'ok' } })
+  expect(result.status).toBe('candidates')
+  expect(result.cards.map(card => card.name)).toEqual(name.startsWith('offer-a') ? ['Alchemist', 'Sanguine', 'Butcher', 'Gravewalker'] : names)
+  expect(result.cards.map(card => card.tier)).toEqual([2, 2, 2, 2])
+  expect(result.cards.map(card => card.symbols.map(symbol => symbol.visualId))).toEqual(name.startsWith('offer-a')
+    ? [['blue-diamond', 'gold-stack'], ['gold-grid', 'blue-diamond'], ['blue-diamond'], ['blue-diamond', 'gold-ring']] : symbols)
+})
 
 function scaleImage(image: Image, scale: 0.5 | 2): Image {
   const width = image.width * scale

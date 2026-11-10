@@ -2,13 +2,14 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import presskitOcr from '../tests/fixtures/presskit-ocr.json' with { type: 'json' }
+import presentationOcr from '../tests/fixtures/presentation-ocr.json' with { type: 'json' }
 import type { Capture } from '../shared/schema'
 import { newCard, newOffer, newReward } from '../shared/offers'
 
 async function pressCapture(page: Page, cropped: boolean): Promise<Capture> {
   const dataBase64 = (await readFile('prototypes/vision/fixtures/images/press-offer-b.png')).toString('base64')
-  const ocr = { ...presskitOcr, status: 'ok' as const, lines: presskitOcr.lines.map(line => ({ ...line, x: line.x / 2, y: line.y / 2, width: line.width / 2, height: line.height / 2 })) }
+  const recorded = presentationOcr.cases[cropped ? 'offer-b-panel' : 'offer-b']
+  const ocr = { ...recorded.ocr, status: 'ok' as const }
   const image = { width: 1920, height: 1080, dataBase64, mimeType: 'image/png' as const, frameHeight: 1080 }
   if (cropped) {
     const bounds = { x: 475, y: 145, width: 980, height: 520 }
@@ -21,11 +22,9 @@ async function pressCapture(page: Page, cropped: boolean): Promise<Capture> {
       return canvas.toDataURL('image/png').split(',')[1]
     }, { source: dataBase64, bounds })
     Object.assign(image, { width: bounds.width, height: bounds.height, dataBase64: png })
-    ocr.lines = ocr.lines.filter(line => line.x >= bounds.x && line.y >= bounds.y && line.x + line.width <= bounds.x + bounds.width && line.y + line.height <= bounds.y + bounds.height)
-      .map(line => ({ ...line, x: line.x - bounds.x, y: line.y - bounds.y }))
   }
   return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(),
-    source: 'windows-helper', helperVersion: '0.3.2', context: { captureMode: 'fixture' }, image, ocr }
+    source: 'windows-helper', helperVersion: presentationOcr.helperVersion, context: { captureMode: 'fixture' }, image, ocr }
 }
 async function importCapture(page: Page, capture: Capture) {
   await page.getByLabel('Import capture file').setInputFiles({ name: `fate-${capture.captureId}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(capture)) })

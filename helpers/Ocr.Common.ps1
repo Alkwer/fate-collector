@@ -8,7 +8,8 @@ function Wait-WinRtResult($Operation, [type]$ResultType) {
 }
 
 function Invoke-FateOcrPass([byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight,
-                            [double]$ScaleX = 1, [double]$ScaleY = 1, [int]$Padding = 0) {
+                            [double]$ScaleX = 1, [double]$ScaleY = 1, [int]$Padding = 0,
+                            [int]$OffsetX = 0, [int]$OffsetY = 0) {
     $memory = [IO.MemoryStream]::new($Png, $false)
     try {
         $stream = [IO.WindowsRuntimeStreamExtensions]::AsRandomAccessStream($memory)
@@ -24,10 +25,10 @@ function Invoke-FateOcrPass([byte[]]$Png, $Engine, [int]$ImageWidth, [int]$Image
             $left = [double]$ImageWidth; $top = [double]$ImageHeight; $right = $bottom = 0.0
             foreach ($word in $line.Words) {
                 $rect = $word.BoundingRect
-                $left = [Math]::Min($left, [Math]::Max(0, ($rect.X - $Padding) / $ScaleX))
-                $top = [Math]::Min($top, [Math]::Max(0, ($rect.Y - $Padding) / $ScaleY))
-                $right = [Math]::Max($right, [Math]::Min($ImageWidth, ($rect.X + $rect.Width - $Padding) / $ScaleX))
-                $bottom = [Math]::Max($bottom, [Math]::Min($ImageHeight, ($rect.Y + $rect.Height - $Padding) / $ScaleY))
+                $left = [Math]::Min($left, [Math]::Max(0, $OffsetX + ($rect.X - $Padding) / $ScaleX))
+                $top = [Math]::Min($top, [Math]::Max(0, $OffsetY + ($rect.Y - $Padding) / $ScaleY))
+                $right = [Math]::Max($right, [Math]::Min($ImageWidth, $OffsetX + ($rect.X + $rect.Width - $Padding) / $ScaleX))
+                $bottom = [Math]::Max($bottom, [Math]::Min($ImageHeight, $OffsetY + ($rect.Y + $rect.Height - $Padding) / $ScaleY))
             }
             if ($right -gt $left -and $bottom -gt $top) {
                 [ordered]@{ text = [string]$line.Text; x = $left; y = $top; width = $right - $left; height = $bottom - $top }
@@ -39,6 +40,37 @@ function Invoke-FateOcrPass([byte[]]$Png, $Engine, [int]$ImageWidth, [int]$Image
         throw 'Windows OCR returned too much text. Choose a tighter crop.'
     }
     return @{ text = $text; lines = $lines }
+}
+
+function Test-FateControlAlignment($A, $B) {
+    return [Math]::Abs(($A.x + $A.width / 2) - ($B.x + $B.width / 2)) -le [Math]::Max($A.width, $B.width) / 2
+}
+
+function Test-FateInvocation($Lines) {
+    if (@($Lines | Where-Object { ($_.text -replace '[^a-z]', '') -eq 'invokefates' }).Count) { return $true }
+    $fates = @($Lines | Where-Object { ($_.text -replace '[^a-z]', '') -eq 'fates' })
+    foreach ($invoke in $Lines | Where-Object { ($_.text -replace '[^a-z]', '') -eq 'invoke' }) {
+        foreach ($heading in $fates) {
+            if ($heading.y -ge $invoke.y -and
+                $heading.y - ($invoke.y + $invoke.height) -le [Math]::Max($invoke.height, $heading.height) * 1.5 -and
+                (Test-FateControlAlignment $invoke $heading)) { return $true }
+        }
+    }
+    return $false
+}
+
+function Find-FateConfirmLine($Candidates, $HeadingLines, [string]$Pattern = '^\s*confirm\s*$') {
+    $headings = @($HeadingLines | Where-Object { ($_.text -replace '[^a-z]', '') -in 'fates', 'selectafate' })
+    $aligned = @(
+        foreach ($candidate in $Candidates | Where-Object { $_.text -match $Pattern }) {
+            foreach ($heading in $headings) {
+                if ($heading.y + $heading.height -lt $candidate.y -and (Test-FateControlAlignment $heading $candidate)) {
+                    $candidate
+                }
+            }
+        }
+    )
+    if ($aligned.Count -eq 1) { return $aligned[0] }
 }
 
 function Select-FateOcrPass($Original, $Normalized, [string[]]$Names) {
@@ -56,9 +88,18 @@ function Select-FateOcrPass($Original, $Normalized, [string[]]$Names) {
     }
     if ($null -eq $Original -or !$Original.text.Trim()) { return $Normalized }
     $originalHeaders = @($Original.lines | Where-Object { $known.ContainsKey(($_.text.ToLowerInvariant() -replace '[^a-z]', '')) })
-    # Extra recognized headers are useful only if no original header is lost or
-    # moved to another card. Ties, conflicts and unknown-only output keep raw OCR.
-    if ($newHeaders.Count -le $originalHeaders.Count) { return $Original }
+    if ($newHeaders.Count -lt $originalHeaders.Count) { return $Original }
+    $originalInvocation = Test-FateInvocation $Original.lines
+    $normalizedInvocation = Test-FateInvocation $Normalized.lines
+    if ($originalInvocation -and !$normalizedInvocation) { return $Original }
+    # On a tie, use the new pass only if it reads the button below the panel heading.
+    if ($newHeaders.Count -eq $originalHeaders.Count) {
+        if ($originalInvocation -or $normalizedInvocation -or
+            @($Original.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }).Count) { return $Original }
+        $confirm = Find-FateConfirmLine $Normalized.lines $Normalized.lines
+        if ($null -eq $confirm -or !(Find-FateConfirmLine $confirm $Original.lines)) { return $Original }
+    }
+    # Preserve every original header at its card position, even when the new pass reads the button.
     $used = @{}
     foreach ($header in $originalHeaders) {
         $match = -1
@@ -75,6 +116,42 @@ function Select-FateOcrPass($Original, $Normalized, [string[]]$Names) {
         $used[$match] = $true
     }
     return $Normalized
+}
+
+function Merge-FateConfirmLine($Selected, $Fragment, $ReadLines) {
+    $confirm = Find-FateConfirmLine $ReadLines $Selected.lines
+    if ($null -eq $confirm) { return $Selected }
+    $overlapX = [Math]::Min($Fragment.x + $Fragment.width, $confirm.x + $confirm.width) - [Math]::Max($Fragment.x, $confirm.x)
+    $overlapY = [Math]::Min($Fragment.y + $Fragment.height, $confirm.y + $confirm.height) - [Math]::Max($Fragment.y, $confirm.y)
+    if ($overlapX -lt $Fragment.width / 2 -or $overlapY -lt $Fragment.height / 2) { return $Selected }
+    $lines = @(
+        foreach ($line in $Selected.lines) {
+            if ([Object]::ReferenceEquals($line, $Fragment)) { $confirm } else { $line }
+        }
+    )
+    $text = [string](($lines | ForEach-Object { $_.text }) -join "`n")
+    if ($text.Length -gt 20000) { return $Selected }
+    return @{ text = $text; lines = $lines }
+}
+
+function Read-FateConfirm($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
+    if ($null -eq $Selected -or @($Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }).Count -or
+        (Test-FateInvocation $Selected.lines) -or ($null -ne $Other -and (Test-FateInvocation $Other.lines))) { return $Selected }
+    $fragment = Find-FateConfirmLine $Selected.lines $Selected.lines '^\s*confir\s*$'
+    if ($null -eq $fragment) { return $Selected }
+    # Re-read the pixels around the truncated label once. The fragment only locates the crop.
+    $margin = 3 * $fragment.height
+    $x = [int][Math]::Max(0, [Math]::Floor($fragment.x - $margin))
+    $y = [int][Math]::Max(0, [Math]::Floor($fragment.y - $margin))
+    $width = [int][Math]::Min($ImageWidth, [Math]::Ceiling($fragment.x + $fragment.width + $margin)) - $x
+    $height = [int][Math]::Min($ImageHeight, [Math]::Ceiling($fragment.y + $fragment.height + $margin)) - $y
+    if ($width -gt 512 -or $height -gt 256) { return $Selected }
+    $region = [Drawing.Rectangle]::new($x, $y, $width, $height)
+    $prepared = [FateOcrImage]::Prepare($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region)
+    $button = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $x $y
+    $merged = Merge-FateConfirmLine $Selected $fragment $button.lines
+    if (![Object]::ReferenceEquals($merged, $Selected)) { Write-Verbose 'Read Confirm from the cropped button.' }
+    return $merged
 }
 
 function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [string]$OcrLanguage,
@@ -135,8 +212,15 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
         }
     }
     if ($null -ne $selected) {
+        $usingNormalized = [Object]::ReferenceEquals($selected, $normalized)
+        Write-Verbose $(if ($usingNormalized) { 'Selected normalized OCR.' } else { 'Selected original OCR.' })
+        if ($OcrMode -eq 'auto') {
+            try {
+                $other = if ($usingNormalized) { $original } else { $normalized }
+                $selected = Read-FateConfirm $selected $other $Png $engine $ImageWidth $ImageHeight
+            } catch { Write-Verbose ("Confirm OCR retry failed. " + $_.Exception.Message) }
+        }
         $ocr.status = 'ok'; $ocr.text = $selected.text; $ocr.lines = $selected.lines
-        Write-Verbose $(if ([Object]::ReferenceEquals($selected, $normalized)) { 'Selected normalized OCR.' } else { 'Selected original OCR.' })
     }
     return $ocr
 }

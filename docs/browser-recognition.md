@@ -21,8 +21,12 @@ verifies reproducibility. No full screenshot is bundled in the app, no new runti
 package is required, and no pixels are sent to the backend.
 
 The browser decodes PNG pixels in a dedicated Worker. The search requires the
-same strict Fates/Confirm boundaries as the text parser, so collected/invoked rows
-cannot supply offered cards. Each suggestion is mapped by header coordinates,
+same exact Fates/Confirm controls as text parser `prerelease-names-3`. A unique
+vertically ordered pair must share a horizontal axis; a separate world-space
+"Select a Fate" label no longer invalidates that pair. Missing controls or several
+aligned pairs still cause abstention. Invoke Fates, including a title split across
+adjacent OCR lines, is excluded. Cards below Confirm cannot supply offered cards.
+Each suggestion is mapped by header coordinates,
 including duplicate names. The image limits remain 8192 px / 16,777,216 pixels;
 the matcher accepts at most eight recognized offered headers and a reference
 height of 540–2160. Helper 0.3.2 supplies the full client height for cropped panels.
@@ -54,6 +58,22 @@ either visual field. Reimport preserves existing corrections.
 
 ## Executed evidence
 
+- Fresh Windows en-US OCR from helper 0.3.3 on 10 November, without editing its text
+  or rectangles: both 1920×1080 press offers and their panel crops now give four
+  offered T2 cards each. Offer A matches seven motifs; B matches six and excludes
+  its collected Torchbearer. The old full-frame A failure came from a separate
+  world-space title; B's `CONFIR` and cropped `NHR` are now read as `CONFIRM`.
+  [Recorded OCR, source hashes and crop bounds](../tests/fixtures/presentation-ocr.json)
+  feed the parser and pixel tests; browser tests use B's fresh full/crop OCR.
+- The same fresh-OCR browser replay selects Tempest provisionally for Dreadmaidens'
+  Sacrament and reports 1/2 after collecting it. Exceptional Gem remains unsupported.
+  A's Gravewalker preference requires manual Item Rarity catalog identification.
+  Both invocation screenshots (`exceptional-combo-03h14m42.png` and
+  `showcase-before-07h24m51.png`) still produce no offered cards. Manual, partial
+  invocation reconstructions retain their prior 1/3 Exceptional and six regular
+  icon-unit duplicate results; they do not prove hidden rewards. Desktop and 390px
+  replay passed without page errors or POST requests. Crop replay supplies the known
+  1080px source height to simulate calibrated F9 metadata; it is not a native F9 test.
 - Real, checked-in 1920×1080 press image `press-offer-b.png`, paired with the existing
   Windows OCR from the same native 4K scene after halving coordinates: four offered
   T2 cards and all six expected motifs. The collected Torchbearer stays excluded.

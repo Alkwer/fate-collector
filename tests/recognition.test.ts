@@ -2,8 +2,17 @@ import { expect, test } from 'vitest'
 import { extractCards } from '../shared/recognition'
 import type { Capture } from '../shared/schema'
 import pressKitOcr from './fixtures/presskit-ocr.json'
+import presentationOcr from './fixtures/presentation-ocr.json'
 const line = (text: string, x: number, y: number) => ({ text, x, y, width: 100, height: 20 })
 const base: Capture = { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', image: { width: 1000, height: 800, mimeType: 'image/png', dataBase64: 'eA==' }, ocr: { status: 'ok', text: '', language: 'en-US', lines: [] } }
+
+test.each(Object.entries(presentationOcr.cases))('uses fresh Windows OCR for presentation %s', (name, capture) => {
+  expect(capture.ocr.status).toBe('ok')
+  const result = extractCards({ ...capture, ocr: { ...capture.ocr, status: 'ok' } })
+  expect(result.cards.map(card => card.name)).toEqual(name.startsWith('offer-a')
+    ? ['Alchemist', 'Sanguine', 'Butcher', 'Gravewalker']
+    : name.startsWith('offer-b') ? ['Torchbearer', 'Tempest', 'Stormcaller', 'Houndmaster'] : [])
+})
 test('extracts the offered row, allows a raised selected card, excludes the collected deck', () => {
   const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
     line('Fates', 450, 0), line('CONFIRM', 450, 450),
@@ -19,6 +28,25 @@ test('extracts the offered row, allows a raised selected card, excludes the coll
 test('does not guess from absent geometry or an unknown name', () => {
   expect(extractCards({ ...base, ocr: { ...base.ocr, text: 'Alchemist', lines: [] } }).cards).toEqual([])
   expect(extractCards({ ...base, ocr: { ...base.ocr, lines: [line('Brandnewfate', 30, 100)] } }).cards).toEqual([])
+})
+
+test('pairs panel controls despite an unrelated world-space title and excludes cards below Confirm', () => {
+  const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
+    line('SELECT A FATE', 20, 0), line('Fates', 450, 100), line('CONFIRM', 450, 550),
+    line('Alchemist', 30, 200), line('Unknown Fate', 300, 200), line('Sanguine', 650, 180),
+    line('First description', 30, 350), line('Unknown description', 300, 350), line('Third description', 650, 350),
+    line('Torchbearer', 450, 650),
+  ] } })
+  expect(result.cards.map(card => ({ name: card.name, modifiers: card.modifiers }))).toEqual([
+    { name: 'Alchemist', modifiers: ['First description'] }, { name: 'Sanguine', modifiers: ['Third description'] },
+  ])
+})
+
+test.each(['CONFIR', 'NHR', 'Confirm selection'])('does not invent a Confirm boundary from %s', text => {
+  const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [
+    line('Fates', 450, 0), line(text, 450, 450), line('Alchemist', 30, 100), line('Torchbearer', 450, 600),
+  ] } })
+  expect(result.cards).toEqual([])
 })
 test('reads four offered cards from real Windows OCR of the GGG pre-release screenshot, excluding the owned Torchbearer', () => {
   const result = extractCards({ ...base, image: { ...base.image, width: 3840, height: 2160 }, ocr: { ...pressKitOcr, status: 'ok' } })
@@ -67,6 +95,9 @@ test.each([
   [line('Fates', 450, 0), line('Fates', 450, 50), line('CONFIRM', 450, 450)],
   [line('Fates', 450, 500), line('CONFIRM', 450, 450)],
   [line('Invoke Fates', 450, 0), line('CONFIRM', 450, 450)],
+  [line('Invoke', 450, 0), line('Fates', 450, 25), line('CONFIRM', 450, 450)],
+  [line('Fates', 50, 0), line('CONFIRM', 450, 450)],
+  [line('Fates', -10, 0), line('CONFIRM', -10, 450)],
 ].map(controls => ({ controls })))('does not guess an offer from ambiguous or non-offer controls (%#)', ({ controls }) => {
   const result = extractCards({ ...base, ocr: { ...base.ocr, lines: [...controls, line('Alchemist', 30, 100)] } })
   expect(result.cards).toEqual([])

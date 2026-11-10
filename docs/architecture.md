@@ -68,8 +68,10 @@ and an assessed dataset, not inferred card-name-to-reward mappings.
 
 Helper 0.3.1 uses window-targeted Windows Graphics Capture for HDR and for detected
 SDR desktop occlusion, with guarded GDI otherwise. It compares multiple OCR passes.
-Both OCR passes come from one original screenshot. Only one pass is emitted, with
-geometry mapped to original pixels; capture/upload v1 contracts stay unchanged.
+Both OCR passes come from one original screenshot. Helper 0.3.3 can use an exact
+Confirm button to break a header-preserving tie, then optionally reread one bounded
+crop around a truncated `CONFIR`. Only an exact overlapping Confirm result replaces
+that line; all geometry maps to original pixels. Capture/upload v1 contracts stay unchanged.
 Calibration ratios are restored after process restarts, while a resolution change
 requires preview and an aspect-ratio change requires new corners. The helper
 captures evidence without automating game input.

@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.2 adds full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.3 improves Confirm OCR; 0.3.2 added full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Direct cloud upload: no browser required
 
@@ -73,7 +73,9 @@ Automatic SDR uses guarded GDI and falls back to window-targeted Windows Graphic
 
 Advanced troubleshooting can set `Backend=auto`, `gdi` or `wgc` under `[capture]` in `fate-collector.ini`, or pass `-CaptureBackend` to the exporter. `auto` is the default. Forcing `gdi` with Windows HDR enabled can distort colors.
 
-OCR reads the original pixels and a bounded, contrast-normalized/resized version. Coordinates from the second pass are mapped to the original screenshot. The second pass is selected only if the first has no text, or it adds exact catalog headers while preserving the original known headers in their positions. Conflicts and ties keep the original pass. Unknown names are not replaced by dictionary guesses. This selection is a heuristic, not calibrated confidence; a missed/incorrect unknown name is still possible. The returned text is one whole selected pass, never a mixture of captures. The original PNG is unchanged. The capture format stays compatible with existing v1 uploads; helper version 0.3.0 identifies this pipeline. `-OcrMode original` or `-OcrMode normalized` can isolate a pass for offline diagnosis.
+OCR reads the original pixels and a bounded, contrast-normalized/resized version. Coordinates from the second pass are mapped to the original screenshot. The second pass is selected if the first has no text, or it adds exact catalog headers while preserving the original known headers in their positions. In 0.3.3, an equal header count can also select the second pass if it uniquely reads an exact Confirm below an aligned panel heading and the original has no exact Confirm. Conflicts keep the original pass; invocation-title evidence is preserved. Unknown names are not replaced by dictionary guesses. This selection is a heuristic, not calibrated confidence; a missed/incorrect unknown name is still possible.
+
+If auto mode still reads exactly `CONFIR` below an aligned heading, it performs one additional normalized OCR read of the surrounding pixels (at most 512×256 before scaling). An exact `CONFIRM` result must overlap the fragment in both axes; only that line is replaced with the actual OCR text and mapped rectangle. No button text is invented when this read fails, and the retry is disabled for invocation screens. The original PNG and all other selected lines remain unchanged. The capture format stays compatible with existing v1 uploads. `-OcrMode original` or `-OcrMode normalized` isolates a whole-image pass without the button retry for offline diagnosis.
 
 The prototype under `prototypes/vision` remains separate: its icon recognition and dictionary-assisted header refinements have not been enabled in F9.
 
