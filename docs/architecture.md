@@ -22,8 +22,8 @@ PoE visible panel
 | `shared/visual-suggestions.ts` | Unreviewed, position-based mapping from motifs to fresh card fields |
 | `src/lib/visual-worker.ts` | Local image decoding/matching off the main thread; bounded timeout/fallback |
 | `shared/advisor.ts` | Local goal-based ranking, bounded invocation search and explicit uncertainty |
-| `src/components/FateAdvisor.tsx` | Next-card and invocation advice, explicit area collection |
-| `src/lib/advisor-workspace.ts` | Validated tab-session persistence, preserving last valid notes on failed edits |
+| `src/components/FateAdvisor.tsx` | Unified offer/advice screen and collection for the current map |
+| `src/lib/advisor-workspace.ts` | Map identity, explicit offer membership, validated tab persistence and v1 migration |
 | `src/lib/imports.ts` | Bounded imports, decoded-image validation, exports |
 | `src/lib/storage.ts` | Local evidence, revisions and atomic archive imports |
 | `src/lib/capture-sync.ts` | Bounded folder intake and duplicate-safe delivery |

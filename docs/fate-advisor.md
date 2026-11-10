@@ -1,19 +1,24 @@
 # Fate advisor
 
-The **Advisor** tab covers two decisions: the next Fate from the current offer,
-and the order of up to three input cards from the current area's collection.
+The **Current map** screen combines the current offer, next-Fate recommendation,
+collected cards and the order of up to three invocation inputs. Ordinary Fates
+can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation
 schemas. The rule baseline is the [prerelease research checked on 8 November
 2026](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md), not live-game validation.
 
 ## Use
 
-1. Capture/import an offer in **Collector**. In **Edit details → Modifiers &
+1. Start a map session with **Start new map**, then capture/import an offer.
+   Confirm **Use this offer in current map** before it enters advice. If no map
+   is active, **Start map with this offer** performs both steps explicitly.
+   Helper session IDs, timestamps and folder catch-up do not establish map identity.
+   In **Edit details → Modifiers &
    rewards**, identify each visible reward's exact label, kind, count and, when
    known, combo threshold. Supported icon shapes and T2/T3 are now suggested locally
    from the image. Shape matches do not establish a reward's meaning or kind.
    Check the tier and the full reward row using the two visual-review checkboxes.
-2. Open **Advisor**, choose **Choose from current offer** and a **Reward goal**.
+2. On the same screen, choose **Choose from current offer** and a **Reward goal**.
    The result names the matching Fate(s), shows icon progress and invocation order,
    and separates a supported recommendation from a provisional preference.
 3. After choosing in the game, use **Add … to collected** for that card. Only one
@@ -22,12 +27,24 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
 4. After the next capture, repeat. Choose **Plan collected Fates** for an invocation
    plan. Use **Edit collected cards** to enter earlier cards or correct these local
    snapshots. Later changes to an observed offer do not silently alter the snapshots.
-5. Use **Start a new area** when leaving the instance. The collection survives app
-   navigation and reload in this browser tab through versioned `sessionStorage`.
-   Restored cards require **Continue this area** before advice resumes. A separate
+5. Use **New map** when entering a different instance. It creates a new local map
+   ID, clears collected cards and all offer bindings, resets the current draft and
+   returns to offer mode. It preserves the reward goal and the observation archive.
+   Leaving temporarily and returning to the same instance does not require a reset.
+   Map changes are **not detected automatically**; the player establishes the boundary.
+6. The collection survives navigation and reload in this tab through versioned
+   `sessionStorage`. **Every active restored map**, including one without collected
+   cards, requires **Continue this map** or **New map** before advice resumes. A separate
    browser tab has separate planning state; closing the tab normally ends its session.
    It is not part of observation backups or uploads. Storage failures are shown;
-   invalid edits preserve the last valid stored area rather than overwriting it.
+   invalid edits preserve the last valid stored map rather than overwriting it.
+   Version 1 notes migrate to version 2 without deleting the original data. Old
+   nonempty collections require confirmation and have an unknown map start time.
+7. **Saved offers** and restored offer/export JSON open an independent archive
+   editor. Opening or correcting an archive entry does not replace the current
+   map's draft or include it in advice. An explicit **Use this offer in current map**
+   transfer is available only after saving corrections and confirming the map.
+   Use it only if the archived capture belongs to the currently played instance.
 
 ## Rules and uncertainty
 
@@ -61,5 +78,6 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
 
 The engine is in `shared/advisor.ts`, independent of React, capture parsing and
 storage. Unit tests cover ranking, unknowns, thresholds, duplicate order and limits.
-`e2e/advisor.spec.ts` covers both decisions, edits, area resets, local-only planning,
+`e2e/advisor.spec.ts` covers both decisions, edits, map resets, archive isolation,
+empty restored maps, explicit offer membership, local-only planning,
 and desktop/tablet/mobile rendering alongside the existing collector regression suite.

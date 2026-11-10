@@ -220,6 +220,23 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .field-error { color: #f2aaa0; font-size: .875rem; }
 .visual-review { margin-top: 16px; }
 .visual-review .checkbox-row { margin-top: 10px; }
+.map-session, .archive-boundary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; margin-bottom: 20px; border-block: 1px solid var(--border-light); }
+.map-session strong { color: var(--gold); font-size: 18px; }
+.map-session p, .archive-boundary p { max-width: 760px; font-size: 14px; color: var(--muted); margin-top: 6px; }
+.map-session-actions, .archive-boundary > div { display: flex; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+.collector-grid.map-layout { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); align-items: start; }
+.map-sidebar { display: grid; gap: 18px; min-width: 0; }
+.map-capture-connection { margin-top: 20px; }
+.map-offer-confirmation { padding: 16px 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.map-offer-confirmation p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+.map-layout .offer-preview { margin-top: 22px; }
+.map-layout .advisor-controls { margin-bottom: 20px; }
+.map-layout .collect-fate { margin-top: 8px; font-size: 14px; }
+.map-layout .candidate-plan > summary { color: var(--muted); }
+.map-layout .advisor-candidates { margin: 8px 0 0; }
+.map-layout .fate-list .advisor-value { color: var(--gold); }
+.map-layout .advisor-collection .section-heading { flex-wrap: wrap; }
+@media (max-width: 900px) { .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); }.map-session, .archive-boundary { flex-wrap: wrap; }.map-session-actions, .archive-boundary > div { flex-shrink: 1; } }
 .advisor-restore { flex-wrap: wrap; }
 .advisor-restore > div { display: flex; flex-wrap: wrap; gap: 10px; }
 .advisor-restore button { font-size: 14px; line-height: 1.4; padding: 9px 12px; border: 1px solid var(--border-light); }

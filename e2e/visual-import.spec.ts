@@ -48,7 +48,7 @@ for (const cropped of [false, true]) {
     await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(1)
     await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
     await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
-    await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+    await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
     await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
     await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
     await page.getByRole('button', { name: 'Edit current offer' }).click()
@@ -95,6 +95,23 @@ test('missing crop scale or unavailable worker preserves capture and OCR without
   await expect(page.getByAltText('Captured Fate offer')).toBeVisible()
 })
 
+test('capture imports never infer map membership from a helper session or timestamp', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Start new map', exact: true }).click()
+  const capture = await pressCapture(page, true)
+  capture.context = { captureMode: 'fixture', ...capture.context, session: { id: crypto.randomUUID(), startedAt: capture.capturedAt, sequence: 1 } }
+  await importCapture(page, capture)
+  await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Use this offer in current map' }).click()
+  await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
+  await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
+  await page.getByRole('button', { name: 'New map', exact: true }).click()
+  await expect(page.getByRole('complementary', { name: 'Collected in this map' })).toContainText('0/12')
+  await importCapture(page, capture)
+  await expect(page.getByRole('button', { name: 'Use this offer in current map' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(0)
+})
+
 test('connected F9 folder intake saves visual candidates automatically and keeps them unreviewed', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window, 'showDirectoryPicker', { configurable: true, value: async () => (await navigator.storage.getDirectory()).getDirectoryHandle('captures', { create: true }) })
@@ -113,7 +130,7 @@ test('connected F9 folder intake saves visual candidates automatically and keeps
   await page.getByText('Edit details', { exact: true }).click()
   await expect(page.getByLabel('Review status')).toHaveValue('unverified')
   await expect(page.getByLabel('I checked this tier against the image')).not.toBeChecked()
-  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
   await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
 })

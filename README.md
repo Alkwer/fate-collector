@@ -68,8 +68,9 @@ are automated.
 
 ## What is implemented
 
-- A local [Fate advisor](docs/fate-advisor.md): goal-based next-card recommendations,
-  explicit area collection and invocation order, with duplicate handling and uncertainty.
+- A local [Fate advisor](docs/fate-advisor.md) on the Current map screen: next-card
+  recommendations, map-scoped collection and invocation order, with duplicate handling
+  and uncertainty. New maps clear planning state; archive entries require explicit transfer.
 - Local screenshot and positioned OCR bundles, clipboard/file import and drag/drop.
 - Read-only capture-folder connection, automatic local intake and correction saving,
   persistent connection handles, duplicate receipts and deletion protection.
