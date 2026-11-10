@@ -65,7 +65,7 @@ for (const cropped of [false, true]) {
     await expect(page.getByRole('heading', { name: 'Torchbearer checked', exact: true })).toBeVisible()
     await expect(page.getByText('Tier 2 · suggested', { exact: true })).toHaveCount(3)
     await page.getByLabel('Import capture file').setInputFiles({ name: 'original.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(capture)) })
-    await expect(page.getByRole('status')).toContainText('already saved')
+    await expect(page.getByRole('status').filter({ hasText: 'already saved' })).toBeVisible()
     await expect(page.locator('.collector-grid')).toHaveAttribute('aria-busy', 'false')
     await expect(page.getByRole('heading', { name: 'Torchbearer checked', exact: true })).toBeVisible()
     await expect(page.getByText('Tier 2 · suggested', { exact: true })).toHaveCount(3)
