@@ -17,7 +17,8 @@ Chrome or Edge. The browser reads completed files and saves them locally; no pas
 confirmation or save click is required. This local review connection needs an open page.
 The Windows helper performs local OCR. The website suggests known Fate names,
 descriptions, supported tiers and icon shapes. Visual suggestions remain unreviewed;
-reward meanings and unsupported icons stay unknown. Area, modifiers,
+the [tooltip catalog](research/REWARD_CATALOG_2026-11-10.md) supplies a few meanings,
+while ambiguous reward kinds and unsupported icons stay unknown. Area, modifiers,
 rewards and the chosen card are optional. The main screen has no fields to fill in;
 manual corrections are under **Edit details** and save automatically while connected.
 Automatic records stay unverified until explicitly reviewed. Manual file import,
@@ -157,7 +158,7 @@ documents the implementation differences, measured evidence and native validatio
 Its [whole-offer reader](prototypes/vision/OFFERS-V2.md) adds positioned Windows OCR,
 offered/collected/invoked card grouping and tooltip masking, with explicit unknowns.
 
-Icon shapes do not establish reward meanings, exact outcomes or probabilities. There is no
+The small tooltip catalog does not establish every motif's kind, exact outcomes or probabilities. There is no
 continuous screen watcher, automatic choice detection or public anonymous ingestion.
 Capture each offer once: importing the same file is deduplicated, but pressing F9
 again creates a new capture. Shared collection is currently for trusted testers

@@ -16,7 +16,10 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
    In **Edit details → Modifiers &
    rewards**, identify each visible reward's exact label, kind, count and, when
    known, combo threshold. Supported icon shapes and T2/T3 are now suggested locally
-   from the image. Shape matches do not establish a reward's meaning or kind.
+   from the image. The tooltip catalog suggests Dreadmaidens' Sacrament combo (2),
+   while ambiguous rarity/currency kinds remain unknown. Use **Tooltip catalog**
+   to select a verified matching combo, see its reference icon and open the GGG
+   source. Exceptional Gem requires manual identification, not the three-gems motif.
    Check the tier and the full reward row using the two visual-review checkboxes.
 2. On the same screen, choose **Choose from current offer** and a **Reward goal**.
    The result names the matching Fate(s), shows icon progress and invocation order,

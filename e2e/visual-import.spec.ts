@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import presskitOcr from '../tests/fixtures/presskit-ocr.json' with { type: 'json' }
 import type { Capture } from '../shared/schema'
+import { newCard, newOffer, newReward } from '../shared/offers'
 
 async function pressCapture(page: Page, cropped: boolean): Promise<Capture> {
   const dataBase64 = (await readFile('prototypes/vision/fixtures/images/press-offer-b.png')).toString('base64')
@@ -43,8 +44,9 @@ for (const cropped of [false, true]) {
     const capture = await pressCapture(page, cropped)
     await importCapture(page, capture)
     await expect(page.getByText('Tier 2 · suggested', { exact: true })).toHaveCount(4)
-    await expect(page.getByText('Suggested icons: Gold ring. Meanings need review.', { exact: true })).toBeVisible()
-    await expect(page.getByText('Suggested icons: Silver cluster, Orange feathers, Gold ring. Meanings need review.', { exact: true })).toBeVisible()
+    await expect(page.getByText('Suggested icons: Item Rarity (Gold ring; kind unknown). Meanings need review.', { exact: true })).toBeVisible()
+    await expect(page.getByText('Suggested icons: Silver cluster, Item Rarity (Gold ring; kind unknown). Meanings need review.', { exact: true })).toBeVisible()
+    await expect(page.getByText("Dreadmaidens' Sacrament · suggested; check the full reward row", { exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(1)
     await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
     await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
@@ -134,3 +136,73 @@ test('connected F9 folder intake saves visual candidates automatically and keeps
   await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
 })
+
+for (const width of [1440, 390]) {
+  test(`tooltip catalog connects capture, next choice, invocation and map reset at ${width}px`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+    await page.setViewportSize({ width, height: 960 })
+    await page.goto('/')
+    await expect(page).toHaveTitle(/Fate Collector/)
+    const capture = await pressCapture(page, true)
+    await importCapture(page, capture)
+    await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+    await page.getByLabel('Reward goal').selectOption("combo:dreadmaidens' sacrament")
+    await expect(page.getByRole('heading', { name: 'Provisional preference: Tempest', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
+    await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
+
+    // A separate synthetic offer exercises a manual tooltip correction; it is
+    // not represented as an independent game capture or recognition sample.
+    const manual = { ...newOffer(), cards: [{ ...newCard(), name: 'Wildfire', tier: 2, rewards: [newReward()],
+      visualReview: { version: 'test-manual-review', rewardsReviewed: true, tierReviewed: true } }] }
+    await page.getByLabel('Import capture file').setInputFiles({ name: 'catalog-offer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(manual)) })
+    await expect(page.getByRole('heading', { name: 'Archived offer', exact: true })).toBeVisible()
+    await page.getByText('Edit details', { exact: true }).click()
+    await page.getByText('Modifiers & rewards', { exact: false }).click()
+    await page.getByLabel('Count', { exact: true }).fill('2')
+    await page.getByRole('combobox', { name: 'Tooltip catalog', exact: true }).selectOption('dreadmaidens-sacrament')
+    await expect(page.getByLabel('Count', { exact: true })).toHaveValue('2')
+    await expect(page.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('combo')
+    await expect(page.getByLabel('Combo threshold', { exact: true })).toHaveValue('2')
+    await expect(page.getByLabel('Identified', { exact: true })).toBeChecked()
+    const reviewed = page.getByLabel('I checked all reward icons, kinds, counts and thresholds', { exact: true })
+    await expect(reviewed).not.toBeChecked()
+    await reviewed.check()
+    await page.getByRole('combobox', { name: 'Tooltip catalog', exact: true }).selectOption('additional-currency')
+    await expect(page.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('unknown')
+    await expect(page.getByLabel('Combo threshold', { exact: true })).toHaveValue('')
+    await expect(page.getByLabel('Identified', { exact: true })).not.toBeChecked()
+    await expect(reviewed).not.toBeChecked()
+    await page.getByRole('combobox', { name: 'Tooltip catalog', exact: true }).selectOption('exceptional-gem')
+    await expect(page.getByLabel('Combo threshold', { exact: true })).toHaveValue('3')
+    await expect(page.getByText('The three-coloured-gems motif is a different icon.', { exact: false })).toBeVisible()
+    await page.getByRole('combobox', { name: 'Tooltip catalog', exact: true }).selectOption('dreadmaidens-sacrament')
+    await page.getByLabel('Count', { exact: true }).fill('1')
+    await reviewed.check()
+    await expect(page.getByAltText("Dreadmaidens' Sacrament reference icon")).toBeVisible()
+    await expect(page.getByRole('link', { name: 'GGG tooltip', exact: true })).toHaveAttribute('href', /t=11697s/)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.locator('.reward-editor').screenshot({ path: join(tmpdir(), `fate-catalog-detail-${width}.png`) })
+    await page.screenshot({ path: join(tmpdir(), `fate-catalog-editor-${width}.png`), fullPage: true })
+    await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+    await page.getByRole('button', { name: 'Use this offer in current map', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Provisional preference: Wildfire', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Add Wildfire to collected', exact: true }).click()
+    await page.getByLabel('Decision').selectOption('invoke')
+    await expect(page.getByRole('heading', { name: 'Provisional invocation plan', exact: true })).toBeVisible()
+    await expect(page.locator('.advisor-plans article').first()).toContainText('2/2 matching icons · Combo ready')
+    await expect(page.locator('.advisor-plans article').first().locator('.invocation-order li')).toHaveText(['Tempest (collected #1)', 'Wildfire (collected #2)'])
+    await page.screenshot({ path: join(tmpdir(), `fate-catalog-plan-${width}.png`), fullPage: true })
+    await page.reload()
+    await page.getByRole('button', { name: 'Continue this map', exact: true }).click()
+    await page.getByLabel('Decision').selectOption('invoke')
+    await expect(page.locator('.advisor-plans article').first()).toContainText('2/2 matching icons · Combo ready')
+    await page.getByRole('button', { name: 'New map', exact: true }).click()
+    await expect(page.getByRole('complementary', { name: 'Collected in this map' })).toContainText('0/12')
+    await expect(page.getByRole('heading', { name: 'Wildfire', exact: true })).toHaveCount(0)
+    await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+    expect(errors).toEqual([])
+  })
+}

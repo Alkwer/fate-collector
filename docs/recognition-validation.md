@@ -1,6 +1,6 @@
 # Recognition validation for PoE captures
 
-The production F9 helper captures the calibrated panel and reads positioned OCR. The browser's `extractCards` suggests known names in the offered row. Record whether it preserved the image and abstained when the row or name was uncertain. Collected and invoked cards, tiers and symbols are outside the parser's scope.
+The production F9 helper captures the calibrated panel and reads positioned OCR. The browser's `extractCards` suggests known names in the offered row. Its separate [browser visual matcher](browser-recognition.md) proposes supported tiers and motifs, with a limited tooltip catalog and explicit review. Record whether it preserved the image and abstained when the row or name was uncertain. Collected and invoked cards remain outside this importer's scope. Track OCR, image matches and semantic suggestions separately.
 
 The offline whole-offer prototype reads a separate, uncropped game frame. It measures `offered`, `collected` and `invoked` assignments, names and supported reward motifs. Keep the two results separate even when both inputs come from the same encounter.
 

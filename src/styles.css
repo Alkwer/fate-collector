@@ -114,6 +114,8 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .reward-editor { margin: 14px 0 0; padding: 12px; border: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
 .reward-editor legend { font-size: 13px; color: var(--muted); padding: 0 5px; }
 .reward-label { grid-column: 1/-1; }
+.catalog-reference { display: flex; align-items: flex-start; gap: 10px; }
+.catalog-reference img { flex: 0 0 34px; object-fit: contain; }
 .checkbox-row { display: flex; flex-direction: row; align-items: center; gap: 10px; font-weight: 400; }
 .danger { color: #c49d8f; }
 .remove-card { font-size: 13px; margin-top: 12px; }

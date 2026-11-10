@@ -35,13 +35,19 @@ No partial worker output is applied after a timeout.
 
 ## What the suggestions establish
 
-A motif match is not a reward identity. All suggested reward rows start with
-`identified: false`, unknown kind and no threshold; the label describes appearance.
-Even the known currency-tooltip reference does not establish a universal kind or
-threshold, so the importer does not guess those values.
+A motif match does not by itself establish a reward's kind or threshold. The
+[tooltip-backed catalog](../research/REWARD_CATALOG_2026-11-10.md) supplies a
+provisional Dreadmaidens' Sacrament combo (2) for orange feathers. Gold ring and
+gold grid receive the names Item Rarity and Additional Currency Items, but keep
+unknown kind, no threshold and `identified: false`. Other motifs remain unknown.
+The editor offers three verified combo presets with reference icons and GGG
+sources. Exceptional Gem is manual only; the three-gems motif is not that combo.
+Fresh card review versions include `rewards-v1`; saved records are not backfilled.
 
 Tiers appear as **suggested** until checked. The reward list is partial until the
-user checks the whole row, including unrecognized icons. The advisor excludes
+user checks the whole row, including unrecognized icons, kinds, counts and
+thresholds. A catalog meaning does not approve its occurrence in this image.
+The advisor excludes
 unconfirmed visual tiers from duplicate merges and treats incomplete visual reward
 coverage as uncertainty. Saving/reviewing an offer does not implicitly confirm
 either visual field. Reimport preserves existing corrections.
@@ -66,6 +72,6 @@ The image comes from GGG prerelease materials and contributed reference crops.
 These are integration/regression results, not an independent accuracy estimate.
 The existing [native validation matrix](recognition-validation.md) remains open:
 fresh positive encounters, HDR, alternate UI scales and an untouched positive
-holdout are unavailable. Automatic **semantic** reward recommendations still need
-tooltip-grounded mappings; synthetic advisor cases establish the rule engine,
-not the meanings of these eight shapes. No profitability or drop-rate claim follows.
+holdout are unavailable. The small semantic catalog covers only the cases above;
+synthetic advisor cases establish the rule engine, not additional icon meanings.
+No profitability or drop-rate claim follows.

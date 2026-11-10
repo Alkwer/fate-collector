@@ -27,7 +27,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
         <strong>{automatic ? 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}
       </>}
     </div>
-    {evidence?.visualRecognition && <details className="visual-review"><summary>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</summary><p className="hint">Recognition runs locally. Icon shapes do not establish their reward meanings.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</details>}
+    {evidence?.visualRecognition && <details className="visual-review"><summary>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</summary><p className="hint">Recognition runs locally. The tooltip catalog covers some icons; check every suggested meaning and reward kind against your game.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</details>}
     <dialog ref={dialog} className="evidence-dialog" aria-labelledby="evidence-heading"><div className="dialog-heading"><h2 id="evidence-heading">Source evidence</h2><button onClick={() => dialog.current?.close()}>Close</button></div>{evidence && <img src={evidence.imageDataUrl} alt="Full size source evidence" />}</dialog>
   </section>
 }

@@ -2,6 +2,7 @@ import type { Capture, FateCard, Reward } from './schema'
 import { newReward } from './offers'
 import { findOfferedRegion, knownFateName } from './recognition'
 import type { VisualAnalysis } from './visual-recognition'
+import { REWARD_CATALOG_VERSION, visualRewardFields } from './reward-catalog'
 
 export const VISUAL_LABELS: Record<NonNullable<Reward['visualId']>, string> = {
   'blue-diamond': 'Blue diamond', 'gold-stack': 'Gold stack', 'gold-grid': 'Gold grid',
@@ -23,12 +24,11 @@ export function applyVisualSuggestions(cards: FateCard[], capture: Capture, resu
     const rewards = candidate.symbols.flatMap(symbol => {
       if (!Object.hasOwn(VISUAL_LABELS, symbol.visualId)) return []
       const visualId = symbol.visualId as NonNullable<Reward['visualId']>
-      // A matched shape is not an identified reward, kind, threshold or payout.
-      return [{ ...newReward(), visualId, label: VISUAL_LABELS[visualId] }]
+      return [{ ...newReward(), visualId, label: VISUAL_LABELS[visualId], ...visualRewardFields(visualId) }]
     })
     if (candidate.tier === null && !rewards.length) return card
     return { ...card, tier: candidate.tier, rewards, visualReview: {
-      version: result.version, tierReviewed: candidate.tier === null, rewardsReviewed: false,
+      version: `${result.version}/${REWARD_CATALOG_VERSION}`, tierReviewed: candidate.tier === null, rewardsReviewed: false,
     } }
   })
 }

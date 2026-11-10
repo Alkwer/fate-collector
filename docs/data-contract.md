@@ -54,10 +54,12 @@ claim. Update the website before using the new helper with strict older clients.
 
 Local browser matching may set `card.visualReview` (`version`, `tierReviewed`,
 `rewardsReviewed`) and a reward's optional catalog `visualId`. These are provenance
-and review flags, not probabilities. Initially a shape is `kind: unknown`,
-`identified: false`, with a descriptive label and one row per matched icon.
+and review flags, not probabilities. There is one row per matched icon. The
+versioned tooltip catalog can suggest a known meaning (currently Dreadmaidens'
+Sacrament combo 2); ambiguous shapes retain `kind: unknown`, `identified: false`.
+An identified meaning does not confirm the image match or reward completeness.
 Unknown unseen icons are not invented as additional rows. The full row remains
-partial until the user checks it. Changes to a suggested tier or rewards reset
+partial until the user checks every icon, kind, count and threshold. Changes to a suggested tier or rewards reset
 their corresponding review flag. These optional fields survive offer backups
 and explicitly shared reviewed corrections; automatic raw cloud parsing still
 receives only OCR and does not run vision.

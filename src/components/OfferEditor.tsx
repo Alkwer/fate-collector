@@ -3,6 +3,8 @@ import type { FateCard, Offer, Reward } from '../../shared/schema'
 import { newCard, newReward } from '../../shared/offers'
 import { KNOWN_FATE_NAMES } from '../../shared/recognition'
 import { VISUAL_LABELS } from '../../shared/visual-suggestions'
+import { catalogFields, REWARD_CATALOG, selectedCatalogReward } from '../../shared/reward-catalog'
+import rewardIcons from '../../shared/reward-icons.json'
 
 interface Props { offer: Offer; onChange: (patch: Partial<Offer>) => void; purpose?: 'offer' | 'collection' }
 export function OfferEditor({ offer, onChange, purpose = 'offer' }: Props) {
@@ -48,16 +50,27 @@ export function OfferEditor({ offer, onChange, purpose = 'offer' }: Props) {
           <p id="modifier-help" className={modifierProblem ? 'field-error' : 'hint'} role={modifierProblem ? 'alert' : undefined}>{modifierProblem || 'Up to 40 lines, 1,000 characters per line. Corrections save after validation.'}</p>
           <div className="section-heading reward-heading"><h3>Rewards</h3><button className="text-button" disabled={selected.rewards.length >= 30} onClick={() => updateCard({ rewards: [...selected.rewards, newReward()] })}>Add reward</button></div>
           <p className="hint">Keep unknown icons unidentified. An empty list means rewards were not read, not that the card has no rewards.</p>
-          {selected.rewards.map((reward, index) => <fieldset className="reward-editor" key={reward.id}><legend>Reward {index + 1}</legend>
+          {selected.rewards.map((reward, index) => {
+            const entry = selectedCatalogReward(reward)
+            const icon = entry && rewardIcons.icons.find(icon => icon.id === entry.id)
+            return <fieldset className="reward-editor" key={reward.id}><legend>Reward {index + 1}</legend>
             {reward.visualId && <p className="reward-label hint">Image suggestion: {VISUAL_LABELS[reward.visualId]}. Check the in-game tooltip for its reward, kind and threshold.</p>}
+            <label className="reward-label">Tooltip catalog<select value={entry?.id ?? ''} onChange={event => {
+              const entry = REWARD_CATALOG.find(item => item.id === event.target.value)
+              if (entry) updateReward(reward.id, catalogFields(entry))
+            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : 'Kind unknown'}</option>)}</select></label>
+            {entry && <p className="reward-label catalog-reference hint">
+              {icon && <img src={`data:image/png;base64,${icon.pngBase64}`} alt={`${entry.label} reference icon`} width={34} height={36} />}
+              <span>{entry.description} <a href={entry.source} target="_blank" rel="noreferrer">GGG {entry.kind === 'unknown' ? 'press reference' : 'tooltip'}</a>. Prerelease reference; check your game version.</span>
+            </p>}
             <label className="reward-label">Label<input value={reward.label} maxLength={160} placeholder="Unidentified icon" onChange={e => updateReward(reward.id, { label: e.target.value, identified: e.target.value.trim() ? reward.identified : false })} /></label>
             <label>Kind<select value={reward.kind} onChange={e => updateReward(reward.id, { kind: e.target.value as Reward['kind'] })}><option value="unknown">Unknown</option><option value="regular">Regular</option><option value="combo">Combo</option></select></label>
             <label>Count<input type="number" min={1} max={100} value={reward.count} onChange={e => updateReward(reward.id, { count: Number(e.target.value) })} /></label>
             <label>Combo threshold<input type="number" min={1} max={100} value={reward.threshold ?? ''} placeholder="Unknown" onChange={e => updateReward(reward.id, { threshold: e.target.value ? Number(e.target.value) : null })} /></label>
             <label className="checkbox-row"><input type="checkbox" checked={reward.identified} disabled={!reward.label.trim()} onChange={e => updateReward(reward.id, { identified: e.target.checked })} />Identified</label>
             <button className="text-button danger" onClick={() => updateCard({ rewards: selected.rewards.filter(r => r.id !== reward.id) })}>Remove reward</button>
-          </fieldset>)}
-          {selected.visualReview && <label className="checkbox-row visual-review"><input type="checkbox" checked={selected.visualReview.rewardsReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, rewardsReviewed: event.target.checked } })} />I checked that every visible reward icon is included</label>}
+          </fieldset> })}
+          {selected.visualReview && <label className="checkbox-row visual-review"><input type="checkbox" checked={selected.visualReview.rewardsReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, rewardsReviewed: event.target.checked } })} />I checked all reward icons, kinds, counts and thresholds</label>}
         </details>
         <button className="text-button danger remove-card" onClick={() => {
           onChange({ cards: offer.cards.filter(c => c.id !== selected.id), selectedCardId: offer.selectedCardId === selected.id ? null : offer.selectedCardId, completeness: 'unverified' })

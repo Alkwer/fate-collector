@@ -14,8 +14,8 @@ export function OfferPreview({ offer, saved = false, automatic = false, embedded
       <ul className="fate-list">{offer.cards.map((card, index) => <li key={card.id}>
         <div className="fate-title"><h3>{card.name || `Unread card ${index + 1}`}</h3>{card.tier !== null && <span className="muted">Tier {card.tier}{card.visualReview && !card.visualReview.tierReviewed ? ' · suggested' : ''}</span>}</div>
         {card.modifiers.length > 0 && <p>{card.modifiers.join(' ')}</p>}
-        {card.rewards.some(reward => reward.identified) && <p className="detected-rewards">{card.rewards.filter(reward => reward.identified).map(reward => `${reward.count > 1 ? `${reward.count}× ` : ''}${reward.label}`).join(', ')}</p>}
-        {card.rewards.some(reward => reward.visualId && !reward.identified) && <p>Suggested icons: {card.rewards.filter(reward => reward.visualId && !reward.identified).map(reward => VISUAL_LABELS[reward.visualId!]).join(', ')}. Meanings need review.</p>}
+        {card.rewards.some(reward => reward.identified) && <p className="detected-rewards">{card.rewards.filter(reward => reward.identified).map(reward => `${reward.count > 1 ? `${reward.count}× ` : ''}${reward.label}`).join(', ')}{card.visualReview && !card.visualReview.rewardsReviewed ? ' · suggested; check the full reward row' : ''}</p>}
+        {card.rewards.some(reward => reward.visualId && !reward.identified) && <p>Suggested icons: {card.rewards.filter(reward => reward.visualId && !reward.identified).map(reward => reward.label === VISUAL_LABELS[reward.visualId!] ? reward.label : `${reward.label} (${VISUAL_LABELS[reward.visualId!]}; ${reward.kind === 'unknown' ? 'kind unknown' : 'unidentified'})`).join(', ')}. Meanings need review.</p>}
         {renderAdvice?.(card)}
       </li>)}</ul>
       <p className="preview-hint">{saved ? 'Spotted a misread? Open Edit details to correct it.' : 'Compare these cards with the image. Use Edit details only if something needs correcting.'}</p>

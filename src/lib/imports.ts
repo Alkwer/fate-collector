@@ -33,7 +33,7 @@ export async function importJson(text: string, captureOnly = false): Promise<Imp
     if (visual) entry.evidence.visualRecognition = { version: visual.version, status: visual.status, warnings: visual.warnings }
     const suggested = entry.offer.cards.some(card => card.visualReview)
     return { mode: 'draft', entries: [entry], message: suggested
-      ? `${entry.offer.cards.length} candidate cards found. Suggested tiers and icon shapes need review; reward meanings are not inferred.`
+      ? `${entry.offer.cards.length} candidate cards found. Check suggested tiers and rewards against the image and tooltips; the catalog covers only some icons.`
       : recognition.message }
   }
   if (kind === 'fate-collector.offer') {

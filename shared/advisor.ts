@@ -1,14 +1,11 @@
 import { cardSchema, rewardSchema, type FateCard } from './schema'
+import { KNOWN_COMBOS } from './reward-catalog'
+export { KNOWN_COMBOS } from './reward-catalog'
 
 export type AdvisorGoal = { kind: 'regular' | 'combo'; label: string }
 
 export const MAX_COLLECTED_FATES = 12
 export const MAX_OFFERED_FATES = 30
-export const KNOWN_COMBOS = [
-  { label: 'Item Rarity', threshold: 3 },
-  { label: 'Exceptional Gem', threshold: 3 },
-  { label: "Dreadmaidens' Sacrament", threshold: 2 },
-] as const
 
 export type InvocationPlan = {
   cardIds: string[]
