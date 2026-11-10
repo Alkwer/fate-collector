@@ -29,7 +29,11 @@ def generate_reward_icons() -> str:
         x, y, width, height = box
         with Image.open(path) as image:
             output = io.BytesIO()
-            image.crop((x, y, x + width, y + height)).save(output, format="PNG")
+            crop = image.crop((x, y, x + width, y + height)).convert("RGB")
+            # Strip inherited metadata and use stored DEFLATE blocks. Different
+            # platform zlib builds otherwise produce different compressed bytes
+            # for identical pixels, breaking the cross-platform --check.
+            Image.frombytes("RGB", crop.size, crop.tobytes()).save(output, format="PNG", compress_level=0)
         icons.append({"id": reward_id, "source": source, "box": box,
                       "sourceSha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                       "pngBase64": base64.b64encode(output.getvalue()).decode("ascii")})
