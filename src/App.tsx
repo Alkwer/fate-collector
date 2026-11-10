@@ -16,12 +16,16 @@ import { installDiagnosticLog, logDiagnostic } from './lib/diagnostic-log'
 
 import { errorText, useOfferDraft } from './lib/useOfferDraft'
 import { BackupDownload } from './components/BackupDownload'
+import { FateAdvisor } from './components/FateAdvisor'
+import { useAdvisorWorkspace } from './lib/useAdvisorWorkspace'
 
 export default function App() {
   const consentState = useSharingConsent()
   useDiagnosticWithdrawals()
   useEffect(installDiagnosticLog, [])
-  const [tab, setTab] = useState<'collector' | 'saved' | 'diagnostics'>('collector')
+  const [tab, setTab] = useState<'collector' | 'advisor' | 'saved' | 'diagnostics'>('collector')
+  const advisor = useAdvisorWorkspace()
+  const [editFromAdvisor, setEditFromAdvisor] = useState(false)
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
   const detailsPanel = useRef<HTMLDetailsElement>(null)
   const [backup, setBackup] = useState<ReturnType<typeof archiveParts> | null>(null)
@@ -31,6 +35,13 @@ export default function App() {
   const [environment, setEnvironment] = useState('unknown')
   const fileInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (editFromAdvisor && tab === 'collector' && detailsPanel.current) {
+      detailsPanel.current.open = true
+      detailsPanel.current.querySelector('summary')?.focus()
+      setEditFromAdvisor(false)
+    }
+  }, [editFromAdvisor, tab])
   function closeActions() { if (moreActions.current) moreActions.current.open = false }
   const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
   const refresh = useCallback(async () => setRecords(await storage.listOffers()), [])
@@ -136,7 +147,7 @@ export default function App() {
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
     {environment === 'staging' && <div className="environment-banner" role="status"><strong>STAGING</strong> Test collection. Uploads go to the test database.</div>}
-    <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button><button className={tab === 'diagnostics' ? 'active' : ''} aria-current={tab === 'diagnostics' ? 'page' : undefined} onClick={() => setTab('diagnostics')}>Diagnostics</button></nav></div></header>
+    <header className="app-header"><div className="header-inner"><span className="wordmark">Fate Collector</span><nav aria-label="Main"><button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}>Collector</button><button className={tab === 'advisor' ? 'active' : ''} aria-current={tab === 'advisor' ? 'page' : undefined} onClick={() => setTab('advisor')}>Advisor</button><button className={tab === 'saved' ? 'active' : ''} aria-current={tab === 'saved' ? 'page' : undefined} onClick={() => setTab('saved')}>Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button><button className={tab === 'diagnostics' ? 'active' : ''} aria-current={tab === 'diagnostics' ? 'page' : undefined} onClick={() => setTab('diagnostics')}>Diagnostics</button></nav></div></header>
     <main id="main" className="workspace" tabIndex={-1}>
       {notice && <div className={`notice ${notice.error ? 'error' : ''}`} role={notice.error ? 'alert' : 'status'}><span>{notice.text}</span><button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}
       {tab === 'collector' ? <>
@@ -161,13 +172,13 @@ export default function App() {
           <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : autoSaveFailure ? autoSaveFailure.conflict ? 'Save conflict' : 'Save failed' : dirty ? 'Changes pending…' : 'Saved locally'}</span>
           {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); retryAutoSave() }}>Retry save</button>}
         </div> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
-      </> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} busy={busy || autoSaving} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
+      </> : tab === 'advisor' ? <FateAdvisor offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsAreaConfirmation={advisor.needsAreaConfirmation} onConfirmArea={advisor.confirmArea} storageError={advisor.storageError} busy={busy} onEditOffer={() => { setTab('collector'); setEditFromAdvisor(true) }} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} busy={busy || autoSaving} pendingOfferId={dirty ? draft.id : null} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={() => {
         try { setBackup(archiveParts(records.map(r => ({ offer: r.offer, evidence: null })))) } catch (error) { announce(errorText(error), true) }
       }} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       {backup && <BackupDownload parts={backup} onClose={() => setBackup(null)} />}
       <input ref={fileInput} className="file-input" type="file" accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file); event.target.value = '' }} />
       <details className="setup-help"><summary>How to capture from Path of Exile</summary><p>Run the Windows helper. Select the panel with F6 and F7 once; the helper remembers it. F8 previews the saved frame. Press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. The helper uses GDI for SDR and Windows Graphics Capture for HDR. Live game and HDR monitor compatibility still need validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></details>
     </main>
-    <footer className="app-footer">Icon recognition needs verification. The collector does not recommend choices yet.<span>Independent community tool · Not affiliated with Grinding Gear Games</span></footer>
+    <footer className="app-footer">Advisor uses identified rewards and preview rules. Unknown icons need manual review.<span>Independent community tool · Not affiliated with Grinding Gear Games</span></footer>
   </>
 }

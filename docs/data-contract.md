@@ -46,6 +46,27 @@ captures without these controls. Raw evidence remains available for manual revie
 The small name dictionary may miss unknown names or misassign text at unsupported scales/layouts.
 The app never automatically claims the offer is complete or reviewed.
 
+Helper 0.3.2 adds optional `image.frameHeight`, the full client height before a
+calibrated crop. It must be at least the PNG height and at most 8192. Offline image
+exports omit it. The direct-upload projection omits it as well. Older captures
+remain valid; cropped legacy captures without scale metadata receive no visual
+claim. Update the website before using the new helper with strict older clients.
+
+Local browser matching may set `card.visualReview` (`version`, `tierReviewed`,
+`rewardsReviewed`) and a reward's optional catalog `visualId`. These are provenance
+and review flags, not probabilities. Initially a shape is `kind: unknown`,
+`identified: false`, with a descriptive label and one row per matched icon.
+Unknown unseen icons are not invented as additional rows. The full row remains
+partial until the user checks it. Changes to a suggested tier or rewards reset
+their corresponding review flag. These optional fields survive offer backups
+and explicitly shared reviewed corrections; automatic raw cloud parsing still
+receives only OCR and does not run vision.
+
+Local evidence optionally records `visualRecognition` with version, status and
+bounded warning strings. This is not an image upload or a human review. Recognition
+is only applied while constructing a fresh draft; existing corrected offers retain
+their fields and revision when a capture is imported again.
+
 ## Automatic folder intake
 
 The browser reads only top-level `fate-<uuid>.json` files in the user-selected folder,

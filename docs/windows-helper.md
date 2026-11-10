@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.1 strengthens overlay checks, recovers damaged upload metadata and scans large archives faster. Saved calibration, the second OCR pass and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.2 adds full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Direct cloud upload: no browser required
 

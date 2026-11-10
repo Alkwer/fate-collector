@@ -1,8 +1,9 @@
 # Fate Collector
 
 An English-language observation collector for Path of Exile 1. Capture the whole
-Fate offer, preserve the evidence, and build a dataset before making reward
-recommendations. This is a working foundation, not a finished Fate Advisor.
+Fate offer, preserve the evidence, and compare specific Fates with a local advisor.
+Advice uses identified rewards and conservative prerelease rules; unknown icons
+still need manual identification.
 
 The collection routine is **F9 in the game → automatically queued → shared Cloudflare database**.
 Enable **Cloud upload settings** once in the Windows helper with the deployed
@@ -14,8 +15,9 @@ reach the shared database as unverified observations.
 For local review, use **Connect folder** to select the `captures` folder in desktop
 Chrome or Edge. The browser reads completed files and saves them locally; no paste,
 confirmation or save click is required. This local review connection needs an open page.
-The Windows helper performs local OCR. The website suggests known Fate names and
-descriptions; uncertain tiers and reward icons stay unknown. Area, modifiers,
+The Windows helper performs local OCR. The website suggests known Fate names,
+descriptions, supported tiers and icon shapes. Visual suggestions remain unreviewed;
+reward meanings and unsupported icons stay unknown. Area, modifiers,
 rewards and the chosen card are optional. The main screen has no fields to fill in;
 manual corrections are under **Edit details** and save automatically while connected.
 Automatic records stay unverified until explicitly reviewed. Manual file import,
@@ -66,10 +68,14 @@ are automated.
 
 ## What is implemented
 
+- A local [Fate advisor](docs/fate-advisor.md): goal-based next-card recommendations,
+  explicit area collection and invocation order, with duplicate handling and uncertainty.
 - Local screenshot and positioned OCR bundles, clipboard/file import and drag/drop.
 - Read-only capture-folder connection, automatic local intake and correction saving,
   persistent connection handles, duplicate receipts and deletion protection.
 - Candidate card-name and description extraction from a small prerelease dictionary.
+- Local Web Worker matching of eight icon motifs and T2/T3, with conservative
+  offered-row bounds, explicit review and helper 0.3.2 crop-scale metadata.
 - Editable whole offers, optional choice/reward annotations, partial/complete coverage.
 - IndexedDB evidence and history, correction revisions, JSON export/import.
 - Direct helper uploads, encrypted Windows credentials, durable queue, offline retry
@@ -142,13 +148,15 @@ Background throttling or tab suspension can delay import; the app catches up fro
 disk when it resumes. Closing the page stops import until it is reopened. Folder
 polling checks about every two seconds while the browser allows it to run.
 
-The separate [visual recognition prototype](prototypes/vision/README.md) scans
-saved screenshots for eight icon motifs and tier 2/3 feathers. Its measured
-coverage and abstentions are documented; it is not connected to F9 or uploads.
+The frozen [visual recognition prototype](prototypes/vision/README.md) scans
+saved screenshots for eight icon motifs and tier 2/3 feathers. A bounded browser
+implementation now uses its reference crops during local F9-folder, clipboard and
+capture-file import. [Browser recognition validation](docs/browser-recognition.md)
+documents the implementation differences, measured evidence and native validation gaps.
 Its [whole-offer reader](prototypes/vision/OFFERS-V2.md) adds positioned Windows OCR,
 offered/collected/invoked card grouping and tooltip masking, with explicit unknowns.
 
-Reward icons, exact combinations and probabilities are not inferred by the collector. There is no
+Icon shapes do not establish reward meanings, exact outcomes or probabilities. There is no
 continuous screen watcher, automatic choice detection or public anonymous ingestion.
 Capture each offer once: importing the same file is deduplicated, but pressing F9
 again creates a new capture. Shared collection is currently for trusted testers

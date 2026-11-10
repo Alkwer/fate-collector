@@ -1,0 +1,131 @@
+import { test, expect, type Page } from '@playwright/test'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { newCard, newOffer, newReward } from '../shared/offers'
+import type { FateCard, Offer, Reward } from '../shared/schema'
+
+function reward(label: string, count = 1, kind: Reward['kind'] = 'regular'): Reward {
+  return { ...newReward(), label, count, kind, identified: true }
+}
+function card(name: string, rewards: Reward[], tier = 2): FateCard {
+  return { ...newCard(), name, tier, rewards }
+}
+async function importOffer(page: Page, cards: FateCard[]): Promise<Offer> {
+  const offer = { ...newOffer(), cards }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'advisor-offer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await expect(page.getByRole('heading', { name: 'Offered Fates', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  return offer
+}
+
+test('specific reward goals change the recommendation; editing recomputes without recording a choice', async ({ page }) => {
+  await page.goto('/')
+  const offer = await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [reward('Gems', 2)])])
+  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await expect(page.getByRole('heading', { name: 'Recommended: Alchemist', exact: true })).toBeVisible()
+  await page.getByLabel('Reward goal').selectOption('regular:gems')
+  await expect(page.getByRole('heading', { name: 'Recommended: Sanguine', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Edit current offer' }).click()
+  await expect(page.getByRole('heading', { name: 'Correct cards', exact: true })).toBeVisible()
+  await page.getByText('Modifiers & rewards', { exact: false }).click()
+  await page.getByLabel('Label', { exact: true }).fill('Gems')
+  await page.getByLabel('Count', { exact: true }).fill('4')
+  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Recommended: Alchemist', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Collector', exact: true }).click()
+  await page.getByText('More actions', { exact: true }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export JSON', exact: true }).click()
+  const download = await downloadPromise
+  const stream = await download.createReadStream()
+  const chunks: Buffer[] = []
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk))
+  expect(JSON.parse(Buffer.concat(chunks).toString()).offers[0].offer).toMatchObject({ id: offer.id, selectedCardId: null })
+})
+
+test('unknown rewards abstain and partial knowledge remains provisional', async ({ page }) => {
+  await page.goto('/')
+  await importOffer(page, [card('Alchemist', []), card('Sanguine', [newReward()])])
+  await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+  await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
+  await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [])])
+  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await expect(page.getByRole('heading', { name: 'Provisional preference: Alchemist' })).toBeVisible()
+  await expect(page.getByText('Missing data or unresolved mechanics could change this ranking.', { exact: false })).toBeVisible()
+})
+
+test('collects one Fate per offer, plans duplicate order, and restores the area only after confirmation', async ({ page }) => {
+  await page.goto('/')
+  await importOffer(page, [card('Torchbearer', [reward('Currency', 2)]), card('Tempest', [reward('Gems')])])
+  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
+  await expect(page.getByRole('button', { name: 'Add Tempest to collected' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Collector', exact: true }).click()
+  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  await expect(page.getByRole('complementary')).toContainText('1/12')
+  await importOffer(page, [card('Torchbearer', [reward('Currency', 5)])])
+  await expect(page.getByRole('heading', { name: 'Recommended: Torchbearer' })).toBeVisible()
+  await expect(page.locator('.advisor-candidates')).toContainText('15 matching reward icon units')
+  await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
+  await page.getByLabel('Decision').selectOption('invoke')
+  await expect(page.getByRole('heading', { name: 'Suggested invocation plan' })).toBeVisible()
+  const best = page.locator('.advisor-plans article').first()
+  await expect(best).toContainText('15 matching reward icon units')
+  await expect(best).toContainText('T2 + T2 → T3')
+  await expect(best).toContainText('2 of 3 input slots')
+  await expect(best.locator('.invocation-order li')).toHaveText(['Torchbearer (collected #2)', 'Torchbearer (collected #1)'])
+  await page.getByRole('button', { name: 'Start a new area' }).click()
+  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
+  await page.getByLabel('Decision').selectOption('offer')
+  await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
+  await page.reload()
+  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  await expect(page.getByRole('complementary')).toContainText('1/12')
+  await expect(page.getByRole('heading', { name: 'Confirm your current area.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue this area' }).click()
+  await page.getByLabel('Decision').selectOption('invoke')
+  await expect(page.getByRole('heading', { name: 'Suggested invocation plan' })).toBeVisible()
+  await page.reload()
+  await page.getByRole('button', { name: 'Advisor', exact: true }).click()
+  await page.getByRole('button', { name: 'Start a new area' }).click()
+  await expect(page.getByRole('complementary')).toContainText('0/12')
+})
+
+for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['tablet', { width: 820, height: 1180 }], ['mobile', { width: 390, height: 844 }]] as const) {
+  test(`combo goal and manual collected corrections work at ${name} width`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('console', message => { if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text()) })
+    await page.goto('/')
+    await expect(page).toHaveTitle('Fate Collector')
+    for (const name of ['Bloodthirsty', 'Sanguine']) {
+      await importOffer(page, [card(name, [reward('Exceptional Gem', 1, 'combo')])])
+      await page.getByRole('button', { name: `Add ${name} to collected` }).click()
+    }
+    await importOffer(page, [card('Deathbringer', [reward('Exceptional Gem', 1, 'combo')]), card('Wildfire', [reward("Dreadmaidens' Sacrament", 1, 'combo')])])
+    await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+    await expect(page.getByRole('heading', { name: 'Recommended: Deathbringer' })).toBeVisible()
+    await expect(page.locator('.advisor-candidates').first()).toContainText('3/3 matching icons · Combo ready')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.screenshot({ path: join(tmpdir(), `fate-advisor-${name}.png`), fullPage: true })
+    await page.getByRole('button', { name: 'Add Deathbringer to collected' }).click()
+    await page.getByLabel('Decision').selectOption('invoke')
+    await expect(page.locator('.advisor-plans article').first()).toContainText('3/3 matching icons · Combo ready')
+    await page.getByText('Edit collected cards', { exact: true }).click()
+    const collectionEditor = page.getByRole('region', { name: 'Collected card details' })
+    await collectionEditor.getByRole('button', { name: 'Bloodthirsty', exact: true }).click()
+    await collectionEditor.getByLabel('Fate name', { exact: true }).fill('A very long manually entered Fate name used to verify wrapping')
+    await collectionEditor.getByText('Modifiers & rewards', { exact: false }).click()
+    await collectionEditor.getByLabel('Count', { exact: true }).fill('0')
+    await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
+    await collectionEditor.getByLabel('Count', { exact: true }).fill('1')
+    await expect(page.getByRole('heading', { name: 'Suggested invocation plan' })).toBeVisible()
+    await page.getByLabel('Reward goal').focus()
+    await expect(page.getByLabel('Reward goal')).toBeFocused()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    expect(await page.locator('vite-error-overlay').count()).toBe(0)
+    expect(errors).toEqual([])
+  })
+}

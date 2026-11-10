@@ -9,11 +9,10 @@ export const PARSER_VERSION = 'prerelease-names-2'
 export const KNOWN_FATE_NAMES = fateNames
 const normalize = (text: string) => text.toLowerCase().replace(/[^a-z]/g, '')
 const byName = new Map(KNOWN_FATE_NAMES.map(name => [normalize(name), name]))
+export const knownFateName = (text: string): string | undefined => byName.get(normalize(text))
 
-export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
-  if (capture.ocr.status !== 'ok' || !capture.ocr.lines.length) {
-    return { cards: [], message: 'No positioned OCR is available. The screenshot is preserved; add cards only if you want to review it now.' }
-  }
+export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { lines: CaptureUpload['ocr']['lines']; headers: CaptureUpload['ocr']['lines']; bottom: number } | null {
+  if (capture.ocr.status !== 'ok' || !capture.ocr.lines.length) return null
   const lines = capture.ocr.lines.filter(line => line.width > 0 && line.height > 0
     && line.x + line.width <= capture.image.width && line.y + line.height <= capture.image.height)
   const headings = lines.filter(line => ['fates', 'selectafate'].includes(normalize(line.text)))
@@ -22,16 +21,28 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
   // card below Confirm must never replace unreadable or missing offered headers.
   if (headings.length !== 1 || confirms.length !== 1 || headings[0].y + headings[0].height >= confirms[0].y
     || lines.some(line => normalize(line.text) === 'invokefates')) {
-    return { cards: [], message: 'The offered-card area could not be established. Include the Fates heading and Confirm button in the capture, or add cards manually.' }
+    return null
   }
   const offerLines = lines.filter(line => line.y >= headings[0].y + headings[0].height
     && line.y + line.height < confirms[0].y && /[a-z]/i.test(line.text)).sort((a, b) => a.y - b.y)
   const first = offerLines[0]
-  if (!first) return { cards: [], message: 'No card text was read in the offered area. The screenshot is preserved for review.' }
+  if (!first) return { lines: offerLines, headers: [], bottom: confirms[0].y }
   // Anchor the header row to all text, including unknown names, before looking
   // up candidates. A selected card may be raised slightly above its neighbours.
   const row = offerLines.filter(m => m.y - first.y <= Math.max(first.height * 4, capture.image.height * 0.06))
     .sort((a, b) => a.x - b.x)
+  return { lines: offerLines, headers: row, bottom: confirms[0].y }
+}
+
+export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
+  if (capture.ocr.status !== 'ok' || !capture.ocr.lines.length) {
+    return { cards: [], message: 'No positioned OCR is available. The screenshot is preserved; add cards only if you want to review it now.' }
+  }
+  const region = findOfferedRegion(capture)
+  if (!region) return { cards: [], message: 'The offered-card area could not be established. Include the Fates heading and Confirm button in the capture, or add cards manually.' }
+  const { lines: offerLines, headers: row } = region
+  const first = offerLines[0]
+  if (!first) return { cards: [], message: 'No card text was read in the offered area. The screenshot is preserved for review.' }
   const headerBottom = Math.max(...row.map(m => m.y + m.height))
   const cards = row.flatMap((header, index) => {
     const name = byName.get(normalize(header.text))

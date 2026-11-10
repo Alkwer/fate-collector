@@ -179,11 +179,14 @@ try {
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.3.1'
+        helperVersion = '0.3.2'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context
     }
+    # Preserve the full client height so local visual matching does not mistake
+    # a calibrated crop for a full frame. Image fixtures retain explicit unknown scale.
+    if ($PSCmdlet.ParameterSetName -eq 'Window') { $bundle.image.frameHeight = $ClientHeight }
     $json = $bundle | ConvertTo-Json -Depth 6 -Compress
     $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($json)
     if ($bytes.Length -gt 12MB) {

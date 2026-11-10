@@ -36,6 +36,7 @@ export const rewardSchema = z.object({
   count: z.number().int().min(1).max(100),
   threshold: z.number().int().min(1).max(100).nullable(),
   identified: z.boolean(),
+  visualId: z.enum(['blue-diamond', 'gold-stack', 'gold-grid', 'gold-ring', 'silver-cluster', 'orange-feathers', 'three-gems', 'gold-axe']).optional(),
 }).strict().refine(r => !r.identified || r.label.trim().length > 0, 'An identified reward needs a label.')
 
 export const cardSchema = z.object({
@@ -44,6 +45,7 @@ export const cardSchema = z.object({
   tier: z.number().int().min(1).max(100).nullable(),
   modifiers: z.array(z.string().max(1000)).max(40),
   rewards: z.array(rewardSchema).max(30),
+  visualReview: z.object({ version: z.string().min(1).max(60), tierReviewed: z.boolean(), rewardsReviewed: z.boolean() }).strict().optional(),
 }).strict()
 
 export const offerSchema = z.object({
@@ -100,7 +102,9 @@ export const captureSchema = z.object({
     width: z.number().int().positive().max(8192),
     height: z.number().int().positive().max(8192),
     dataBase64: z.string().min(1).max(MAX_IMPORT_BYTES).regex(/^[A-Za-z0-9+/]+={0,2}$/),
-  }).strict().refine(i => i.width * i.height <= 16_777_216, 'The image is too large.'),
+    frameHeight: z.number().int().positive().max(8192).optional(),
+  }).strict().refine(i => i.width * i.height <= 16_777_216, 'The image is too large.')
+    .refine(i => i.frameHeight === undefined || i.frameHeight >= i.height, 'Frame height must include the full crop.'),
   ocr: z.object({
     status: z.enum(['ok', 'unavailable', 'error']),
     text: z.string().max(20000),
@@ -132,6 +136,10 @@ export const evidenceSchema = z.object({
   ocrStatus: z.enum(['ok', 'unavailable', 'error', 'not-run']),
   helperVersion: z.string().max(40).nullable(),
   ocrLines: captureSchema.shape.ocr.shape.lines,
+  visualRecognition: z.object({
+    version: z.string().min(1).max(60), status: z.enum(['candidates', 'unsupported', 'unavailable']),
+    warnings: z.array(z.string().max(500)).max(20),
+  }).strict().optional(),
 }).strict()
 
 export const exportSchema = z.object({

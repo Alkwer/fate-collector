@@ -18,6 +18,12 @@ PoE visible panel
 | `helpers/` | Persistent/previewed crop calibration, SDR/HDR capture, Windows OCR, explicit upload setup, durable queue and retries |
 | `shared/` | Versioned Zod contracts, defaults and upload eligibility |
 | `shared/recognition.ts` | Shared browser/Worker prerelease text extraction adapter |
+| `shared/visual-recognition.ts` | Bounded OCR-guided pixel matcher using generated reference crops |
+| `shared/visual-suggestions.ts` | Unreviewed, position-based mapping from motifs to fresh card fields |
+| `src/lib/visual-worker.ts` | Local image decoding/matching off the main thread; bounded timeout/fallback |
+| `shared/advisor.ts` | Local goal-based ranking, bounded invocation search and explicit uncertainty |
+| `src/components/FateAdvisor.tsx` | Next-card and invocation advice, explicit area collection |
+| `src/lib/advisor-workspace.ts` | Validated tab-session persistence, preserving last valid notes on failed edits |
 | `src/lib/imports.ts` | Bounded imports, decoded-image validation, exports |
 | `src/lib/storage.ts` | Local evidence, revisions and atomic archive imports |
 | `src/lib/capture-sync.ts` | Bounded folder intake and duplicate-safe delivery |
@@ -75,5 +81,6 @@ the same connection. Warm scans preload receipt IDs without reading image blobs.
 See [scan measurements](scan-performance.md).
 
 `scripts/research-corpus-stats.mjs` validates exported archives using the shared
-schema and produces separate live/test quality counts. Future advice still needs
-verified Fate mechanics and its own uncertainty model.
+schema and produces separate live/test quality counts. The [Fate advisor](fate-advisor.md)
+uses a separate conservative rules engine and uncertainty model; research observations
+are not converted into drop probabilities or market values.

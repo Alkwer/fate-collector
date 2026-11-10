@@ -12,7 +12,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
       <details><summary>What's new and how to update</summary>
-        <p>Safer capture around overlapping windows, recovery of damaged upload state and faster checks of large capture folders.</p>
+        <p>Captures now preserve the full game-window height for local tier and icon suggestions, including calibrated crops.</p>
         <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
       </details>
     </aside>}
@@ -27,6 +27,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
         <strong>{automatic ? 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}
       </>}
     </div>
+    {evidence?.visualRecognition && <details className="visual-review"><summary>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</summary><p className="hint">Recognition runs locally. Icon shapes do not establish their reward meanings.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</details>}
     <dialog ref={dialog} className="evidence-dialog" aria-labelledby="evidence-heading"><div className="dialog-heading"><h2 id="evidence-heading">Source evidence</h2><button onClick={() => dialog.current?.close()}>Close</button></div>{evidence && <img src={evidence.imageDataUrl} alt="Full size source evidence" />}</dialog>
   </section>
 }
