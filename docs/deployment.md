@@ -45,7 +45,7 @@ the reviewed target configuration is the source of truth. Never store upload key
 in source, frontend variables, release artifacts or workflow inputs.
 
 Restrict the `production` environment to branch `main`. Protect `main` with the
-`app` and `windows-helper` checks, up-to-date branches, resolved conversations,
+`app`, `windows-helper` and `vision-prototype` checks, up-to-date branches, resolved conversations,
 no force pushes and no deletions. These settings complement the workflow checks;
 repo owners and Cloudflare administrators can still change protections or deploy
 directly. This is a controlled release process, not a restriction on account owners.

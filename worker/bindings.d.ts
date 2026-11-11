@@ -3,6 +3,7 @@
 interface __BaseEnv_WorkerBindings {
 	DB: D1Database;
 	DIAGNOSTIC_RATE_LIMITER: RateLimit;
+	CONSENT_WITHDRAWAL_RATE_LIMITER: RateLimit;
 	ASSETS: Fetcher;
 	APP_ENV: string;
 	RELEASE_REVISION: string;

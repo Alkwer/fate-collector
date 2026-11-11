@@ -12,7 +12,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
       <details><summary>What's new and how to update</summary>
-        <p>Captures now preserve the full game-window height for local tier and icon suggestions, including calibrated crops.</p>
+        <p>Helper 0.3.4 verifies queued uploads before sending and recovers damaged withdrawal requests. It also preserves the game-window height for local icon suggestions.</p>
         <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
       </details>
     </aside>}

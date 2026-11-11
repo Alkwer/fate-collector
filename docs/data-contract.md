@@ -185,7 +185,8 @@ still submit corrections with the same reference; no history is silently deleted
 ## Export and limits
 
 `fate-collector.export` wraps up to 250 offer/evidence pairs. Current-offer exports
-include local evidence. History exports contain metadata only. Metadata imports
+include local evidence. History exports offer a full evidence backup (the default)
+or metadata only. Metadata imports
 cannot reconstruct missing screenshots on their own. Existing offer fields are kept
 unchanged during import, including corrections; matching missing evidence can be restored.
 Multi-offer imports are atomic and reject a storage-cap overflow before writing.
@@ -195,9 +196,34 @@ This allows a previously shared revision to be retried unchanged under the same
 consent. A subsequent edit creates the next revision. New screenshots and helper
 captures still open as drafts when imported manually.
 
-Each JSON import/export file is limited to 12 MiB. **Export all data** splits a
-large journal into numbered, independently importable files and shows a download
-link for every part. Download all parts; history backups contain no image blobs.
+Capture and plain-image imports remain limited to 12 MiB. Archive imports accept
+up to 32 MiB, so an already valid capture plus later corrections can be restored
+together. **Export all data** splits a journal into numbered, independently importable
+files, normally at 12 MiB. An individual pair over that size gets its own part, up
+to 32 MiB. Download every part. Full backups include local image/OCR evidence;
+metadata-only backups omit it. Each part includes a backup set UUID, part number
+and total. Select all parts together to validate completeness before importing;
+single-part imports explicitly report their position. Export reads each offer
+with its evidence in one IndexedDB transaction, then decodes the image outside it,
+serializes one bounded part at a time and retains downloadable blobs rather than
+all image strings. Unsaved editor changes are not part of the saved journal.
+
+Unreadable offers are excluded from normal history and backup with a visible count;
+the original records remain in IndexedDB. Missing or invalid evidence is also
+reported and the readable offer metadata is exported. **Export recovery data**
+creates a separate `fate-collector.recovery` file containing raw invalid records,
+associated evidence and validation errors. It is for manual repair and is not
+accepted as an ordinary import; listing, backup and recovery export never delete it.
+Explicit isolation moves unreadable records to recovery storage. Explicit evidence
+repair keeps the damaged original there too. Recovery import salvages valid offers
+from an export, reports omissions, and does not modify the original input file.
+
+Unsaved valid drafts have separate IndexedDB recovery copies; they do not change
+saved offer revisions. Recovery is offered after reload. Invalid or unsaved recovery
+writes show an error rather than claiming persistence. History broadcasts refresh
+other tabs; pending edits retain revision conflicts. Storage usage, the 250-offer
+limit and browser persistence are visible in the journal. Sharing preflight checks
+the actual UTF-8 request size against 128 KiB.
 The editor accepts at most 40 modifier lines per card and 1,000 characters per
 line, shows the invalid line, and preserves the draft until corrected.
 Images are limited to 8192 pixels per

@@ -18,7 +18,7 @@ for (const width of [1440, 390]) {
     // journal exceeds that limit and must be exported in independent parts.
     for (const batch of [entries.slice(0, 120), entries.slice(120)]) {
       await page.getByLabel('Import capture file').setInputFiles({ name: 'batch.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ kind: 'fate-collector.export', schemaVersion: 1, offers: batch })) })
-      await expect(page.getByRole('status')).toContainText('Imported 120 new offers')
+      await expect(page.locator('.notice[role="status"]')).toContainText('Imported 120 new offers')
     }
     await expect(page.getByRole('button', { name: /^Saved offers\s*240$/ })).toBeVisible()
     await page.getByRole('button', { name: 'Export all data' }).click()
@@ -40,7 +40,7 @@ for (const width of [1440, 390]) {
         expect(bytes.byteLength).toBeLessThanOrEqual(MAX_IMPORT_BYTES)
         restored.push(...exportSchema.parse(JSON.parse(bytes.toString('utf8'))).offers)
         await other.getByLabel('Import capture file').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: bytes })
-        await expect(other.getByRole('status')).toContainText('Imported')
+        await expect(other.locator('.notice[role="status"]')).toContainText('Imported')
       }
       const byId = (a: { offer: { id: string } }, b: { offer: { id: string } }) => a.offer.id.localeCompare(b.offer.id)
       expect(restored.sort(byId)).toEqual([...entries].sort(byId))

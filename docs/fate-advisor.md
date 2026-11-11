@@ -21,6 +21,11 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
    to select a verified matching combo, see its reference icon and open the GGG
    source. Exceptional Gem requires manual identification, not the three-gems motif.
    Check the tier and the full reward row using the two visual-review checkboxes.
+   **Edit details** keeps the source image beside the selected card on desktop.
+   Select a reward icon to open and focus its fields, or use **Next card to review**
+   to move to another card with unknown or unchecked values. Selecting a catalog
+   meaning does not check either visual-review box. On narrow screens the image
+   appears above the fields and can be enlarged.
 2. On the same screen, choose **Choose from current offer** and a **Reward goal**.
    The result names the matching Fate(s), shows icon progress and invocation order,
    and separates a supported recommendation from a provisional preference.
@@ -86,3 +91,10 @@ storage. Unit tests cover ranking, unknowns, thresholds, duplicate order and lim
 `e2e/advisor.spec.ts` covers both decisions, edits, map resets, archive isolation,
 empty restored maps, explicit offer membership, local-only planning,
 and desktop/tablet/mobile rendering alongside the existing collector regression suite.
+
+The last ten collection edits and map resets can be undone during the visit.
+Restoring another map requires explicit confirmation of the current instance.
+After invoking in game, **Mark this invocation completed** removes exactly the
+plan's cards and prevents selecting the same offer again. Undo restores that state.
+Corrections in saved source offers are highlighted beside collected snapshots;
+**Apply source correction** is explicit and can also be undone.

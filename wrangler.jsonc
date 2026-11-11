@@ -18,6 +18,9 @@
     "migrations_dir": "migrations"
   }],
   "observability": { "enabled": true },
-  "ratelimits": [{ "name": "DIAGNOSTIC_RATE_LIMITER", "namespace_id": "2026110801", "simple": { "limit": 20, "period": 60 } }],
+  "ratelimits": [
+    { "name": "DIAGNOSTIC_RATE_LIMITER", "namespace_id": "2026110801", "simple": { "limit": 20, "period": 60 } },
+    { "name": "CONSENT_WITHDRAWAL_RATE_LIMITER", "namespace_id": "2026111101", "simple": { "limit": 20, "period": 60 } }
+  ],
   "triggers": { "crons": ["*/15 * * * *"] }
 }

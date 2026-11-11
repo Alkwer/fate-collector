@@ -1,8 +1,11 @@
 import { z } from 'zod'
 
 export const MAX_IMPORT_BYTES = 12 * 1024 * 1024
+// Full backups may contain both a maximum-sized capture and corrected metadata.
+// Capture/image imports keep their smaller limit; decoded image limits do not change.
+export const MAX_ARCHIVE_BYTES = 32 * 1024 * 1024
 export const MAX_API_BYTES = 128 * 1024
-const uuid = z.string().uuid()
+const uuid = z.string().uuid().toLowerCase()
 const timestamp = z.string().datetime({ offset: true })
 const shortText = z.string().max(160)
 const coordinate = z.number().finite().min(0).max(16384)
@@ -136,6 +139,11 @@ export const evidenceSchema = z.object({
   ocrStatus: z.enum(['ok', 'unavailable', 'error', 'not-run']),
   helperVersion: z.string().max(40).nullable(),
   ocrLines: captureSchema.shape.ocr.shape.lines,
+  cardRegions: z.array(z.object({
+    cardId: uuid,
+    x: z.number().min(0).max(1), y: z.number().min(0).max(1),
+    width: z.number().positive().max(1), height: z.number().positive().max(1),
+  }).strict().refine(box => box.x + box.width <= 1.000001 && box.y + box.height <= 1.000001)).max(30).optional(),
   visualRecognition: z.object({
     version: z.string().min(1).max(60), status: z.enum(['candidates', 'unsupported', 'unavailable']),
     warnings: z.array(z.string().max(500)).max(20),
@@ -146,6 +154,8 @@ export const exportSchema = z.object({
   kind: z.literal('fate-collector.export'),
   schemaVersion: z.literal(1),
   offers: z.array(z.object({ offer: offerSchema, evidence: evidenceSchema.nullable() }).strict()).min(1).max(250),
+  backup: z.object({ setId: uuid, part: z.number().int().min(1).max(250), total: z.number().int().min(1).max(250) })
+    .strict().refine(part => part.part <= part.total).optional(),
 }).strict().superRefine((archive, ctx) => {
   for (const [index, entry] of archive.offers.entries()) {
     if (entry.evidence && entry.offer.captureId !== entry.evidence.id) {

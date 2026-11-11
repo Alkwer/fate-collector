@@ -160,6 +160,36 @@ it('stops before sending an observation when the capture receipt is wrong', asyn
     : undefined)
   await expect(smokeStaging({ ...options, fetch })).rejects.toThrow('Capture upload returned an unexpected receipt id.')
   expect(fetch.mock.calls.some(([input, init]) => String(input).endsWith('/api/observations') && JSON.parse(String(init?.body || '{}')).kind)).toBe(false)
+  expect(fetch.mock.calls.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(2)
+})
+
+it('withdraws diagnostics after a failed receipt and reports cleanup failure separately without credentials', async () => {
+  const fetch = mockStaging((path, method, init) => {
+    if (path === '/api/diagnostics' && method === 'POST' && new Headers(init?.headers).get('Authorization') === 'Bearer ' + ingestKey && JSON.parse(String(init?.body)).token && !JSON.parse(String(init?.body)).report.rawLog)
+      return Response.json({ id: 'invalid-receipt' }, { status: 201 })
+    if (path.startsWith('/api/diagnostics/') && path.endsWith('/withdraw')) return new Response(null, { status: 503 })
+  })
+  let failure: unknown
+  try { await smokeStaging({ ...options, fetch }) } catch (error) { failure = error }
+  expect(failure).toBeInstanceOf(AggregateError)
+  expect((failure as Error).message).toContain('cleanup failed')
+  expect(String(failure)).not.toContain(ingestKey)
+  expect(fetch.mock.calls.some(([input]) => String(input).includes('/api/diagnostics/') && String(input).endsWith('/withdraw'))).toBe(true)
+})
+
+it('withdraws a grant even when the server accepted it but its acknowledgement was lost', async () => {
+  const server = mockStaging()
+  let loseAcknowledgement = true
+  const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+    const response = await server(input, init)
+    if (String(input).endsWith('/api/consents') && loseAcknowledgement) {
+      loseAcknowledgement = false
+      throw new Error('lost response')
+    }
+    return response
+  })
+  await expect(smokeStaging({ ...options, fetch })).rejects.toThrow('Register consent failed to fetch')
+  expect(fetch.mock.calls.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(1)
 })
 
 it('rejects an HTML fallback at the helper download URL before posting', async () => {

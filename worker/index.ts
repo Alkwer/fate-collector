@@ -8,6 +8,12 @@ import { newOffer, submissionProblem } from '../shared/offers'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
 
 export interface Env extends Partial<WorkerBindings> { ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
+function samePayload(previous: { payload_json: string }, expected: unknown, schema: { safeParse(value: unknown): { success: boolean; data?: unknown } }): boolean {
+  try {
+    const parsed = schema.safeParse(JSON.parse(previous.payload_json))
+    return parsed.success && JSON.stringify(parsed.data) === JSON.stringify(expected)
+  } catch { return false }
+}
 async function receiveCapture(body: unknown, database: D1Database, consent: ConsentRecord): Promise<Response> {
   const result = captureUploadSchema.safeParse(body)
   if (!result.success) return json({ error: 'Invalid capture upload.', issues: result.error.issues.slice(0, 5).map(i => ({ path: i.path, message: i.message })) }, 400)
@@ -23,13 +29,14 @@ async function receiveCapture(body: unknown, database: D1Database, consent: Cons
     cards: extractCards(capture).cards.slice(0, 30), reviewed: false, completeness: 'unverified' })
   try {
     const insert = await database.prepare(`INSERT INTO capture_uploads (id, content_hash, payload_json, parsed_offer_json, parser_version, captured_at, consent_id)
-      SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM data_consents WHERE id = ? AND policy_version = ?)
-      AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE id = ?) ON CONFLICT(id) DO NOTHING`)
-      .bind(capture.captureId, hash, payload, JSON.stringify(candidate), PARSER_VERSION, capture.capturedAt, consent.id, consent.id, CONSENT_VERSION, consent.id).run()
+      SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM data_consents WHERE lower(id) = lower(?) AND policy_version = ?)
+      AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE lower(id) = lower(?))
+      AND NOT EXISTS (SELECT 1 FROM capture_uploads WHERE lower(id) = lower(?)) ON CONFLICT(id) DO NOTHING`)
+      .bind(capture.captureId, hash, payload, JSON.stringify(candidate), PARSER_VERSION, capture.capturedAt, consent.id, consent.id, CONSENT_VERSION, consent.id, capture.captureId).run()
     if (!insert.meta.changes) {
       if (!await activeConsent(database, consent.id)) return json({ error: 'Consent has been withdrawn. Upload stopped.', code: 'consent-required' }, 403)
-      const previous = await database.prepare('SELECT content_hash, consent_id FROM capture_uploads WHERE id = ?').bind(capture.captureId).first<{ content_hash: string; consent_id: string }>()
-      if (previous?.content_hash !== hash || previous.consent_id !== consent.id) return json({ error: 'This capture ID already exists under different data or consent. Keep the original capture locally.' }, 409)
+      const previous = await database.prepare('SELECT content_hash, consent_id, payload_json FROM capture_uploads WHERE lower(id) = lower(?) ORDER BY received_at, id LIMIT 1').bind(capture.captureId).first<{ content_hash: string; consent_id: string; payload_json: string }>()
+      if (!previous || previous.consent_id?.toLowerCase() !== consent.id.toLowerCase() || !samePayload(previous, capture, captureUploadSchema)) return json({ error: 'This capture ID already exists under different data or consent. Keep the original capture locally.' }, 409)
       return json({ id: capture.captureId, status: 'duplicate', reviewed: false })
     }
     return json({ id: capture.captureId, status: 'accepted', reviewed: false }, 201)
@@ -81,21 +88,22 @@ export default {
     try {
       // Atomic first writer wins. Retries do not count a roll twice, even concurrently.
       const insert = await env.DB.prepare(`INSERT INTO observations (id, revision, content_hash, payload_json, game_version, completeness, captured_at, consent_id)
-        SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM data_consents WHERE id = ? AND policy_version = ?)
-        AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE id = ?)
-        AND NOT EXISTS (SELECT 1 FROM observations WHERE id = ? AND (consent_id IS NULL OR consent_id <> ?))
-        AND (EXISTS (SELECT 1 FROM observations WHERE id = ? AND lower(json_extract(payload_json, '$.captureId')) = lower(?))
-          OR NOT EXISTS (SELECT 1 FROM observations WHERE id <> ? AND ? IS NOT NULL
+        SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM data_consents WHERE lower(id) = lower(?) AND policy_version = ?)
+        AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE lower(id) = lower(?))
+        AND NOT EXISTS (SELECT 1 FROM observations WHERE lower(id) = lower(?) AND (consent_id IS NULL OR lower(consent_id) <> lower(?)))
+        AND (EXISTS (SELECT 1 FROM observations WHERE lower(id) = lower(?) AND lower(json_extract(payload_json, '$.captureId')) = lower(?))
+          OR NOT EXISTS (SELECT 1 FROM observations WHERE lower(id) <> lower(?) AND ? IS NOT NULL
             AND lower(json_extract(payload_json, '$.captureId')) = lower(?)))
-        AND NOT EXISTS (SELECT 1 FROM observations WHERE id = ?
+        AND NOT EXISTS (SELECT 1 FROM observations WHERE lower(id) = lower(?)
           AND coalesce(lower(json_extract(payload_json, '$.captureId')), '') <> coalesce(lower(?), ''))
+        AND NOT EXISTS (SELECT 1 FROM observations WHERE lower(id) = lower(?) AND revision = ?)
         ON CONFLICT(id, revision) DO NOTHING`)
         .bind(offer.id, offer.revision, hash, payload, offer.gameVersion, offer.completeness, offer.capturedAt, consent.id, consent.id, CONSENT_VERSION, consent.id, offer.id, consent.id,
-          offer.id, offer.captureId, offer.id, offer.captureId, offer.captureId, offer.id, offer.captureId).run()
+          offer.id, offer.captureId, offer.id, offer.captureId, offer.captureId, offer.id, offer.captureId, offer.id, offer.revision).run()
       if (!insert.meta.changes) {
         if (!await activeConsent(env.DB, consent.id)) return json({ error: 'Consent has been withdrawn. Sharing stopped.', code: 'consent-required' }, 403)
-        const previous = await env.DB.prepare('SELECT content_hash, consent_id FROM observations WHERE id = ? AND revision = ?').bind(offer.id, offer.revision).first<{ content_hash: string; consent_id: string }>()
-        if (previous?.content_hash !== hash || previous.consent_id !== consent.id) return json({ error: 'This offer, revision or capture already belongs to different data or consent. Keep the original offer ID and capture reference when correcting it.' }, 409)
+        const previous = await env.DB.prepare('SELECT content_hash, consent_id, payload_json FROM observations WHERE lower(id) = lower(?) AND revision = ? ORDER BY received_at, id LIMIT 1').bind(offer.id, offer.revision).first<{ content_hash: string; consent_id: string; payload_json: string }>()
+        if (!previous || previous.consent_id?.toLowerCase() !== consent.id.toLowerCase() || !samePayload(previous, offer, offerSchema)) return json({ error: 'This offer, revision or capture already belongs to different data or consent. Keep the original offer ID and capture reference when correcting it.' }, 409)
         return json({ id: offer.id, revision: offer.revision, status: 'duplicate' })
       }
       return json({ id: offer.id, revision: offer.revision, status: 'accepted' }, 201)

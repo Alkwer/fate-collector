@@ -20,7 +20,7 @@ function setup() {
       async first() { return db.prepare(sql).get(...args) ?? null } }
     return statement
   } }
-  const env: Env = { DB: adapter as unknown as D1Database, ASSETS: { fetch: async () => new Response('html') } as unknown as Fetcher, COLLECTOR_CAPTURE_KEY: 'capture-key', COLLECTOR_INGEST_KEY: 'review-key' }
+  const env: Env = { DB: adapter as unknown as D1Database, CONSENT_WITHDRAWAL_RATE_LIMITER: { limit: async () => ({ success: true }) } as unknown as RateLimit, ASSETS: { fetch: async () => new Response('html') } as unknown as Fetcher, COLLECTOR_CAPTURE_KEY: 'capture-key', COLLECTOR_INGEST_KEY: 'review-key' }
   return { db, env, hook }
 }
 function grant(scope: ConsentScope = 'captures'): ConsentGrant {
@@ -38,6 +38,35 @@ function data(g: ConsentGrant, env: Env) {
     : { ...newOffer(), origin: 'live', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Test card' }] }
   return worker.fetch(request(`/api/${g.scope}`, body, { Authorization: `Bearer ${key(g.scope)}`, 'X-Consent-Id': g.id, 'X-Consent-Token': g.token }), env)
 }
+
+test('legacy uppercase consent remains usable, retriable and revocable with either spelling', async () => {
+  const { db, env } = setup()
+  const g = { ...grant(), id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }
+  expect((await register({ ...g, id: g.id.toUpperCase() }, env)).status).toBe(201)
+  db.prepare('UPDATE data_consents SET id = ? WHERE id = ?').run(g.id.toUpperCase(), g.id)
+  expect((await register(g, env)).status).toBe(200)
+  expect((await data(g, env)).status).toBe(201)
+  expect((await withdraw(g, env)).status).toBe(200)
+  expect(db.prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(0)
+  expect((await data({ ...g, id: g.id.toUpperCase() }, env)).status).toBe(403)
+  expect((await register(g, env)).status).toBe(403)
+  db.prepare('UPDATE consent_withdrawals SET id = ? WHERE id = ?').run(g.id.toUpperCase(), g.id)
+  expect((await register(g, env)).status).toBe(403)
+  expect((await data(g, env)).status).toBe(403)
+})
+
+test('withdrawal limiter rejects traffic before reading its body or accessing D1, and fails closed', async () => {
+  const { env } = setup(); let touched = false
+  const db = { prepare() { touched = true; throw new Error('must not access D1') } } as unknown as D1Database
+  const limited = { ...env, DB: db, CONSENT_WITHDRAWAL_RATE_LIMITER: { limit: async () => ({ success: false }) } as unknown as RateLimit }
+  const response = await withdraw(grant(), limited)
+  expect(response.status).toBe(429)
+  expect(response.headers.get('Retry-After')).toBe('60')
+  expect(touched).toBe(false)
+  expect((await withdraw(grant(), { ...limited, CONSENT_WITHDRAWAL_RATE_LIMITER: undefined })).status).toBe(503)
+  expect((await withdraw(grant(), { ...limited, CONSENT_WITHDRAWAL_RATE_LIMITER: { limit: async () => { throw new Error('down') } } as unknown as RateLimit })).status).toBe(503)
+  expect(touched).toBe(false)
+})
 test('records the exact consent text, client acceptance date and server receipt; retries preserve them', async () => {
   const { db, env } = setup(); const g = grant()
   const response = await register(g, env); expect(response.status).toBe(201)

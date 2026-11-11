@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "npm run build && playwright test",
+    "test:compat": "npm run build && playwright test --config playwright.compat.config.ts",
     "check": "npm run typecheck && npm test && npm run build",
     "db:local": "wrangler d1 migrations apply fate-collector --local",
     "preview": "wrangler dev --local --ip 127.0.0.1 --port 8787",
@@ -31,6 +32,7 @@
     "test:capture-image": "node scripts/test-helper.mjs image",
     "test:capture-backend": "node scripts/test-helper.mjs backend",
     "test:ocr": "node scripts/test-helper.mjs ocr",
+    "test:recognition:holdout": "node scripts/recognition-validation.mjs",
     "research:stats": "node scripts/research-corpus-stats.mjs"
   },
   "dependencies": {

@@ -37,7 +37,21 @@ def generate_reward_icons() -> str:
         icons.append({"id": reward_id, "source": source, "box": box,
                       "sourceSha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                       "pngBase64": base64.b64encode(output.getvalue()).decode("ascii")})
-    return json.dumps({"icons": icons}, indent=2) + "\n"
+    motifs = []
+    catalog = json.loads((FIXTURES / "catalog.json").read_bytes())
+    for entry in catalog["templates"]:
+        if entry["family"] != "reward" or any(item["visualId"] == entry["visualId"] for item in motifs):
+            continue
+        path = FIXTURES / entry["image"]
+        x, y, width, height = entry["box"]
+        with Image.open(path) as image:
+            crop = image.crop((x, y, x + width, y + height)).convert("RGB")
+            output = io.BytesIO()
+            Image.frombytes("RGB", crop.size, crop.tobytes()).save(output, format="PNG", compress_level=0)
+        motifs.append({"visualId": entry["visualId"], "source": entry["image"], "box": entry["box"],
+                       "sourceSha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                       "pngBase64": base64.b64encode(output.getvalue()).decode("ascii")})
+    return json.dumps({"icons": icons, "motifs": motifs}, indent=2) + "\n"
 
 
 def generate() -> str:

@@ -463,8 +463,17 @@ function Invoke-FateDiagnosticWithdrawals {
         if (Get-FateDiagnosticRetryTime $retryPath) { continue }
         $record = $null
         try {
-            $withdrawnAt = Get-FateDiagnosticField (Read-FateDiagnosticJson $path) 'withdrawnAt'
-            if (!(Test-FateDiagnosticTime $withdrawnAt)) { continue }
+            $marker = Read-FateUploadMetadata $path {
+                Test-FateDiagnosticTime (Get-FateDiagnosticField $args[0] 'withdrawnAt')
+            }
+            if ($marker.Damaged) {
+                # Its existence is the durable decision. Preserve damaged evidence
+                # and explicitly record when its unreadable timestamp was recovered.
+                $withdrawnAt = Get-FateDiagnosticTime
+                Write-FateUploadState $path @{ withdrawnAt = $withdrawnAt; timestampSource = 'recovered-at' } -PreserveExisting
+            } elseif ($marker.Value) {
+                $withdrawnAt = $marker.Value.withdrawnAt
+            } else { continue }
             $record = Read-FateDiagnosticRecord $StateDirectory $reportId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
             if (!$record) { continue }
             $body = ConvertTo-Json -Compress -InputObject @{ withdrawnAt = $withdrawnAt }

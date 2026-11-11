@@ -7,7 +7,7 @@ export function consentText(scope: ConsentScope, origin: string): string {
   return `${policy.common}\n\n${policy.scopes[scope]}\n\nDestination: ${origin}`
 }
 export const consentGrantSchema = z.object({
-  id: z.string().uuid(), scope: z.enum(['captures', 'observations']),
+  id: z.string().uuid().transform(value => value.toLowerCase()), scope: z.enum(['captures', 'observations']),
   policyVersion: z.string().max(40), acceptedAt: z.string().datetime({ offset: true }),
   text: z.string().min(1).max(8000), token: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict()

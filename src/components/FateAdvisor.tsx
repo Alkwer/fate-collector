@@ -38,8 +38,9 @@ interface Props {
   source: ReactNode
   saved: boolean
   automatic: boolean
+  savedOffers: Offer[]
 }
-export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, needsMapConfirmation, onUseOffer, source, saved, automatic }: Props) {
+export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers }: Props) {
   const { collection, goal, mode, sources } = workspace
   const mapReady = !!workspace.map && !needsMapConfirmation
   const offerReady = mapReady && offerBelongsToMap(workspace, offer.id)
@@ -49,7 +50,17 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
   const invocation = useMemo(() => goal && mode === 'invoke' && mapReady ? planInvocation(collection.cards, goal) : null, [collection.cards, goal, mode, mapReady])
   const result = mode === 'offer' ? recommendations : invocation
   const allCards = [...collection.cards, ...offer.cards]
-  const alreadyCollected = collection.cards.some(card => sources[card.id] === offer.id || offer.cards.some(offered => offered.id === card.id))
+  const alreadyCollected = workspace.usedOfferIds.includes(offer.id) || collection.cards.some(card => sources[card.id] === offer.id || offer.cards.some(offered => offered.id === card.id))
+  const corrections = collection.cards.flatMap(card => {
+    const source = savedOffers.find(item => item.id === sources[card.id])
+    const corrected = source?.cards.find(item => item.id === card.id)
+    return corrected && JSON.stringify(corrected) !== JSON.stringify(card) ? [{ card, corrected }] : []
+  })
+  function completeInvocation(plan: InvocationPlan) {
+    if (!mapReady || busy || !plan.cardIds.length || !plan.cardIds.every(id => collection.cards.some(card => card.id === id))) return
+    const usedOfferIds = [...new Set([...workspace.usedOfferIds, ...plan.cardIds.flatMap(id => sources[id] ? [sources[id]] : [])])]
+    onChange({ ...workspace, usedOfferIds, collection: { ...collection, cards: collection.cards.filter(card => !plan.cardIds.includes(card.id)) }, sources: Object.fromEntries(Object.entries(sources).filter(([id]) => !plan.cardIds.includes(id))) })
+  }
   function collect(card: FateCard) {
     if (alreadyCollected || collection.cards.length >= MAX_COLLECTED_FATES || busy || !offerReady) return
     onChange({ ...workspace, collection: { ...collection, cards: [...collection.cards, structuredClone(card)] }, sources: { ...sources, [card.id]: offer.id } })
@@ -83,13 +94,14 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
             {candidate?.plan && goal && <details className="candidate-plan"><summary>Reward progress & invocation order</summary><PlanDetails plan={candidate.plan} cards={allCards} collected={collection.cards} goal={goal} /></details>}
             {!!candidate?.warnings.length && <ul className="advisor-warnings">{candidate.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
           </div>
-        } : undefined} /> : invocation && goal && <div className="advisor-plans">{invocation.plans.map((plan, index) => <article key={plan.cardIds.join(':')}><h3>{index === 0 ? 'Best supported plan' : `Alternative ${index + 1}`}</h3><PlanDetails plan={plan} cards={collection.cards} collected={collection.cards} goal={goal} /></article>)}</div>}
-        {offerReady && mode === 'offer' && <p className="hint">{alreadyCollected ? 'A Fate from this offer is already collected. Remove it before changing your choice.' : 'Add only the Fate you actually chose in game. This does not control the game.'}</p>}
+        } : undefined} /> : invocation && goal && <div className="advisor-plans">{invocation.plans.map((plan, index) => <article key={plan.cardIds.join(':')}><h3>{index === 0 ? 'Best supported plan' : `Alternative ${index + 1}`}</h3><PlanDetails plan={plan} cards={collection.cards} collected={collection.cards} goal={goal} /><button onClick={() => completeInvocation(plan)}>Mark this invocation completed</button><p className="hint">After invoking in game, remove these cards from your collection. You can undo this change.</p></article>)}</div>}
+        {offerReady && mode === 'offer' && <p className="hint">{workspace.usedOfferIds.includes(offer.id) ? 'A Fate from this offer has already been invoked.' : alreadyCollected ? 'A Fate from this offer is already collected. Remove it before changing your choice.' : 'Add only the Fate you actually chose in game. This does not control the game.'}</p>}
         <details className="advisor-caveats"><summary>How advice works</summary><p>Ranks matching reward icons toward your goal, not item quantities or market prices. Combat danger, build suitability and future offers are not scored. Check the modifiers before choosing.</p><p>Duplicate combo scaling, mixed-tier merges and a third duplicate remain unresolved. Advice uses prerelease research checked on 8 November 2026.</p><p><a href="https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11220s" target="_blank" rel="noreferrer">GGG Fate mechanics Q&A</a></p></details>
       </section>
       <div className="map-sidebar"><aside className="panel advisor-collection" aria-labelledby="collection-heading">
         <div className="section-heading"><h2 id="collection-heading">Collected in this map</h2><span className="muted">{collection.cards.length}/{MAX_COLLECTED_FATES}</span></div>
         <p className="hint">These Fates can only be invoked in the instance where you collected them.</p>
+        {!!corrections.length && <div className="snapshot-corrections" role="status"><strong>Saved source offers have different card details.</strong><p>Your collected snapshots remain unchanged until you apply a correction.</p>{corrections.map(({ card, corrected }) => <button key={card.id} disabled={!mapReady} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.map(item => item.id === card.id ? structuredClone(corrected) : item) } })}>Apply source correction: {cardName(card)}</button>)}</div>}
         {collection.cards.length ? <ul className="collected-fates">{collection.cards.map((card, index) => <li key={card.id}><div><strong>#{index + 1} {cardName(card)}</strong><span className="cell-sub">{card.tier === null ? 'Tier unknown' : `Tier ${card.tier}`} · {card.rewards.filter(reward => reward.identified).length} identified reward rows</span></div><button disabled={!mapReady} className="text-button" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}>Remove</button></li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
         {mapReady && <details className="collection-editor"><summary>Edit collected cards</summary><OfferEditor offer={collection} purpose="collection" onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></details>}
         <p className="hint">New map clears this collection. Saved offers stay in the archive.</p>

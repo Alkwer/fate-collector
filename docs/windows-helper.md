@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.3 improves Confirm OCR; 0.3.2 added full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.4 verifies queued payloads and recovers damaged withdrawal markers; 0.3.3 improves Confirm OCR, and 0.3.2 added full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Direct cloud upload: no browser required
 
@@ -69,7 +69,7 @@ confirmed. Reports expire after 30 days and are cleaned within the following
 
 ### Capture and OCR methods
 
-Automatic SDR uses guarded GDI and falls back to window-targeted Windows Graphics Capture (WGC) when another window intersects the crop. The fallback rechecks the game identity, foreground and geometry; unrelated backend errors stop capture. When Windows reports HDR on the target monitor, WGC uses float16 scRGB pixels converted against that monitor's SDR white level. The screenshot stays in memory until the normal capture bundle is saved. Foreground/window/coverage checks run before and after capture. A region spanning monitors is rejected. Native tests verify WGC's normal and float16 paths on an **SDR** display, including ordinary and translucent overlays. Real HDR monitors and live PoE still need validation. GDI cannot exclude a transient overlay appearing and disappearing entirely between its checks; select WGC explicitly when window isolation is required.
+Automatic SDR uses guarded GDI and falls back to window-targeted Windows Graphics Capture (WGC) when another window intersects the crop. The fallback rechecks the game identity, foreground and geometry; unrelated backend errors stop capture. When Windows reports HDR on the target monitor, WGC uses float16 scRGB pixels converted against that monitor's SDR white level. A local recovery PNG is written before OCR and removed after the complete capture bundle is saved. Foreground/window/coverage checks run before and after capture. A region spanning monitors is rejected. Native fixture tests verify WGC normal and float16 paths, including overlays; a later run also passed while Windows reported HDR active. A live PoE Character-panel F9 negative passed on 11 November 2026. Positive Fate scenes and the full native display-profile matrix still need validation. GDI cannot exclude a transient overlay appearing and disappearing entirely between its checks; select WGC explicitly when window isolation is required.
 
 Advanced troubleshooting can set `Backend=auto`, `gdi` or `wgc` under `[capture]` in `fate-collector.ini`, or pass `-CaptureBackend` to the exporter. `auto` is the default. Forcing `gdi` with Windows HDR enabled can distort colors.
 
@@ -91,3 +91,29 @@ The exporter prints the saved path and marks offline PNG bundles as fixtures. Ex
 Capture failure code `4` means WGC failed and no capture bundle was published. The focused native checks are `npm run test:calibration`, `npm run test:capture-image`, `npm run test:ocr` and `npm run test:capture-backend`. The last command briefly opens its own generated fixture window and checks WGC dimensions/colors in memory; it does not capture the game, save desktop images or upload anything. AHK tests use the standard v2 installation, or the `AUTOHOTKEY_EXE` environment variable.
 
 When updating, exit the running helper, replace all bundled program files, and restart it. Retain `captures` and `fate-collector.ini`. A website notice compares the version recorded in the opened capture with the bundled helper version; it does not inspect the currently running helper or update it automatically.
+
+Version 0.3.4 writes an atomic queue envelope with a SHA-256 digest of the payload,
+capture ID and consent scope. Each send checks that digest; a verified queued copy
+can still be delivered after the original capture is moved. Older queue entries
+are upgraded only after comparison with the original capture. Keep those original
+files until the upgrade has drained the queue. Older helper versions cannot read
+the new queue format, so replace the complete bundle and do not run both versions.
+
+If a damaged payload can be recovered from an original matching the stored digest,
+the helper preserves the damaged copy and retries the original. Missing checksums,
+unverifiable legacy data and unreadable payloads stay local and show **Upload blocked**.
+Restore the original capture/queue from a trusted backup before retrying; do not
+edit or delete receipt/checksum files to force an upload.
+
+A damaged withdrawal marker still blocks new uploads. When its consent credentials
+remain readable, the helper preserves the damaged marker and reconstructs the
+withdrawal using the same consent ID/token. It records the UTC time damage was
+detected (`timestampSource: recovered-at`) because the original request time is unknown.
+An offline withdrawal continues retrying until the server acknowledges it.
+
+F9 has a 90-second deadline for the exporter process. On timeout the helper
+terminates only the process handle it created and becomes available for another
+capture. The exporter writes a local recovery PNG before OCR; it survives an
+interrupted capture and is removed after the complete JSON is saved or the user
+explicitly cancels. This deadline applies to the AHK F9 path, not a standalone
+PowerShell invocation of the exporter.

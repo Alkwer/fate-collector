@@ -170,7 +170,8 @@ try {
     Assert-True ($attempt.status -eq 'retry' -and $attempt.attempt -eq 1 -and $attempt.httpStatus -eq 0) 'Network failure did not schedule retry.'
     Assert-True ((Get-Feedback $id) -eq 'offline') 'Offline capture was not reported as queued/offline.'
     $queuedPath = Join-Path (Join-Path $scope 'queue') "$id.json"
-    $original = [IO.File]::ReadAllText($queuedPath)
+    $originalEntry = [IO.File]::ReadAllText($queuedPath)
+    $original = (Read-FateUploadState $queuedPath).payload
     $payload = ConvertFrom-Json -InputObject $original
     Assert-True ($payload.captureId -ceq $id -and $payload.kind -eq 'fate-collector.upload' -and $payload.context.captureMode -eq 'game' -and
         $payload.image.width -eq 150 -and $payload.image.height -eq 100 -and $payload.ocr.lines.Count -eq 1 -and
@@ -182,7 +183,9 @@ try {
         (Get-TestState $largeFile).status -eq 'rejected' -and (Get-TestState $largePayload).status -eq 'rejected') 'Invalid, old, staged, or fixture filtering failed.'
     Write-Output 'PASS: only recent finalized game captures enter the bounded OCR-only queue.'
 
-    [void](Write-TestCapture -Id $id -Text 'Edited local backup')
+    $damagedEntry = $originalEntry.Replace('Test OCR', 'Test OCS')
+    Assert-True ($damagedEntry -cne $originalEntry) 'The test did not alter the queued OCR.'
+    [IO.File]::WriteAllText($queuedPath, $damagedEntry)
     $response.Offline = $false
     $response.Status = 429
     $response.RetrySeconds = 240
@@ -193,9 +196,13 @@ try {
     Assert-True ($attempt.attempt -eq 2 -and $attempt.httpStatus -eq 429 -and
         ((ConvertTo-FateUploadTime $attempt.retryAt) - [DateTimeOffset]::UtcNow).TotalSeconds -ge 230) 'Retry-After was not honored.'
     Assert-True ($requests[1] -ceq $original) 'Retry changed an immutable queued payload.'
+    $queueBackups = @([IO.Directory]::EnumerateFiles([IO.Path]::GetDirectoryName($queuedPath), "$id.json.*.corrupt"))
+    Assert-True ($queueBackups.Count -eq 1 -and [IO.File]::ReadAllText($queueBackups[0]) -ceq $damagedEntry) 'Recovery did not preserve the damaged queued OCR.'
+    [void](Write-TestCapture -Id $id -Text 'Edited local backup')
     $response.Status = 201
     $response.Receipt = [PSCustomObject]@{ id = $id; status = 'accepted'; reviewed = $true }
     Invoke-Upload -ForceRetry
+    Assert-True ($requests[2] -ceq $original) 'An edited local backup changed the verified queued payload.'
     Assert-True ((Get-TestState $id).status -eq 'retry' -and [IO.File]::Exists($queuedPath)) 'Accepted a receipt with invalid review state.'
     Assert-True ((Get-Feedback $id) -eq 'retry') 'Invalid success receipt incorrectly displayed Uploaded.'
     $response.Receipt = [PSCustomObject]@{ id = [Guid]::NewGuid().ToString(); status = 'accepted'; reviewed = $false }
@@ -210,7 +217,7 @@ try {
     Write-FateCaptureUploadFeedback -StateDirectory $stateDirectory -CaptureId $id -Path $feedbackPath -AllowLocalTestEndpoint
     Assert-True ([IO.File]::ReadAllText($feedbackPath) -ceq "$id`nuploaded") 'Feedback is not bound to the confirmed capture ID.'
     # Simulate a process dying after saving the receipt but before removing the queued payload.
-    [IO.File]::WriteAllText($queuedPath, $original)
+    [IO.File]::WriteAllText($queuedPath, $originalEntry)
     Invoke-Upload -ForceRetry
     Assert-True ($requests.Count -eq 5 -and ![IO.File]::Exists($queuedPath) -and
         [IO.File]::Exists((Join-Path $capturesDirectory "fate-$id.json"))) 'A receipt did not prevent another upload, or the backup was removed.'
@@ -372,26 +379,58 @@ try {
     $firstId = [IO.Path]::GetFileNameWithoutExtension($firstQueued)
     $secondId = [IO.Path]::GetFileNameWithoutExtension($queuedFiles[1])
     $firstState = Join-Path $repairScope "states/$firstId.json"
-    $originalPayload = [IO.File]::ReadAllText($firstQueued)
-    $changedPayload = $originalPayload.Insert(1, '"unexpected":"LOCAL_IMAGE_SENTINEL",')
+    $originalEntry = [IO.File]::ReadAllText($firstQueued)
+    $originalPayload = (Read-FateUploadState $firstQueued).payload
+    $changedEntry = $originalEntry.Replace('Test OCR', 'Test OCS')
+    [IO.File]::Move((Join-Path $repairCaptures "fate-$firstId.json"), (Join-Path $repairCaptures "fate-$firstId.json.backup"))
     $damagedState = '{"status":'
     [IO.File]::WriteAllText($firstState, $damagedState)
-    [IO.File]::WriteAllText($firstQueued, $changedPayload)
+    [IO.File]::WriteAllText($firstQueued, $changedEntry)
     $consentResponse.Offline = $false
     $requestStart = $requests.Count
     Invoke-FateCaptureUploads @repairParams -ForceRetry
     Assert-True ($requests.Count -eq ($requestStart + 1) -and
         (ConvertFrom-Json -InputObject $requests[$requestStart]).captureId -ceq $secondId) 'The bad entry blocked or was sent before the valid entry.'
     Assert-True ([IO.File]::ReadAllText($firstState) -ceq $damagedState -and
-        [IO.File]::ReadAllText($firstQueued) -ceq $changedPayload) 'A damaged entry was overwritten or removed.'
-    [IO.File]::WriteAllText($firstQueued, $originalPayload)
+        [IO.File]::ReadAllText($firstQueued) -ceq $changedEntry -and
+        (Get-FateCaptureUploadStatus $repairState $firstId -AllowLocalTestEndpoint) -ceq 'queue-blocked') 'A damaged entry was overwritten, removed or not reported.'
+    [IO.File]::WriteAllText($firstQueued, $originalEntry)
     Invoke-FateCaptureUploads @repairParams
     $preserved = @([IO.Directory]::EnumerateFiles((Join-Path $repairScope 'states'), "$firstId.json.*.corrupt"))
     Assert-True ($requests.Count -eq ($requestStart + 2) -and
         $requests[$requestStart + 1] -ceq $originalPayload) 'A verified original payload was not retried unchanged.'
     Assert-True ((Read-FateUploadState $firstState).status -ceq 'accepted') 'The recovered request did not record the new receipt.'
     Assert-True ($preserved.Count -eq 1 -and [IO.File]::ReadAllText($preserved[0]) -ceq $damagedState) 'Recovery did not preserve the damaged state.'
-    Write-Output 'PASS: a corrupt state cannot block other uploads or send altered data, and a verified payload can recover.'
+    Write-Output 'PASS: a corrupt state cannot block other uploads or send altered data; a verified payload can recover without the capture file.'
+
+    $legacyId = Write-TestCapture -Directory $repairCaptures
+    $legacyCapture = Join-Path $repairCaptures "fate-$legacyId.json"
+    $legacyQueued = Join-Path $repairScope "queue/$legacyId.json"
+    $repairSince = ConvertTo-FateUploadTime $repairConfig.EnabledSince
+    $legacyPayload = Get-FateSerializedUploadPayload (Read-FateCaptureBundle $legacyCapture) $legacyId $repairSince
+    Write-FateUploadAtomicText $legacyQueued $legacyPayload
+    [IO.File]::Move($legacyCapture, "$legacyCapture.backup")
+    $requestStart = $requests.Count
+    Invoke-FateCaptureUploads @repairParams -ForceRetry
+    Assert-True ($requests.Count -eq $requestStart -and [IO.File]::ReadAllText($legacyQueued) -ceq $legacyPayload -and
+        (Get-FateCaptureUploadStatus $repairState $legacyId -AllowLocalTestEndpoint) -ceq 'queue-blocked') 'An unverifiable legacy entry was sent, removed, or not reported.'
+    [IO.File]::Move("$legacyCapture.backup", $legacyCapture)
+    $response.Status = 503
+    Invoke-FateCaptureUploads @repairParams -ForceRetry
+    Assert-True ($requests.Count -eq ($requestStart + 1) -and $requests[$requestStart] -ceq $legacyPayload -and
+        (Read-FateUploadState $legacyQueued).payload -ceq $legacyPayload) 'The legacy entry did not migrate and retry with the same payload.'
+    Assert-Throws {
+        Read-FateQueuedUpload $legacyQueued ([guid]::NewGuid().ToString()) $repairConfig.Scope $repairCaptures $repairSince
+    } 'A verified queue entry could be used for a different capture.'
+    Assert-Throws {
+        Read-FateQueuedUpload $legacyQueued $legacyId ([guid]::NewGuid().ToString()) $repairCaptures $repairSince
+    } 'A verified queue entry could be used under a different consent.'
+    [IO.File]::Move($legacyCapture, "$legacyCapture.backup")
+    $response.Status = 201
+    Invoke-FateCaptureUploads @repairParams -ForceRetry
+    Assert-True ($requests.Count -eq ($requestStart + 2) -and $requests[$requestStart + 1] -ceq $legacyPayload -and
+        (Get-FateCaptureUploadStatus $repairState $legacyId -AllowLocalTestEndpoint) -ceq 'uploaded') 'The migrated entry could not retry without the original capture.'
+    Write-Output 'PASS: unverifiable legacy entries are retained and reported; verified entries migrate and bind to their capture and consent.'
 
     $batchState = Join-Path $testDirectory 'withdrawal-batch'
     $batchCaptures = Join-Path $testDirectory 'withdrawal-batch-captures'
@@ -498,32 +537,53 @@ try {
     $withdrawalTokenPath = Get-FateConsentPath $damagedConsentState $config.Scope 'clixml'
     $withdrawalReceipt = Get-FateConsentPath $damagedConsentState $config.Scope 'withdrawn.json'
     $withdrawalRetry = Get-FateConsentPath $damagedConsentState $config.Scope 'withdrawal-retry.json'
-    [IO.File]::Delete((Join-Path $damagedConsentState 'upload.clixml'))
     [IO.File]::WriteAllText($withdrawalReceipt, '{"status":')
     $invalidBytes = [byte[]]@(0xef, 0xbb, 0xbf, 0xff)
+    [IO.File]::WriteAllBytes($withdrawalMarker, $invalidBytes)
     [IO.File]::WriteAllBytes($withdrawalRetry, $invalidBytes)
+    $consentCredential = Get-FateUploadSecretText $config.Consent.Token
+    $withdrawalCredentials = [Collections.Generic.List[bool]]::new()
+    $baseConsentTransport = $consentTransport
+    $recoveryParams = $metadataParams.Clone()
+    $recoveryParams.ConsentTransport = {
+        param($Consent, $Key, $Withdrawal)
+        $withdrawalCredentials.Add(($Consent.Id -ceq $config.Scope -and
+            (Get-FateUploadSecretText $Consent.Token) -ceq $consentCredential))
+        & $baseConsentTransport $Consent $Key $Withdrawal
+    }
     $consentStart = $consentRequests.Count
     $consentResponse.Offline = $true
-    Invoke-FateCaptureUploads @metadataParams
+    $startedRecovery = [DateTimeOffset]::UtcNow
+    Invoke-FateCaptureUploads @recoveryParams
+    $repairedMarker = Read-FateUploadState $withdrawalMarker
+    $recoveredAt = ConvertTo-FateUploadTime $repairedMarker.withdrawnAt
     Assert-True ($consentRequests.Count -eq ($consentStart + 1) -and
-        (Read-FateUploadState $withdrawalRetry).attempt -eq 1) 'Corrupt withdrawal retry prevented replay and durable backoff.'
+        (Read-FateUploadState $withdrawalRetry).attempt -eq 1 -and $requests.Count -eq ($requestStart + 1) -and
+        $repairedMarker.timestampSource -ceq 'recovered-at' -and $recoveredAt -ge $startedRecovery -and
+        $recoveredAt -le [DateTimeOffset]::UtcNow -and (Test-FateConsentWithdrawnLocally $damagedConsentState $config.Scope)) 'Corrupt withdrawal marker or retry prevented safe recovery and durable backoff.'
+    [IO.File]::Delete((Join-Path $damagedConsentState 'upload.clixml'))
     $consentResponse.Offline = $false
-    Invoke-FateCaptureUploads @metadataParams -ForceRetry
+    Invoke-FateCaptureUploads @recoveryParams -ForceRetry
     Assert-True ($consentRequests.Count -eq ($consentStart + 1)) 'Recovery bypassed a newly persisted withdrawal backoff.'
     Write-FateUploadState $withdrawalRetry @{ retryAt = [DateTimeOffset]::UtcNow.AddSeconds(-1).ToString('o'); attempt = 1 }
-    Invoke-FateCaptureUploads @metadataParams
+    Invoke-FateCaptureUploads @recoveryParams
     $withdrawalAttempt = $consentRequests[$consentRequests.Count - 1]
     $backupDirectory = [IO.Path]::GetDirectoryName($withdrawalReceipt)
     $receiptBackups = @([IO.Directory]::EnumerateFiles($backupDirectory, "$($config.Scope).withdrawn.json.*.corrupt"))
     $retryBackups = @([IO.Directory]::EnumerateFiles($backupDirectory, "$($config.Scope).withdrawal-retry.json.*.corrupt"))
+    $markerBackups = @([IO.Directory]::EnumerateFiles($backupDirectory, "$($config.Scope).withdrawal.json.*.corrupt"))
     Assert-True ($consentRequests.Count -eq ($consentStart + 2) -and $requests.Count -eq ($requestStart + 1) -and
+        $withdrawalCredentials.Count -eq 2 -and $withdrawalCredentials[0] -and $withdrawalCredentials[1] -and
         !$withdrawalAttempt.HasKey -and $withdrawalAttempt.Consent.Id -ceq $config.Scope -and
-        $withdrawalAttempt.Withdrawal.withdrawnAt -ceq (Read-FateUploadState $withdrawalMarker).withdrawnAt -and
+        $withdrawalAttempt.Withdrawal.withdrawnAt -ceq $repairedMarker.withdrawnAt -and
+        $consentRequests[$consentStart].Withdrawal.withdrawnAt -ceq $repairedMarker.withdrawnAt -and
         (Test-FateWithdrawalReceipt (Read-FateUploadState $withdrawalReceipt) $config.Scope) -and
         [IO.File]::Exists($withdrawalTokenPath) -and $receiptBackups.Count -eq 1 -and
         [IO.File]::ReadAllText($receiptBackups[0]) -ceq '{"status":' -and $retryBackups.Count -eq 1 -and
-        [Convert]::ToBase64String([IO.File]::ReadAllBytes($retryBackups[0])) -ceq [Convert]::ToBase64String($invalidBytes)) 'Damaged withdrawal metadata did not recover without the active settings or lost evidence.'
-    Write-Output 'PASS: corrupt withdrawal receipt and UTF-8 retry are preserved and reconstructed without sending captures.'
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($retryBackups[0])) -ceq [Convert]::ToBase64String($invalidBytes) -and
+        $markerBackups.Count -eq 1 -and
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($markerBackups[0])) -ceq [Convert]::ToBase64String($invalidBytes)) 'Damaged withdrawal metadata did not recover without the active settings or lost evidence.'
+    Write-Output 'PASS: damaged withdrawal marker, receipt and retry recover with the original credential and one durable recovery timestamp.'
 
     Set-FateUploadConfiguration -StateDirectory $damagedConsentState -Origin $origin -Key $key -ConsentAccepted -AllowLocalTestEndpoint
     $config = Get-FateUploadConfiguration $damagedConsentState -AllowLocalTestEndpoint
@@ -536,7 +596,8 @@ try {
     $statePath = Join-Path $damagedConsentState "$($config.Scope)/states/$brokenId.json"
     $lockedPath = Join-Path $damagedConsentState "$($config.Scope)/states/$lockedId.json"
     $queuedPath = Join-Path $damagedConsentState "$($config.Scope)/queue/$brokenId.json"
-    $originalPayload = [IO.File]::ReadAllText($queuedPath)
+    $originalEntry = [IO.File]::ReadAllText($queuedPath)
+    $originalPayload = (Read-FateUploadState $queuedPath).payload
     [IO.File]::WriteAllBytes($statePath, $invalidBytes)
     [IO.File]::WriteAllText($queuedPath, $originalPayload.Insert(1, '"unexpected":"LOCAL_IMAGE_SENTINEL",'))
     $requestStart = $requests.Count
@@ -545,7 +606,7 @@ try {
         Invoke-FateCaptureUploads @metadataParams -ForceRetry
         Assert-True ($requests.Count -eq ($requestStart + 1) -and
             (ConvertFrom-Json -InputObject $requests[$requestStart]).captureId -ceq $otherId) 'Invalid UTF-8 or a locked state blocked a valid entry or let altered data through.'
-        [IO.File]::WriteAllText($queuedPath, $originalPayload)
+        [IO.File]::WriteAllText($queuedPath, $originalEntry)
         Invoke-FateCaptureUploads @metadataParams
         Assert-True ($requests.Count -eq ($requestStart + 2) -and $requests[$requestStart + 1] -ceq $originalPayload) 'An invalid UTF-8 state did not recover the verified payload.'
     } finally { $busy.Dispose() }

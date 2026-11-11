@@ -14,6 +14,15 @@ It uses bounded OCR-guided regions, sampled grayscale proposals and bilinear RGB
 comparison, not the prototype's full-frame FFT/Lanczos scan or header rereads.
 The frozen Python code, bank and historical reports remain unchanged.
 
+The production dictionary now also includes Dryad and Avalanche, read directly
+from the preserved GGG showcase headers. [Versioned catalog provenance](../shared/catalog-metadata.json)
+records the source/date and explicitly unresolved semantics. This expands name
+recognition only; it does not associate rewards with those names or establish
+native accuracy. [Production promotion](recognition-validation.md#required-promotion-artifact)
+requires an exact-release native holdout report with minimum scene and label
+coverage. The server verifies a local measurement; it does not replay private
+captures or attest the physical HDR state.
+
 The generated `shared/visual-templates.json` contains 11 small crops for eight
 motifs and T2/T3, with source paths, original boxes and SHA-256 hashes. Regenerate
 it with Python/Pillow using `scripts/generate-visual-templates.py`; `--check`

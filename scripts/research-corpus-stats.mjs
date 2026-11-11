@@ -1,6 +1,7 @@
 import { readFile, stat } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
-import { exportSchema, formatValidationError, MAX_IMPORT_BYTES } from '../shared/schema.ts'
+import { exportSchema, formatValidationError, MAX_ARCHIVE_BYTES } from '../shared/schema.ts'
+import { combineBackupParts } from '../shared/backups.ts'
 
 function validateArchive(input) {
   const parsed = exportSchema.safeParse(input)
@@ -136,9 +137,9 @@ const usage = 'Usage: node scripts/research-corpus-stats.mjs <export.json> [--fo
 async function readArchive(path) {
   const file = await stat(path)
   if (!file.isFile()) throw new Error('The export path must be a regular file.')
-  if (file.size > MAX_IMPORT_BYTES) throw new Error('The export exceeds 12 MiB.')
+  if (file.size > MAX_ARCHIVE_BYTES) throw new Error('The export exceeds 32 MiB.')
   const data = await readFile(path)
-  if (data.length > MAX_IMPORT_BYTES) throw new Error('The export exceeds 12 MiB.')
+  if (data.length > MAX_ARCHIVE_BYTES) throw new Error('The export exceeds 32 MiB.')
   try {
     return JSON.parse(data.toString('utf8').replace(/^\uFEFF/, ''))
   } catch {
@@ -159,8 +160,15 @@ async function main() {
     console.log(usage)
     return
   }
-  if (positionals.length !== 1 || !['markdown', 'json'].includes(values.format)) throw new Error(usage)
-  const report = summarizeResearchCorpus(await readArchive(positionals[0]))
+  if (!positionals.length || positionals.length > 250 || !['markdown', 'json'].includes(values.format)) throw new Error(usage)
+  const parts = []
+  let bytes = 0
+  for (const path of positionals) {
+    bytes += (await stat(path)).size
+    if (bytes > 512 * 1024 * 1024) throw new Error('The backup set exceeds 512 MiB.')
+    parts.push(exportSchema.parse(await readArchive(path)))
+  }
+  const report = summarizeResearchCorpus(combineBackupParts(parts))
   const output = values.format === 'json' ? JSON.stringify(report, null, 2) + '\n' : renderResearchCorpusMarkdown(report)
   if (values.check === undefined) {
     process.stdout.write(output)

@@ -2,13 +2,15 @@
 
 Run the report locally with the project's Node 24 and installed dependencies. Use
 a version 1 Fate Collector JSON export from **Saved offers** for a history
-summary, or an export of the current offer to include its local evidence.
+summary. Full backups and current-offer exports include available local evidence;
+offer-data-only backups omit it.
 
 ```powershell
 node scripts/research-corpus-stats.mjs offers.json
 node scripts/research-corpus-stats.mjs offers.json --format json
 node scripts/research-corpus-stats.mjs offers.json > quality.md
 node scripts/research-corpus-stats.mjs offers.json --check quality.md
+node scripts/research-corpus-stats.mjs backup-001.json backup-002.json --format json
 ```
 
 Markdown is the default. To check a previously saved JSON report, include
@@ -18,8 +20,10 @@ and returns an error for a difference, an unreadable file or invalid input.
 The CLI itself only reads files and writes the requested summary to standard
 output. Keep the source export private if it includes screenshots or raw OCR.
 
-The script accepts a single `fate-collector.export` of up to 250 offers and
-12 MiB. It uses the app's export schema and rejects repeated offer or capture
+The script accepts one export or all parts of one backup (32 MiB per part,
+512 MiB total, up to 250 offers). Backup set IDs and part counts must match;
+missing or duplicate parts are rejected. Legacy exports without part metadata
+can also be combined. It uses the app's export schema and rejects repeated offer or capture
 IDs, including case variants. Export one current revision per offer. Helper
 capture bundles and D1 dumps use separate formats. The report contains counts
 grouped by the saved `origin` value and a combined total.
@@ -34,7 +38,7 @@ grouped by the saved `origin` value and a combined total.
   multiple encounters. Possible repeat hints remain in the totals, including
   hints whose referenced capture is outside the export.
 - Embedded image and OCR counts describe evidence included in this export.
-  History exports omit evidence by design. The report validates the archive
+  Full history backups include available evidence; offer-data-only exports omit it. The report validates the archive
   schema and counts image fields without decoding image pixels. Successful OCR
   with text requires status `ok` and nonblank text in the stored text or lines.
 - Card counts cover the records present in the archive. A blank name and a

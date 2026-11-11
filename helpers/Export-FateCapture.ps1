@@ -72,6 +72,7 @@ public static class FateCaptureWindow {
 
 $failureCode = 1
 $temporaryPath = $null
+$recoveryPath = $null
 try {
     Add-Type -AssemblyName System.Drawing
     if ($PSCmdlet.ParameterSetName -eq 'Image') {
@@ -160,6 +161,10 @@ try {
         $failureCode = 2
         throw 'The PNG is too large for a 12 MiB bundle. Choose a tighter crop.'
     }
+    # Keep the captured pixels recoverable if WinRT OCR or its host process stalls.
+    # This is local evidence only; upload and folder intake ignore PNG files.
+    $recoveryPath = Join-Path $directory.FullName ("fate-" + $CaptureId + '.recovery.png')
+    [IO.File]::WriteAllBytes($recoveryPath, $png)
     $ocr = Get-OcrResult -Png $png -ImageWidth $Width -ImageHeight $Height -OcrLanguage $OcrLanguage -OcrMode $OcrMode
     $captureMode = if ($PSCmdlet.ParameterSetName -eq 'Window') { 'game' } else { 'fixture' }
     $previous = $null
@@ -179,7 +184,7 @@ try {
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.3.3'
+        helperVersion = '0.3.4'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context
@@ -204,6 +209,7 @@ try {
     }
     [System.IO.File]::Move($temporaryPath, $outputPath)
     $temporaryPath = $null
+    [IO.File]::Delete($recoveryPath)
     Write-Output $outputPath
     if ($ocr.status -eq 'unavailable') { exit 10 }
     if ($ocr.status -eq 'error') { exit 11 }

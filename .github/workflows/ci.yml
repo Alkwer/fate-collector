@@ -80,3 +80,7 @@ jobs:
       - run: npm run test:calibration
       - run: npm run build
       - run: npm run test:upload:integration
+      - name: Install compatibility browsers
+        run: npx playwright install firefox msedge
+      - name: Validate Edge and Firefox local review
+        run: npx playwright test --config playwright.compat.config.ts
