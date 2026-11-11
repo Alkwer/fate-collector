@@ -12,6 +12,9 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
 
 - A sticky navigation rail leads to **Current map**, **Saved offers** and
   **Diagnostics**. It becomes a top navigation bar at narrow widths.
+- **Download Windows helper** stays visible beside **More actions** in the page
+  header on every screen, with a direct ZIP download. The actions move below the
+  title on mobile; capture setup instructions remain in the help panel.
 - The main decision panel sits beside the source capture and current collection
   on desktop. On tablet the decision comes first, followed by evidence and
   collection side by side. On mobile those supporting panels stack.

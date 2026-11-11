@@ -539,8 +539,11 @@ nav button:focus-visible { outline-color: var(--shell-text); }
 .shell-note { color: var(--shell-muted); font-size: 13px; padding-inline: 12px; }
 .main-area { display: flex; flex-direction: column; min-width: 0; }
 .workspace { width: 100%; max-width: 1480px; margin-inline: auto; padding: 36px 36px 28px; flex: 1; }
-.page-heading { gap: 24px; margin-bottom: 28px; }
+.page-heading { flex-wrap: wrap; gap: 24px; margin-bottom: 28px; }
 .page-heading p { margin-top: 8px; font-size: 14px; }
+.page-heading-actions { display: flex; align-items: center; gap: 12px; max-width: 100%; }
+.helper-download { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 9px 12px; border: 1px solid var(--border-light); border-radius: var(--control-radius); color: var(--text); font: 15px/1.4 var(--sans); text-decoration: none; }
+.helper-download:hover { background: var(--surface-raised); border-color: var(--accent); }
 .more-actions { margin: 0; }
 .action-menu { top: calc(100% + 8px); width: 270px; max-width: calc(100vw - 32px); padding: 8px; border: 0; border-radius: var(--radius); box-shadow: var(--menu-shadow); z-index: 20; }
 .action-menu button { font-size: 14px; }
@@ -679,6 +682,8 @@ td { padding: 16px 12px; }
   .shell-note { display: none; }
   .workspace { padding: 24px 16px; }
   .page-heading { flex-direction: row; gap: 12px; margin-bottom: 24px; }
+  .page-heading-actions { width: 100%; justify-content: space-between; }
+  .helper-download { min-height: 44px; }
   h1, .page-heading h1 { font-size: 25px; }
   .page-heading p { font-size: 13px; }
   .more-actions { align-self: flex-start; }
@@ -708,7 +713,7 @@ td { padding: 16px 12px; }
 @media (max-width: 500px) {
   nav .app-icon { display: none; }
   nav button { padding-inline: 6px; }
-  .page-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+  .page-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
   .page-heading .more-actions > .panel-trigger { padding-inline: 9px; }
   .more-actions { margin-left: auto; }
   .journal-filters, .context-fields { grid-template-columns: minmax(0, 1fr); }
