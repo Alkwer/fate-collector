@@ -28,6 +28,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - name: Use upstream Ubuntu mirrors for browser dependencies
+        run: |
+          # The Azure mirror can stall apt on DNS failures; retain the upstream fallbacks.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i '\|azure.archive.ubuntu.com|d' /etc/apt/apt-mirrors.txt
+          fi
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
       - run: npm run release:pack
