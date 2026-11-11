@@ -19,16 +19,13 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   const [templateNotice, setTemplateNotice] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
-  const rewardDetails = useRef<HTMLDetailsElement>(null)
   const rewardFields = useRef(new Map<string, HTMLFieldSetElement>())
   const cardHeading = useRef<HTMLHeadingElement>(null), focusSelection = useRef(false)
-  const openRewardsOnSelection = useRef(false)
   const pending = offer.cards.filter(cardNeedsReview)
   const selectedIndex = offer.cards.findIndex(card => card.id === selected?.id)
   const next = [...offer.cards.slice(selectedIndex + 1), ...offer.cards.slice(0, selectedIndex)].find(cardNeedsReview)
-  function selectCard(id: string, openRewards = false) { focusSelection.current = true; openRewardsOnSelection.current = openRewards; setSelectedId(id) }
+  function selectCard(id: string) { focusSelection.current = true; setSelectedId(id) }
   function selectReward(id: string) {
-    if (rewardDetails.current) rewardDetails.current.open = true
     rewardFields.current.get(id)?.focus()
   }
   const modifierProblem = selected?.modifiers.length > 40 ? 'Use at most 40 modifier lines.'
@@ -38,13 +35,11 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
     if (!reviewRequest || !offer.cards.some(card => card.id === reviewRequest.cardId)) return
     if (selected?.id === reviewRequest.cardId) {
       cardHeading.current?.focus()
-      if (rewardDetails.current) rewardDetails.current.open = true
-    } else selectCard(reviewRequest.cardId, true)
+    } else selectCard(reviewRequest.cardId)
   }, [reviewRequest, offer.id])
   useEffect(() => {
     if (focusSelection.current) {
       cardHeading.current?.focus()
-      if (openRewardsOnSelection.current && rewardDetails.current) rewardDetails.current.open = true
       focusSelection.current = false
     }
   }, [selected?.id])
@@ -70,7 +65,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
         {showChoice && <td><input type="radio" name="chosen-card" aria-label={`Chosen ${card.name || `card ${index + 1}`}`} checked={offer.selectedCardId === card.id} onChange={() => onChange({ selectedCardId: card.id })} /></td>}
       </tr>)}</tbody></table></div>
       <div className="table-footnote"><span>{collecting ? 'Click a collected card to correct it.' : showChoice ? 'Recorded choice is an archive note. It does not change your current map.' : 'Check the data here. Add your chosen Fate to the collection on the map screen.'}</span>{showChoice && offer.selectedCardId && <button className="text-button" onClick={() => onChange({ selectedCardId: null })}>Clear choice</button>}</div>
-      <div className="review-navigation"><p aria-live="polite">{pending.length ? `${pending.length} card(s) need tier or reward review.` : 'All recorded tiers and rewards are checked.'}</p><button disabled={!next} onClick={() => { if (next) selectCard(next.id, true) }}>Next card to review</button></div>
+      <div className="review-navigation"><p aria-live="polite">{pending.length ? `${pending.length} card(s) need tier or reward review.` : 'All recorded tiers and rewards are checked.'}</p><button disabled={!next} onClick={() => { if (next) selectCard(next.id) }}>Next card to review</button></div>
       {selected && <div className={`card-review-grid ${evidence ? 'has-evidence' : ''}`}>
         {evidence && <CardEvidence evidence={evidence} cardId={selected.id} />}
         <div className="card-editor" key={selected.id}>
@@ -89,7 +84,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
           <p className="hint">Image suggestions need checking. Tier and icon matches are provisional; unsupported or hidden icons may be missing.</p>
           <label className="checkbox-row"><input type="checkbox" checked={selected.visualReview.tierReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, tierReviewed: event.target.checked } })} />I checked this tier against the image</label>
         </div>}
-        <details ref={rewardDetails} className="card-details"><summary>Modifiers & rewards <span className="muted">Used by the advisor</span></summary>
+        <section className="card-details"><h3>Modifiers & rewards <span className="muted">Used by the advisor</span></h3>
           <label>Modifiers<textarea rows={3} value={selected.modifiers.join('\n')} placeholder="One visible modifier per line" aria-invalid={!!modifierProblem} aria-describedby={`${instanceId}-modifier-help`} onChange={e => updateCard({ modifiers: e.target.value.split('\n') })} /></label>
           <p id={`${instanceId}-modifier-help`} className={modifierProblem ? 'field-error' : 'hint'} role={modifierProblem ? 'alert' : undefined}>{modifierProblem || 'Up to 40 lines, 1,000 characters per line. Corrections save after validation.'}</p>
           <div className="section-heading reward-heading"><h3>Rewards</h3><button className="text-button" disabled={selected.rewards.length >= 30} onClick={() => updateCard({ rewards: [...selected.rewards, newReward()] })}>Add reward</button></div>
@@ -129,7 +124,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
           </fieldset> })}
           {selected.visualReview && <label className="checkbox-row visual-review"><input type="checkbox" checked={selected.visualReview.rewardsReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, rewardsReviewed: event.target.checked } })} />I checked all reward icons, kinds, counts and thresholds</label>}
           {templateNotice && <p className="hint" role="status">{templateNotice}</p>}
-        </details>
+        </section>
         <button className="text-button danger remove-card" onClick={() => {
           onChange({ cards: offer.cards.filter(c => c.id !== selected.id), selectedCardId: offer.selectedCardId === selected.id ? null : offer.selectedCardId, completeness: 'unverified' })
         }}>Remove card</button>

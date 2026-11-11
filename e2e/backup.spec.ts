@@ -1,4 +1,4 @@
-import { openDisclosure } from './ui'
+import { openPanel, closePanels } from './ui'
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -18,11 +18,12 @@ for (const width of [1440, 390]) {
     // Both initial inputs respect the existing import limit. Their combined
     // journal exceeds that limit and must be exported in independent parts.
     for (const batch of [entries.slice(0, 120), entries.slice(120)]) {
+      await closePanels(page)
       await page.getByLabel('Import capture file').setInputFiles({ name: 'batch.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ kind: 'fate-collector.export', schemaVersion: 1, offers: batch })) })
       await expect(page.locator('.notice[role="status"]')).toContainText('Imported 120 new offers')
     }
     await expect(page.getByRole('button', { name: /^Saved offers\s*240$/ })).toBeVisible()
-    await openDisclosure(page, '.archive-tools')
+    await openPanel(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     await expect(dialog).toBeVisible()
@@ -41,6 +42,7 @@ for (const width of [1440, 390]) {
         const download = await pending, bytes = await readFile(await download.path())
         expect(bytes.byteLength).toBeLessThanOrEqual(MAX_IMPORT_BYTES)
         restored.push(...exportSchema.parse(JSON.parse(bytes.toString('utf8'))).offers)
+        await closePanels(other)
         await other.getByLabel('Import capture file').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: bytes })
         await expect(other.locator('.notice[role="status"]')).toContainText('Imported')
       }

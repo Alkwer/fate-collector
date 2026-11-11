@@ -1,3 +1,4 @@
+import { DetailPanel } from './DetailPanel'
 import { useEffect, useState } from 'react'
 import { diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
 import { diagnosticHistoryState, downloadDiagnostic, downloadDiagnosticReceipt, forgetDiagnostic, generateDiagnostic, onDiagnosticChange, retryDiagnosticWithdrawals, sendDiagnostic, withdrawDiagnostic, type DiagnosticRecord } from '../lib/diagnostics'
@@ -56,7 +57,7 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
         <p>Consent accepted: {new Date(record.consent.acceptedAt).toLocaleString()}{record.receipt && <> · Received: {new Date(record.receipt.receivedAt).toLocaleString()} · Expires: {new Date(record.receipt.expiresAt).toLocaleString()}</>}{record.withdrawalConfirmedAt && <> · Deleted: {new Date(record.withdrawalConfirmedAt).toLocaleString()}</>}</p>
         {!record.receipt && !record.withdrawnAt && record.retryAt && <p>Sending limit: retry after {new Date(record.retryAt).toLocaleString()}.</p>}
         {record.withdrawnAt && !record.withdrawalConfirmedAt && record.deletionRetryAt && <p>Deletion limit: next retry after {new Date(record.deletionRetryAt).toLocaleString()}.</p>}
-        <details><summary>Accepted diagnostic consent</summary><p className="consent-snapshot">{record.consent.text}</p></details>
+        <DetailPanel title={<>Accepted diagnostic consent</>}><p className="consent-snapshot">{record.consent.text}</p></DetailPanel>
         {!record.receipt && !record.withdrawnAt && <button disabled={busy} onClick={() => { setReport(record.report); setAgreed(false); setMessage('Review this report and tick the checkbox to retry. No automatic diagnostic upload occurs.') }}>Review and retry</button>}
         {!record.withdrawnAt && <button className="text-button danger" onClick={() => void act(() => withdrawDiagnostic(record.report.id))}>Withdraw consent and delete report</button>}
         {record.withdrawnAt && !record.withdrawalConfirmedAt && <><p>Sending is stopped. Deletion retries when connected or after reopening this site.</p><button onClick={() => void act(retryDiagnosticWithdrawals)}>Retry report deletion</button></>}

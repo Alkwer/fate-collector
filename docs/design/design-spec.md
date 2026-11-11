@@ -28,8 +28,7 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
 - Empty states lead with import. On mobile the archived review shows detected
   Fates before the source image. Source previews open at full size. Keep
   table scrolling within the table container where needed.
-- Supporting instructions and statuses use at least 13px text. Buttons and disclosure
-  headers have at least 36px targets on desktop and 44px targets on mobile.
+- Supporting instructions and statuses use at least 13px text. Buttons have at least 36px targets on desktop and 44px targets on mobile.
   Keyboard focus stays visible.
 
 ## Interaction requirements
@@ -40,7 +39,7 @@ the optional archived choice, context and a single **Review status** selector
 under **Edit details**. Keep examples, new offers, individual offer export and
 unreviewed saves under **More actions**. The journal keeps search and its main
 offer filter visible, with additional filters, import, export, recovery and
-sharing under their labelled disclosures. Retain deletion confirmation, source
+sharing in named panels opened by buttons. Retain deletion confirmation, source
 zoom, import guidance and actionable error feedback.
 **Connect folder** links the local captures folder once. While connected, captures
 and corrections save automatically; there is no per-capture confirmation or save
@@ -50,8 +49,9 @@ Support paste and drag/drop as fallbacks.
 The folder connection is optional and explicitly labelled as local review. The
 helper's independent cloud upload is configured in its tray menu and can work with
 the website closed. Do not show a cloud connection or upload status the browser
-cannot observe. The **Connect captures folder** disclosure is secondary to the capture
-and extracted cards.
+cannot observe. **More actions → Connect captures folder** opens a dedicated local-review panel.
+Only an active connection or a problem appears on the map. Capture setup and help
+also live in **More actions**, without expanding text rows on the main screen.
 Do not require typing modifiers, area, tier, or rewards just to preserve a sample.
 Manual review means the user checked the extraction, not that every icon is known.
 Known Fate names and descriptions are extracted from local Windows OCR. The local
@@ -62,12 +62,12 @@ require explicit review before firm advice.
 The current-map workspace follows capture, reward review, choice and invocation.
 Two pressed-state buttons switch between **Choose a Fate** and **Plan invocation**.
 The main result contains the single preferred card's action; equal matches retain
-their individual actions. Show the next missing-data check directly and collapse
-the remaining checklist. Keep the best invocation visible and alternatives collapsed.
+their individual actions. Show the next missing-data check directly and open
+the remaining checklist in a panel. Keep the best invocation visible and open alternatives on demand.
 Keep the recommendation and its gain over the existing collection prominent, with
 equal matches and provisional results explicitly labelled. Missing data links to
 the affected card. **Back to advice** closes current-offer editing and restores
-focus to the decision. Summarize **Reward priorities** in a disclosure and keep
+focus to the decision. Open **Reward priorities** in a focused panel and keep
 profile controls and advice notes available on demand. An active map offers
 **Edit collected cards** even before an offer is imported so players can rebuild
 their current collection.

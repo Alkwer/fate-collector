@@ -13,7 +13,6 @@ const key = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.lab
 export function SolverControls({ control, availableGoals }: { control: SolverSettingsControl; availableGoals: AdvisorGoal[] }) {
   const { settings, change } = control
   const [selected, setSelected] = useState('')
-  const [profileOpen, setProfileOpen] = useState(settings.mode === 'portfolio' && !settings.profile.goals.length)
   const [customLabel, setCustomLabel] = useState('')
   const [customKind, setCustomKind] = useState<'regular' | 'combo'>('regular')
   const [filterText, setFilterText] = useState(settings.profile.avoidModifiers.join('\n'))
@@ -54,10 +53,10 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
     } catch (error) { setMessage({ text: error instanceof Error ? error.message : 'Could not import this profile.', error: true }) }
   }
   return <section className="solver-settings" aria-label="Solver settings">
-    <label className="checkbox-row"><input type="checkbox" checked={settings.mode === 'portfolio'} onChange={event => { if (update({ ...settings, mode: event.target.checked ? 'portfolio' : 'single' }) && event.target.checked) setProfileOpen(true) }} />Compare multiple rewards</label>
+    <label className="checkbox-row"><input type="checkbox" checked={settings.mode === 'portfolio'} onChange={event => { update({ ...settings, mode: event.target.checked ? 'portfolio' : 'single' }) }} />Compare multiple rewards</label>
     {settings.mode === 'portfolio' && <p className="hint">Maximize your combined priorities with up to three input Fates.</p>}
-    <details className="solver-profile" open={profileOpen} onToggle={event => setProfileOpen(event.currentTarget.open)}>
-      <summary>Priorities, build filters & profile <span className="muted">{settings.profile.goals.length} priorities · {settings.profile.avoidModifiers.length} filters</span></summary>
+    <section className="solver-profile">
+      <h3>Priorities, build filters & profile <span className="muted">{settings.profile.goals.length} priorities · {settings.profile.avoidModifiers.length} filters</span></h3>
       <p>Set relative points, or your own estimated value in a consistent unit. A regular reward earns its weight per icon; a combo earns its weight once when completed. These are your assumptions, not measured prices or profit.</p>
       <p className="hint">Incomplete combo progress breaks equal-score ties. Unlisted rewards remain visible but add no points. A weight of 0 disables that priority.</p>
       {!!settings.profile.goals.length && <ul className="priority-list">{settings.profile.goals.map((goal, index) => <li key={key(goal)}>
@@ -72,8 +71,8 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       <button className="outline-button" onClick={() => update({ ...settings, profile: { ...settings.profile, avoidModifiers: filterText.split('\n').map(line => line.trim()).filter(Boolean) } })}>Apply modifier filters</button>
       <div className="profile-transfer"><button onClick={exportProfile}>Export profile</button><button onClick={() => fileInput.current?.click()}>Import profile</button><input hidden ref={fileInput} type="file" accept="application/json,.json" aria-label="Import solver profile" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importProfile(file) }} /></div>
       <p className="hint">Stored on this device across maps and browser restarts. Profile exports include priorities, filters and personal reward templates, but no captured offers or images. Import replaces the profile.</p>
-      {!!settings.definitions.length && <details className="personal-definitions"><summary>Personal reward templates ({settings.definitions.length})</summary><ul>{settings.definitions.map(row => <li key={row.id}><span>{row.label} · {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}{row.note ? ` · ${row.note}` : ''}</span><button className="text-button" aria-label={`Delete template ${row.label} ${row.kind}`} onClick={() => update({ ...settings, definitions: settings.definitions.filter(item => item.id !== row.id) })}>Delete</button></li>)}</ul></details>}
-    </details>
+      {!!settings.definitions.length && <section className="personal-definitions"><h3>Personal reward templates ({settings.definitions.length})</h3><ul>{settings.definitions.map(row => <li key={row.id}><span>{row.label} · {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}{row.note ? ` · ${row.note}` : ''}</span><button className="text-button" aria-label={`Delete template ${row.label} ${row.kind}`} onClick={() => update({ ...settings, definitions: settings.definitions.filter(item => item.id !== row.id) })}>Delete</button></li>)}</ul></section>}
+    </section>
     {message && <p role={message.error ? 'alert' : 'status'} className={message.error ? 'field-error' : 'hint'}>{message.text}</p>}
     {control.error && <div className="storage-warning" role="alert"><p>{control.error}</p><button onClick={control.reload}>Reload saved profile</button>{control.error.startsWith('Your saved profile') && <button onClick={() => { if (window.confirm('Replace the unreadable profile with empty settings?')) change(newSolverSettings(), true) }}>Replace unreadable profile</button>}</div>}
   </section>

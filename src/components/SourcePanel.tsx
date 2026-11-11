@@ -1,3 +1,4 @@
+import { DetailPanel } from './DetailPanel'
 import { useRef } from 'react'
 import type { Evidence, Offer } from '../../shared/schema'
 import { hasNewerHelper, HELPER_VERSION } from '../lib/helper-version'
@@ -11,10 +12,10 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
       <strong>Newer Windows helper available</strong>
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
-      <details><summary>What's new and how to update</summary>
+      <DetailPanel title={<>What's new and how to update</>}>
         <p>Helper 0.3.4 verifies queued uploads before sending and recovers damaged withdrawal requests. It also preserves the game-window height for local icon suggestions.</p>
         <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
-      </details>
+      </DetailPanel>
     </aside>}
     <div className={`dropzone ${evidence ? 'has-image' : ''}`} onDragOver={event => event.preventDefault()} onDrop={event => {
       event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) onFile(file)
@@ -27,7 +28,7 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
         <strong>{automatic ? 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}
       </>}
     </div>
-    {evidence?.visualRecognition && <details className="visual-review"><summary>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</summary><p className="hint">Recognition runs locally. The tooltip catalog covers some icons; check every suggested meaning and reward kind against your game.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</details>}
+    {evidence?.visualRecognition && <DetailPanel className="visual-review" title={<>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</>}><p className="hint">Recognition runs locally. The tooltip catalog covers some icons; check every suggested meaning and reward kind against your game.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</DetailPanel>}
     <dialog ref={dialog} className="evidence-dialog" aria-labelledby="evidence-heading"><div className="dialog-heading"><h2 id="evidence-heading">Source evidence</h2><button onClick={() => dialog.current?.close()}>Close</button></div>{evidence && <img src={evidence.imageDataUrl} alt="Full size source evidence" />}</dialog>
   </section>
 }
@@ -40,10 +41,10 @@ export function CaptureDetails({ evidence, offer, onChange }: DetailsProps) {
       const completeness = event.target.value as Offer['completeness']
       onChange({ completeness, reviewed: completeness !== 'unverified' })
     }}><option value="unverified">Not checked yet</option><option value="partial">Checked — some offered cards are missing</option><option value="complete">Checked — all offered cards are included</option></select></label></div>
-    <details className="disclosure"><summary>Original OCR text</summary>
+    <DetailPanel className="disclosure" title={<>Original OCR text</>}>
       <p className="hint">This is the original local OCR evidence. Card edits do not alter it.</p>
       <pre className="ocr-text">{evidence?.ocrText || 'No OCR text available. The Windows helper reads text locally; a plain screenshot is preserved without automatic recognition.'}</pre>
-    </details>
+    </DetailPanel>
       <div className="context-fields">
         <label>Game version<input value={offer.gameVersion} maxLength={64} onChange={e => onChange({ gameVersion: e.target.value })} /></label>
         <label>Area<input value={offer.area} maxLength={160} placeholder="Unknown" onChange={e => onChange({ area: e.target.value })} /></label>

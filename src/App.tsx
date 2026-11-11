@@ -1,3 +1,4 @@
+import { DetailPanel, type DetailPanelHandle } from './components/DetailPanel'
 import { useSharingConsent } from './lib/useSharingConsent'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { offerSchema, formatValidationError, type Offer } from '../shared/schema'
@@ -22,6 +23,7 @@ import { useSolverSettings } from './lib/useSolverSettings'
 import { DraftRecovery } from './components/LocalRecovery'
 import { AppIcon } from './components/AppIcon'
 import { useTheme } from './lib/theme'
+import { WorkspaceNotice } from './components/WorkspaceNotice'
 
 export default function App() {
   const appearance = useTheme()
@@ -36,7 +38,8 @@ export default function App() {
   const [damagedEvidenceCount, setDamagedEvidenceCount] = useState(0)
   const [isolatedCount, setIsolatedCount] = useState(0)
   const [missingEvidenceIds, setMissingEvidenceIds] = useState<string[]>([])
-  const detailsPanel = useRef<HTMLDetailsElement>(null)
+  const detailsPanel = useRef<DetailPanelHandle>(null)
+  const [editing, setEditing] = useState(false)
   const [reviewRequest, setReviewRequest] = useState<{ cardId: string; sequence: number } | null>(null)
   const [backup, setBackup] = useState<{ parts: BackupPart[]; includeEvidence: boolean; summary: Awaited<ReturnType<typeof storage.readOfferArchive>> } | null>(null)
   const backupReturnFocus = useRef<HTMLElement | null>(null)
@@ -46,19 +49,20 @@ export default function App() {
   const [environment, setEnvironment] = useState('unknown')
   const fileInput = useRef<HTMLInputElement>(null)
   const recoveryInput = useRef<HTMLInputElement>(null)
-  const moreActions = useRef<HTMLDetailsElement>(null)
-  const connectionPanel = useRef<HTMLDetailsElement>(null)
+  const moreActions = useRef<DetailPanelHandle>(null)
+  const connectionPanel = useRef<DetailPanelHandle>(null)
+  const helpPanel = useRef<DetailPanelHandle>(null)
   function editCurrentOffer(cardId?: string) {
     if (!detailsPanel.current) return
-    detailsPanel.current.open = true
+    detailsPanel.current.show()
     if (cardId) setReviewRequest(previous => ({ cardId, sequence: (previous?.sequence ?? 0) + 1 }))
-    else detailsPanel.current.querySelector('summary')?.focus()
+    else detailsPanel.current.element?.querySelector<HTMLElement>('h2')?.focus()
   }
   function returnToAdvice() {
-    if (detailsPanel.current) detailsPanel.current.open = false
+    if (detailsPanel.current) detailsPanel.current.close()
     document.getElementById('advisor-heading')?.focus()
   }
-  function closeActions() { if (moreActions.current) moreActions.current.open = false }
+  function closeActions() { if (moreActions.current) moreActions.current.close() }
   const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
   const refresh = useCallback(async () => {
     const history = await storage.readOfferHistory()
@@ -68,13 +72,13 @@ export default function App() {
   const sync = useCaptureSync(async entry => {
     // Apply delivery to this editor session before an asynchronous history read
     // allows the user to switch drafts underneath this callback.
-    mapEditor.receive(entry, tab === 'collector' && !!detailsPanel.current?.open)
+    mapEditor.receive(entry, tab === 'collector' && !!detailsPanel.current?.isOpen())
     if (entry.restored) archiveEditor.receive(entry, true)
     await refresh()
   })
   const mapEditor = useOfferDraft({ records, connected: sync.status === 'active', refresh, announce })
   useEffect(() => {
-    if ((sync.status === 'permission' || sync.status === 'error') && connectionPanel.current) connectionPanel.current.open = true
+    if ((sync.status === 'permission' || sync.status === 'error') && connectionPanel.current) connectionPanel.current.show()
   }, [sync.status, tab])
   const archiveEditor = useOfferDraft({ records, connected: sync.status === 'active', refresh, announce })
   const editor = tab === 'review' ? archiveEditor : mapEditor
@@ -225,6 +229,11 @@ export default function App() {
     else advisor.startMap(archiveEditor.draft.id)
     setTab('collector'); setNotice(null)
   }
+  useEffect(() => { setEditing(false) }, [tab, draft.id])
+  const saveBar = (evidence || draft.cards.length > 0 || dirty || savedLocally) && <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <div className="auto-save-actions">
+          <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : autoSaveFailure ? autoSaveFailure.conflict ? 'Save conflict' : 'Save failed' : dirty ? 'Changes pending…' : 'Saved locally'}</span>
+          {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); retryAutoSave() }}>Retry save</button>}
+        </div> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
     {environment === 'staging' && <div className="environment-banner" role="status"><strong>STAGING</strong> Test collection. Uploads go to the test database.</div>}
@@ -241,19 +250,22 @@ export default function App() {
     <div className="main-area">
     <main id="main" className="workspace" tabIndex={-1}>
       <div className="page-heading"><div><h1>{tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current map'}</h1><p>{tab === 'review' ? 'Review this observation separately from your current map.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p></div>
-        <details ref={moreActions} className="more-actions" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeActions(); moreActions.current?.querySelector('summary')?.focus() } }}><summary>More actions</summary><div className="action-menu">
+        <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
           {(tab === 'collector' || tab === 'review') && <>
+            <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
             {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
             <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
             {tab === 'collector' && <><button disabled={busy || autoSaving} onClick={() => { closeActions(); startMap() }}>{advisor.workspace.map ? 'New map' : 'Start new map'}</button>
               <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(newOffer(), null); setNotice(null) } }}>New offer</button>
               <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button></>}
           </>}
+          {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
+          <button onClick={() => { closeActions(); helpPanel.current?.show() }}>How to capture from Path of Exile</button>
           <label className="theme-picker">Appearance<select value={appearance.theme} onChange={event => appearance.changeTheme(event.target.value === 'trail' ? 'trail' : 'mineral')}><option value="mineral">Mineral Depth · dark</option><option value="trail">Light Trail · light</option></select></label>
           {appearance.error && <p className="hint" role="status">{appearance.error}</p>}
-        </div></details>
+        </div></DetailPanel>
       </div>
-      {notice && <div className={`notice ${notice.error ? 'error' : ''}`} role={notice.error ? 'alert' : 'status'}><span>{notice.text}</span><button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}
+      {notice && <WorkspaceNotice notice={notice} onDismiss={() => setNotice(null)} />}
       <DraftRecovery busy={busy} onRecover={record => { if (!mapEditor.recover(record)) return false; setTab('collector'); announce('Draft recovered. Check it before saving; your saved offer has not been replaced.'); return true }} />
       {editor.recoveryError && <p className="notice error" role="alert">{editor.recoveryError}</p>}
       {tab === 'saved' && (archiveEditor.savedLocally || archiveEditor.dirty) && <button onClick={() => setTab('review')}>Resume archived review</button>}
@@ -266,26 +278,25 @@ export default function App() {
         {!advisor.workspace.map && !!draft.cards.length && advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
         {advisor.storageError && <p className="notice error" role="alert">{advisor.storageError}</p>}
         <FateAdvisor solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
-        <details className="map-capture-connection" ref={connectionPanel}><summary>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}<span className="summary-detail">{sync.status === 'active' ? 'Automatic local saves' : 'Optional local review'}</span></summary><CaptureConnection sync={sync} /></details>
+        {sync.status !== 'off' && <button className="connection-status text-button" onClick={() => connectionPanel.current?.show()}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Local review settings'}</button>}
+        {sync.problem && <p className="connection-warning field-error" role="alert">{sync.problem}</p>}
+        <DetailPanel trigger={false} className="map-capture-connection" ref={connectionPanel} title="Local review"><CaptureConnection sync={sync} /></DetailPanel>
         </> : <>
         <div className="archive-boundary"><p>This archived offer is not used in current-map advice. Only transfer it if it belongs to the instance you are playing now.{archiveEditor.dirty ? ' Save corrections before transferring.' : ''}{advisor.needsMapConfirmation ? ' Confirm your map on the Current map screen first.' : ''}</p><div><button onClick={() => setTab('collector')}>Return to current map</button><button disabled={busy || autoSaving || archiveEditor.dirty || advisor.needsMapConfirmation} onClick={useArchivedOffer}>{advisor.workspace.map ? 'Use this offer in current map' : 'Start map with this offer'}</button></div></div>
         <div className={`collector-grid ${draft.cards.length ? 'has-fates' : ''} ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
           <SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />
           <OfferPreview offer={draft} saved={savedLocally && !dirty} automatic={sync.status === 'active'} />
         </div></>}
-        <details ref={detailsPanel} className="advanced-panel" key={`${tab}:${draft.id}`}><summary>Edit details</summary><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
+        <DetailPanel trigger={false} ref={detailsPanel} onOpenChange={setEditing} className="advanced-panel" key={`${tab}:${draft.id}`} title="Edit details" footer={<>{editing && saveBar}<button onClick={returnToAdvice}>{tab === 'collector' ? 'Back to advice' : 'Done'}</button></>}><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
           <OfferEditor solverControl={solver} offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
-        </div>{tab === 'collector' && <div className="review-return"><p>Advice updates as you edit. Saving the observation and checking its rewards are separate steps.</p><button onClick={returnToAdvice}>Back to advice</button></div>}</details>
-        {(evidence || draft.cards.length > 0 || dirty || savedLocally) && <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <div className="auto-save-actions">
-          <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : autoSaveFailure ? autoSaveFailure.conflict ? 'Save conflict' : 'Save failed' : dirty ? 'Changes pending…' : 'Saved locally'}</span>
-          {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); retryAutoSave() }}>Retry save</button>}
-        </div> : <div className="primary-actions"><button className="primary-button" onClick={() => void save(canConfirm ? 'confirm' : 'current')} disabled={!canSave}>{busy ? 'Working…' : savedCurrent && !needsConfirmation ? 'Saved' : canConfirm ? 'Confirm and save' : 'Save offer'}</button></div>}</div>}
+        </div></DetailPanel>
+        {!editing && saveBar}
       </> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={includeEvidence => void exportAll(includeEvidence)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       {backup && <BackupDownload {...backup} onRecovery={() => void exportRecovery()} onClose={() => { setBackup(null); requestAnimationFrame(() => backupReturnFocus.current?.focus()) }} />}
       <input ref={fileInput} className="file-input" type="file" multiple accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const files = Array.from(event.target.files ?? []); if (files.length) void loadFile(files); event.target.value = '' }} />
       <input ref={recoveryInput} className="file-input" type="file" accept=".json" aria-label="Recover damaged backup" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file, true); event.target.value = '' }} />
-      <details className="setup-help"><summary>How to capture from Path of Exile</summary><p>Run the Windows helper. Select the panel with F6 and F7 once; the helper remembers it. F8 previews the saved frame. Press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. The helper uses GDI for SDR and Windows Graphics Capture for HDR. Live game and HDR monitor compatibility still need validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></details>
+      <DetailPanel trigger={false} ref={helpPanel} className="setup-help" title="How to capture from Path of Exile"><p>Run the Windows helper. Select the panel with F6 and F7 once; the helper remembers it. F8 previews the saved frame. Press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. The helper uses GDI for SDR and Windows Graphics Capture for HDR. Live game and HDR monitor compatibility still need validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></DetailPanel>
     </main>
     <footer className="app-footer">Advisor uses identified rewards and preview rules. Unknown icons need manual review.<span>Independent community tool · Not affiliated with Grinding Gear Games</span></footer>
     </div></div>

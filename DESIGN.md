@@ -176,7 +176,7 @@ Mineral Depth uses petrol and mint. Light Trail pairs an olive shell with pale n
 
 - One decision surface with adjacent evidence
 - Quiet navigation and compact, ruled comparison rows
-- Secondary controls in labelled disclosures
+- Secondary tasks in named panels, opened by buttons; no accordion rows
 - Uncertainty communicated in words and color
 
 ## Colors
@@ -211,19 +211,25 @@ Use the theme's ambient shadow for the decision panel, import and journal. The *
 
 ## Shapes
 
-Work surfaces and overlays use a 14px radius. Controls and inline notices use a 7px radius. The mode switch groups two controls within a 10px track. Card comparisons, save feedback and secondary disclosures use straight dividers.
+Work surfaces and overlays use a 14px radius. Controls and inline notices use a 7px radius. The mode switch groups two controls within a 10px track. Card comparisons, save feedback and panel content use straight dividers.
 
 ## Components
 
 ### Buttons and fields
 
 - Primary actions use the theme accent. Provisional choice and invocation actions use amber with the provisional label nearby. Secondary actions use neutral text and a control border.
-- The default button height is at least 40px. The interaction floor is 36px on desktop and 44px for buttons and disclosures on mobile. Text fields have a 42px minimum.
+- The default button height is at least 40px. The interaction floor is 36px on desktop and 44px for buttons on mobile. Text fields have a 42px minimum.
 - Focus is a 2px accent outline with a 4px offset. Use shell text for focus on navigation. Hover changes surface and border colors over 180ms. Honor reduced motion.
 
 ### Navigation and appearance
 
 The active entry uses the raised shell tone, brighter text and a heavier weight. **More actions** houses **Appearance** on every screen. Mineral Depth is the default. The local preference restores on reload and the palette changes in place.
+
+### Focused panels
+
+Secondary actions open named native dialogs instead of accordion rows. Close, Done and Escape return to the task without discarding changes; focus returns to the entry action. The map's More actions groups manual editing, folder setup and capture help. Keep connection problems visible on the map. Editing retains save actions and feedback inside the panel. Modifiers, rewards and profile fields are directly visible within their editor rather than nested behind another disclosure.
+
+Panel headings use 24px Source Sans 3 (21px on mobile). Headers and footers stay outside the scrolling body. Panels fit the viewport with 24px desktop and 8px mobile side margins; large editors can use 1180px. Text-only secondary actions use underlines, with no disclosure triangle.
 
 ### Decision and evidence
 
