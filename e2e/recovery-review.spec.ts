@@ -1,4 +1,4 @@
-import { openDisclosure } from './ui'
+import { openPanel, closePanels, toggleEditor } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -14,6 +14,7 @@ async function sampleEntry(): Promise<Archive['offers'][number]> {
     ocrText: 'Original OCR preserved', ocrLines: [], ocrStatus: 'ok', helperVersion: '0.3.3' } }
 }
 async function restore(page: Page, entries: Archive['offers']) {
+  await closePanels(page)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'archive.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ kind: 'fate-collector.export', schemaVersion: 1, offers: entries })) })
   await expect(page.getByRole('button', { name: new RegExp(`^Saved offers\\s*${entries.length}$`) })).toBeVisible()
 }
@@ -35,6 +36,7 @@ test('a damaged journal record cannot hide readable offers or prevent their back
     database.close()
   }, { record: damaged, evidence: bad.evidence })
   await page.reload()
+  await closePanels(page)
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 unreadable offer(s)')
   await expect(page.getByRole('button', { name: 'Open', exact: true })).toHaveCount(1)
@@ -44,15 +46,16 @@ test('a damaged journal record cannot hide readable offers or prevent their back
   const data = JSON.parse(await readFile(await download.path(), 'utf8'))
   expect(data.records[0].value).toEqual(damaged)
   expect(data.evidence).toContainEqual({ key: bad.offer.captureId, value: bad.evidence })
-  await openDisclosure(page, '.archive-tools')
+  await openPanel(page, '.archive-tools')
   await page.getByRole('button', { name: 'Export all data' }).click()
-  await expect(page.getByRole('dialog')).toContainText('1 unreadable offer(s) excluded')
+  await expect(page.getByRole('dialog', { name: 'Download your backup' })).toContainText('1 unreadable offer(s) excluded')
   await page.keyboard.press('Escape')
   await page.reload()
+  await closePanels(page)
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 unreadable offer(s)')
   page.once('dialog', dialog => dialog.accept())
-  await page.getByText('Unreadable records', { exact: true }).click()
+  await page.getByRole('button', { name: 'Unreadable records', exact: true }).click()
   await page.getByRole('button', { name: 'Isolate original', exact: true }).click()
   await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 isolated original')
   const isolatedDownload = page.waitForEvent('download')
@@ -68,9 +71,9 @@ test('full backup downloads and restores images, OCR and revisions; metadata exp
   const entries = [await sampleEntry(), await sampleEntry()]
   await restore(page, entries)
   for (const mode of ['full', 'data']) {
-    await openDisclosure(page, '.archive-tools')
+    await openPanel(page, '.archive-tools')
     await page.getByLabel('Backup contents').selectOption(mode)
-    await openDisclosure(page, '.archive-tools')
+    await openPanel(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     const downloads = dialog.getByRole('link')
@@ -84,6 +87,7 @@ test('full backup downloads and restores images, OCR and revisions; metadata exp
         await downloads.nth(index).click()
         const download = await pending, bytes = await readFile(await download.path())
         exported.push(...JSON.parse(bytes.toString()).offers)
+        await closePanels(restored)
         await restored.getByLabel('Import capture file').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: bytes })
         await expect(restored.getByRole('status')).toContainText('Imported')
       }
@@ -94,8 +98,8 @@ test('full backup downloads and restores images, OCR and revisions; metadata exp
       await restored.getByRole('button', { name: 'Open', exact: true }).first().click()
       if (mode === 'full') {
         await expect(restored.getByAltText('Captured Fate offer')).toBeVisible()
-        await restored.getByText('Edit details', { exact: true }).click()
-        await restored.getByText('Original OCR text', { exact: true }).click()
+        await toggleEditor(restored)
+        await restored.getByRole('button', { name: 'Original OCR text', exact: true }).click()
         await expect(restored.getByText('Original OCR preserved', { exact: true })).toBeVisible()
       } else await expect(restored.getByAltText('Captured Fate offer')).toHaveCount(0)
     } finally { await fresh.close() }
@@ -113,7 +117,7 @@ for (const width of [1440, 768, 390]) {
     await page.goto('/')
     await expect(page).toHaveTitle(/Fate Collector/)
     await restore(page, [await sampleEntry()])
-    await page.getByText('Edit details', { exact: true }).click()
+    await toggleEditor(page)
     await expect(page.getByAltText('Reference capture for the selected Fate')).toBeVisible()
     const shortcut = page.getByRole('button', { name: 'Review reward 1: Item Rarity', exact: true })
     await expect(shortcut.locator('img')).toBeVisible()

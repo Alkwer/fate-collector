@@ -1,10 +1,31 @@
 import { expect, type Page } from '@playwright/test'
 
-/** Follow the same disclosure path as a user without bypassing visibility checks. */
-export async function openDisclosure(page: Page, selector: string) {
-  const details = page.locator(selector)
-  await details.waitFor({ state: 'visible' })
-  if (await details.getAttribute('open') === null) await details.locator(':scope > summary').click()
+export async function closePanels(page: Page) {
+  while (await page.locator('.detail-dialog[open]').count()) await page.keyboard.press('Escape')
+}
+
+/** Open secondary work through its visible action and leave the map undisturbed. */
+export async function openPanel(page: Page, selector: string) {
+  const panel = page.locator(selector)
+  if (await panel.locator(':scope > .detail-dialog[open]').count()) return
+  const actions: Record<string, string | RegExp> = {
+    '.advanced-panel': 'Edit details',
+    '.map-capture-connection': /^(Connect captures folder|Local review connected|Folder access needed|Local review needs attention)$/,
+    '.setup-help': 'How to capture from Path of Exile',
+  }
+  if (actions[selector]) {
+    await openPanel(page, '.more-actions')
+    await page.locator('.more-actions > .detail-dialog').getByRole('button', { name: actions[selector], exact: true }).click()
+  } else {
+    await closePanels(page)
+    await panel.locator(':scope > .panel-trigger').click()
+  }
+  await expect(panel.locator(':scope > .detail-dialog')).toBeVisible()
+}
+
+export async function toggleEditor(page: Page) {
+  if (await page.locator('.advanced-panel > .detail-dialog[open]').count()) await closePanels(page)
+  else await openPanel(page, '.advanced-panel')
 }
 
 /** A new map clears its planning data and returns to the capture entry point. */

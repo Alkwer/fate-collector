@@ -1,3 +1,4 @@
+import { DetailPanel } from './DetailPanel'
 import { useMemo } from 'react'
 import { recommendPortfolio, solveInvocation, type SolverPlan, type SolverProfile } from '../../shared/solver'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'
@@ -57,8 +58,8 @@ export function PortfolioAdvice(props: Props) {
           : <><h3>{status === 'provisional' ? 'Provisional portfolio plan' : 'Suggested portfolio plan'}</h3><p>Maximizes your configured points, then combo progress, then saves input slots.</p></>}
       </div>
       {portfolio && !alreadyCollected && <p className="advisor-baseline">Collection baseline: <strong>{number(portfolio.baseline?.score ?? 0)} priority points</strong> · {number(portfolio.baseline?.progress ?? 0)} combo progress. No unknown future offers are assumed.</p>}
-      {!!result.excluded.length && <details className="advisor-caveats"><summary>Excluded by your settings ({result.excluded.length})</summary><ul>{result.excluded.map(row => <li key={row.cardId}><strong>{named(cards.find(card => card.id === row.cardId))}</strong>: {row.reasons.join(' · ')}</li>)}</ul></details>}
-      {!!result.warnings.length && <details className="advisor-caveats"><summary>What limits this recommendation</summary><ul className="advisor-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></details>}
+      {!!result.excluded.length && <DetailPanel className="advisor-caveats" title={<>Excluded by your settings ({result.excluded.length})</>}><ul>{result.excluded.map(row => <li key={row.cardId}><strong>{named(cards.find(card => card.id === row.cardId))}</strong>: {row.reasons.join(' · ')}</li>)}</ul></DetailPanel>}
+      {!!result.warnings.length && <DetailPanel className="advisor-caveats" title={<>What limits this recommendation</>}><ul className="advisor-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
     </>}
     {mode === 'offer' || !mapReady ? <OfferPreview offer={offer} saved={props.saved} automatic={props.automatic} embedded highlightedCardIds={selectedIds} provisional={status === 'provisional'} renderAdvice={offerReady ? card => {
       const candidate = portfolio?.candidates.find(row => row.cardId === card.id)
@@ -67,13 +68,13 @@ export function PortfolioAdvice(props: Props) {
         {excluded.has(card.id) && <p className="exclusion-reason">Excluded: {excluded.get(card.id)!.join(' · ')}</p>}
         {candidate && !alreadyCollected && <p className="candidate-gain">{candidate.gain === null ? 'No supported plan' : `${signed(candidate.gain)} priority points · ${signed(candidate.progressGain ?? 0)} combo progress vs collection`}{status === 'provisional' ? ' · provisional' : ''}</p>}
         {featured?.id !== card.id && <button disabled={alreadyCollected || excluded.has(card.id) || collected.length >= MAX_COLLECTED_FATES} onClick={() => props.onCollect(card)}>Add {named(card)} to collected</button>}
-        {candidate?.plan && <details className="candidate-plan"><summary>All rewards & invocation order</summary><PortfolioPlan plan={candidate.plan} cards={cards} collected={collected} /></details>}
+        {candidate?.plan && <DetailPanel className="candidate-plan" title={<>All rewards & invocation order</>}><PortfolioPlan plan={candidate.plan} cards={cards} collected={collected} /></DetailPanel>}
       </div>
     } : undefined} /> : invocation && <div className="advisor-plans">
       {invocation.tiedBestPlanCount > 1 && <p className="hint">{invocation.tiedBestPlanCount} equally ranked plans. Showing up to three alternatives.</p>}
       {invocation.plans.map((plan, index) => {
         const content = <article data-best={index === 0 || undefined} data-state={status}><h3>{index === 0 ? 'Best supported portfolio' : `Alternative ${index + 1}`}</h3><PortfolioPlan plan={plan} cards={collected} collected={collected} /><button className={index === 0 ? 'primary-choice' : undefined} onClick={() => props.onInvoke(plan)}>Mark this invocation completed</button><p className="hint">After invoking in game, remove these cards from your collection. You can undo this change.</p></article>
-        return index === 0 ? <div key={plan.cardIds.join(':')}>{content}</div> : <details className="alternative-plan" key={plan.cardIds.join(':')}><summary>Alternative {index + 1} · {number(plan.score)} points · {plan.cardIds.length} inputs</summary>{content}</details>
+        return index === 0 ? <div key={plan.cardIds.join(':')}>{content}</div> : <DetailPanel className="alternative-plan" key={plan.cardIds.join(':')} title={<>Alternative {index + 1} · {number(plan.score)} points · {plan.cardIds.length} inputs</>}>{content}</DetailPanel>
       })}
     </div>}
   </>

@@ -1,22 +1,23 @@
+import { openPanel } from './ui'
 import { test, expect } from '@playwright/test'
-import { openDisclosure } from './ui'
 
 test('Mineral Depth is the default; Light Trail persists and synchronizes without resetting a draft', async ({ page, context }) => {
   await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'mineral')
   await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
-  await page.locator('.advanced-panel > summary').click()
+  await openPanel(page, '.advanced-panel')
   await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Keep this draft through theme changes')
-  await openDisclosure(page, '.more-actions')
+  await openPanel(page, '.more-actions')
   await page.getByLabel('Appearance').selectOption('trail')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'trail')
+  await openPanel(page, '.advanced-panel')
   await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep this draft through theme changes')
   const other = await context.newPage()
   await other.goto('/')
   await expect(other.locator('html')).toHaveAttribute('data-theme', 'trail')
   await other.getByRole('button', { name: 'Diagnostics', exact: true }).click()
-  await openDisclosure(other, '.more-actions')
+  await openPanel(other, '.more-actions')
   await other.getByLabel('Appearance').selectOption('mineral')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'mineral')
   await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Keep this draft through theme changes')
@@ -33,7 +34,7 @@ test('theme remains usable when its preference cannot be saved', async ({ page }
     }
   })
   await page.goto('/')
-  await openDisclosure(page, '.more-actions')
+  await openPanel(page, '.more-actions')
   await page.getByLabel('Appearance').selectOption('trail')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'trail')
   await expect(page.getByRole('status')).toContainText('Theme changed for this visit')
@@ -44,7 +45,7 @@ test('theme remains usable when its preference cannot be saved', async ({ page }
 for (const theme of ['mineral', 'trail']) test(`${theme} keeps the appearance menu keyboard accessible at 320px`, async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('/')
-  const summary = page.locator('.more-actions > summary')
+  const summary = page.locator('.more-actions > .panel-trigger')
   await summary.focus()
   await page.keyboard.press('Enter')
   await page.getByLabel('Appearance').selectOption(theme)

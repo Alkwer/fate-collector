@@ -118,6 +118,6 @@ test('generation resets the choice; diagnostic controls and long report receipts
   await send(page)
   await page.getByRole('button', { name: 'Withdraw consent and delete report' }).click()
   await expect(page.getByRole('heading', { name: 'Deleted from collection' })).toBeVisible()
-  await page.getByText('Accepted diagnostic consent', { exact: true }).click()
+  await page.getByRole('button', { name: 'Accepted diagnostic consent', exact: true }).click()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
 })
