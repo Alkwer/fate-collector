@@ -6,14 +6,27 @@ on:
         description: Successful Deploy staging run ID for this main commit
         required: true
         type: string
+      validation_mode:
+        description: Full native validation, or temporary prelaunch exception before 2026-11-13 00:00 UTC
+        required: true
+        default: native-holdout
+        type: choice
+        options:
+          - native-holdout
+          - prelaunch
+      prelaunch_acknowledged:
+        description: I accept deferred native Fate and manual staging validation; CI and live synthetic staging checks remain required
+        required: true
+        default: false
+        type: boolean
       manual_tests_passed:
-        description: I checked F9, OCR, offline recovery and local review on this staging release
+        description: For native-holdout only, I checked F9, OCR, offline recovery and local review on this staging release
         required: true
         default: false
         type: boolean
       recognition_run_id:
-        description: Successful Verify local native recognition report run for this exact release
-        required: true
+        description: Required for native-holdout; successful recognition report run for this exact release. Leave empty for prelaunch
+        required: false
         type: string
 permissions:
   contents: read
@@ -27,17 +40,20 @@ jobs:
     outputs:
       release_id: ${{ steps.release.outputs.id }}
     steps:
+      - uses: actions/checkout@v7
       - name: Require tested main commit
         uses: actions/github-script@v9
         env:
           STAGING_RUN_ID: ${{ inputs.staging_run_id }}
+          RELEASE_VALIDATION_MODE: ${{ inputs.validation_mode }}
+          PRELAUNCH_ACKNOWLEDGED: ${{ inputs.prelaunch_acknowledged }}
           MANUAL_TESTS_PASSED: ${{ inputs.manual_tests_passed }}
           RECOGNITION_RUN_ID: ${{ inputs.recognition_run_id }}
         with:
           script: |
-            if (context.ref !== 'refs/heads/main' || process.env.MANUAL_TESTS_PASSED !== 'true') {
-              throw new Error('Promotion requires main and explicit confirmation of manual staging tests.');
-            }
+            if (context.ref !== 'refs/heads/main') throw new Error('Promotion requires main.');
+            const { assertPromotionPolicy, PRELAUNCH_DEADLINE } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/promotion-policy.mjs`);
+            const mode = assertPromotionPolicy(process.env);
             if (!/^[1-9][0-9]*$/.test(process.env.STAGING_RUN_ID)) throw new Error('Invalid staging run ID.');
             const { data: run } = await github.rest.actions.getWorkflowRun({ ...context.repo, run_id: Number(process.env.STAGING_RUN_ID) });
             if (run.path !== '.github/workflows/deploy.yml' || run.event !== 'workflow_dispatch' ||
@@ -45,14 +61,18 @@ jobs:
                 run.head_branch !== 'main' || run.repository.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
               throw new Error('Choose a successful staging workflow for this exact main commit.');
             }
-            if (!/^[1-9][0-9]*$/.test(process.env.RECOGNITION_RUN_ID)) throw new Error('A native recognition report run is required.');
+            if (mode === 'prelaunch') {
+              await core.summary.addHeading('Prelaunch release exception')
+                .addRaw(`Native Fate holdout and full manual staging validation are deferred, not passed. Exception expires ${PRELAUNCH_DEADLINE}. Complete native validation after launch before the next promotion. Full CI and live synthetic staging checks passed for this exact commit.\n`)
+                .write();
+              return;
+            }
             const { data: recognition } = await github.rest.actions.getWorkflowRun({ ...context.repo, run_id: Number(process.env.RECOGNITION_RUN_ID) });
             if (recognition.path !== '.github/workflows/recognition-validation.yml' || recognition.event !== 'workflow_dispatch' ||
                 recognition.status !== 'completed' || recognition.conclusion !== 'success' || recognition.head_sha !== context.sha ||
                 recognition.head_branch !== 'main' || recognition.repository.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
               throw new Error('Choose the designated successful recognition workflow in this repository for this exact main commit.');
             }
-      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -65,12 +85,14 @@ jobs:
           github-token: ${{ github.token }}
       - run: npm run release:verify
       - uses: actions/download-artifact@v8
+        if: inputs.validation_mode != 'prelaunch'
         with:
           name: recognition-holdout
           path: .recognition
           run-id: ${{ inputs.recognition_run_id }}
           github-token: ${{ github.token }}
       - name: Recompute the native holdout gate for this package
+        if: inputs.validation_mode != 'prelaunch'
         run: node scripts/verify-recognition-release.mjs .recognition/report.json
       - name: Recheck the live staging release
         id: release
@@ -107,3 +129,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STAGING_VERIFIED_RELEASE: ${{ needs.verify.outputs.release_id }}
+          RELEASE_VALIDATION_MODE: ${{ inputs.validation_mode }}
+          PRELAUNCH_ACKNOWLEDGED: ${{ inputs.prelaunch_acknowledged }}
+          MANUAL_TESTS_PASSED: ${{ inputs.manual_tests_passed }}
+          RECOGNITION_RUN_ID: ${{ inputs.recognition_run_id }}

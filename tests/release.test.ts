@@ -53,7 +53,7 @@ test('deployment requires an explicit environment with a different database', ()
 })
 test('production cannot be deployed locally, from a branch or with a different staging package', () => {
   const manifest = { revision, releaseId: 'b'.repeat(64) }
-  const env = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'Alkwer/fate-collector', GITHUB_SHA: revision, GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/promote.yml@refs/heads/main', STAGING_VERIFIED_RELEASE: manifest.releaseId }
+  const env = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'Alkwer/fate-collector', GITHUB_SHA: revision, GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/promote.yml@refs/heads/main', STAGING_VERIFIED_RELEASE: manifest.releaseId, MANUAL_TESTS_PASSED: 'true', RECOGNITION_RUN_ID: '123' }
   expect(() => assertDeploymentContext('production', env, manifest)).not.toThrow()
   expect(() => assertDeploymentContext('production', {}, manifest)).toThrow('GitHub Actions')
   expect(() => assertDeploymentContext('production', { ...env, STAGING_VERIFIED_RELEASE: 'wrong' }, manifest)).toThrow('verified staging')

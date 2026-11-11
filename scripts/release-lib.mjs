@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { assertPromotionPolicy } from './promotion-policy.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
 export async function releaseFiles(directory, prefix = '') {
@@ -49,6 +50,8 @@ export function assertDeploymentContext(environment, env, manifest) {
   const expected = `${env.GITHUB_REPOSITORY}/.github/workflows/${workflow}@${env.GITHUB_REF}`
   if (env.GITHUB_WORKFLOW_REF !== expected) throw new Error('Use the designated deployment workflow.')
   if (environment === 'production' && (env.GITHUB_REF !== 'refs/heads/main' || env.STAGING_VERIFIED_RELEASE !== manifest.releaseId)) throw new Error('Production requires a verified staging release on main.')
+  // Recheck the deadline after any environment approval or queued job delay.
+  if (environment === 'production') assertPromotionPolicy(env)
 }
 export async function verifyLiveRelease(target, environment, manifest) {
   const response = await fetch(`${target.url}/api/status`, { redirect: 'error', signal: AbortSignal.timeout(10000), cache: 'no-store' })
