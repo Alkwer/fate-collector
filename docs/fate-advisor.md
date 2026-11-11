@@ -71,6 +71,49 @@ and any supported comparison remains provisional where the missing data matters.
    If both editors show the same offer, clean copies follow each successful save.
    Pending corrections remain untouched and retain conflict protection.
 
+## Combined priorities and reusable profiles
+
+Enable **Compare multiple rewards** to optimize several rewards together. Open
+**Priorities, build filters & profile**, add observed, catalog or custom rewards,
+and give each a relative weight (0 disables it). Regular icons earn that weight
+per icon unit. A completed combo earns its weight once. For example, Currency
+weight 1 and Armour weight 3 give 7 points to a plan with 1 Currency and 2 Armour
+icons. These are configurable preferences or user estimates in a consistent unit,
+not measured item quantities, market prices, expected value or profit.
+
+The search evaluates all supported subsets of up to three inputs, both confirmed
+T2 duplicate orders, and every eligible offered card against the collected-only
+baseline. It ranks total points, then weighted capped combo progress, then fewer
+inputs. Progress is a tie-breaker, not an extra payout. Equal offered choices are
+all shown; invocation shows the best plan and up to two alternatives. **All rewards
+& invocation order** explains retained rewards, per-reward points, merge order,
+consumed cards, and unresolved outcomes. Unlisted rewards remain visible with zero
+weight. Relevant unknowns keep the result provisional instead of asserting a zero
+return. **Mark this invocation completed** consumes exactly the listed inputs;
+the existing collection undo also restores them.
+
+Build filters exclude whole cards whose recorded modifiers contain any supplied
+literal phrase (case-insensitive). Individual offered or collected cards can also
+be excluded. Both controls apply to combined-priority mode only. Missing modifiers
+produce an explicit safety warning when filters are active. This is a user-defined
+filter, not an automatic assessment of the build or encounter difficulty.
+
+The profile is stored separately in `localStorage`, surviving new maps, reloads
+and browser restarts unless browser data is cleared or evicted. **Export profile**
+and **Import profile** transfer a bounded, validated versioned JSON profile with
+weights, modifier filters and personal reward templates. Map state, individual
+card exclusions, screenshots and observations are not included. New maps clear
+individual exclusions. Corrupt profiles are preserved until explicitly replaced;
+stale tabs must reload newer settings before overwriting them. Failed saves warn
+the user and keep current edits available for export.
+
+In the reward editor, **Save personal template** stores an explicitly identified
+reward's label, kind and combo threshold. Applying a personal entry from **Tooltip
+catalog** preserves the observed icon count and does not confirm visual review.
+Personal templates are clearly distinguished from the source-backed catalog and
+are never learned as automatic icon matches. They let players reuse newly verified
+tooltip meanings without waiting for an application release.
+
 ## Rules and uncertainty
 
 - The [GGG FAQ](https://www.pathofexile.com/forum/view-thread/4013527) confirms
@@ -113,11 +156,16 @@ and any supported comparison remains provisional where the missing data matters.
   Up to 12 collected cards and 30 offered cards bound the search; 12 is an application
   limit, not a claim about the game. Invalid draft numbers abstain until corrected.
 
-The engine is in `shared/advisor.ts`, independent of React, capture parsing and
-storage. Unit tests cover ranking, unknowns, thresholds, duplicate order and limits.
+The engines are in `shared/advisor.ts` and `shared/solver.ts`, independent of React,
+capture parsing and storage. They share supported input/order enumeration. Unit
+tests cover weighted outcomes, baselines, ties, unknowns, thresholds, duplicate
+order, exclusions, input limits, profile validation and stale-tab storage conflicts.
 `e2e/advisor.spec.ts` covers both decisions, edits, map resets, archive isolation,
 empty restored maps, explicit offer membership, local-only planning,
 and desktop/tablet/mobile rendering alongside the existing collector regression suite.
+`e2e/solver.spec.ts` covers combined weights, build filters, exclusions, invocation
+and undo, profile persistence/import/export, personal templates, storage failure,
+stale tabs, and desktop/tablet/mobile layouts.
 
 The last ten collection edits and map resets can be undone during the visit.
 Restoring another map requires explicit confirmation of the current instance.
@@ -125,3 +173,25 @@ After invoking in game, **Mark this invocation completed** removes exactly the
 plan's cards and prevents selecting the same offer again. Undo restores that state.
 Corrections in saved source offers are highlighted beside collected snapshots;
 **Apply source correction** is explicit and can also be undone.
+
+## Remaining game-data validation
+
+The prelaunch implementation supports manual reward entry, reusable definitions,
+single and combined priorities, build filters, conservative exhaustive planning,
+explanations and collection lifecycle. The following still need live evidence:
+
+- Native Fate captures for recognition precision/recall, full reward-row coverage,
+  tooltip mappings, HDR and UI-scale/resolution calibration. Synthetic tests and
+  prerelease screenshots do not certify those properties.
+- Rules for mixed tiers, T3 merges, a third duplicate, combo behavior after merging,
+  and whether merges alter the usable input-slot limit. Unsupported combinations
+  remain explicit unknowns until those rules are established.
+- Actual reward distributions, quantity/rarity effects, Viscera probabilities and
+  league prices before any data-derived economic model can be claimed. User weights
+  can express estimates but cannot replace these observations.
+
+The pending offer is hidden until a choice is made according to the GGG FAQ; a
+future-offer forecast cannot be inferred from the current capture. Confirming map
+identity, visual review and the chosen/invoked cards remains a deliberate user step:
+the app does not observe or control those game actions. The release remains under
+the documented prelaunch exception until the native validation gates can pass.

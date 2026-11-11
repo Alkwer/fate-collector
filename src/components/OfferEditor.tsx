@@ -7,12 +7,16 @@ import { catalogFields, REWARD_CATALOG, selectedCatalogReward } from '../../shar
 import rewardIcons from '../../shared/reward-icons.json'
 import { cardNeedsReview } from '../lib/card-review'
 import { CardEvidence } from './CardEvidence'
+import { upsertDefinition } from '../lib/solver-settings'
+import { normalizeRewardLabel } from '../../shared/advisor'
+import type { SolverSettingsControl } from './SolverControls'
 
-interface Props { offer: Offer; onChange: (patch: Partial<Offer>) => void; purpose?: 'offer' | 'collection'; evidence?: Evidence | null; showRecordedChoice?: boolean; reviewRequest?: { cardId: string; sequence: number } | null }
-export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, showRecordedChoice = true, reviewRequest }: Props) {
+interface Props { offer: Offer; onChange: (patch: Partial<Offer>) => void; purpose?: 'offer' | 'collection'; evidence?: Evidence | null; showRecordedChoice?: boolean; reviewRequest?: { cardId: string; sequence: number } | null; solverControl?: SolverSettingsControl }
+export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, showRecordedChoice = true, reviewRequest, solverControl }: Props) {
   const instanceId = useId()
   const collecting = purpose === 'collection'
   const showChoice = !collecting && showRecordedChoice
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
   const rewardDetails = useRef<HTMLDetailsElement>(null)
@@ -92,25 +96,39 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
           <p className="hint">Keep unknown icons unidentified. An empty list means rewards were not read, not that the card has no rewards.</p>
           {selected.rewards.map((reward, index) => {
             const entry = selectedCatalogReward(reward)
+            const personalEntry = solverControl?.settings.definitions.find(row => row.label === reward.label && row.kind === reward.kind && row.threshold === reward.threshold && reward.identified)
             const icon = entry && rewardIcons.icons.find(icon => icon.id === entry.id)
             return <fieldset className="reward-editor" key={reward.id} tabIndex={-1} ref={element => { if (element) rewardFields.current.set(reward.id, element); else rewardFields.current.delete(reward.id) }}><legend>Reward {index + 1}</legend>
             {reward.visualId && <p className="reward-label hint">Image suggestion: {VISUAL_LABELS[reward.visualId]}. Check the in-game tooltip for its reward, kind and threshold.</p>}
-            <label className="reward-label">Tooltip catalog<select value={entry?.id ?? ''} onChange={event => {
+            <label className="reward-label">Tooltip catalog<select value={entry?.id ?? (personalEntry ? `personal:${personalEntry.id}` : '')} onChange={event => {
               const entry = REWARD_CATALOG.find(item => item.id === event.target.value)
+              const personal = solverControl?.settings.definitions.find(item => `personal:${item.id}` === event.target.value)
               if (entry) updateReward(reward.id, catalogFields(entry))
-            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : 'Kind unknown'}</option>)}</select></label>
+              else if (personal) updateReward(reward.id, { label: personal.label, kind: personal.kind, threshold: personal.threshold, identified: true })
+            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
             {entry && <p className="reward-label catalog-reference hint">
               {icon && <img src={`data:image/png;base64,${icon.pngBase64}`} alt={`${entry.label} reference icon`} width={34} height={36} />}
               <span>{entry.description} <a href={entry.source} target="_blank" rel="noreferrer">GGG {entry.kind === 'unknown' ? 'press reference' : 'tooltip'}</a>. Prerelease reference; check your game version.</span>
             </p>}
+            {!entry && personalEntry && <p className="reward-label hint">Personal template. {personalEntry.note} Check this definition against the current tooltip; applying it does not confirm the image review.</p>}
             <label className="reward-label">Label<input value={reward.label} maxLength={160} placeholder="Unidentified icon" onChange={e => updateReward(reward.id, { label: e.target.value, identified: e.target.value.trim() ? reward.identified : false })} /></label>
             <label>Kind<select value={reward.kind} onChange={e => updateReward(reward.id, { kind: e.target.value as Reward['kind'] })}><option value="unknown">Unknown</option><option value="regular">Regular</option><option value="combo">Combo</option></select></label>
             <label>Count<input type="number" min={1} max={100} value={reward.count} onChange={e => updateReward(reward.id, { count: Number(e.target.value) })} /></label>
             <label>Combo threshold<input type="number" min={1} max={100} value={reward.threshold ?? ''} placeholder="Unknown" onChange={e => updateReward(reward.id, { threshold: e.target.value ? Number(e.target.value) : null })} /></label>
             <label className="checkbox-row"><input type="checkbox" checked={reward.identified} disabled={!reward.label.trim()} onChange={e => updateReward(reward.id, { identified: e.target.checked })} />Identified</label>
+            {solverControl && <div className="reward-label personal-template"><button disabled={!reward.identified || reward.kind === 'unknown' || (reward.kind === 'combo' && reward.threshold === null)} onClick={() => {
+              if (!reward.identified || reward.kind === 'unknown') return
+              try {
+                const existing = solverControl.settings.definitions.find(row => row.kind === reward.kind && normalizeRewardLabel(row.label) === normalizeRewardLabel(reward.label))
+                const settings = upsertDefinition(solverControl.settings, { id: crypto.randomUUID(), label: reward.label, kind: reward.kind, threshold: reward.kind === 'combo' ? reward.threshold : null, note: existing?.note ?? '' })
+                const saved = solverControl.change(settings)
+                setTemplateNotice(saved ? 'Personal template added to your profile. Apply it explicitly to another reward; image checks remain separate.' : 'Template not saved. Resolve the profile storage message on the map screen.')
+              } catch { setTemplateNotice('Template not saved. Use a valid name and combo threshold; your profile can hold up to 64 definitions.') }
+            }}>Save personal template</button><p className="hint">Reuses the meaning you entered, never an automatic icon match or a verified catalog entry. Recheck it against the tooltip.</p></div>}
             <button className="text-button danger" onClick={() => updateCard({ rewards: selected.rewards.filter(r => r.id !== reward.id) })}>Remove reward</button>
           </fieldset> })}
           {selected.visualReview && <label className="checkbox-row visual-review"><input type="checkbox" checked={selected.visualReview.rewardsReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, rewardsReviewed: event.target.checked } })} />I checked all reward icons, kinds, counts and thresholds</label>}
+          {templateNotice && <p className="hint" role="status">{templateNotice}</p>}
         </details>
         <button className="text-button danger remove-card" onClick={() => {
           onChange({ cards: offer.cards.filter(c => c.id !== selected.id), selectedCardId: offer.selectedCardId === selected.id ? null : offer.selectedCardId, completeness: 'unverified' })

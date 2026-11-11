@@ -72,6 +72,9 @@ are automated.
 - A local [Fate advisor](docs/fate-advisor.md) on the Current map screen: next-card
   recommendations, map-scoped collection and invocation order, with duplicate handling
   and uncertainty. New maps clear planning state; archive entries require explicit transfer.
+- Combined reward priorities with user-defined weights, modifier/card exclusions,
+  complete reward breakdowns, and durable importable/exportable profiles. Personal
+  tooltip templates reuse manually verified meanings without claiming automatic recognition.
 - Local screenshot and positioned OCR bundles, clipboard/file import and drag/drop.
 - Read-only capture-folder connection, automatic local intake and correction saving,
   persistent connection handles, duplicate receipts and deletion protection.

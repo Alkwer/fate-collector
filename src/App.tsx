@@ -18,6 +18,7 @@ import { errorText, useOfferDraft } from './lib/useOfferDraft'
 import { BackupDownload } from './components/BackupDownload'
 import { FateAdvisor } from './components/FateAdvisor'
 import { useAdvisorWorkspace } from './lib/useAdvisorWorkspace'
+import { useSolverSettings } from './lib/useSolverSettings'
 import { DraftRecovery } from './components/LocalRecovery'
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
   useEffect(installDiagnosticLog, [])
   const [tab, setTab] = useState<'collector' | 'review' | 'saved' | 'diagnostics'>('collector')
   const advisor = useAdvisorWorkspace()
+  const solver = useSolverSettings()
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
   const [unreadableOffers, setUnreadableOffers] = useState<storage.UnreadableOffer[]>([])
   const [damagedEvidenceCount, setDamagedEvidenceCount] = useState(0)
@@ -241,7 +243,7 @@ export default function App() {
         </section>}
         {!advisor.workspace.map && !!draft.cards.length && advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
         {advisor.storageError && <p className="notice error" role="alert">{advisor.storageError}</p>}
-        <FateAdvisor savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
+        <FateAdvisor solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
         <div className="map-capture-connection"><CaptureConnection sync={sync} /></div>
         </> : <>
         <div className="archive-boundary"><p>This archived offer is not used in current-map advice. Only transfer it if it belongs to the instance you are playing now.{archiveEditor.dirty ? ' Save corrections before transferring.' : ''}{advisor.needsMapConfirmation ? ' Confirm your map on the Current map screen first.' : ''}</p><div><button onClick={() => setTab('collector')}>Return to current map</button><button disabled={busy || autoSaving || archiveEditor.dirty || advisor.needsMapConfirmation} onClick={useArchivedOffer}>{advisor.workspace.map ? 'Use this offer in current map' : 'Start map with this offer'}</button></div></div>
@@ -250,7 +252,7 @@ export default function App() {
           <OfferPreview offer={draft} saved={savedLocally && !dirty} automatic={sync.status === 'active'} />
         </div></>}
         <details ref={detailsPanel} className="advanced-panel" key={`${tab}:${draft.id}`}><summary>Edit details</summary><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
-          <OfferEditor offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
+          <OfferEditor solverControl={solver} offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
         </div>{tab === 'collector' && <div className="review-return"><p>Advice updates as you edit. Saving the observation and checking its rewards are separate steps.</p><button onClick={returnToAdvice}>Back to advice</button></div>}</details>
         <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <div className="auto-save-actions">

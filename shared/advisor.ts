@@ -6,6 +6,7 @@ export type AdvisorGoal = { kind: 'regular' | 'combo'; label: string }
 
 export const MAX_COLLECTED_FATES = 12
 export const MAX_OFFERED_FATES = 30
+export const MERGED_REGULAR_MULTIPLIER = 3
 
 export type InvocationPlan = {
   cardIds: string[]
@@ -34,7 +35,7 @@ export type Recommendation = {
 const MAX_INVOCATION_INPUTS = 3
 const COMBAT_WARNING = 'Combat difficulty and modifier risk are outside this comparison.'
 const NO_PROGRESS = 'No positive result could be established for this goal.'
-const UNKNOWN_NAME = 'A Fate name is missing, so possible duplicate interactions are unresolved.'
+export const UNKNOWN_FATE_NAME = 'A Fate name is missing, so possible duplicate interactions are unresolved.'
 
 function cleanLabel(label: string): string {
   return label.normalize().trim().replace(/\s+/g, ' ').replace(/[\u2018\u2019\u201B\u02BC\uFF07]/g, "'")
@@ -59,7 +60,7 @@ export function getAdvisorGoals(cards: FateCard[]): AdvisorGoal[] {
   return [...regular.values(), ...combo.values()]
 }
 
-function inputProblem(cards: FateCard[], limit: number, group: string): string | null {
+export function advisorInputProblem(cards: FateCard[], limit: number, group: string): string | null {
   if (!Array.isArray(cards) || cards.length > limit) return `Use at most ${limit} ${group} Fates.`
   const cardIds = new Set<string>()
   for (const card of cards) {
@@ -101,6 +102,52 @@ type GoalCard = {
   warnings: string[]
 }
 
+type InvocationInput = Pick<GoalCard, 'name' | 'tier' | 'tierReviewed'>
+
+export function visitInvocationOrders<Card extends InvocationInput>(
+  cards: Card[],
+  required: Card | undefined,
+  addPlan: (active: Card[], pair?: [Card, Card]) => void,
+  warn: (warning: string) => void,
+): void {
+  function consider(selected: Card[]) {
+    if (selected.length > 1 && selected.some(card => !card.name)) {
+      warn(UNKNOWN_FATE_NAME)
+      return
+    }
+    const duplicate = selected.find((card, i) => selected.slice(i + 1).some(other => other.name === card.name))
+    if (!duplicate) {
+      addPlan(selected)
+      return
+    }
+    const copies = selected.filter(card => card.name === duplicate.name)
+    if (copies.length > 2) {
+      warn('Invoking three copies of the same Fate is unresolved.')
+    } else if (copies.some(card => card.tier !== 2)) {
+      warn('Only pairs of the same Fate at Tier 2 have a confirmed merge.')
+    } else if (copies.some(card => !card.tierReviewed)) {
+      warn('Check the suggested tiers before relying on a duplicate merge.')
+    } else {
+      const [first, second] = copies
+      const others = selected.filter(card => card.name !== duplicate.name)
+      // Only the order of the pair changes the outcome. Keep the merged pair
+      // together before the remaining Fate, as shown in the prerelease demo.
+      addPlan(others, [first, second])
+      addPlan(others, [second, first])
+    }
+  }
+
+  function visit(selected: Card[], start: number) {
+    if (selected.length) consider(selected)
+    if (selected.length === MAX_INVOCATION_INPUTS) return
+    for (let index = start; index < cards.length; index += 1) {
+      visit([...selected, cards[index]], index + 1)
+    }
+  }
+
+  visit(required ? [required] : [], 0)
+}
+
 function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
   const goalLabel = normalizeRewardLabel(goal.label)
   const thresholds = new Set<number>()
@@ -112,7 +159,7 @@ function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
   const goalCards: GoalCard[] = cards.map(card => {
     const name = normalizeRewardLabel(card.name)
     const warnings = new Set<string>()
-    if (!name) warnings.add(UNKNOWN_NAME)
+    if (!name) warnings.add(UNKNOWN_FATE_NAME)
     if (!card.rewards.length) warnings.add('At least one Fate has no recorded rewards.')
     if (card.visualReview && !card.visualReview.rewardsReviewed) warnings.add('Visual suggestions may miss reward icons. Check the full reward row before relying on this ranking.')
     let targetCount = 0
@@ -150,7 +197,12 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
   const warnings = new Set(goalWarnings)
 
   function addPlan(active: GoalCard[], pair?: [GoalCard, GoalCard]) {
-    const targetCount = active.reduce((sum, card) => sum + card.targetCount, 0) + (pair ? pair[0].targetCount * 3 : 0)
+    if (pair && goal.kind === 'combo') {
+      warnings.add('Combo behavior after merging duplicate Fates is unresolved.')
+      return
+    }
+    const targetCount = active.reduce((sum, card) => sum + card.targetCount, 0)
+      + (pair ? pair[0].targetCount * MERGED_REGULAR_MULTIPLIER : 0)
     const retained = pair ? [pair[0], ...active] : active
     const planWarnings = [...new Set([...goalWarnings, ...retained.flatMap(card => card.warnings)])]
     for (const warning of planWarnings) warnings.add(warning)
@@ -166,49 +218,12 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
     })
   }
 
-  function consider(selected: GoalCard[]) {
-    if (selected.length > 1 && selected.some(card => !card.name)) {
-      warnings.add(UNKNOWN_NAME)
-      return
-    }
-    const firstDuplicate = selected.find((card, i) => selected.slice(i + 1).some(other => other.name === card.name))
-    if (!firstDuplicate) {
-      addPlan(selected)
-      return
-    }
-    const copies = selected.filter(card => card.name === firstDuplicate.name)
-    if (copies.length > 2) {
-      warnings.add('Invoking three copies of the same Fate is unresolved.')
-    } else if (copies.some(card => card.tier !== 2)) {
-      warnings.add('Only pairs of the same Fate at Tier 2 have a confirmed merge.')
-    } else if (copies.some(card => !card.tierReviewed)) {
-      warnings.add('Check the suggested tiers before relying on a duplicate merge.')
-    } else if (goal.kind === 'combo') {
-      warnings.add('Combo behavior after merging duplicate Fates is unresolved.')
-    } else {
-      const [first, second] = copies
-      const others = selected.filter(card => card.name !== firstDuplicate.name)
-      // Only the order of the pair changes the outcome. Keep the merged pair
-      // together before the remaining Fate, as shown in the prerelease demo.
-      addPlan(others, [first, second])
-      addPlan(others, [second, first])
-    }
-  }
-
-  function visit(selected: GoalCard[], start: number) {
-    if (selected.length) consider(selected)
-    if (selected.length === MAX_INVOCATION_INPUTS) return
-    for (let index = start; index < cards.length; index += 1) {
-      visit([...selected, cards[index]], index + 1)
-    }
-  }
-
-  visit(required ? [required] : [], 0)
+  visitInvocationOrders(cards, required, addPlan, warning => warnings.add(warning))
   return { plans: plans.sort(comparePlans).slice(0, 3), warnings: [...warnings] }
 }
 
 export function planInvocation(cards: FateCard[], goal: AdvisorGoal): PlanResult {
-  const problem = inputProblem(cards, MAX_COLLECTED_FATES, 'collected')
+  const problem = advisorInputProblem(cards, MAX_COLLECTED_FATES, 'collected')
   if (problem || !validGoal(goal)) return { status: 'insufficient', plans: [], warnings: [problem ?? 'Choose a reward goal.'] }
 
   const analysis = analyzeGoal(cards, goal)
@@ -218,7 +233,7 @@ export function planInvocation(cards: FateCard[], goal: AdvisorGoal): PlanResult
 }
 
 export function recommendFates(offered: FateCard[], collected: FateCard[], goal: AdvisorGoal): Recommendation {
-  const problem = inputProblem(offered, MAX_OFFERED_FATES, 'offered') ?? inputProblem(collected, MAX_COLLECTED_FATES, 'collected')
+  const problem = advisorInputProblem(offered, MAX_OFFERED_FATES, 'offered') ?? advisorInputProblem(collected, MAX_COLLECTED_FATES, 'collected')
   if (problem || !validGoal(goal)) {
     return { status: 'insufficient', comparison: 'unknown', baseline: null, candidates: [], recommendedCardIds: [], warnings: [problem ?? 'Choose a reward goal.'] }
   }

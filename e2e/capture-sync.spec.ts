@@ -122,7 +122,9 @@ test('folder capture auto-saves, corrections auto-save, reconnect deduplicates, 
   await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
   await expect(page.locator('.action-band')).toContainText('Not reviewed yet.')
   await expect(page.getByRole('button', { name: 'Confirm and save', exact: true })).toHaveCount(0)
-  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
+  // The optional solver switch is visible; capture intake still needs no form fields.
+  await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
+  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
 
   await page.getByText('Edit details', { exact: true }).click()
   await page.getByLabel('Fate name', { exact: true }).fill('Alchemist corrected')

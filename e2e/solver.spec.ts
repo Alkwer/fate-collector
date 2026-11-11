@@ -1,0 +1,173 @@
+import { expect, test, type Page } from '@playwright/test'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { newCard, newOffer, newReward } from '../shared/offers'
+import type { FateCard, Reward } from '../shared/schema'
+import { newSolverSettings } from '../src/lib/solver-settings'
+
+function reward(label: string, count: number, extra: Partial<Reward> = {}): Reward {
+  return { ...newReward(), label, count, kind: 'regular', identified: true, ...extra }
+}
+function fate(name: string, rewards: Reward[], modifiers: string[] = []): FateCard { return { ...newCard(), name, tier: 2, rewards, modifiers } }
+async function load(page: Page, cards: FateCard[], first = true) {
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'solver.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newOffer(), cards })) })
+  await page.getByRole('button', { name: first ? 'Start map with this offer' : 'Use this offer in current map', exact: true }).click()
+}
+async function priority(page: Page, key: string, weight?: number) {
+  await page.getByRole('combobox', { name: 'Add reward', exact: true }).selectOption(key)
+  await page.getByRole('button', { name: 'Add priority', exact: true }).click()
+  if (weight !== undefined) {
+    const [kind, label] = key.split(':')
+    await page.getByLabel(new RegExp(`^${label} ${kind} weight$`, 'i')).fill(String(weight))
+  }
+}
+function errorsOn(page: Page) {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', entry => { if (entry.type() === 'error') errors.push(entry.text()) })
+  return errors
+}
+
+test('weights, build exclusions, persistence, invocation and undo work together', async ({ page }) => {
+  const errors = errorsOn(page)
+  await page.goto('/')
+  const cards = [fate('Currency specialist', [reward('Currency', 4)], ['Reflects damage']), fate('Balanced Fate', [reward('Currency', 1), reward('Armour', 2)], ['More monster life'])]
+  await load(page, cards)
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await priority(page, 'regular:currency')
+  await expect(page.getByRole('heading', { name: 'Recommended: Currency specialist', exact: true })).toBeVisible()
+  await priority(page, 'regular:armour', 3)
+  await expect(page.getByRole('heading', { name: 'Recommended: Balanced Fate', exact: true })).toBeVisible()
+  await page.reload()
+  await page.getByRole('button', { name: 'Continue this map', exact: true }).click()
+  // The current offer draft is not persisted; re-open the capture in this map.
+  await load(page, cards, false)
+  await expect(page.getByRole('heading', { name: 'Recommended: Balanced Fate', exact: true })).toBeVisible()
+  await page.getByLabel('Exclude Balanced Fate from plans', { exact: true }).check()
+  await expect(page.getByRole('heading', { name: 'Recommended: Currency specialist', exact: true })).toBeVisible()
+  await page.locator('.solver-profile > summary').click()
+  await page.getByLabel('Avoid modifiers containing').fill('reflect')
+  await page.getByRole('button', { name: 'Apply modifier filters', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'No supported portfolio recommendation.', exact: true })).toBeVisible()
+  await page.getByLabel('Exclude Balanced Fate from plans', { exact: true }).uncheck()
+  await page.getByRole('button', { name: 'Add Balanced Fate to collected', exact: true }).click()
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  const best = page.locator('.advisor-plans article[data-best]')
+  await expect(best).toContainText('7 priority points')
+  await expect(best.getByRole('definition')).toContainText(['1 icon units', '2 icon units'])
+  await best.getByRole('button', { name: 'Mark this invocation completed' }).click()
+  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await page.getByRole('button', { name: 'Undo collection change', exact: true }).click()
+  await expect(page.getByRole('complementary')).toContainText('1/12')
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'New map', exact: true }).click()
+  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await expect(page.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
+  expect(errors).toEqual([])
+})
+
+test('merge breakdown preserves unknown combo results and removes exactly the invoked inputs', async ({ page }) => {
+  await page.goto('/')
+  await load(page, [fate('Rot', [reward('Currency', 10), reward('Exceptional Gem', 2, { kind: 'combo', threshold: 3 })])])
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await priority(page, 'regular:currency')
+  await priority(page, 'combo:exceptional gem', 20)
+  await page.getByRole('button', { name: 'Add Rot to collected', exact: true }).click()
+  await load(page, [fate('Rot', [reward('Currency', 1), reward('Exceptional Gem', 3, { kind: 'combo', threshold: 3 })])], false)
+  await expect(page.getByRole('heading', { name: 'Provisional preference: Rot', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add Rot to collected', exact: true }).click()
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  const best = page.locator('.advisor-plans article[data-best]')
+  await expect(best).toHaveAttribute('data-state', 'provisional')
+  await expect(best).toContainText('30 priority points')
+  await expect(best).toContainText('Unresolved outcome')
+  await expect(best).toContainText('collected #2) is consumed')
+  await expect(best.locator('.invocation-order li')).toHaveCount(2)
+  await best.getByRole('button', { name: 'Mark this invocation completed' }).click()
+  await expect(page.getByRole('complementary')).toContainText('0/12')
+})
+
+test('personal templates and profile import do not silently confirm visual observations', async ({ page, context }) => {
+  await page.goto('/')
+  await load(page, [fate('Custom', [reward('Personal combo', 2, { kind: 'combo', threshold: 2 })])])
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await priority(page, 'combo:personal combo', 7)
+  await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
+  await page.getByText('Modifiers & rewards', { exact: false }).first().click()
+  await page.getByRole('button', { name: 'Save personal template', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Personal template added' })).toBeVisible()
+  await page.getByRole('button', { name: 'Back to advice', exact: true }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export profile', exact: true }).click()
+  const download = await downloadPromise
+  const profilePath = await download.path()
+  expect(profilePath).toBeTruthy()
+  const fresh = await context.newPage(); await fresh.goto('/')
+  await expect(fresh.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
+  await fresh.close()
+  const unknown = { ...fate('Unread', [reward('Unknown', 1, { identified: false, kind: 'unknown' })]), visualReview: { version: 'qa', tierReviewed: true, rewardsReviewed: false } }
+  await load(page, [unknown], false)
+  await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
+  await page.getByText('Modifiers & rewards', { exact: false }).first().click()
+  await page.getByLabel('Tooltip catalog').selectOption({ label: 'Personal combo · personal combo (2)' })
+  await expect(page.getByLabel('Label', { exact: true })).toHaveValue('Personal combo')
+  await expect(page.getByLabel('Count', { exact: true })).toHaveValue('1')
+  await expect(page.getByLabel('I checked all reward icons, kinds, counts and thresholds')).not.toBeChecked()
+  await page.getByRole('button', { name: 'Back to advice', exact: true }).click()
+  await page.getByLabel('Import solver profile').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{broken') })
+  await expect(page.getByRole('alert').last()).toBeVisible()
+  await page.getByLabel('Import solver profile').setInputFiles(profilePath!)
+  await expect(page.getByRole('status').filter({ hasText: 'Profile imported' })).toBeVisible()
+  await expect(page.getByLabel('Personal combo combo weight')).toHaveValue('7')
+})
+
+test('a stale tab cannot overwrite a newer durable profile', async ({ page, context }) => {
+  await page.goto('/')
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await priority(page, 'combo:exceptional gem')
+  const other = await context.newPage(); await other.goto('/')
+  await other.locator('.solver-profile > summary').click()
+  await other.getByLabel('Exceptional Gem combo weight').fill('9')
+  await page.getByLabel('Exceptional Gem combo weight').fill('2')
+  await expect(page.getByRole('alert').filter({ hasText: 'another tab' })).toBeVisible()
+  await page.getByRole('button', { name: 'Reload saved profile' }).click()
+  await expect(page.getByLabel('Exceptional Gem combo weight')).toHaveValue('9')
+  await other.close()
+})
+
+for (const width of [1440, 820, 390]) {
+  test(`weighted planner is usable at ${width}px`, async ({ page }) => {
+    const errors = errorsOn(page)
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto('/')
+    await load(page, [fate('Balanced Fate with a long readable name', [reward('Currency', 2), reward('Armour', 3)])])
+    await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+    await priority(page, 'regular:currency')
+    await priority(page, 'regular:armour', 2)
+    await page.locator('.solver-profile > summary').click()
+    await expect(page.locator('.advisor-outcome')).toHaveAttribute('data-state', 'ready')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: join(tmpdir(), `portfolio-${width}.png`), fullPage: true })
+    await page.getByRole('button', { name: /Add Balanced Fate with a long readable name to collected/ }).click()
+    await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+    await expect(page.locator('.advisor-plans article[data-best]')).toContainText('8 priority points')
+    await page.screenshot({ path: join(tmpdir(), `portfolio-plan-${width}.png`), fullPage: true })
+    expect(errors).toEqual([])
+  })
+}
+
+test('denied profile storage keeps edits usable and exportable without claiming persistence', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) { if (key === 'fate-collector.solver-profile.v1') throw new DOMException('Full', 'QuotaExceededError'); return original.call(this, key, value) }
+  })
+  await page.goto('/')
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await priority(page, 'combo:exceptional gem')
+  await expect(page.getByRole('alert').filter({ hasText: 'could not be saved' })).toBeVisible()
+  const saved = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export profile', exact: true }).click()
+  expect((await saved).suggestedFilename()).toBe('fate-solver-profile.json')
+  await page.getByLabel('Import solver profile').setInputFiles({ name: 'bad-profile.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newSolverSettings(), profile: { goals: [{ kind: 'combo', label: 'Invalid', weight: -1 }], avoidModifiers: [] } })) })
+  await expect(page.getByRole('alert').filter({ hasText: 'Invalid profile' })).toBeVisible()
+})
