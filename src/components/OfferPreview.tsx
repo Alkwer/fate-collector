@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { FateCard, Offer } from '../../shared/schema'
 import { VISUAL_LABELS } from '../../shared/visual-suggestions'
 
-export function OfferPreview({ offer, saved = false, automatic = false, embedded = false, renderAdvice }: { offer: Offer; saved?: boolean; automatic?: boolean; embedded?: boolean; renderAdvice?: (card: FateCard) => ReactNode }) {
+export function OfferPreview({ offer, saved = false, automatic = false, embedded = false, highlightedCardIds, provisional = false, renderAdvice }: { offer: Offer; saved?: boolean; automatic?: boolean; embedded?: boolean; highlightedCardIds?: string[]; provisional?: boolean; renderAdvice?: (card: FateCard) => ReactNode }) {
   const sequence = offer.captureContext?.session?.sequence
   const possibleRepeat = Boolean(offer.captureContext?.possibleDuplicate)
   return <section className={`${embedded ? '' : 'panel '}offer-preview`} aria-labelledby="preview-heading">
@@ -11,7 +11,8 @@ export function OfferPreview({ offer, saved = false, automatic = false, embedded
       {sequence !== undefined ? `Session capture #${sequence}` : ''}{sequence !== undefined && possibleRepeat ? ' · ' : ''}{possibleRepeat ? 'Possible repeat (matching OCR)' : ''}
     </p>}
     {offer.cards.length ? <>
-      <ul className="fate-list">{offer.cards.map((card, index) => <li key={card.id}>
+      <ul className="fate-list">{offer.cards.map((card, index) => <li key={card.id} className={highlightedCardIds?.includes(card.id) ? `recommended-fate${provisional ? ' provisional-fate' : ''}` : undefined}>
+        {highlightedCardIds?.includes(card.id) && <p className="recommendation-label">{provisional ? 'Provisional match' : highlightedCardIds.length > 1 ? 'Equal best match' : 'Best match for your goal'}</p>}
         <div className="fate-title"><h3>{card.name || `Unread card ${index + 1}`}</h3>{card.tier !== null && <span className="muted">Tier {card.tier}{card.visualReview && !card.visualReview.tierReviewed ? ' · suggested' : ''}</span>}</div>
         {card.modifiers.length > 0 && <p>{card.modifiers.join(' ')}</p>}
         {card.rewards.some(reward => reward.identified) && <p className="detected-rewards">{card.rewards.filter(reward => reward.identified).map(reward => `${reward.count > 1 ? `${reward.count}× ` : ''}${reward.label}`).join(', ')}{card.visualReview && !card.visualReview.rewardsReviewed ? ' · suggested; check the full reward row' : ''}</p>}

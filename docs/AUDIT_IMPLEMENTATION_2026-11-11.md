@@ -7,7 +7,7 @@ does not establish native Fate recognition quality.
 
 Later release-policy update: the owner approved a [temporary prelaunch
 exception](deployment.md#temporary-prelaunch-policy), expiring on 13 November
-2026 at 00:00 UTC. The native evidence gaps below remain open; standard promotion
+2026 at 19:00 UTC. The native evidence gaps below remain open; standard promotion
 still verifies the exact-package holdout, while prelaunch explicitly defers it.
 
 | # | Audit item | Implementation / remaining evidence |

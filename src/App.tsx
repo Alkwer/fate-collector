@@ -32,6 +32,7 @@ export default function App() {
   const [isolatedCount, setIsolatedCount] = useState(0)
   const [missingEvidenceIds, setMissingEvidenceIds] = useState<string[]>([])
   const detailsPanel = useRef<HTMLDetailsElement>(null)
+  const [reviewRequest, setReviewRequest] = useState<{ cardId: string; sequence: number } | null>(null)
   const [backup, setBackup] = useState<{ parts: BackupPart[]; includeEvidence: boolean; summary: Awaited<ReturnType<typeof storage.readOfferArchive>> } | null>(null)
   const backupReturnFocus = useRef<HTMLElement | null>(null)
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
@@ -41,10 +42,15 @@ export default function App() {
   const fileInput = useRef<HTMLInputElement>(null)
   const recoveryInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<HTMLDetailsElement>(null)
-  function editCurrentOffer() {
+  function editCurrentOffer(cardId?: string) {
     if (!detailsPanel.current) return
     detailsPanel.current.open = true
-    detailsPanel.current.querySelector('summary')?.focus()
+    if (cardId) setReviewRequest(previous => ({ cardId, sequence: (previous?.sequence ?? 0) + 1 }))
+    else detailsPanel.current.querySelector('summary')?.focus()
+  }
+  function returnToAdvice() {
+    if (detailsPanel.current) detailsPanel.current.open = false
+    document.getElementById('advisor-heading')?.focus()
   }
   function closeActions() { if (moreActions.current) moreActions.current.open = false }
   const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
@@ -229,11 +235,11 @@ export default function App() {
           </div></details>
         </div>
         {tab === 'collector' ? <>
-        {(advisor.workspace.map || !draft.cards.length) && <section className="map-session" aria-label="Map session">
-          <div><strong>{advisor.needsMapConfirmation ? 'Confirm your current map.' : advisor.workspace.map ? 'Map session active' : 'No active map'}</strong><p>Fates stay in the instance where you collect them. Start a new map session when you enter a different instance.</p><p className="hint">{advisor.workspace.map?.startedAt ? `Started ${new Date(advisor.workspace.map.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. ` : ''}Map changes are not detected automatically.</p></div>
-          <div className="map-session-actions">{advisor.needsMapConfirmation && <button disabled={busy} onClick={advisor.confirmMap}>Continue this map</button>}<button className="outline-button" disabled={busy || autoSaving} onClick={startMap}>{advisor.workspace.map ? 'New map' : 'Start new map'}</button></div>
+        {(advisor.workspace.map || !draft.cards.length) && <section className="map-session" data-state={advisor.needsMapConfirmation ? 'confirmation' : advisor.workspace.map ? 'active' : 'empty'} aria-label="Map session">
+          <div><strong>{advisor.needsMapConfirmation ? 'Confirm your current map.' : advisor.workspace.map ? 'Map session active' : 'No active map'}</strong><p>{advisor.workspace.map?.startedAt ? `Started ${new Date(advisor.workspace.map.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ` : ''}Start a new session when you enter a different instance.</p></div>
+          <div className="map-session-actions">{advisor.canUndo && <button className="text-button" disabled={busy} onClick={advisor.undo}>Undo collection change</button>}{advisor.needsMapConfirmation && <button disabled={busy} onClick={advisor.confirmMap}>Continue this map</button>}<button className="outline-button" disabled={busy || autoSaving} onClick={startMap}>{advisor.workspace.map ? 'New map' : 'Start new map'}</button></div>
         </section>}
-        {advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
+        {!advisor.workspace.map && !!draft.cards.length && advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
         {advisor.storageError && <p className="notice error" role="alert">{advisor.storageError}</p>}
         <FateAdvisor savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
         <div className="map-capture-connection"><CaptureConnection sync={sync} /></div>
@@ -244,9 +250,9 @@ export default function App() {
           <OfferPreview offer={draft} saved={savedLocally && !dirty} automatic={sync.status === 'active'} />
         </div></>}
         <details ref={detailsPanel} className="advanced-panel" key={`${tab}:${draft.id}`}><summary>Edit details</summary><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
-          <OfferEditor offer={draft} onChange={change} evidence={evidence} />
+          <OfferEditor offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
-        </div></details>
+        </div>{tab === 'collector' && <div className="review-return"><p>Advice updates as you edit. Saving the observation and checking its rewards are separate steps.</p><button onClick={returnToAdvice}>Back to advice</button></div>}</details>
         <div className="action-band"><p>{saveMessage}<span className="save-state">{automatic ? `${reviewMessage} Corrections save on this device.` : savedCurrent ? `${reviewMessage} Saved on this device.` : 'Saving here does not upload changes.'}{draft.origin === 'test' ? ' Test capture.' : ''}</span></p>{automatic ? <div className="auto-save-actions">
           <span className="auto-save-state" role="status">{autoSaving ? 'Saving changes…' : autoSaveFailure ? autoSaveFailure.conflict ? 'Save conflict' : 'Save failed' : dirty ? 'Changes pending…' : 'Saved locally'}</span>
           {autoSaveFailure && !autoSaveFailure.conflict && <button className="outline-button" disabled={busy || autoSaving} onClick={() => { setNotice(null); retryAutoSave() }}>Retry save</button>}

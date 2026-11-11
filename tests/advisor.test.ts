@@ -33,6 +33,21 @@ describe('advisor goals', () => {
 })
 
 describe('offered Fate recommendations', () => {
+  it('explains gains against the existing plan and distinguishes no benefit from missing evidence', () => {
+    const owned = [fate('owned', [reward('Currency', 5)])]
+    const result = recommendFates([fate('new', [reward('Currency', 2)])], owned, currency)
+    expect(result).toMatchObject({ comparison: 'improvement', baseline: { targetCount: 5 }, candidates: [{ gain: 2, plan: { targetCount: 7 } }] })
+    expect(recommendFates([fate('neutral', [reward('Armour')])], owned, currency)).toMatchObject({ comparison: 'no-improvement', candidates: [{ gain: 0 }] })
+    expect(recommendFates([fate('unknown', [])], owned, currency).comparison).toBe('unknown')
+    expect(recommendFates([fate('neutral', [reward('Armour')])], [], currency).comparison).toBe('no-improvement')
+    expect(recommendFates([fate('invalid', [reward('Currency', 0)])], owned, currency)).toMatchObject({ comparison: 'unknown', baseline: null })
+  })
+
+  it('caps displayed combo gains at the threshold and never promises repeated payouts', () => {
+    const result = recommendFates([fate('new', [combo(8)])], [fate('owned', [combo(2)])], gem)
+    expect(result).toMatchObject({ comparison: 'improvement', baseline: { targetCount: 2 }, candidates: [{ gain: 1 }] })
+    expect(recommendFates([fate('new', [combo(8)])], [fate('owned', [combo(3)])], gem)).toMatchObject({ comparison: 'no-improvement', candidates: [{ gain: 0 }] })
+  })
   it('ranks by observed icons independently of Fate names and changes rank with the goal', () => {
     const offered = [
       fate('rot', [reward('Armour', 4)], { name: 'Rot' }),

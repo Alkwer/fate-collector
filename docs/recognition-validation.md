@@ -56,7 +56,7 @@ The hashes catch modified files, exact duplicate PNGs and previously indexed fix
 
 ### Required promotion artifact
 
-The default `native-holdout` production promotion requires a `recognition_run_id` from **Verify local native recognition report** (`recognition-validation.yml`), in this repository on main at the exact staging SHA. The explicitly accepted [temporary prelaunch policy](deployment.md#temporary-prelaunch-policy) can defer this requirement only before **13 November 2026, 00:00 UTC**; it does not mark the holdout as passed or change its coverage thresholds. Run the native holdout locally first for standard promotion. With the original staging package at `.release`, generate the sanitized submission:
+The default `native-holdout` production promotion requires a `recognition_run_id` from **Verify local native recognition report** (`recognition-validation.yml`), in this repository on main at the exact staging SHA. The explicitly accepted [temporary prelaunch policy](deployment.md#temporary-prelaunch-policy) can defer this requirement only before **13 November 2026, 19:00 UTC**; it does not mark the holdout as passed or change its coverage thresholds. Run the native holdout locally first for standard promotion. With the original staging package at `.release`, generate the sanitized submission:
 
 ```powershell
 node scripts/verify-recognition-release.mjs .qa/native-recognition/report.json .release/release.json --github-input > .qa/native-recognition/github-input.txt

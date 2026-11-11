@@ -11,6 +11,13 @@ or additional engine rules.
 
 ## Use
 
+The workflow strip follows Capture → Check rewards → Choose a Fate → Invoke.
+The **Data to check** list names the missing fields on each offered or collected
+card. **Review [name]** opens that card's reward editor and moves keyboard focus
+to it. **Back to advice** closes the editor; recommendations update as you edit.
+Saving a sample does not certify its reward data. Unknown rewards can stay unknown,
+and any supported comparison remains provisional where the missing data matters.
+
 1. Start a map session with **Start new map**, then capture/import an offer.
    Confirm **Use this offer in current map** before it enters advice. If no map
    is active, **Start map with this offer** performs both steps explicitly.
@@ -28,13 +35,19 @@ or additional engine rules.
    to move to another card with unknown or unchecked values. Selecting a catalog
    meaning does not check either visual-review box. On narrow screens the image
    appears above the fields and can be enlarged.
-2. On the same screen, choose **Choose from current offer** and a **Reward goal**.
+2. On the same screen, choose **Choose a Fate** and a **Reward goal**.
    The result names the matching Fate(s), shows icon progress and invocation order,
    and separates a supported recommendation from a provisional preference.
+   Each candidate shows its gain over the best plan already available from your
+   collection. Combo gains stop at the threshold; extra icons do not imply another
+   payout. **No improvement for this goal** means the known alternatives do not
+   improve it; missing evidence instead keeps the comparison unresolved.
 3. After choosing in the game, use **Add … to collected** for that card. Only one
    card per imported offer can be added; remove it to change that planning choice.
-   This does not mark the observation's optional Choice field or automate the game.
-4. After the next capture, repeat. Choose **Plan collected Fates** for an invocation
+   The result confirms the added choice and offers **Plan this collection**.
+   The map editor has no second choice control. **Recorded choice** is an optional
+   archive-only research note; it does not modify the map collection or control the game.
+4. After the next capture, repeat. Choose **Plan invocation** for an invocation
    plan. Use **Edit collected cards** to enter earlier cards or correct these local
    snapshots. Later changes to an observed offer do not silently alter the snapshots.
 5. Use **New map** when entering a different instance. It creates a new local map
@@ -72,6 +85,10 @@ or additional engine rules.
   The [loot research update](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md#update-of-11-november-2026)
   does not supply a conversion from rarity to reward value. No rarity or Atlas Drops
   multiplier is applied by this engine. Card tier remains separate from item/modifier tier.
+- **Viscera and boss rewards** links the GGG FAQ: Grim-Fate empowered Pinnacles
+  guarantee Viscera, while regular empowered bosses have better chances with more
+  invoked Fates and duplicates. No probabilities or duplicate/combo formulas are
+  given, so this guidance does not change numerical icon ranking.
 - Combo goals use identified matching icons and a consistent threshold. The small
   verified catalog supplies Item Rarity (3), Exceptional Gem (3) and Dreadmaidens'
   Sacrament (2). A conflicting explicit threshold leaves activation unresolved.

@@ -20,15 +20,20 @@ jobs:
       - run: python -m unittest discover -s prototypes/vision -p 'test_*.py' -v
   app:
     runs-on: ubuntu-latest
+    # Match @playwright/test; browsers and system dependencies are preinstalled.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v7
+      - name: Trust the mounted checkout for validation subprocesses
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npx playwright install --with-deps chromium
       - run: npx playwright test
       - run: npm run release:pack
       - uses: actions/upload-artifact@v7

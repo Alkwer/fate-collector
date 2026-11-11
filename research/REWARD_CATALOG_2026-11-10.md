@@ -1,5 +1,18 @@
 # Reward catalog evidence — 10 November 2026
 
+## Recheck on 11 November
+
+The [GGG FAQ](https://www.pathofexile.com/forum/view-thread/4013527/page/1) and
+[official 3.30 notes](https://www.pathofexile.com/forum/view-thread/4013680) do not
+establish additional motif meanings or combo thresholds. The four catalog entries
+and three known combos remain unchanged. The UI now exposes the FAQ's qualitative
+Viscera guidance separately: Grim-Fate empowered Pinnacles guarantee their Viscera;
+regular empowered bosses have better chances with more invoked Fates and duplicates.
+The sources supply no probabilities or duplicate/combo formulas. This is not a new
+reward-icon mapping and does not change numerical ranking or recognition evidence.
+
+## Preserved visual evidence
+
 The catalog was checked against the existing original GGG press images and video
 frames below. This is prerelease evidence, not a live-game verification. The web
 reader returned no usable Covens page text and could not fetch the YouTube video;

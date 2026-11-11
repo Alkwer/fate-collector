@@ -5,6 +5,10 @@ The earlier Polish concept is superseded by the user's English-only requirement.
 
 - Charcoal background `#111311`, surface `#191c19`, text `#eee9dc`, muted text
   `#a9afa4`, olive borders `#424b3c`, gold accent `#d3b775`.
+- Gold identifies navigation. Green `#8dd5b1` identifies supported recommendations
+  and the main choice action; amber `#ecc17a` marks provisional advice and required
+  confirmation; blue `#9fc8ec` identifies data review. Text labels accompany each
+  state. Ordinary Fate names and secondary actions use neutral text.
 - Georgia title/wordmark, system sans body and explicit control typography.
 - Compact header and 26–32px title, 40/60 source/preview columns, single-action save band.
 - Four-pixel corners, no decorative game art, statistics, badges or gradients.
@@ -35,8 +39,22 @@ the website closed. Do not show a cloud connection or upload status the browser
 cannot observe. The connection strip is secondary to the capture and extracted cards.
 Do not require typing modifiers, area, tier, or rewards just to preserve a sample.
 Manual review means the user checked the extraction, not that every icon is known.
-Known Fate names and descriptions are extracted from local Windows OCR. Reward-icon
-recognition is not implemented; unknown rewards and tiers remain unknown.
+Known Fate names and descriptions are extracted from local Windows OCR. The local
+visual matcher suggests supported tiers and icon shapes. Only sourced tooltip
+meanings are suggested; unsupported rewards stay unknown and visual suggestions
+require explicit review before firm advice.
+
+The current-map workspace follows capture, reward review, choice and invocation.
+Two pressed-state buttons switch between **Choose a Fate** and **Plan invocation**.
+The main result contains the single preferred card's action; equal matches retain
+their individual actions. Show the next missing-data check directly and collapse
+the remaining checklist. Keep the best invocation visible and alternatives collapsed.
+Keep the recommendation and its gain over the existing collection prominent, with
+equal matches and provisional results explicitly labelled. Missing data links to
+the affected card rather than sending the user to an undirected form. Put the
+capture above the collection in the secondary column; stack at tablet width.
+The map editor has no archive choice control. Keep capture saving, reward checking
+and local map choices distinct in the copy, without requiring duplicate input.
 
 Visible primary copy: Fate Collector; Collector; Saved offers; Review your captures.;
 Check detected Fates and correct any misreads.; More actions; Your capture;

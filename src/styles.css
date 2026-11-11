@@ -267,6 +267,40 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .map-layout .advisor-candidates { margin: 8px 0 0; }
 .map-layout .fate-list .advisor-value { color: var(--gold); }
 .map-layout .advisor-collection .section-heading { flex-wrap: wrap; }
+.advisor-main > .section-heading { flex-wrap: wrap; gap: 12px; }
+.advisor-steps { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 0 0 14px; margin: 16px 0; border-bottom: 1px solid var(--border); }
+.advisor-steps li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.advisor-steps li span { font: 18px Georgia, serif; }
+.advisor-steps li[aria-current] { color: var(--gold); font-weight: 600; }
+.advisor-review { border-left: 2px solid var(--gold); padding: 14px 16px; background: #1f241c; margin-block: 18px; }
+.advisor-review p, .advisor-review li span { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+.advisor-review ul { list-style: none; margin: 12px 0 0; padding: 0; }
+.advisor-review li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 10px; border-top: 1px solid var(--border); }
+.advisor-review li > div { min-width: 0; overflow-wrap: anywhere; }
+.advisor-review button { font-size: 13px; flex-shrink: 0; max-width: 50%; overflow-wrap: anywhere; }
+.advisor-baseline { font-size: 13px; color: var(--muted); margin-block: 12px; }
+.candidate-gain { font-size: 14px; color: var(--text); }
+.fate-list > .recommended-fate { padding-inline: 14px; border-left: 3px solid var(--gold); background: #20261c; }
+.recommendation-label { color: var(--gold); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.advisor-outcome button { margin-top: 14px; }
+.review-return { display: flex; gap: 16px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 16px; border: 1px solid var(--border); }
+.review-return p { color: var(--muted); font-size: 14px; }
+.review-return button { flex-shrink: 0; }
+.map-session { padding-block: 12px; }
+.map-session strong { font-size: 16px; }
+.map-sidebar .source-panel { min-height: 0; }
+.map-sidebar .has-image { min-height: 0; }
+.map-layout:not(.awaiting-capture) .dropzone:not(.has-image) { min-height: 160px; padding: 20px; }
+.map-layout:not(.awaiting-capture) .dropzone:not(.has-image) .upload-icon { display: none; }
+.map-sidebar .evidence-button img { max-height: 350px; object-fit: contain; }
+@media (max-width: 900px) { .awaiting-capture .map-sidebar { order: -1; } }
+@media (max-width: 600px) {
+  .advisor-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+  .advisor-review { padding: 12px; }
+  .advisor-review li, .review-return { align-items: stretch; flex-direction: column; }
+  .advisor-review button { max-width: none; min-height: 44px; }
+  .map-layout .collect-fate { width: 100%; }
+}
 @media (max-width: 900px) { .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); }.map-session, .archive-boundary { flex-wrap: wrap; }.map-session-actions, .archive-boundary > div { flex-shrink: 1; } }
 .advisor-restore { flex-wrap: wrap; }
 .advisor-restore > div { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -330,4 +364,91 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
   .history-table .row-actions button { min-height: 44px; }
   .action-band { position: static; }
   .backup-controls { flex-wrap: wrap; }
+}
+
+/* The map is a workbench: one decision, with evidence and collection secondary. */
+.page-heading h1 { font-size: 27px; }
+.map-session { margin-bottom: 24px; border-top: 0; padding-top: 0; }
+.map-session strong { color: var(--success); }
+.map-session[data-state='confirmation'] strong { color: var(--warning); }
+.map-session[data-state='empty'] strong { color: var(--text); }
+.map-session p { font-size: 13px; }
+.map-session-actions .text-button { color: var(--muted); font-size: 13px; }
+.collector-grid.map-layout { grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 28px; }
+.map-layout .advisor-main { background: transparent; border: 0; padding: 0; }
+.advisor-main > .section-heading h2 { font-size: 23px; }
+.advisor-main > .section-heading .text-button { color: var(--muted); font-size: 13px; }
+.advisor-controls { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: end; }
+.decision-control > span { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.decision-switch { display: flex; gap: 3px; padding: 3px; background: #0d100e; border: 1px solid var(--border); border-radius: 6px; }
+.decision-switch button { flex: 1; padding: 9px 7px; border-color: transparent; color: var(--muted); font-size: 14px; }
+.decision-switch button[aria-pressed='true'] { background: #354038; color: var(--text); border-color: #627467; }
+.advisor-controls select { min-height: 49px; }
+.advisor-review { background: var(--info-surface); border: 1px solid #354e62; border-left: 3px solid var(--info); border-radius: 5px; margin-block: 16px; }
+.review-next { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.review-next > div { min-width: 0; overflow-wrap: anywhere; }
+.advisor-review strong { color: var(--info); font-size: 14px; }
+.advisor-review p, .advisor-review li span { color: #c0ceda; }
+.advisor-review button { border-color: #7296b4; color: #d2e6f6; }
+.advisor-review details > summary { color: var(--info); margin-top: 8px; font-size: 13px; }
+.advisor-outcome { margin: 18px 0 10px; padding: 22px 24px; border: 1px solid var(--border); border-left-width: 4px; border-radius: 6px; background: #202620; }
+.advisor-outcome h3 { color: var(--text); font-size: 24px; line-height: 1.35; text-wrap: pretty; }
+.advisor-outcome p { max-width: 65ch; color: #c1c7bd; }
+.advisor-outcome[data-state='ready'], .advisor-outcome[data-state='complete'] { border-color: #4e8066; border-left-color: var(--success); background: var(--success-surface); }
+.advisor-outcome[data-state='ready'] h3, .advisor-outcome[data-state='complete'] h3 { color: var(--success); }
+.advisor-outcome[data-state='provisional'] { background: var(--warning-surface); border-color: #846a3e; border-left-color: var(--warning); }
+.advisor-outcome[data-state='provisional'] h3 { color: var(--warning); }
+.primary-choice { background: var(--success); color: #12281d; border-color: var(--success); font-weight: 650; padding: 12px 18px; }
+.primary-choice:hover:not(:disabled) { background: #b1e6ca; color: #12281d; border-color: #b1e6ca; }
+.advisor-outcome[data-state='provisional'] .primary-choice { background: var(--warning); color: #30230e; border-color: var(--warning); }
+.advisor-outcome[data-state='provisional'] .primary-choice:hover:not(:disabled) { background: #f4d39c; }
+.advisor-baseline { margin-top: 12px; font-variant-numeric: tabular-nums; }
+.map-layout .offer-preview { margin-top: 26px; }
+.map-layout .offer-preview > .section-heading h2 { font-size: 17px; }
+.map-layout .fate-list > li { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 17px 20px; margin-bottom: 12px; }
+.map-layout .fate-title h3 { color: var(--text); font-size: 19px; }
+.map-layout .fate-list > .recommended-fate { border-color: #4e8066; border-left: 4px solid var(--success); background: #1b2821; }
+.map-layout .fate-list > .provisional-fate { border-color: #846a3e; border-left-color: var(--warning); background: #27251c; }
+.map-layout .fate-list .recommendation-label { color: var(--success); font-size: 12px; }
+.map-layout .fate-list .provisional-fate .recommendation-label { color: var(--warning); }
+.candidate-gain { color: var(--muted); }
+.recommended-fate .candidate-gain { color: var(--success); }
+.provisional-fate .candidate-gain { color: var(--warning); }
+.map-layout .fate-list .advisor-value { color: var(--text); }
+.map-layout .candidate-plan > summary { font-size: 13px; }
+.map-sidebar .source-panel, .map-sidebar .advisor-collection { border-color: #343d32; background: #151a15; padding: 20px; }
+.map-sidebar h2 { font-size: 18px; }
+.map-sidebar .advisor-empty { padding-block: 14px; }
+.advisor-collection .section-heading > span { color: var(--success); font-size: 16px; font-variant-numeric: tabular-nums; }
+.map-sidebar .collection-editor .editor-panel { background: var(--surface); }
+.advisor-plans article[data-best] { padding: 20px; border: 1px solid #4e8066; background: var(--success-surface); border-radius: 6px; margin-block: 20px 12px; }
+.advisor-plans article[data-best] > h3, .advisor-plans article[data-best] .advisor-value { color: var(--success); }
+.advisor-plans article[data-best][data-state='provisional'] { background: var(--warning-surface); border-color: #846a3e; }
+.advisor-plans article[data-best][data-state='provisional'] > h3, .advisor-plans article[data-best][data-state='provisional'] .advisor-value { color: var(--warning); }
+.advisor-plans article[data-state='provisional'] .primary-choice { background: var(--warning); color: #30230e; border-color: var(--warning); }
+.advisor-plans article[data-state='provisional'] .primary-choice:hover:not(:disabled) { background: #f4d39c; }
+.advisor-plans .primary-choice { margin-top: 18px; }
+.alternative-plan { border-bottom: 1px solid var(--border); padding-block: 6px; }
+.alternative-plan > article { padding: 12px 16px 20px; }
+.alternative-plan > summary { color: var(--muted); }
+.review-return { background: var(--info-surface); border-color: #354e62; }
+.review-return button { border-color: var(--info); color: var(--info); }
+.card-editor:focus-within { border-color: var(--info); }
+.reward-shortcuts .needs-review { border-color: #7296b4; background: var(--info-surface); }
+@media (max-width: 1000px) {
+  .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr) minmax(270px, .75fr); gap: 20px; }
+  .advisor-controls { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+}
+@media (max-width: 900px) { .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .map-session { margin-bottom: 22px; gap: 12px; }
+  .map-session-actions { width: 100%; justify-content: space-between; }
+  .advisor-main > .section-heading h2 { font-size: 21px; }
+  .advisor-outcome { padding: 18px; }
+  .advisor-outcome h3 { font-size: 22px; }
+  .primary-choice { width: 100%; overflow-wrap: anywhere; }
+  .review-next { flex-direction: column; align-items: stretch; gap: 12px; }
+  .map-layout .fate-list > li { padding: 16px; }
+  .map-layout .fate-title { flex-wrap: wrap; gap: 4px 12px; }
+  .map-sidebar .source-panel, .map-sidebar .advisor-collection { padding: 16px; }
 }
