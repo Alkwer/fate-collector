@@ -69,7 +69,7 @@ or additional engine rules.
   regular and combo rewards remain separate. Names never imply a reward.
 - A regular goal ranks matching icon units. Counts do not estimate item quantity,
   price, profit, modifier value, build suitability or fight difficulty.
-  The [loot research update](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md#aktualizacja-z-11-listopada-2026)
+  The [loot research update](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md#update-of-11-november-2026)
   does not supply a conversion from rarity to reward value. No rarity or Atlas Drops
   multiplier is applied by this engine. Card tier remains separate from item/modifier tier.
 - Combo goals use identified matching icons and a consistent threshold. The small

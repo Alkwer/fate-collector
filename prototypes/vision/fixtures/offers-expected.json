@@ -93,7 +93,7 @@
       "sharedVisualIds": [],
       "occlusionBoxes": [],
       "notes": [
-        "Houndmaster to podniesiona, wybrana karta po prawej."
+        "Houndmaster is the raised, selected card on the right."
       ]
     },
     {
@@ -142,7 +142,7 @@
         ]
       ],
       "notes": [
-        "Czarny dymek zasłania fragment panelu; szare symbole po prawej pominięto. Wspólny pasek nagród nie jest przypisany do poszczególnych kart."
+        "A black tooltip obscures part of the panel; grey symbols on the right were excluded. The shared reward bar is not assigned to individual cards."
       ]
     },
     {
@@ -197,7 +197,7 @@
         ]
       ],
       "notes": [
-        "Torchbearer w górnym rzędzie jest podniesioną wybraną kartą. Dymek Avalanche nie jest dodatkową kartą. Okno prezentera zasłania nagrody dolnej karty."
+        "Torchbearer in the upper row is the raised, selected card. The Avalanche tooltip is not an additional card. The presenter's window obscures the lower card's rewards."
       ]
     },
     {
@@ -250,7 +250,7 @@
         ]
       ],
       "notes": [
-        "Okno prezentera znajduje się poniżej oferty."
+        "The presenter's window is below the offer."
       ]
     },
     {
@@ -298,7 +298,7 @@
         ]
       ],
       "notes": [
-        "Dymek Torchbearer zasłania wspólny pasek ikon; widoczne przez niego przyciemnione symbole pominięto, podobnie jak szary symbol po prawej. Tekst dymka nie jest dodatkową kartą. Wspólnego paska nie przypisano do poszczególnych kart."
+        "The Torchbearer tooltip obscures the shared icon bar; dimmed symbols visible through it were excluded, as was the grey symbol on the right. The tooltip text is not an additional card. The shared bar was not assigned to individual cards."
       ]
     }
   ]

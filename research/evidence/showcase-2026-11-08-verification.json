@@ -27,10 +27,10 @@
     "videoTimestampBasis": "Cumulative EXTINF durations from original VOD HLS playlist; local contiguous playlist for merge frames. Published frame timestamps rounded to seconds with 1-second tolerance.",
     "inGameMechanicsTested": false,
     "limitations": [
-      "Automatyczna transkrypcja zawiera błędy nazw i nie była niezależnie korygowana ze słuchu.",
-      "Wygląd slotu nie dowodzi jego dostępności ani niedostępności dla czwartej karty.",
-      "Pokaz nie zawiera trzeciej kopii tej samej karty ani scalania kart o różnych tierach.",
-      "Klatki w repozytorium to wybrane dowody; pełny plik audio i ASR pozostały w katalogu tymczasowym."
+      "The automatic transcription contains name errors and was not independently corrected by ear.",
+      "The slot's appearance does not prove whether it is available for a fourth card.",
+      "The showcase contains neither a third copy of the same card nor merging of cards with different tiers.",
+      "The frames in the repository are selected evidence; the full audio and ASR files remained in the temporary directory."
     ],
     "audioSha256": "3b65045b3ef5ec3b794cbca5eb8eedfd404b2e6ad84f830fae842ded3155f073",
     "transcriptJsonSha256": "9a387f08bec1f167ad119f0628484871eb56f2f0a5b2ae3e9a7da5d2962dfd5e"
@@ -41,7 +41,7 @@
       "approximateVideoSeconds": 26691,
       "timestampToleranceSeconds": 1,
       "inspected": true,
-      "observation": "Trzy puste sloty przywołania; w kolekcji dwa Torchbearery i Tempest, każdy z dwoma piórami.",
+      "observation": "Three empty invocation slots; the collection contains two Torchbearers and Tempest, each with two feathers.",
       "sha256": "677c8ac3dc9b2841bca0aa1a3042875d6bf6ffcaa42e7f2817a7fe92d2625c94"
     },
     {
@@ -49,7 +49,7 @@
       "approximateVideoSeconds": 26695,
       "timestampToleranceSeconds": 1,
       "inspected": true,
-      "observation": "Torchbearer z trzema piórami w lewym slocie; środkowy zakryty czarnymi piórami; prawy pusty; Tempest nadal w kolekcji.",
+      "observation": "Torchbearer with three feathers in the left slot; the middle slot is covered with black feathers; the right slot is empty; Tempest is still in the collection.",
       "sha256": "9fd3ee5c6f8fdbb4a75b4e21a50f6f43a8834ce7485fc0ce1abbe43e1eb47bc5"
     },
     {
@@ -57,7 +57,7 @@
       "approximateVideoSeconds": 26700,
       "timestampToleranceSeconds": 1,
       "inspected": true,
-      "observation": "Torchbearer z trzema piórami po lewej i Tempest z dwoma po prawej; środkowy slot nadal zakryty; kolekcja pusta.",
+      "observation": "Torchbearer with three feathers on the left and Tempest with two on the right; the middle slot is still covered; the collection is empty.",
       "sha256": "97d622d718f46777f623435542b97c6850ee284db9efad2fb1df46d1e7912392"
     },
     {
@@ -65,7 +65,7 @@
       "approximateVideoSeconds": 26755,
       "timestampToleranceSeconds": 1,
       "inspected": true,
-      "observation": "Tooltip Fated Apex Rapier, Unidentified (Tier 3); potwierdzenie pisowni Fated na przedmiocie.",
+      "observation": "Fated Apex Rapier tooltip, Unidentified (Tier 3); confirms the spelling of Fated on the item.",
       "sha256": "f0cebc2117c7d14d1fbcedad63b77cd73f98a2a67df05d92dc14738afcbf18b5"
     }
   ],
@@ -83,7 +83,7 @@
           26695.76
         ]
       ],
-      "observation": "Octavian opisuje dwa Torchbearery i potrojenie nagród pierwszego; odpowiada to widocznej sekwencji pary."
+      "observation": "Octavian describes two Torchbearers and tripling the first card's rewards; this matches the visible pair sequence."
     },
     {
       "id": "third-card-is-not-third-duplicate",
@@ -92,7 +92,7 @@
         26697.36,
         26701.04
       ],
-      "observation": "Wypowiedź o trzeciej karcie dotyczy Tempesta. Trzeciego Torchbearera nie ma w kolekcji ani w sekwencji."
+      "observation": "The statement about a third card refers to Tempest. There is no third Torchbearer in the collection or sequence."
     },
     {
       "id": "same-tier-pair-and-mixed-result",
@@ -101,7 +101,7 @@
         26691,
         26700
       ],
-      "observation": "Dwa Torchbearery z dwoma piórami dają jednego z trzema. Tempest zachowuje dwa pióra; nie jest z nim scalany."
+      "observation": "Two Torchbearers with two feathers produce one with three. Tempest retains two feathers and is not merged with it."
     },
     {
       "id": "three-inputs-two-active-cards",
@@ -110,7 +110,7 @@
         26691,
         26708
       ],
-      "observation": "Trzy wejściowe karty dają dwie aktywne karty. Środkowy slot pozostaje zakryty do zatwierdzenia. Nie pokazano czwartego wejścia."
+      "observation": "Three input cards produce two active cards. The middle slot remains covered until confirmation. No fourth input was shown."
     },
     {
       "id": "merge-may-preserve-input-cost",
@@ -119,7 +119,7 @@
         26695,
         26708
       ],
-      "observation": "Zakryty środkowy slot sugeruje zachowanie kosztu drugiej karty. Brak próby czwartego wejścia uniemożliwia ustalenie twardego limitu."
+      "observation": "The covered middle slot suggests that the second card's input cost is retained. Without a fourth-input attempt, the hard limit cannot be established."
     },
     {
       "id": "fated-spelling",
@@ -127,7 +127,7 @@
       "videoSeconds": [
         26755
       ],
-      "observation": "Na tooltipie wyraźnie widnieje Fated Apex Rapier; Tier 3 jest tierem przedmiotu."
+      "observation": "The tooltip clearly reads Fated Apex Rapier; Tier 3 is the item's tier."
     }
   ],
   "relevantSpeechSegmentTimes": [
@@ -301,8 +301,8 @@
     }
   ],
   "unresolved": [
-    "Trzecia kopia tej samej karty i kolejne mnożenie nagród.",
-    "Scalanie tej samej nazwy o różnych tierach, w tym dalsze łączenie z T3.",
-    "Możliwość zagrania czwartej lub kolejnych kart wejściowych po scaleniu."
+    "A third copy of the same card and further reward multiplication.",
+    "Merging cards with the same name and different tiers, including further merging with T3.",
+    "Whether a fourth or subsequent input card can be played after merging."
   ]
 }
