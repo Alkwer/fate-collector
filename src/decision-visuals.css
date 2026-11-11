@@ -116,9 +116,8 @@
 .reward-breakdown dt .reward-symbol { width: 24px; height: 24px; vertical-align: middle; margin-right: 8px; }
 .reward-uncertainty { color: var(--warning); }
 @media (min-width: 1001px) and (max-width: 1200px) {
-  .visual-offer .fate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .map-layout .visual-offer .fate-list > li { border-inline-end: 0; }
-  .map-layout .visual-offer .fate-list > li:nth-child(odd):not(:last-child) { border-inline-end: 1px solid var(--border); }
+  .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); }
+  .map-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 }
 @media (max-width: 760px) {
   .map-session[data-state='active'] { flex-wrap: nowrap; gap: 8px; margin-bottom: 16px; }

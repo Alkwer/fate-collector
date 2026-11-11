@@ -199,7 +199,7 @@ Self-hosted upright Source Sans 3 serves headings and the wordmark. Segoe UI Var
 
 ## Layout
 
-The desktop shell has a 208px sticky navigation rail and a main workspace capped at 1480px. The decision panel takes the flexible column beside a 300px evidence column with a 26px gap. Evidence sits above the current collection. At 1200px, the rail narrows to 188px and the evidence column to 260px. At 1000px, the decision moves above the supporting row. At 760px, navigation moves to the top and support stacks in one column.
+The desktop shell has a 208px sticky navigation rail and a main workspace capped at 1480px. The decision panel takes the flexible column beside a 300px evidence column with a 26px gap. Evidence sits above the current collection. At 1200px, the rail narrows to 188px and the decision moves above the supporting row, keeping all three pictured offers together. At 760px, navigation moves to the top and support stacks in one column.
 
 The empty state centers the capture action. In the archive, narrower layouts present journal records as stacked rows. Keep horizontal table overflow local to the table container.
 
