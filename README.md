@@ -90,9 +90,15 @@ are automated.
 
 The app stores at most 250 offers per browser origin. At capacity, auto-import pauses
 and new files remain on disk; export/remove old records and click **Resume local review**.
-Export backups regularly:
-browser storage can be cleared or evicted. **Export all data** omits screenshots;
-open an offer and use **Export JSON** to include its image and raw OCR.
+Export backups regularly: browser storage can be cleared or evicted.
+In **Saved offers**, choose **Data, screenshots & OCR** for a full backup or
+**Offer data only** for a smaller archive, then use **Export all data** and download
+every part. The dialog reports missing or damaged evidence. Full backups include
+available screenshots, original OCR and saved correction revisions. Most parts
+stay below 12 MiB; a larger individual record uses its own part up to 32 MiB.
+Unreadable offers are isolated without hiding readable history or deleting data.
+Use **Export recovery data** to preserve raw damaged records for repair; this is
+not a directly importable backup.
 After restoring a metadata-only backup, import the original helper files to recover
 missing screenshots and OCR while preserving your corrections and review status.
 
@@ -122,6 +128,12 @@ npm run test:capture-backend
 npm run test:upload
 npm run test:upload:integration
 ```
+
+`npm run test:recognition:holdout -- path/to/manifest.json` checks a separately
+labeled native F9 corpus through the production importer and visual worker.
+Without a manifest it deliberately fails on the empty checked-in holdout.
+See the [validation procedure](docs/recognition-validation.md) for fixed thresholds,
+profile coverage and the distinction between regression replay and release evidence.
 
 The helper/upload commands require Windows PowerShell 5.1; add `-- -RequireOcr` to
 `npm run test:helper` to require an installed OCR recognizer. The native upload
@@ -167,6 +179,9 @@ with a private key, not an open crowd-sourcing launch.
 For a local dataset quality report, run `npm run research:stats -- path/to/export.json`.
 The [report guide](docs/research-statistics.md) explains Markdown/JSON output,
 report consistency checks and why session counts or repeat hints are not independent encounters.
+
+The [11 November audit implementation report](docs/AUDIT_IMPLEMENTATION_2026-11-11.md)
+tracks all 28 improvements, their validation and the native tests awaiting launch.
 
 ## License
 

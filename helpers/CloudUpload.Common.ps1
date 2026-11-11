@@ -65,11 +65,12 @@ function Write-FateUploadState([string]$Path, $Value, [switch]$PreserveExisting)
     Write-FateUploadAtomicText $Path (ConvertTo-Json -InputObject $Value -Compress -Depth 6) -PreserveExisting:$PreserveExisting
 }
 
-function Read-FateUploadStateText([string]$Path) {
+function Read-FateUploadStateText([string]$Path, [long]$MaxBytes = [long]::MaxValue) {
     try {
         $stream = [IO.File]::Open($Path, 'Open', 'Read', ([IO.FileShare]::Read -bor [IO.FileShare]::Delete))
     } catch [IO.FileNotFoundException], [IO.DirectoryNotFoundException] { return }
     try {
+        if ($stream.Length -gt $MaxBytes) { throw 'Upload state exceeds its size limit.' }
         # Do not let StreamReader switch to a permissive decoder when it sees a BOM.
         $reader = [IO.StreamReader]::new($stream, $script:FateUploadUtf8, $false)
         try {
@@ -304,6 +305,55 @@ function Get-FateSerializedUploadPayload([string]$Source, [string]$Id, [DateTime
     }
 }
 
+function Get-FateQueuePayloadHash([string]$Payload, [string]$Id, [string]$Scope) {
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = $script:FateUploadUtf8.GetBytes("$Scope`n$Id`n$Payload")
+        [BitConverter]::ToString($sha256.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant()
+    } finally { $sha256.Dispose() }
+}
+
+function Write-FateQueuedUpload([string]$Path, [string]$Payload, [string]$Id, [string]$Scope, [switch]$PreserveExisting) {
+    Write-FateUploadState $Path @{
+        kind = 'fate-collector.queue'
+        version = 1
+        payload = $Payload
+        sha256 = Get-FateQueuePayloadHash $Payload $Id $Scope
+    } -PreserveExisting:$PreserveExisting
+}
+
+function Read-FateQueuedUpload([string]$Path, [string]$Id, [string]$Scope, [string]$CapturesDirectory, [DateTimeOffset]$EnabledSince) {
+    # The envelope contains an escaped copy of a payload bounded to 128 KiB.
+    $source = Read-FateUploadStateText $Path 1MB
+    if (!$source) { throw 'Queued upload is empty or missing.' }
+    $entry = ConvertFrom-Json -InputObject $source -ErrorAction Stop
+    if ($entry -isnot [PSCustomObject] -or !$entry.PSObject.Properties['kind']) { throw 'Invalid queued upload.' }
+
+    $legacy = $entry.kind -ceq 'fate-collector.upload'
+    if (!$legacy) {
+        if ($entry.kind -cne 'fate-collector.queue' -or !$entry.PSObject.Properties['version'] -or
+            $entry.version -isnot [int] -or $entry.version -ne 1 -or !$entry.PSObject.Properties['sha256'] -or
+            $entry.sha256 -isnot [string] -or $entry.sha256 -cnotmatch '\A[0-9a-f]{64}\z') { throw 'Invalid queued upload checksum.' }
+        if ($entry.PSObject.Properties['payload'] -and $entry.payload -is [string] -and $entry.payload -and
+            $script:FateUploadUtf8.GetByteCount($entry.payload) -le 128KB -and
+            (Get-FateQueuePayloadHash $entry.payload $Id $Scope) -ceq $entry.sha256) {
+            return $entry.payload
+        }
+    }
+
+    $original = [IO.FileInfo]::new((Join-Path $CapturesDirectory "fate-$Id.json"))
+    if (!$original.Exists -or ($original.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Original capture is unavailable.' }
+    $expected = Get-FateSerializedUploadPayload (Read-FateCaptureBundle $original.FullName) $Id $EnabledSince
+    if (!$expected -or
+        ($legacy -and ![string]::Equals($source, $expected, [StringComparison]::Ordinal)) -or
+        (!$legacy -and (Get-FateQueuePayloadHash $expected $Id $Scope) -cne $entry.sha256)) {
+        throw 'Cannot verify queued payload against original capture.'
+    }
+    # Migrate only verified legacy entries and keep any damaged envelope for inspection.
+    Write-FateQueuedUpload $Path $expected $Id $Scope -PreserveExisting:(!$legacy)
+    return $expected
+}
+
 function Write-FateWithdrawalRetry([string]$Path, $Result, $Previous = (Read-FateDiagnosticJson $Path), [switch]$PreserveExisting) {
     $attempt = Get-FateDiagnosticField $previous 'attempt'
     $attempt = if ($attempt -is [int] -and $attempt -in 1..10) { [Math]::Min(10, $attempt + 1) } else { 1 }
@@ -387,6 +437,8 @@ function Get-FateCaptureUploadStatus {
     if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) { return 'local' }
     if (!(Test-FateUploadConsentActive $configuration $StateDirectory)) { return 'consent-required' }
     $scope = Join-Path $StateDirectory $configuration.Scope
+    if ([IO.File]::Exists((Join-Path $scope "states/$CaptureId.blocked")) -and
+        [IO.File]::Exists((Join-Path $scope "queue/$CaptureId.json"))) { return 'queue-blocked' }
     $state = Read-FateUploadState (Join-Path $scope "states/$CaptureId.json")
     if ($state) {
         if ($state.status -in 'accepted', 'duplicate') { return 'uploaded' }
@@ -415,7 +467,7 @@ function Write-FateCaptureUploadFeedback {
     $status = 'error'
     try {
         $status = Get-FateCaptureUploadStatus -StateDirectory $StateDirectory -CaptureId $CaptureId -AllowLocalTestEndpoint:$AllowLocalTestEndpoint
-        if ($Failed -and $status -notin 'uploaded', 'rejected', 'authorization', 'consent-required', 'settings-damaged') { $status = 'error' }
+        if ($Failed -and $status -notin 'uploaded', 'rejected', 'authorization', 'consent-required', 'settings-damaged', 'queue-blocked') { $status = 'error' }
     } catch { $status = 'error' } # A settings/read failure must be visible, never a false success.
     [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Path)))
     Write-FateUploadAtomicText $Path "$CaptureId`n$status"
@@ -488,7 +540,7 @@ function Invoke-FateCaptureUploads {
                     continue
                 }
                 if ($serialized) {
-                    Write-FateUploadAtomicText $queuedPath $serialized
+                    Write-FateQueuedUpload $queuedPath $serialized $id $configuration.Scope
                 } else {
                     Write-FateUploadState $statePath @{ status = 'ignored' }
                 }
@@ -512,6 +564,7 @@ function Invoke-FateCaptureUploads {
             $id = [IO.Path]::GetFileNameWithoutExtension($path)
             if ($id -notmatch "\A$script:FateUploadGuid\z") { continue }
             $statePath = Join-Path $states "$id.json"
+            $blockedPath = Join-Path $states "$id.blocked"
             $state = $null
             $damagedState = $false
             $stateSource = $null
@@ -527,6 +580,7 @@ function Invoke-FateCaptureUploads {
                     if ($state.status -ne 'retry') {
                         if ($state.status -in 'accepted', 'duplicate') { [void](ConvertTo-FateUploadTime $state.at) }
                         Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+                        Remove-Item -LiteralPath $blockedPath -Force -ErrorAction SilentlyContinue
                         continue
                     }
                     if ($state.attempt -isnot [int] -or $state.attempt -notin 1..10 -or $state.httpStatus -isnot [int]) {
@@ -537,23 +591,17 @@ function Invoke-FateCaptureUploads {
                 } catch { $damagedState = $true }
             }
             try {
-                $payload = [IO.File]::ReadAllText($path, $script:FateUploadUtf8)
-                if ($damagedState) {
-                    # A lost receipt can be retried only with the original eligible request.
-                    $original = [IO.FileInfo]::new((Join-Path $CapturesDirectory "fate-$id.json"))
-                    if (!$original.Exists -or ($original.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                        throw 'Original capture is unavailable.'
-                    }
-                    $expectedPayload = Get-FateSerializedUploadPayload (Read-FateCaptureBundle $original.FullName) $id $since
-                    if (!$expectedPayload -or ![string]::Equals($payload, $expectedPayload, [StringComparison]::Ordinal)) {
-                        throw 'Cannot verify queued payload against original capture.'
-                    }
-                    $state = $null
+                $payload = Read-FateQueuedUpload $path $id $configuration.Scope $CapturesDirectory $since
+            } catch [IO.IOException], [UnauthorizedAccessException] { continue }
+            catch {
+                if (![IO.File]::Exists($blockedPath)) {
+                    Write-FateUploadAtomicText $blockedPath 'queue-integrity'
+                    Write-FateDiagnosticEvent $StateDirectory 'upload' 'blocked'
                 }
-            } catch {
-                Write-FateDiagnosticEvent $StateDirectory 'upload' 'blocked'
                 continue
             }
+            Remove-Item -LiteralPath $blockedPath -Force -ErrorAction SilentlyContinue
+            if ($damagedState) { $state = $null }
             $attempted++
             $result = $null
             if (Test-FateConsentWithdrawnLocally $StateDirectory $configuration.Scope) { return }

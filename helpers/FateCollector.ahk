@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include Calibration.ahk
+#Include CaptureProcess.ahk
 
 ; Game-window checks and panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
@@ -208,14 +209,17 @@ CapturePanel() {
             command .= ' -PreviousCapturePath "' captureSession.lastFile '"'
         SetTimer ClearNotice, 0
         ToolTip
-        code := RunWait(command, A_ScriptDir, "Hide")
+        code := RunFateCaptureProcess(command, A_ScriptDir)
         Critical "On"
 
         if cancelled {
             if FileExist(outputFile)
                 FileDelete outputFile
+            recoveryFile := outputDir "\fate-" captureId ".recovery.png"
+            if FileExist(recoveryFile)
+                FileDelete recoveryFile
             Notice("Capture canceled. Repeat F6 and F7.")
-        } else if FileExist(outputFile) && (code = 0 || code = 10 || code = 11 || code = 12) {
+        } else if FileExist(outputFile) && (code = 0 || code = 10 || code = 11 || code = 12 || code = 124) {
             suffix := code = 10 ? " (OCR unavailable)" : code = 11 ? " (OCR failed)" : ""
             if FileGetSize(outputFile) > 12 * 1024 * 1024
                 throw Error("Capture exceeds the supported size limit.")
@@ -235,6 +239,9 @@ CapturePanel() {
             } catch {
                 Notice("Clipboard unavailable. Import the file saved in helpers\captures" suffix ".")
             }
+        } else if code = 124 {
+            RecordDiagnosticEvent("capture", "error")
+            Notice("Capture timed out. Any recovery PNG is kept in captures\.pending. Press F9 to retry.")
         } else if code = 2 {
             RecordDiagnosticEvent("capture", "blocked")
             Notice("The selection is too large. Use F6 and F7 to select a smaller panel.")
@@ -317,7 +324,7 @@ RunCloudUploader(*) {
 }
 
 HasCloudUploadWork(stateDir) {
-    static lastConsentCheck := 0
+    static lastReceiptCheck := 0
     if FileExist(stateDir "\upload.clixml")
         return true
     ; Withdrawal can be pending even when there is no active upload configuration.
@@ -328,8 +335,8 @@ HasCloudUploadWork(stateDir) {
                 if !FileExist(stateDir "\" folder "\" id ".withdrawn.json")
                     return true
                 ; Only PowerShell can validate the receipt. Recheck old ones periodically.
-                if folder = "consents" && (!lastConsentCheck || A_TickCount < lastConsentCheck || A_TickCount - lastConsentCheck >= 600000) {
-                    lastConsentCheck := A_TickCount
+                if !lastReceiptCheck || A_TickCount < lastReceiptCheck || A_TickCount - lastReceiptCheck >= 600000 {
+                    lastReceiptCheck := A_TickCount
                     return true
                 }
             }
@@ -373,6 +380,7 @@ ShowUploadFeedback(status) {
         case "uploaded": message := "Uploaded."
         case "offline": message := "Queued - connection unavailable. Will retry."
         case "queued", "retry": message := "Queued - waiting to upload. Will retry."
+        case "queue-blocked": message := "Upload blocked - queued data could not be verified. Capture kept locally."
         case "authorization": message := "Upload paused - check the upload key in Cloud upload settings."
         case "consent-pending": message := "Queued - waiting for the collection to confirm consent."
         case "consent-required": message := "Upload paused - review consent in Cloud upload settings."

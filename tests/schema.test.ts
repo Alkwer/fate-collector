@@ -30,6 +30,11 @@ describe('observations preserve uncertainty', () => {
   test('a server submission cannot contain screenshots or unrelated fields', () => {
     expect(offerSchema.safeParse({ ...newOffer(), imageDataUrl: 'data:image/png;base64,eA==' }).success).toBe(false)
   })
+  test('sharing preflight checks UTF-8 size while preserving a locally valid offer', () => {
+    const offer = offerSchema.parse({ ...newOffer(), origin: 'live', reviewed: true, completeness: 'partial', cards: Array.from({ length: 6 }, () => ({ ...newCard(), name: 'Alchemist', modifiers: Array(30).fill('ą'.repeat(1000)) })) })
+    expect(submissionProblem(offer)).toContain('128 KiB')
+    expect(submissionProblem({ ...offer, cards: [{ ...offer.cards[0], modifiers: [] }] })).toBeNull()
+  })
   test('helper fixtures default to test, real game provenance defaults to live', () => {
     const capture = captureSchema.parse(helperCapture())
     expect(captureToDraft(capture).offer).toMatchObject({ origin: 'test' })

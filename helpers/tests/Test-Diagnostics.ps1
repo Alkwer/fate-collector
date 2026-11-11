@@ -226,6 +226,25 @@ try {
             [IO.File]::Exists((Get-FateDiagnosticPath $state $item.id 'withdrawal.json'))) 'A diagnostic withdrawal marker or receipt is missing.'
     }
     Write-Output 'PASS: diagnostic withdrawals are bounded, back off after a timeout or 503, and resume after the deadline.'
+    foreach ($damage in 'json', 'utf8', 'missing-time') {
+        $item = New-FateDiagnosticReport $state $captures $origin
+        $response.Mode = 'received'
+        Assert-Diagnostic ((Send-TestDiagnostic $item -ConsentAccepted) -eq 'received') 'Could not prepare damaged withdrawal test.'
+        Save-FateDiagnosticWithdrawal $state $item.id -AllowLocalTestEndpoint
+        $damagedMarker = Get-FateDiagnosticPath $state $item.id 'withdrawal.json'
+        switch ($damage) {
+            'json' { [IO.File]::WriteAllText($damagedMarker, '{broken') }
+            'utf8' { [IO.File]::WriteAllBytes($damagedMarker, [byte[]]@(0xff)) }
+            'missing-time' { [IO.File]::WriteAllText($damagedMarker, '{}') }
+        }
+        $requestCount = $requests.Count
+        Invoke-FateDiagnosticWithdrawals -StateDirectory $state -Id $item.id -AllowLocalTestEndpoint -Transport $transport
+        Assert-Diagnostic ($requests.Count -eq $requestCount + 1 -and (Get-TestDiagnosticStatus $item) -eq 'withdrawn') 'Damaged withdrawal marker was not recovered and sent.'
+        Assert-Diagnostic (@([IO.Directory]::EnumerateFiles([IO.Path]::GetDirectoryName($damagedMarker), "$($item.id).withdrawal.json.*.corrupt")).Count -eq 1) 'Damaged withdrawal evidence was lost.'
+        $recovered = Read-FateDiagnosticJson $damagedMarker
+        Assert-Diagnostic ($recovered.timestampSource -eq 'recovered-at') 'Recovery misrepresented the original withdrawal timestamp.'
+    }
+    Write-Output 'PASS: malformed JSON, invalid UTF-8 and missing withdrawal timestamps preserve originals and recover deletion.'
 } finally {
     $key.Dispose()
     $resolved = [IO.Path]::GetFullPath($testDirectory)

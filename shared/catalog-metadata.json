@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "version": "catalog-evidence-2026-11-11",
+  "checkedAt": "2026-11-11",
+  "gameVersion": "3.30 prerelease",
+  "completeness": "partial",
+  "names": {
+    "version": "fate-names-v2",
+    "added": ["Dryad", "Avalanche"],
+    "source": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s",
+    "evidence": "prototypes/vision/fixtures/v2/images/showcase.png",
+    "method": "Manual visual reinspection of preserved GGG showcase frame; both offered headers readable. Not a native F9 sample.",
+    "rewardsInferredFromName": false
+  },
+  "rewards": {
+    "version": "rewards-v1",
+    "source": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11637s",
+    "evidenceReport": "research/REWARD_CATALOG_2026-11-10.md",
+    "newSemanticsConfirmed": [],
+    "status": "Existing tooltip meanings retained; no new motif meanings or thresholds inferred."
+  },
+  "freshSources": [
+    { "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1", "owner": "GGG", "published": "2026-11-10", "result": "FAQ: choice sequencing and rarity clarification; no mixed-tier, third-duplicate or general combo algorithm." },
+    { "url": "https://www.pathofexile.com/covens", "owner": "GGG", "result": "Web reader exposed navigation only; no names extracted." },
+    { "url": "https://poedb.tw/us/Covens_league", "owner": "PoEDB community data", "result": "Overview; no complete Fate-name or reward table." },
+    { "url": "https://poedb.tw/us/Dreadmaidens_Sacrament", "owner": "PoEDB community data", "result": "Corroborates existing unique name and Basalt Flask base, not combo threshold." },
+    { "url": "https://poedb.tw/us/Version_3.30.0", "owner": "PoEDB community data", "result": "Partial TCG notes; includes outdated rarity text contradicted by GGG FAQ. No mechanic rules imported." }
+  ],
+  "unresolvedMechanics": ["mixed-tier duplicate merge", "third duplicate", "slot recovery after merge", "general duplicate/combo algorithm", "repeat combo payouts"],
+  "advisorPolicy": "conservative"
+}

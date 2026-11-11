@@ -84,6 +84,9 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   if (status.diagnosticsEnabled !== true) throw new Error('Staging diagnostics must be enabled.')
 
   const grants = {}
+  const cleanup = new Map()
+  let failure
+  try {
   function post(path, operation, expectedStatus, payload, key, extraHeaders = {}) {
     const consent = grants[path]
     return request(path, operation, expectedStatus, {
@@ -96,6 +99,7 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   await post(OBSERVATIONS, 'Observation without consent', 428, {}, ingestKey)
   for (const [scope, key] of [['captures', captureKey], ['observations', ingestKey]]) {
     const grant = { id: randomUUID(), token: randomBytes(32).toString('hex'), scope, policyVersion: policy.version, acceptedAt: new Date().toISOString(), text: `${policy.common}\n\n${policy.scopes[scope]}\n\nDestination: ${origin}` }
+    cleanup.set(`/api/consents/${grant.id}/withdraw`, { token: grant.token, header: 'X-Consent-Token', id: grant.id })
     const response = await post('/api/consents', 'Register consent', 201, grant, key)
     const receipt = await readJson(response, 'Register consent')
     for (const field of ['id', 'scope', 'policyVersion', 'acceptedAt', 'text']) if (receipt[field] !== grant[field]) throw new Error(`Register consent returned an unexpected receipt ${field}.`)
@@ -145,6 +149,7 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     const grant = grants[path]
     const response = await post(`/api/consents/${grant.id}/withdraw`, 'Withdraw consent', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Consent-Token': grant.token })
     await verifyReceipt(response, 'Withdraw consent', { id: grant.id, status: 'withdrawn' })
+    cleanup.delete(`/api/consents/${grant.id}/withdraw`)
     await post(path, 'Upload after withdrawal', 403, payload, key)
     await post('/api/consents', 'Reusing withdrawn consent', 403, grant, key)
   }
@@ -154,6 +159,7 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     state: { storage: 'unknown', folderConnection: 'off', sharing: 'off', queue: { pending: 0, accepted: 0, rejected: 0, ignored: 0 } }, events: [],
   }
   const diagnostic = { report, consent: { version: DIAGNOSTIC_VERSION, text: diagnosticText(origin), acceptedAt: new Date().toISOString() }, token: randomBytes(32).toString('hex') }
+  cleanup.set(`/api/diagnostics/${report.id}/withdraw`, { token: diagnostic.token, header: 'X-Diagnostic-Token', id: report.id })
   await post('/api/diagnostics', 'Diagnostic without consent', 400, { report }, ingestKey)
   await post('/api/diagnostics', 'Diagnostic without key', 401, diagnostic)
   await post('/api/diagnostics', 'Diagnostic with raw log', 400, { ...diagnostic, report: { ...report, rawLog: 'SYNTHETIC_SECRET_MUST_BE_REJECTED' } }, ingestKey)
@@ -163,7 +169,27 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   if (JSON.stringify(duplicate) !== JSON.stringify(received)) throw new Error('Diagnostic retry changed the receipt.')
   const deleted = diagnosticWithdrawalSchema.parse(await readJson(await post(`/api/diagnostics/${report.id}/withdraw`, 'Diagnostic withdrawal', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Diagnostic-Token': diagnostic.token }), 'Diagnostic withdrawal'))
   if (deleted.id !== report.id) throw new Error('Diagnostic withdrawal returned a different ID.')
+  cleanup.delete(`/api/diagnostics/${report.id}/withdraw`)
   await post('/api/diagnostics', 'Diagnostic replay after withdrawal', 410, diagnostic, ingestKey)
+  } catch (error) { failure = error }
+  finally {
+    const failures = []
+    for (const [path, entry] of cleanup) {
+      try {
+        const response = await request(path, 'Staging cleanup withdrawal', 200, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', [entry.header]: entry.token },
+          body: JSON.stringify({ withdrawnAt: new Date().toISOString() }),
+        })
+        await verifyReceipt(response, 'Staging cleanup withdrawal', { id: entry.id, status: 'withdrawn' })
+      } catch {
+        // Never print request credentials, tokens or payloads in CI errors.
+        failures.push(new Error(`Staging cleanup could not confirm withdrawal for ${path}.`))
+      }
+    }
+    if (failures.length) throw new AggregateError([...(failure ? [failure] : []), ...failures],
+      [failure?.message, 'Staging cleanup failed; synthetic data may remain in staging.'].filter(Boolean).join(' '))
+  }
+  if (failure) throw failure
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

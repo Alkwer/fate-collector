@@ -8,6 +8,7 @@ if (process.argv[2] === 'calibration') {
   for (const args of [
     ['/ErrorStdOut', '/Validate', resolve('helpers/tests/Validate-Helper.ahk')],
     ['/ErrorStdOut', resolve('helpers/tests/Test-Calibration.ahk')],
+    ['/ErrorStdOut', resolve('helpers/tests/Test-CaptureProcess.ahk')],
   ]) {
     const result = spawnSync(ahk, args, { stdio: 'inherit', windowsHide: true, timeout: 30000 })
     if (result.error) throw result.error

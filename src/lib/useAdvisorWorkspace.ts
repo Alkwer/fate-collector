@@ -14,6 +14,11 @@ export function useAdvisorWorkspace() {
     }
   })
   const current = useRef(state)
+  const [undoStates, setUndoStates] = useState<typeof state[]>([])
+  function remember() {
+    const snapshot = structuredClone(current.current)
+    setUndoStates(items => [...items.slice(-9), snapshot])
+  }
 
   function commit(next: typeof state) {
     current.current = next
@@ -30,6 +35,7 @@ export function useAdvisorWorkspace() {
   function changeWorkspace(next: AdvisorWorkspace) {
     const { workspace, needsMapConfirmation } = current.current
     if (next.map?.id !== workspace.map?.id || (!workspace.map && next.collection.cards.length)) return
+    if (JSON.stringify(next.collection.cards) !== JSON.stringify(workspace.collection.cards)) remember()
     save({ ...next, map: workspace.map, offerIds: workspace.offerIds }, needsMapConfirmation)
   }
 
@@ -41,6 +47,7 @@ export function useAdvisorWorkspace() {
   function startMap(offerId?: string) {
     const { workspace } = current.current
     if (state.workspace.map?.id !== workspace.map?.id) return
+    remember()
     const next = startMapWorkspace(workspace)
     save(offerId === undefined ? next : bindOfferToMap(next, offerId), false)
   }
@@ -52,5 +59,11 @@ export function useAdvisorWorkspace() {
     if (next !== workspace) save(next, false)
   }
 
-  return { ...state, changeWorkspace, confirmMap, startMap, bindOffer }
+  function undo() {
+    const previous = undoStates.at(-1)
+    if (!previous) return
+    setUndoStates(items => items.slice(0, -1))
+    save(previous.workspace, previous.needsMapConfirmation || previous.workspace.map?.id !== current.current.workspace.map?.id)
+  }
+  return { ...state, changeWorkspace, confirmMap, startMap, bindOffer, undo, canUndo: undoStates.length > 0 }
 }

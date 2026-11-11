@@ -116,6 +116,35 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .reward-label { grid-column: 1/-1; }
 .catalog-reference { display: flex; align-items: flex-start; gap: 10px; }
 .catalog-reference img { flex: 0 0 34px; object-fit: contain; }
+.advanced-grid.has-review-evidence { grid-template-columns: minmax(0, 1fr); }
+.card-review-grid { min-width: 0; }
+.card-review-grid.has-evidence { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 20px; align-items: start; }
+.card-evidence { min-width: 0; position: sticky; top: 20px; }
+.card-evidence h3 { margin-bottom: 12px; }
+.card-evidence .evidence-button img { height: auto; max-height: 65vh; min-height: 180px; object-fit: contain; }
+.selected-card-heading { margin-bottom: 16px; overflow-wrap: anywhere; }
+.review-navigation { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.review-navigation p { font-size: 14px; color: var(--muted); }
+.reward-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.reward-shortcuts button { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 48px; padding: 8px 10px; max-width: 100%; }
+.reward-shortcuts img { flex: 0 0 34px; object-fit: contain; }
+.reward-shortcuts span { overflow-wrap: anywhere; min-width: 0; }
+.reward-shortcuts small { display: block; color: var(--muted); font-size: 12px; }
+.reward-shortcuts .needs-review { border-color: var(--gold); }
+.reward-editor:focus, .selected-card-heading:focus { outline: 2px solid var(--gold); outline-offset: 3px; }
+.backup-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.backup-controls select { max-width: 100%; }
+.backup-warning { border-left: 3px solid var(--gold); padding: 12px; margin-top: 16px; }
+.backup-warning button { margin-top: 12px; }
+.recovery-notice { align-items: flex-start; flex-wrap: wrap; overflow-wrap: anywhere; }
+.recovery-notice > div { flex: 1 1 320px; min-width: 0; }
+.recovery-notice ul { padding-left: 20px; }
+@media (max-width: 900px) {
+  .card-review-grid.has-evidence { grid-template-columns: minmax(0, 1fr); }
+  .card-evidence { position: static; }
+  .card-evidence .evidence-button img { max-height: 280px; }
+  .backup-controls { width: 100%; }
+}
 .checkbox-row { display: flex; flex-direction: row; align-items: center; gap: 10px; font-weight: 400; }
 .danger { color: #c49d8f; }
 .remove-card { font-size: 13px; margin-top: 12px; }
@@ -277,3 +306,28 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .collection-editor .reward-summary { min-width: 0; }
 @media (max-width: 1000px) { .advisor-layout { grid-template-columns: minmax(0, 1fr); }.advisor-main, .advisor-collection { padding: 20px; } }
 @media (max-width: 600px) { .advisor-controls { grid-template-columns: minmax(0, 1fr); }.advisor-main, .advisor-collection { padding: 16px; }.advisor-outcome { padding: 15px; }.advisor-outcome h3 { font-size: 19px; }.advisor-card-heading { align-items: flex-start; flex-direction: column; }.advisor-card-heading button { width: 100%; }.invocation-order { display: block; }.invocation-order li + li { margin-top: 6px; } }
+.evidence-button { position: relative; }
+.evidence-region { position: absolute; border: 3px solid var(--gold); background: rgb(235 203 115 / .08); pointer-events: none; }
+.evidence-dialog svg { display: block; width: min(90vw, 700px); height: 70vh; }
+.journal-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.journal-filters label { display: grid; gap: 5px; min-width: 0; }
+.journal-filters input, .journal-filters select { width: 100%; min-width: 0; }
+.journal-import, .storage-health { margin-bottom: 18px; }
+.journal-import button { margin: 0 10px 10px 0; }
+.storage-warning { border-left: 3px solid var(--gold); padding-left: 12px; }
+.snapshot-corrections { margin: 16px 0; padding: 12px; border: 1px solid var(--gold); }
+.snapshot-corrections button { margin-top: 10px; }
+.draft-recovery ul { padding-left: 20px; }
+.draft-recovery li { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .journal-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .journal-filters label:first-child { grid-column: 1 / -1; }
+  .history-table, .history-table tbody, .history-table tr, .history-table td { display: block; width: 100%; min-width: 0; }
+  .history-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .history-table tr { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 5px 10px; border: 0; }
+  .history-table .row-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .history-table .row-actions button { min-height: 44px; }
+  .action-band { position: static; }
+  .backup-controls { flex-wrap: wrap; }
+}

@@ -11,6 +11,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+test-results-compat/
 /output/
 .qa/
 *.local.json

@@ -1,4 +1,4 @@
-import type { Evidence, FateCard, Offer, Reward, Capture } from './schema'
+import { MAX_API_BYTES, type Evidence, type FateCard, type Offer, type Reward, type Capture } from './schema'
 
 export function newReward(): Reward {
   return { id: crypto.randomUUID(), label: '', kind: 'unknown', count: 1, threshold: null, identified: false }
@@ -34,5 +34,6 @@ export function submissionProblem(offer: Offer): string | null {
   if (!offer.gameVersion.trim()) return 'Enter the game version before sharing.'
   if (!offer.cards.length) return 'Add the cards you could read before sharing.'
   if (offer.completeness === 'unverified') return 'Mark the offer as complete or partial before sharing.'
+  if (new TextEncoder().encode(JSON.stringify(offer)).byteLength > MAX_API_BYTES) return 'This offer exceeds the 128 KiB sharing limit. Export a backup, then shorten optional notes or modifiers before sharing.'
   return null
 }

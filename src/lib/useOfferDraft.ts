@@ -24,10 +24,17 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
   const [failedAutoSave, setFailedAutoSave] = useState<{ session: number; version: number; conflict: boolean } | null>(null)
   const dirtyRef = useRef(false), busyRef = useRef(false)
   const draftSession = useRef(0), editVersion = useRef(0)
+  const recoveryId = useRef<string>(crypto.randomUUID()), recoveryWrites = useRef(Promise.resolve())
+  const recoveredFrom = useRef<string | null>(null)
+  const [recoveryError, setRecoveryError] = useState<string | null>(null)
   const setDirty = useCallback((value: boolean) => { dirtyRef.current = value; setDirtyState(value) }, [])
   const setBusy = useCallback((value: boolean) => { busyRef.current = value; setBusyState(value) }, [])
   const savedLocally = records.some(record => record.offer.id === draft.id)
-  const automatic = connected && savedLocally
+  const previouslySaved = useRef({ id: draft.id, saved: savedLocally })
+  if (previouslySaved.current.id !== draft.id) previouslySaved.current = { id: draft.id, saved: savedLocally }
+  else if (savedLocally) previouslySaved.current.saved = true
+  // A cross-tab deletion must still try the guarded save and surface its tombstone.
+  const automatic = connected && previouslySaved.current.saved
   const canConfirm = !!evidence && draft.cards.length > 0 && draft.cards.every(card => card.name.trim())
   const needsConfirmation = canConfirm && !draft.reviewed
   const canSave = !busy && !autoSaving && (!!evidence || draft.cards.length > 0 || dirty) && (!savedLocally || dirty || needsConfirmation)
@@ -50,6 +57,26 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
     } else if (!dirtyRef.current && !busyRef.current && !inspecting) loadDraft(entry.offer, entry.evidence)
   }
   function canReplace() { return !dirtyRef.current || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
+  function recover(record: storage.RecoveryDraft) {
+    if (!canReplace()) return false
+    recoveredFrom.current = record.id
+    recoveryId.current = crypto.randomUUID()
+    loadDraft(record.offer, record.evidence, true)
+    return true
+  }
+  useEffect(() => {
+    const id = recoveryId.current
+    const sourceId = recoveredFrom.current
+    // Serialize recovery writes, including the removal after a successful save.
+    recoveryWrites.current = recoveryWrites.current.then(async () => {
+      if (dirty) {
+        if (!offerSchema.safeParse(draft).success) { setRecoveryError('The current invalid fields cannot be recovered after a crash. Correct them or export your draft before leaving.'); return }
+        await storage.writeDraftRecovery(id, draft, evidence)
+        if (sourceId) { await storage.removeDraftRecovery(sourceId); if (recoveredFrom.current === sourceId) recoveredFrom.current = null }
+      } else await storage.removeDraftRecovery(id)
+      setRecoveryError(null)
+    }).catch(() => setRecoveryError('The draft is still open, but its recovery copy could not be saved. Export it before closing the page.'))
+  }, [draft, evidence, dirty])
   useEffect(() => {
     // Map/archive editors can hold the same saved offer. Refresh a clean copy
     // after another editor saves it, without rebasing pending or in-flight edits.
@@ -107,5 +134,5 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
     finally { setBusy(false) }
   }
   return { draft, evidence, dirty, busy, autoSaving, dirtyRef, setBusy, loadDraft, change, receive, canReplace, save,
-    savedLocally, automatic, canConfirm, needsConfirmation, canSave, autoSaveFailure, retryAutoSave: () => setFailedAutoSave(null) }
+    savedLocally, automatic, canConfirm, needsConfirmation, canSave, autoSaveFailure, recoveryError, recover, retryAutoSave: () => setFailedAutoSave(null) }
 }

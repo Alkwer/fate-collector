@@ -29,7 +29,7 @@ function env(): Env {
       async first() { return database.prepare(sql).get(...args) ?? null } }
     return query
   } }
-  return { DB: adapter as unknown as D1Database, ASSETS: { fetch: async () => new Response('static') } as unknown as Fetcher, COLLECTOR_INGEST_KEY: 'test-access', COLLECTOR_CAPTURE_KEY: 'capture-access' }
+  return { DB: adapter as unknown as D1Database, CONSENT_WITHDRAWAL_RATE_LIMITER: { limit: async () => ({ success: true }) } as unknown as RateLimit, ASSETS: { fetch: async () => new Response('static') } as unknown as Fetcher, COLLECTOR_INGEST_KEY: 'test-access', COLLECTOR_CAPTURE_KEY: 'capture-access' }
 }
 function offer(): Offer { return { ...newOffer(), source: 'manual', origin: 'live', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Alchemist' }] } }
 function post(body: unknown, key = 'test-access') { return new Request('https://collector.test/api/observations', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, 'X-Consent-Id': consentIds.observations, 'X-Consent-Token': consentToken }, body: JSON.stringify(body) }) }
@@ -216,4 +216,50 @@ test('database errors are retriable without exposing submitted text', async () =
   const response = await worker.fetch(capturePost(upload()), failed)
   expect(response.status).toBe(503)
   expect(await response.text()).not.toContain('private database error')
+})
+
+test('capture and observation identity is independent of UUID letter case, including legacy payload hashes', async () => {
+  const bindings = env(); const db = databases[0]
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const sample = { ...upload(), captureId: id }
+  expect((await worker.fetch(capturePost({ ...sample, captureId: id.toUpperCase() }), bindings)).status).toBe(201)
+  expect((await worker.fetch(capturePost(sample), bindings)).status).toBe(200)
+  // Historical releases stored original case in both identity and hashed JSON.
+  const legacy = JSON.stringify({ ...sample, captureId: id.toUpperCase() })
+  db.prepare('UPDATE capture_uploads SET id = ?, payload_json = ?, content_hash = ? WHERE id = ?')
+    .run(id.toUpperCase(), legacy, createHash('sha256').update(legacy).digest('hex'), id)
+  expect((await worker.fetch(capturePost(sample), bindings)).status).toBe(200)
+  expect(db.prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(1)
+  expect((await worker.fetch(capturePost({ ...sample, helperVersion: 'different' }), bindings)).status).toBe(409)
+
+  const reviewed = { ...offer(), id, captureId: null }
+  expect((await worker.fetch(post({ ...reviewed, id: id.toUpperCase() }), bindings)).status).toBe(201)
+  const legacyOffer = JSON.stringify({ ...reviewed, id: id.toUpperCase() })
+  db.prepare('UPDATE observations SET id = ?, payload_json = ?, content_hash = ? WHERE id = ?')
+    .run(id.toUpperCase(), legacyOffer, createHash('sha256').update(legacyOffer).digest('hex'), id)
+  expect((await worker.fetch(post(reviewed), bindings)).status).toBe(200)
+  expect((await worker.fetch(post({ ...reviewed, revision: 2 }), bindings)).status).toBe(201)
+  expect(db.prepare('SELECT count(*) AS n FROM latest_observations').get()?.n).toBe(1)
+  expect(db.prepare('SELECT revision FROM latest_observations').get()?.revision).toBe(2)
+})
+
+test('identity migration preserves historical case collisions while counting a single capture and latest offer', () => {
+  const db = new DatabaseSync(':memory:'); databases.push(db)
+  const migrations = new URL('../migrations/', import.meta.url)
+  const files = readdirSync(migrations).filter(name => name.endsWith('.sql')).sort()
+  for (const file of files.filter(name => name < '0008')) db.exec(readFileSync(new URL(file, migrations), 'utf8'))
+  const id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  for (const value of [id, id.toUpperCase()]) {
+    db.prepare('INSERT INTO capture_uploads (id, content_hash, payload_json, parsed_offer_json, parser_version, captured_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(value, 'original-hash', JSON.stringify({ captureId: value }), JSON.stringify({ captureId: value }), 'original-parser', '2026-01-01T00:00:00Z')
+  }
+  db.exec(readFileSync(new URL(files.find(name => name.startsWith('0008'))!, migrations), 'utf8'))
+  expect(db.prepare('SELECT count(*) AS n FROM capture_uploads').get()?.n).toBe(2)
+  expect(db.prepare('SELECT count(*) AS n FROM research_observations').get()?.n).toBe(1)
+  for (const [index, value] of [id.toUpperCase(), id].entries()) {
+    db.prepare('INSERT INTO observations (id, revision, content_hash, payload_json, game_version, completeness, captured_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(value, index + 1, 'original-hash', JSON.stringify({ id: value, captureId: id }), 'v1', 'partial', '2026-01-01T00:00:00Z')
+  }
+  expect(db.prepare('SELECT count(*) AS n FROM observations').get()?.n).toBe(2)
+  expect(db.prepare('SELECT id, revision FROM research_observations').all()).toEqual([{ id, revision: 2 }])
 })

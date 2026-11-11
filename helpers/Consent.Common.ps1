@@ -165,8 +165,14 @@ function Invoke-FatePendingWithdrawals([string]$StateDirectory, [scriptblock]$Tr
                 try { [void](ConvertTo-FateUploadTime $Entry.withdrawnAt) } catch { return $false }
                 return $true
             }
-            if (!$marker.Value) { continue }
-            $withdrawal = @{ withdrawnAt = $marker.Value.withdrawnAt }
+            if ($marker.Damaged) {
+                # The marker's existence records the decision. Its original timestamp
+                # is unknown, so persist the time this damage was discovered.
+                $withdrawal = @{ withdrawnAt = [DateTime]::UtcNow.ToString('o') }
+                Write-FateUploadState $path @{ withdrawnAt = $withdrawal.withdrawnAt; timestampSource = 'recovered-at' } -PreserveExisting
+            } elseif ($marker.Value) {
+                $withdrawal = @{ withdrawnAt = $marker.Value.withdrawnAt }
+            } else { continue }
             $attempted++
             $result = $null
             try { $result = & $Transport $consent $null $withdrawal } catch {}
