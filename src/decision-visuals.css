@@ -15,8 +15,9 @@
 .reward-symbol { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 48px; height: 48px; color: var(--text); }
 .reward-symbol .app-icon { width: 100%; height: 100%; stroke-width: 1.35; }
 .reward-symbol img { width: 100%; height: 100%; max-width: 36px; max-height: 36px; object-fit: contain; }
-.fate-art { width: 160px; max-width: 100%; aspect-ratio: 1; flex-shrink: 0; overflow: hidden; background: var(--evidence); }
-.fate-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fate-art { display: grid; place-items: center; width: 160px; max-width: 100%; aspect-ratio: 1; flex-shrink: 0; overflow: hidden; background: var(--evidence); }
+/* Keep video-only artwork at its native size instead of enlarging a small crop. */
+.fate-art img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
 .fate-art.is-unavailable { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; color: var(--muted); text-align: center; }
 .fate-art.is-unavailable .app-icon { width: 36px; height: 36px; }
 .fate-art.is-unavailable span { padding-inline: 8px; font-size: 13px; }

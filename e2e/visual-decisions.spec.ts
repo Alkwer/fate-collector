@@ -19,7 +19,7 @@ for (const theme of ['mineral', 'trail']) test(`${theme}: visual rewards preserv
   await closePanels(page)
   const cards = page.locator('.visual-offer .fate-list > li')
   await expect(cards.nth(0).getByRole('img', { name: 'Alchemist Fate artwork' })).toBeVisible()
-  await expect(cards.nth(0).locator(':scope > .fate-art img')).toHaveJSProperty('naturalWidth', 112)
+  expect(await cards.nth(0).locator(':scope > .fate-art img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(192)
   await expect(cards.nth(0).locator(':scope > .reward-strip .reward-symbol img')).toHaveAttribute('src', '/game-art/reward-gold-grid.png')
   await expect(cards.nth(1).locator(':scope > .fate-art')).toContainText('Artwork unavailable')
   await expect(cards.nth(0).locator(':scope > .reward-strip .reward-unit')).toContainText('3×Currency')
@@ -58,9 +58,39 @@ test('observed game motifs stay unknown and a missing portrait has a usable fall
   const card = page.locator('.visual-offer .fate-list > li')
   await expect(card.locator('.fate-art')).toContainText('Artwork unavailable')
   await expect(card.locator('.reward-symbol img')).toHaveAttribute('src', '/game-art/reward-blue-diamond.png')
-  await expect(card.locator('.reward-symbol img')).toHaveJSProperty('naturalWidth', 24)
+  expect(await card.locator('.reward-symbol img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(36)
   await expect(card.locator('.reward-unit')).toContainText('Kind unknown · review')
   await expect(page.getByRole('button', { name: 'Review Tempest', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
   await expect(page.getByRole('complementary')).toContainText('Kind unknown · review')
+})
+
+for (const theme of ['mineral', 'trail']) test(`${theme}: all four newly sourced Fates render without enlarging artwork`, async ({ page }) => {
+  await page.goto('/')
+  await openPanel(page, '.more-actions')
+  await page.getByLabel('Appearance').selectOption(theme)
+  await closePanels(page)
+  const names = ['Wildfire', 'Doomsayer', 'Incandescent', 'Crowkeeper']
+  const offer = { ...newOffer(), cards: names.map(name => ({ ...newCard(), name, tier: 1,
+    rewards: [{ ...newReward(), label: 'Currency', count: 1, kind: 'regular', identified: true }] })) }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'new-artwork.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+  await openPanel(page, '.reward-settings')
+  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await closePanels(page)
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 })
+    for (const name of names) {
+      const art = page.locator('.visual-offer').getByRole('img', { name: `${name} Fate artwork` })
+      await expect(art).toBeVisible()
+      await art.evaluate((img: HTMLImageElement) => img.decode())
+      const size = await art.evaluate((img: HTMLImageElement) => ({ natural: img.naturalWidth, rendered: img.getBoundingClientRect().width }))
+      expect(size.natural).toBeGreaterThanOrEqual(160)
+      expect(size.rendered).toBeLessThanOrEqual(size.natural)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+  }
+  await page.getByRole('button', { name: 'Add Crowkeeper to collected', exact: true }).click()
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  await expect(page.locator('.advisor-plans article[data-best] .invoke-card').getByRole('img', { name: 'Crowkeeper Fate artwork' })).toBeVisible()
 })

@@ -1,331 +1,652 @@
 {
   "copyright": "Path of Exile artwork © Grinding Gear Games.",
-  "purpose": "Unmodified portrait crops and reward references for identifying Fates. No depicted tier, modifier, reward or count is assigned from a portrait.",
+  "purpose": "Unmodified native-resolution portrait and reward crops. No depicted tier, modifier, reward or count is assigned from a portrait. Recognition templates are independent and unchanged.",
   "assets": [
     {
       "file": "alchemist.webp",
       "name": "alchemist",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        574,
-        470,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "be859ca3b3b3c7e9460831076e399da0d7fcb24137881a6e50013897d2ded0aa"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        1150,
+        940,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "f5c0e1d85a5d833ba7e13d953d74c1ed82dfefc8f00cf659ee5971cd6d6a6df4"
     },
     {
       "file": "sanguine.webp",
       "name": "sanguine",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        799,
-        470,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "47a7839da1a5221299cc21ab4eb8ff3cd8a797384c29d60cf23758db394d9c71"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        1600,
+        940,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "66c927dd6fac1b563acbc534c2a8686294f59a094126754a276f9836deee06f3"
     },
     {
       "file": "butcher.webp",
       "name": "butcher",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        1024,
-        470,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "3ae49839829aaa3e80a6e641249c54fddabb54f7dc07e93ac62f4590cb0eccde"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        2050,
+        940,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "7afed53026154d01fb3a62979134ca93a4cc1de3908941aeccf3da944c6f2864"
     },
     {
       "file": "gravewalker.webp",
       "name": "gravewalker",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        1249,
-        470,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "51ce1cc8d9bdcb1259dd06c3e08de51278173c62fa02ebe01e3e0f2dc3284ccb"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        2500,
+        940,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "bc5c37ebb66244112907a93387df8f85cb8aedc58c63d3b052c688b359f97ce8"
     },
     {
       "file": "torchbearer.webp",
       "name": "torchbearer",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        574,
-        314,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "91e4d5db847e3ebddbbec75b5d406fd640cc10e594a946d7b5e12b7c5ba7389b"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1150,
+        628,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "312f43acf5b90caf9b5c55c183e2ca5faf8326226e80ba3881990a8b115a2b90"
     },
     {
       "file": "tempest.webp",
       "name": "tempest",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        799,
-        314,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "1805b8772eb8f6320f82be57c5998ed3f2b4a1f1697546c2b5c839ed8a58ac94"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1600,
+        628,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "0680fd47c1874b961693a84b6d7d6dc40595e8627c7a5772c8d659fc62419b48"
     },
     {
       "file": "stormcaller.webp",
       "name": "stormcaller",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        1024,
-        314,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "fd6e43ded87fd421f49f169657e8566602744422697f1102c6e2b6086f89e8a3"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        2050,
+        628,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "d9c9433f560bc4d282b5e4fbe46d61af3f8fcfe5dac7bf790e327dea4d960320"
     },
     {
       "file": "houndmaster.webp",
       "name": "houndmaster",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        1249,
-        294,
-        112,
-        110
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "7c824a5950ece1aa2f44068f9f77e43f9c0d73a5c4b979d6371e2249e69c7ced"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        2500,
+        588,
+        220,
+        220
+      ],
+      "dimensions": [
+        220,
+        220
+      ],
+      "sha256": "e2abfc81a7b479d57a8de3895a162cbb8793021a08ddf5070688e1c0e6b9f419"
     },
     {
       "file": "bloodthirsty.webp",
       "name": "bloodthirsty",
-      "source": "research/evidence/exceptional-combo-03h14m42.png",
-      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
-      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
-      "box": [
-        600,
-        240,
-        112,
-        104
+      "source": "day1/11680.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11680s",
+      "videoSeconds": 11680,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        2560,
+        1440
       ],
-      "sha256": "9b832b301a09f94715af18b362786c182bb00ff566629e721c78e5faf1486901"
+      "sourceSha256": "5801ea6e9eb76940e57b70909af4c9bf572768f1b7d7f161132f895b48f787b1",
+      "box": [
+        804,
+        320,
+        138,
+        138
+      ],
+      "dimensions": [
+        138,
+        138
+      ],
+      "sha256": "3cede45b4dc6c42c9cb1cab18bd28a8d68b0a2df117ee4be23da6910ea0f829d"
     },
     {
       "file": "deathbringer.webp",
       "name": "deathbringer",
-      "source": "research/evidence/exceptional-combo-03h14m42.png",
-      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
-      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
-      "box": [
-        1220,
-        240,
-        112,
-        104
+      "source": "day1/11680.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11680s",
+      "videoSeconds": 11680,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        2560,
+        1440
       ],
-      "sha256": "2529cf5a41f2179cbe88906d3a6b27b46db8ea96da295ec868ea2e710c0c77c1"
+      "sourceSha256": "5801ea6e9eb76940e57b70909af4c9bf572768f1b7d7f161132f895b48f787b1",
+      "box": [
+        1632,
+        320,
+        138,
+        138
+      ],
+      "dimensions": [
+        138,
+        138
+      ],
+      "sha256": "7789b7778ddbe8fb6bf5dbc46e3c0a9e45c433e1e8175e42e50570d47742a735"
     },
     {
       "file": "dryad.webp",
       "name": "dryad",
-      "source": "research/evidence/exceptional-combo-03h14m42.png",
-      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
-      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
-      "box": [
-        574,
-        674,
-        112,
-        104
+      "source": "trailer/36.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=XaySR0RjRPA&t=36s",
+      "videoSeconds": 36,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "85dd6400568f3bb8ea00865d629c381f0ae4322c58a4a1832b9d77ebd351582c"
+      "sourceSha256": "82e06dd75d6ae1ccef4a7ebc1062486303a3262319947ced087826424abbe7c6",
+      "box": [
+        1810,
+        930,
+        250,
+        250
+      ],
+      "dimensions": [
+        250,
+        250
+      ],
+      "sha256": "e29306f97ec03ef06657086b616d9216489c9ab3b8c464163829380fcedc9654"
     },
     {
       "file": "conjurer.webp",
       "name": "conjurer",
-      "source": "research/evidence/duplicates-before-03h15m02.png",
+      "source": "day1/11702.png",
       "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11702s",
-      "sourceSha256": "d13a1bf507cf0acf3bb36ecc0b02376091ec5011851696dc818ede14f533b360",
-      "box": [
-        600,
-        240,
-        112,
-        104
+      "videoSeconds": 11702,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        2560,
+        1440
       ],
-      "sha256": "7e5aadf03560a0440c178f201e856b1ea13b42897d8d42ec3420f9a1da133fd2"
+      "sourceSha256": "49bd466f1f17d936a1058a4817f84bb4a7b2230f32d4ae0f3f0ebc781d569504",
+      "box": [
+        804,
+        320,
+        138,
+        138
+      ],
+      "dimensions": [
+        138,
+        138
+      ],
+      "sha256": "93931cbcfb076fe2928b10b2b256090d00850cf30349df489a94c75fe5e1a1f9"
     },
     {
       "file": "avalanche.webp",
       "name": "avalanche",
-      "source": "prototypes/vision/fixtures/v2/images/showcase.png",
+      "source": "day1/26635.png",
       "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s",
-      "sourceSha256": "bebe139c6384d1e7bdb8fa46179536a4cc28313bd318926dc46b2a2be78897df",
-      "box": [
-        762,
-        216,
-        65,
-        62
+      "videoSeconds": 26635,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        2560,
+        1440
       ],
-      "sha256": "f6d88a3bc1791eb230088e4b8d8eb64ae00495d1d1710d351718590025e1d19a"
+      "sourceSha256": "10e98be3103763b86a4a02d51abeae28c1ccbcfbe90e52edf129af1223d5f31c",
+      "box": [
+        1527,
+        432,
+        124,
+        124
+      ],
+      "dimensions": [
+        124,
+        124
+      ],
+      "sha256": "f9d194cf9d90d26e38c5d8048273dbd05f7c6f7d909224cd49d99a541407e7af"
+    },
+    {
+      "file": "doomsayer.webp",
+      "name": "doomsayer",
+      "source": "gallery/Panel2.webp",
+      "sourceUrl": "https://web.poecdn.com/protected/image/promo/covensofumbra/Panel2.webp?key=YMNn1CjhLYc1njLU_aQHWA",
+      "sourceDimensions": [
+        1920,
+        776
+      ],
+      "sourceSha256": "09d8a612d2f2b94aa30ad8fd3bdb69ebee1752ff8be96ea19baca1f575f5e76d",
+      "box": [
+        155,
+        290,
+        160,
+        160
+      ],
+      "dimensions": [
+        160,
+        160
+      ],
+      "sha256": "ed97340b83696b26f7a74090af3d0d0eb8a37bd0d76437af168a52b1944268ae"
+    },
+    {
+      "file": "wildfire.webp",
+      "name": "wildfire",
+      "source": "gallery/Panel2.webp",
+      "sourceUrl": "https://web.poecdn.com/protected/image/promo/covensofumbra/Panel2.webp?key=YMNn1CjhLYc1njLU_aQHWA",
+      "sourceDimensions": [
+        1920,
+        776
+      ],
+      "sourceSha256": "09d8a612d2f2b94aa30ad8fd3bdb69ebee1752ff8be96ea19baca1f575f5e76d",
+      "box": [
+        755,
+        290,
+        160,
+        160
+      ],
+      "dimensions": [
+        160,
+        160
+      ],
+      "sha256": "1f904ce793920e1a00459e631677825506bff8bf479266244dcfbe0e834c9d3a"
+    },
+    {
+      "file": "incandescent.webp",
+      "name": "incandescent",
+      "source": "gallery/Screenshot1.webp",
+      "sourceUrl": "https://web.poecdn.com/protected/image/promo/covensofumbra/Screenshots/Panel2/Screenshot1.webp?key=aoza73oYjHDwS-f-KkKchg",
+      "sourceDimensions": [
+        3840,
+        2160
+      ],
+      "sourceSha256": "b33b1c408c4af69749db101ffa07798a2e43d4910fadcbc0a23d3f5d5b337712",
+      "box": [
+        1208,
+        480,
+        208,
+        208
+      ],
+      "dimensions": [
+        208,
+        208
+      ],
+      "sha256": "c072f128c6736d4bf0aa677ff017e125b14a2d96873a456f436bccbd352a3742"
+    },
+    {
+      "file": "crowkeeper.webp",
+      "name": "crowkeeper",
+      "source": "gallery/Screenshot1.webp",
+      "sourceUrl": "https://web.poecdn.com/protected/image/promo/covensofumbra/Screenshots/Panel2/Screenshot1.webp?key=aoza73oYjHDwS-f-KkKchg",
+      "sourceDimensions": [
+        3840,
+        2160
+      ],
+      "sourceSha256": "b33b1c408c4af69749db101ffa07798a2e43d4910fadcbc0a23d3f5d5b337712",
+      "box": [
+        2036,
+        1320,
+        216,
+        216
+      ],
+      "dimensions": [
+        216,
+        216
+      ],
+      "sha256": "257c73cf1e7be7e90208e344b507435b09be9d3099ded7bf81365c6ba84cecad"
     },
     {
       "file": "reward-item-rarity.png",
-      "source": "prototypes/vision/fixtures/v2/images/invoke-fates.png",
+      "name": "item-rarity",
+      "source": "Path of Exile/InvokeFates_1.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "dfa9b3f5683a2eb2fad127dacaeac6a4d77798447a969c90a4bb3b2e42940274",
-      "box": [
-        626,
-        847,
-        34,
-        36
+      "archiveMember": "Path of Exile/InvokeFates_1.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "917129e7ad8d0a92d30f88e18b9619bc143fd562383b422499e188ece2e5b079"
+      "sourceSha256": "b80a1f612d48e4994a736d66b220a92c66221df3f38d1811c2010d0c9fed26d6",
+      "box": [
+        1252,
+        1694,
+        68,
+        72
+      ],
+      "dimensions": [
+        68,
+        72
+      ],
+      "sha256": "d24bcb3db3b6720198645b32d8ffe317b23eff46ff9d204bf712988003955820"
     },
     {
       "file": "reward-exceptional-gem.png",
-      "source": "research/evidence/exceptional-combo-03h14m42.png",
-      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
-      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
-      "box": [
-        531,
-        472,
-        34,
-        30
+      "name": "exceptional-gem",
+      "source": "day1/11680.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11680s",
+      "videoSeconds": 11680,
+      "frameMethod": "Native-resolution browser video frame, no resize or sharpening",
+      "sourceDimensions": [
+        2560,
+        1440
       ],
-      "sha256": "af377242106b72ee680e51da065604c6391efa534dffca8e704d1308cd90b94e"
+      "sourceSha256": "5801ea6e9eb76940e57b70909af4c9bf572768f1b7d7f161132f895b48f787b1",
+      "box": [
+        708,
+        629,
+        45,
+        40
+      ],
+      "dimensions": [
+        45,
+        40
+      ],
+      "sha256": "b8512e8b4a0f6566973cbf6d64553f84778db683c284804a7c00367ce89ce6ad"
     },
     {
       "file": "reward-dreadmaidens-sacrament.png",
-      "source": "research/evidence/item-rarity-03h13m57.png",
-      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11637s",
-      "sourceSha256": "af1e03cf1e2e3145039ebc79b9396ab97d41f4e02e1d2feb7866ee14ab64848d",
-      "box": [
-        851,
-        857,
-        34,
-        36
+      "name": "dreadmaidens-sacrament",
+      "source": "Path of Exile/Fates_UI_2.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "a79bc0f46bf098de6e84219191ec0311aa2163d631dd39092133efdfce81dea0"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1670,
+        1018,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "3c9fa83a85985449f793f17b9bfd96c7292f16a7e64a2241cb39584f0c1cc162"
     },
     {
       "file": "reward-blue-diamond.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "name": "blue-diamond",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        593,
-        665,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "e0fd41125d6b4decc56c83b283450ad9876b8d7b61024d941154e052fcac3590"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        1186,
+        1330,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "988ec61efe52c1bbe9a057a90ce00495ddb2b30c1671e236d1ecae7aad9a9748"
     },
     {
       "file": "reward-gold-stack.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "name": "gold-stack",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        631,
-        665,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "39f378b03a93aac5e625e93602bbf9e31b4288c7785f50c5c58f19b11ac4bb3e"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        1262,
+        1330,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "4bc1884dd47bbe230c18a67cb3132fceeba21fe50df02b1c46681904be7ea2b1"
     },
     {
       "file": "reward-gold-grid.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "name": "gold-grid",
+      "source": "Path of Exile/Fates_UI.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
-      "box": [
-        818,
-        665,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "8f280c2c579c581870235298e229ded19358c892693c25b1945058d055b086eb"
+      "sourceSha256": "5a9c8d9c588bbd4b4aa7f44ab8ade057e5baa7ebac05b9dd913d3ece66fbd411",
+      "box": [
+        1636,
+        1330,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "d22167c4ee10c8c92973d11a234fccd823018b64da29ac5338e2ab8a9099c72a"
     },
     {
       "file": "reward-gold-ring.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "name": "gold-ring",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        610,
-        509,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "a9970fbc0eab81de3ad06096c2200ef028f8fbf5d3b09fe73914ed8d40d33cc6"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1220,
+        1018,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "764afd3c7cb145237d41bb4a89b642c6ab13bad95546196e0b50a16ad08d0314"
     },
     {
       "file": "reward-silver-cluster.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "name": "silver-cluster",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        797,
-        509,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "635f0f380288937dabfb5ca7a1b968f33d14abb11a581c5d0627b42a92071444"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1594,
+        1018,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "cea7c3bcb2f0aa5d8dc8bdf67f14702b069dca0630c01121b095796c9d5d4d33"
     },
     {
       "file": "reward-orange-feathers.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "name": "orange-feathers",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        835,
-        509,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "c2d86be9d1cbea139fdaa0896e2f58e64df31de6dba9a3fe3d43bc21c78d1d1b"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        1670,
+        1018,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "3c9fa83a85985449f793f17b9bfd96c7292f16a7e64a2241cb39584f0c1cc162"
     },
     {
       "file": "reward-three-gems.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "name": "three-gems",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        1060,
-        509,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "42db35508f58770767de7a27b85dc8bee49d0697adfc97628702c9f60264aa16"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        2120,
+        1018,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "15373b853753bc28c9e0bd6d4d18aa18dbed43f72bd3411219164fd9bfc45491"
     },
     {
       "file": "reward-gold-axe.png",
-      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "name": "gold-axe",
+      "source": "Path of Exile/Fates_UI_2.png",
       "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
-      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
-      "box": [
-        1285,
-        489,
-        24,
-        24
+      "archiveMember": "Path of Exile/Fates_UI_2.png",
+      "sourceDimensions": [
+        3840,
+        2160
       ],
-      "sha256": "2dc64cebf05a96342a3554033d9008cc69623bc21a8244bbcb2e02dca3028faa"
+      "sourceSha256": "f0a189c39b5d4999d3eee784a9fe51d00afd56ed0b92ace6fe5d376f7b529ef7",
+      "box": [
+        2570,
+        978,
+        48,
+        48
+      ],
+      "dimensions": [
+        48,
+        48
+      ],
+      "sha256": "b5ba46ef67c921fdec9725015d071a48bef66d9ee22d27e3abbfbdd0f9abd127"
     }
   ]
 }
