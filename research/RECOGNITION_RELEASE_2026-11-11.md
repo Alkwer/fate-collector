@@ -23,7 +23,7 @@ Queries included `site:pathofexile.com Covens Fates tier`, `site:poedb.tw Fates 
 
 The official [3.30.0 patch notes](https://www.pathofexile.com/forum/view-thread/4013680)
 are now available. The earlier PoEDB/TCG entry above records the initial review,
-not the current availability of official notes. The [research update](FATE_ADVISOR_RESEARCH_2026-11-07.md#aktualizacja-z-11-listopada-2026)
+not the current availability of official notes. The [research update](FATE_ADVISOR_RESEARCH_2026-11-07.md#update-of-11-november-2026)
 records the direct source recheck and relevant findings. This documentation
 update adds no recognition labels, catalog rules or native release evidence.
 

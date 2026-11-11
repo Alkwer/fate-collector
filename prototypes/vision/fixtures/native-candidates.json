@@ -9,7 +9,7 @@
       1440
     ],
     "label": "uninspected",
-    "note": "Nie obejrzano — poza limitem sześciu obrazów."
+    "note": "Not inspected — outside the six-image limit."
   },
   {
     "file": "screenshot-0001.png",
@@ -21,7 +21,7 @@
       1440
     ],
     "label": "uninspected",
-    "note": "Nie obejrzano — poza limitem sześciu obrazów."
+    "note": "Not inspected — outside the six-image limit."
   },
   {
     "file": "screenshot-0002.png",
@@ -33,7 +33,7 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   },
   {
     "file": "screenshot-0003.png",
@@ -45,7 +45,7 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   },
   {
     "file": "screenshot-0004.png",
@@ -57,7 +57,7 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   },
   {
     "file": "screenshot-0005.png",
@@ -69,7 +69,7 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   },
   {
     "file": "screenshot-0006.png",
@@ -81,7 +81,7 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   },
   {
     "file": "screenshot-0007.png",
@@ -93,6 +93,6 @@
       2160
     ],
     "label": "negative",
-    "note": "Ręcznie obejrzany: brak panelu Fate."
+    "note": "Manually inspected: no Fate panel."
   }
 ]

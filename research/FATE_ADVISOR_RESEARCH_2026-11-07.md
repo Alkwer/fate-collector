@@ -1,131 +1,131 @@
-# Fate Advisor — reguły Covens of Umbra i granice ich interpretacji
+# Fate Advisor — Covens of Umbra rules and the limits of their interpretation
 
-Stan: **11 listopada 2026**, po uzupełnieniu o oficjalne FAQ i patch notes 3.30.0. Weryfikacja nagrań Q&A oraz pokazu DatModz i Octaviana pochodzi z 8 listopada. Materiał przedpremierowy, bez własnych testów mechaniki w grze. Nazwa pliku zachowuje datę pierwszego rozpoznania.
+Status: **11 November 2026**, updated with the official FAQ and 3.30.0 patch notes. Verification of the Q&A recording and the DatModz and Octavian showcase dates from 8 November. Pre-release material, without our own in-game tests of the mechanics. The filename retains the date of the initial investigation.
 
-## Wynik i zakres weryfikacji
+## Findings and verification scope
 
-7 listopada odczytano automatyczne angielskie napisy całej prezentacji PoE1 w [oficjalnej transmisji GGG — dzień 1](https://www.youtube.com/watch?v=8FKW2rKJyxA), około 03:08:45–03:35:25. Fragment o Fate'ach dodatkowo sprawdzono na klatkach filmu, w tym tooltipy i animację łączenia duplikatów.
+On 7 November, the automatic English captions for the entire PoE1 presentation in [GGG's official broadcast — day 1](https://www.youtube.com/watch?v=8FKW2rKJyxA) were read, approximately 03:08:45–03:35:25. The Fates segment was additionally checked against video frames, including tooltips and the duplicate-merging animation.
 
-8 listopada zweryfikowano doprecyzowania z [oryginalnego panelu PoE1 Q&A — dzień 2](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11220s), w szczególności około **03:07:06–03:10:07**. Źródłem były angielskie napisy automatyczne pobrane bezpośrednio z transmisji kanału Path of Exile. Pobrano zakres obejmujący panel i wyszukano wypowiedzi o kartach, łączeniu, nagrodach oraz rarity; odczytano cały fragment o Fates wraz z kontekstem. Odtworzono też wybrane momenty w odtwarzaczu YouTube i porównano wyświetlane napisy oraz czas z pobranymi segmentami. Klatka obrazu potwierdziła, że jest to panel rozmówców, a nie demonstracja łączenia kart w grze.
+On 8 November, clarifications from the [original PoE1 Q&A panel — day 2](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11220s) were verified, particularly around **03:07:06–03:10:07**. The source was the automatic English captions downloaded directly from the Path of Exile channel's broadcast. A range covering the panel was downloaded and searched for statements about cards, merging, rewards and rarity; the entire Fates segment was read in context. Selected moments were also played in the YouTube player, and the displayed captions and timing were compared with the downloaded segments. A video frame confirmed that this was a discussion panel, rather than an in-game demonstration of merging cards.
 
-To bezpośrednia weryfikacja treści napisów oficjalnego nagrania, **nie niezależna transkrypcja ze słuchu ani test działania gry**. ASR zawiera błędy, zwłaszcza w nazwach; zapisuje m.in. Fated jako „faded”. Pisowni tej etykiety nie potwierdzono na tooltipie w Q&A; potwierdzono ją później na obrazie pokazu DatModz. Czasy odnoszą się do całej transmisji; linki zaczynają się kilka sekund przed wypowiedzią. Zakres i identyfikatory segmentów zapisano w [metryce weryfikacji](evidence/qa-2026-11-08-verification.json).
+This is direct verification of the caption content from the official recording, **not an independent transcription by ear or a test of the game's behavior**. The ASR contains errors, particularly in names; for example, it transcribes Fated as “faded”. The spelling of this label was not confirmed on a tooltip in the Q&A; it was later confirmed in the DatModz showcase footage. Timestamps refer to the entire broadcast; links start a few seconds before the statement. The range and segment identifiers are recorded in the [verification metadata](evidence/qa-2026-11-08-verification.json).
 
-Następnie sprawdzono [pokaz DatModz i Octaviana w dniu 1](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=25200s). Ponieważ zapis nie udostępniał już napisów YouTube, wykonano lokalną transkrypcję dźwięku **07:00:00–07:27:00** przy użyciu whisper.cpp 1.9.2 / base.en i odczytano ją w całości. Wybór oraz przywoływanie Fates porównano z klatkami nagrania, a sekwencję scalania dodatkowo sprawdzono co sekundę. To automatyczna transkrypcja i analiza obrazu, bez niezależnej korekty ze słuchu. [Metryka pokazu i zapisane klatki](evidence/showcase-2026-11-08-verification.json).
+The [DatModz and Octavian showcase on day 1](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=25200s) was then checked. As YouTube captions were no longer available for the recording, the audio from **07:00:00–07:27:00** was transcribed locally using whisper.cpp 1.9.2 / base.en, and the entire transcription was read. Fate selection and invocation were compared with video frames, and the merging sequence was additionally checked at one-second intervals. This is automatic transcription and image analysis, without independent correction by ear. [Showcase metadata and saved frames](evidence/showcase-2026-11-08-verification.json).
 
-Początkowy błąd odtwarzacza z pierwszego rozpoznania udało się rozwiązać przez odczyt publicznych napisów i segmentów transmisji. Materiały prasowe i późniejsza relacja społecznościowa służyły do odnalezienia szczegółów; poniższe ustalenia z Q&A sprawdzono już w źródle pierwotnym.
+The initial player error encountered during the first investigation was resolved by reading public captions and broadcast segments. Press materials and a later community report helped locate details; the Q&A findings below have since been checked against the primary source.
 
-## Potwierdzone reguły
+## Confirmed rules
 
-- Zwykłe Fates pozostają w instancji, w której zostały zebrane. Pokaz mówi o zbieraniu nawet czterech–pięciu kart w obszarze i przywoływaniu maksymalnie trzech. Cztery–pięć nie zostało przedstawione jako bezwzględny limit. Każda karta ma przynajmniej jedną zwykłą nagrodę; może mieć też combo. [Fragment](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11590s).
-- Combo wymaga odpowiedniej liczby kopii **tej samej ikony nagrody**, a nie stałego zestawu nazw Fate'ów. [Fragment](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11620s).
+- Regular Fates remain in the instance in which they were collected. The showcase mentions collecting as many as four–five cards in an area and invoking a maximum of three. Four–five was not presented as an absolute limit. Each card has at least one regular reward; it may also have a combo. [Segment](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11590s).
+- A combo requires the appropriate number of copies of **the same reward icon**, rather than a fixed set of Fate names. [Segment](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11620s).
 
-| Combo | Wymaganie | Efekt | Dowód |
+| Combo | Requirement | Effect | Evidence |
 | --- | --- | --- | --- |
-| Item Rarity | 3 kopie właściwej ikony | Bardzo duże zwiększenie Item Rarity bossa; bez podanej liczby | [03:13:50](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11630s), evidence/item-rarity-03h13m57.png |
-| Exceptional Gem | 3 kopie właściwej ikony | Dodatkowy Exceptional Gem; prowadzący określa go jako exceptional support | [03:14:30](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11670s), evidence/exceptional-tooltip-03h14m37.png |
-| Dreadmaidens' Sacrament | 2 kopie właściwej ikony | Konkretny unique Basalt Flask | [03:14:45](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11685s), evidence/flask-tooltip-03h14m57.png |
+| Item Rarity | 3 copies of the appropriate icon | A very large increase to the boss's Item Rarity; no number given | [03:13:50](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11630s), evidence/item-rarity-03h13m57.png |
+| Exceptional Gem | 3 copies of the appropriate icon | An additional Exceptional Gem; the presenter describes it as an exceptional support | [03:14:30](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11670s), evidence/exceptional-tooltip-03h14m37.png |
+| Dreadmaidens' Sacrament | 2 copies of the appropriate icon | A specific unique Basalt Flask | [03:14:45](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11685s), evidence/flask-tooltip-03h14m57.png |
 
-Pokazane Bloodthirsty + Sanguine + Deathbringer uruchamiają Exceptional Gem. To przykład konkretnych kart z pasującymi ikonami, nie uniwersalna receptura na te trzy nazwy. Wildfire pokazano z ikoną flaska.
+The shown Bloodthirsty + Sanguine + Deathbringer activate Exceptional Gem. This is an example of specific cards with matching icons, rather than a universal recipe for those three names. Wildfire was shown with a flask icon.
 
-## Duplikaty: wypowiedź i obserwacja interfejsu
+## Duplicates: statement and interface observation
 
-GGG zapowiada potrojenie nagród **pierwszego zagranego Fate'a** po połączeniu kopii tego samego typu. [Prezentacja](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11700s). W późniejszym Q&A pada wprost, że **nagrody drugiej karty są odrzucane**, a karty można wycofać i zagrać ponownie w innej kolejności. Nie chodzi o potrojenie sumy nagród obu kart. [Q&A, od 03:09:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11385s).
+GGG announces that the rewards of **the first Fate played** are tripled after merging copies of the same type. [Presentation](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11700s). The later Q&A explicitly states that **the second card's rewards are discarded**, and that cards can be withdrawn and played again in a different order. This does not mean tripling the combined rewards of both cards. [Q&A, from 03:09:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11385s).
 
-Sekwencja dwóch Conjurerów pokazuje dodatkowo:
+The two-Conjurer sequence additionally shows that:
 
-- z dwóch kart powstaje jedna karta w pierwszym slocie;
-- dwie zwykłe ikony pierwszej karty pojawiają się po trzy razy;
-- osobna ikona drugiej karty nie pojawia się w wyniku;
-- aktywuje się ikona combo currency, a po prawej pozostaje wyszarzona kopia;
-- karta po połączeniu ma więcej piór oznaczających tier.
+- the two cards become one card in the first slot;
+- the first card's two regular icons each appear three times;
+- the second card's separate icon does not appear in the result;
+- the currency combo icon activates, while a greyed-out copy remains on the right;
+- the merged card has more feathers indicating its tier.
 
-Dowody: evidence/duplicates-before-03h15m02.png, evidence/duplicates-after-03h15m03.png, evidence/duplicates-sequence-03h15m00.png.
+Evidence: evidence/duplicates-before-03h15m02.png, evidence/duplicates-after-03h15m03.png, evidence/duplicates-sequence-03h15m00.png.
 
-To potwierdza interakcję duplikatu z combo w pokazanym przykładzie. Interpretacja „potrojenie licznika combo, następnie rozliczenie progu” pasuje do obrazu, ale nie jest jeszcze zweryfikowaną ogólną regułą wszystkich combo. Nie należy automatycznie implementować jej dla każdej nagrody.
+This confirms the interaction between duplicates and a combo in the example shown. The interpretation “triple the combo counter, then evaluate the threshold” fits the footage, but is not yet a verified general rule for all combos. It should not automatically be implemented for every reward.
 
-Tooltip piór potwierdza, że wyższy tier zwiększa Item Rarity i może wzmacniać niebezpieczne efekty. Dowód: evidence/fate-tier-03h15m02.png.
+The feather tooltip confirms that a higher tier increases Item Rarity and may strengthen dangerous effects. Evidence: evidence/fate-tier-03h15m02.png.
 
-## Doprecyzowania z Q&A — zweryfikowane 8 listopada
+## Q&A clarifications — verified on 8 November
 
-| Ustalenie | Treść wypowiedzi i granica wniosku | Źródło w dniu 2 |
+| Finding | Statement and limits of the conclusion | Day 2 source |
 | --- | --- | --- |
-| Nagrody nie są na stałe przypisane do nazwy Fate'a | Nagrody losują się niezależnie od typu karty; Rot jest przykładem karty, która nie musi zawsze dawać currency. Nie ustala to równych szans wszystkich nagród ani niezależności poszczególnych ikon od siebie. | [03:07:30](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11250s), wypowiedź ok. 03:07:36–03:07:56 |
-| Efekt ikony może objąć także pozostały łup bossa | Przykład: efekt zapewniający mod szybkości na wszystkich butach upuszczanych przez wzmocnionego potwora gwarantuje również kilka par butów. Obejmuje też inne buty, które ten potwór i tak by upuścił. Nie wolno sprowadzać tego do jednej dodatkowej sztuki przedmiotu. | [03:07:50](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11270s), wypowiedź ok. 03:07:56–03:08:11 |
-| Przedmioty zmodyfikowane przez efekt mają etykietę Fated | Etykieta odróżnia je przy dropie, podobnie jak Superior oznacza jakość. Q&A opisuje jej działanie; pisownię potwierdza późniejsza kontrola obrazu z pokazu DatModz, opisana niżej. | [03:08:05](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11285s), wypowiedź ok. 03:08:11–03:08:21 |
-| Gwarantowany mod ma być wartościowy | Wyjaśnienie na przykładzie fizycznego moda wskazuje, że jest on wysokiego tieru. Nie podano konkretnego tieru, wartości, listy modów ani obietnicy T1 na każdym przedmiocie. | [03:08:20](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11300s), wypowiedź ok. 03:08:21–03:08:46 |
-| Rarity bossa wpływa również na przedmioty z szablonów nagród | Szablony przedmiotów mogą być modyfikowane przez rarity przypisanego potwora. W omawianym przykładzie także sam przedmiot może częściej mieć wyższy tier. To częściowo rozstrzyga wcześniejsze pytanie o wymuszone nagrody; nie ustala wpływu rarity na każde combo, currency, Exceptional Gems czy konkretny unique. | [03:08:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11325s), wypowiedź ok. 03:08:46–03:09:06 |
-| Dwie karty tieru 2 mogą dać tier 3 | W kontekście duplikatów i przykładu dwóch Rot pada wyjaśnienie, że w endgame są wersje tieru 2 i 3, a tier 3 otrzymuje się przez połączenie dwóch kart tieru 2. Nie jest to dowód reguły dla dwóch dowolnych nazw, mieszanych tierów ani kolejnego scalania z kartą tieru 3. | [03:09:30](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11370s), wypowiedź ok. 03:09:36–03:09:51 |
-| Kolejność duplikatów wybiera zachowane nagrody | Pierwsza karta: nagrody ×3. Druga karta: jej nagrody odpadają. Można wycofać karty i zmienić kolejność przed rozpoczęciem walki. Potwierdza to wcześniejszą obserwację animacji Conjurerów, ale nie ujawnia pełnego algorytmu combo. | [03:09:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11385s), wypowiedź ok. 03:09:51–03:10:07 |
+| Rewards are not permanently assigned to a Fate name | Rewards are rolled independently of the card type; Rot is an example of a card that does not always have to give currency. This does not establish equal probabilities for all rewards or independence between individual icons. | [03:07:30](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11250s), statement around 03:07:36–03:07:56 |
+| An icon's effect may also apply to the boss's other loot | Example: an effect that provides a speed mod on all boots dropped by the empowered monster also guarantees several pairs of boots. It also applies to other boots that the monster would have dropped anyway. This must not be reduced to one additional item. | [03:07:50](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11270s), statement around 03:07:56–03:08:11 |
+| Items modified by the effect have the Fated label | The label distinguishes them when they drop, similarly to how Superior indicates quality. The Q&A describes its behavior; the spelling is confirmed by the later visual check of the DatModz showcase described below. | [03:08:05](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11285s), statement around 03:08:11–03:08:21 |
+| The guaranteed mod is intended to be valuable | The explanation uses a physical mod as an example and indicates that it is high tier. No specific tier, value, mod list or promise of T1 on every item was given. | [03:08:20](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11300s), statement around 03:08:21–03:08:46 |
+| Boss rarity also affects items from reward templates | Item templates can be modified by the assigned monster's rarity. In the example discussed, the item itself may also be more likely to have a higher tier. This partially resolves the earlier question about forced rewards; it does not establish how rarity affects every combo, currency, Exceptional Gems or a specific unique. | [03:08:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11325s), statement around 03:08:46–03:09:06 |
+| Two tier 2 cards can produce tier 3 | In the context of duplicates and the example of two Rot cards, the explanation states that tier 2 and 3 versions exist in endgame, and tier 3 is obtained by merging two tier 2 cards. This is not evidence of a rule for any two names, mixed tiers or further merging with a tier 3 card. | [03:09:30](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11370s), statement around 03:09:36–03:09:51 |
+| Duplicate order determines which rewards are retained | First card: rewards ×3. Second card: its rewards are discarded. Cards can be withdrawn and reordered before starting the fight. This confirms the earlier observation of the Conjurer animation, but does not reveal the full combo algorithm. | [03:09:45](https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11385s), statement around 03:09:51–03:10:07 |
 
-**Trzy odrębne znaczenia tieru:** tier karty Fate, tier upuszczonego przedmiotu i tier jego konkretnego moda. Q&A rozróżnia je w tej samej rozmowie; nie należy przenosić numeracji ani zasad skalowania z jednego na drugi.
+**Three distinct meanings of tier:** the Fate card's tier, the dropped item's tier and the tier of its specific mod. The Q&A distinguishes them within the same discussion; numbering and scaling rules should not be transferred from one to another.
 
-## Pokaz DatModz i Octaviana — trzy sprawdzone pytania
+## DatModz and Octavian showcase — three questions checked
 
-Przed przywołaniem gracz ma **Torchbearer T2 + Torchbearer T2 + Tempest T2**. Po zagraniu dwóch Torchbearerów pierwsza karta ma trzy pióra (T3), a środkowy slot zostaje zakryty czarnymi piórami. Następnie Tempest trafia do prawego slotu; gracz zatwierdza zestaw. Sekwencja przypada około **07:24:51–07:25:08**. [Nagranie od 07:24:50](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26690s).
+Before invocation, the player has **Torchbearer T2 + Torchbearer T2 + Tempest T2**. After playing the two Torchbearers, the first card has three feathers (T3), and the middle slot is covered with black feathers. Tempest then goes into the right-hand slot; the player confirms the set. The sequence occurs around **07:24:51–07:25:08**. [Recording from 07:24:50](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26690s).
 
-| Pytanie | Co rzeczywiście pokazano | Wniosek |
+| Question | What was actually shown | Conclusion |
 | --- | --- | --- |
-| Trzeci duplikat | Są tylko dwa Torchbearery. Około 07:24:57–07:25:01 Octavian zachęca do zagrania trzeciej karty dla jej podstawowych nagród; na ekranie jest to **Tempest**. | „Trzecia karta” nie oznacza trzeciej kopii Torchbearera. Dalsze scalanie i kolejny mnożnik pozostają nieustalone. |
-| Mieszane tiery | Scalane Torchbearery mają po dwa pióra. Wynik ma trzy; pozostały Tempest nadal dwa. | Potwierdzony jest zestaw wynikowy **Torchbearer T3 + Tempest T2**, ale nie scalanie tej samej nazwy o różnych tierach. |
-| Limit kart po scaleniu | Użyto trzech kart wejściowych, otrzymując dwie aktywne karty. Środkowy slot pozostaje zakryty również po dodaniu Tempesta, aż do zatwierdzenia. Nie ma czwartej karty ani próby jej zagrania. | Scalenie nie blokuje dodania trzeciej karty wejściowej. Obraz **nie potwierdza odzyskania slotu** i sugeruje zachowanie kosztu dwóch wejść; twardy limit po scaleniu nadal nie jest rozstrzygnięty. |
+| Third duplicate | There are only two Torchbearers. Around 07:24:57–07:25:01, Octavian encourages playing the third card for its base rewards; on screen, this is **Tempest**. | “Third card” does not mean a third copy of Torchbearer. Further merging and another multiplier remain undetermined. |
+| Mixed tiers | The Torchbearers being merged each have two feathers. The result has three; the remaining Tempest still has two. | The resulting set **Torchbearer T3 + Tempest T2** is confirmed, but merging cards with the same name and different tiers is not. |
+| Card limit after merging | Three input cards were used, producing two active cards. The middle slot remains covered after adding Tempest, through to confirmation. There is no fourth card or attempt to play one. | Merging does not prevent adding the third input card. The footage **does not confirm that a slot is recovered** and suggests that the cost of two inputs is retained; the hard limit after merging remains unresolved. |
 
-Klatki porównawcze: [trzy karty przed zagraniem, ok. 07:24:51](evidence/showcase-before-07h24m51.png), [po scaleniu pary, ok. 07:24:55](evidence/showcase-merged-07h24m55.png), [po dodaniu Tempesta, ok. 07:25:00](evidence/showcase-third-card-07h25m00.png). Nie należy już opisywać miejsca po drugiej karcie jako potwierdzonego wolnego slotu.
+Comparison frames: [three cards before playing, around 07:24:51](evidence/showcase-before-07h24m51.png), [after merging the pair, around 07:24:55](evidence/showcase-merged-07h24m55.png), [after adding Tempest, around 07:25:00](evidence/showcase-third-card-07h25m00.png). The space left by the second card should no longer be described as a confirmed free slot.
 
-Pokaz ponownie potwierdza znaczenie kolejności: około 07:23:55–07:24:09 i 07:24:50–07:24:56 Octavian mówi o potrojeniu nagród pierwszego Torchbearera. Nie przedstawia reguły trzech duplikatów ani tabeli mieszanych tierów. [Pierwsze objaśnienie](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s).
+The showcase again confirms the importance of order: around 07:23:55–07:24:09 and 07:24:50–07:24:56, Octavian talks about tripling the first Torchbearer's rewards. He does not present a rule for three duplicates or a mixed-tier table. [First explanation](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s).
 
-Dodatkowo [tooltip z ok. 07:25:55](evidence/showcase-fated-07h25m55.png) jednoznacznie pokazuje pisownię **Fated Apex Rapier**. Widoczne na nim „Tier 3” dotyczy przedmiotu, nie karty Fate. [Fragment łupu](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26735s).
+Additionally, the [tooltip from around 07:25:55](evidence/showcase-fated-07h25m55.png) clearly shows the spelling **Fated Apex Rapier**. Its visible “Tier 3” refers to the item, rather than the Fate card. [Loot segment](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26735s).
 
-## Aktualizacja z 11 listopada 2026
+## Update of 11 November 2026
 
-Ponownie sprawdzono tekst [oficjalnego FAQ GGG](https://www.pathofexile.com/forum/view-thread/4013527) oraz sekcje „The Covens of Umbra Challenge League” i „Item Generation Changes” w [patch notes 3.30.0](https://www.pathofexile.com/forum/view-thread/4013680). Oba źródła odczytano 11 listopada 2026. Jest to weryfikacja zapowiedzi, nie zachowania gry.
+The text of [GGG's official FAQ](https://www.pathofexile.com/forum/view-thread/4013527) and the “The Covens of Umbra Challenge League” and “Item Generation Changes” sections in the [3.30.0 patch notes](https://www.pathofexile.com/forum/view-thread/4013680) were checked again. Both sources were read on 11 November 2026. This verifies announcements, rather than game behavior.
 
-### FAQ: wybór kolejnych ofert i źródła rarity
+### FAQ: selecting subsequent offers and sources of rarity
 
-- Następny zestaw Fate'ów pozostaje ukryty, dopóki gracz nie wybierze karty z poprzedniej oferty. Interakcja z kolejnym spotkaniem może ponownie pokazać nierozstrzygnięty zestaw.
-- Rarity z ekwipunku gracza nie wpływa na walutę wypadającą z przeciwników; rarity map i potworów może na nią wpływać. Sprzeczna kartka z gry karcianej ExileCon była według GGG błędna i nieaktualna.
+- The next set of Fates remains hidden until the player chooses a card from the previous offer. Interacting with another encounter may show the unresolved set again.
+- Rarity from the player's equipment does not affect currency dropped by enemies; map and monster rarity may affect it. According to GGG, the contradictory card from the ExileCon card game was incorrect and outdated.
 
-### Patch notes: ogólne zasady łupu
+### Patch notes: general loot rules
 
-- Rarity potwora lub skrzyni wpływa na wybór puli dropu. Walutę rozdzielono na Magic Currency oraz Rare Currency, obejmującą m.in. Chaos, Divine i Mirror. Usunięto wcześniejsze ograniczenia dropu przedmiotów bez rarity z magicznych, rzadkich i unikalnych potworów.
-- Od aktu 6 magiczny lub rzadki przedmiot może mieć **Item Tier 2–5**. Wpływa on na mody, bazę, jakość, sockety i linki. T5 może otrzymać +1 do item level lub wypaść jako fractured magic. Ruthless nie ma Item Tiers.
-- Rarity potwora wpływa na szansę przedmiotów z tierem, a na wyższych poziomach na rzadszego unique, gdy wypada unique. Player rarity również wpływa na szansę tierowanego ekwipunku.
-- **Atlas Drops** zastępuje Item Quantity w modyfikatorach map; skaluje mapy, Threads, określone dodatkowe dropy i zasoby ligowe, nie cały łup.
+- Monster or chest rarity affects the choice of drop pool. Currency has been divided into Magic Currency and Rare Currency, the latter including Chaos, Divine and Mirror. Previous restrictions on drops of items without rarity from magic, rare and unique monsters have been removed.
+- From act 6, a magic or rare item may have **Item Tier 2–5**. This affects mods, base, quality, sockets and links. T5 may receive +1 to item level or drop as fractured magic. Ruthless does not have Item Tiers.
+- Monster rarity affects the chance of tiered items and, at higher levels, of a rarer unique when a unique drops. Player rarity also affects the chance of tiered equipment.
+- **Atlas Drops** replaces Item Quantity in map modifiers; it scales maps, Threads, specified additional drops and league resources, rather than all loot.
 
-Patch notes nie podają algorytmu scalania Fate'ów, pełnego katalogu combo ani prawdopodobieństw. Ogólnych reguł dropu nie należy automatycznie stosować do każdej gwarantowanej nagrody Fate.
+The patch notes do not provide the Fate-merging algorithm, a full combo catalogue or probabilities. General drop rules should not automatically be applied to every guaranteed Fate reward.
 
-## Konsekwencje dla Fate Advisor
+## Implications for Fate Advisor
 
-Bieżącą implementację i ograniczenia opisuje [instrukcja Advisora](../docs/fate-advisor.md). Poniższe wnioski wyznaczają zakres interpretacji dowodów, nie potwierdzają wdrożenia wszystkich proponowanych funkcji.
+The current implementation and limitations are described in the [Advisor guide](../docs/fate-advisor.md). The conclusions below define the scope for interpreting the evidence; they do not confirm that all proposed features have been implemented.
 
-Warto zbudować doradcę wyboru w obrębie obszaru. Dane pojedynczej karty powinny zawierać typ, tier, zwykłe nagrody oraz ikony combo z progami. Nazwa nie wystarcza.
+An advisor for choices within an area is worth building. Data for an individual card should include its type, tier, regular rewards and combo icons with thresholds. The name alone is insufficient.
 
-Doradca powinien porównywać kolejność zagrań, pokazywać aktywowane combo i wyjaśniać, dlaczego korzystniejsza kopia powinna zostać przywołana jako pierwsza. Potrzebne jest porównanie stanu przed i po połączeniu; samo policzenie ikon w początkowym zestawie może dawać błędny wynik.
+The advisor should compare play orders, show activated combos and explain why the more beneficial copy should be invoked first. A comparison of the state before and after merging is needed; simply counting icons in the initial set may produce an incorrect result.
 
-Q&A uzasadnia zachowanie osobnych danych o tierze karty, efektach nagród i wynikowym łupie. Opis nagrody powinien pozwalać rozróżnić dodatkowe przedmioty od efektu obejmującego wszystkie przedmioty danego typu z bossa. Przy duplikatach trzeba zachować informację, które nagrody należały do pierwszej, a które do drugiej karty; samo sumowanie zestawu traci tę różnicę. Przejście dwóch zgodnych kart T2 do T3 można odnotować jako zapowiedzianą regułę, bez ekstrapolowania jej na nieopisane połączenia.
+The Q&A supports keeping separate data on card tier, reward effects and resulting loot. The reward description should distinguish additional items from an effect applying to all items of a given type from the boss. For duplicates, information about which rewards belonged to the first card and which to the second must be retained; simply summing the set loses that distinction. The transition from two matching T2 cards to T3 can be recorded as an announced rule, without extrapolating to undocumented combinations.
 
-Pokaz DatModz uzasadnia osobne liczenie **kart wejściowych** i **kart po scaleniu**: trzy wejścia dają tu dwie aktywne karty. Nie należy z liczby kart wynikowych wyprowadzać pozwolenia na czwarte wejście. Mieszane tiery w zestawie wynikowym nie potwierdzają możliwości ich dalszego scalania.
+The DatModz showcase supports counting **input cards** and **cards after merging** separately: three inputs produce two active cards here. The number of resulting cards should not be used to infer permission for a fourth input. Mixed tiers in the resulting set do not confirm that they can be merged further.
 
-Nie należy jeszcze obiecywać optymalizacji zysku w divine/hour. Pierwsza wersja może rekomendować warianty pod cel gracza: wybrany przedmiot, kategoria nagrody albo ograniczenie trudności. Reguły niezweryfikowane powinny zwracać „nieustalone”, zamiast udawać brak synergii.
+Profit optimization in divine/hour should not yet be promised. The first version can recommend variants based on the player's objective: a chosen item, reward category or difficulty limit. Unverified rules should return “undetermined”, rather than pretending there is no synergy.
 
-**Wnioski z FAQ dla planowania i zbierania danych:** rekomendacja kolejnej karty może korzystać z bieżącej oferty i już zebranych kart, bez znajomości przyszłych ofert. Plan przywołania dotyczy natomiast zgromadzonego zestawu. Ponownie pokazana oferta nie jest dowodem nowego losowania. Nowy capture ID ani przekroczenie 15-sekundowego okna wskazówki o duplikacie nie dowodzą niezależności obserwacji; nie należy jednak automatycznie scalać podobnych ofert bez dowodu ich tożsamości.
+**FAQ implications for planning and data collection:** the next-card recommendation can use the current offer and cards already collected, without knowing future offers. The invocation plan, meanwhile, concerns the collected set. An offer being shown again is not evidence of a new roll. A new capture ID or exceeding the 15-second duplicate-hint window does not prove that observations are independent; however, similar offers should not automatically be merged without evidence that they are the same offer.
 
-**Wnioski dla dalszych badań łupu:** rozdzielać rarity gracza, mapy i potwora, Atlas Drops oraz rzeczywisty wynik walki. Zachowywać patch i poziom obszaru. Obecny kontrakt nie ma osobnych pól na te źródła rarity ani wynikowy ekwipunek; dodatkowe obserwacje można opisać w `notes`, bez dopisywania nieobsługiwanych pól. Tier przedmiotu i jego moda nie należą do pola tieru karty. Same liczby ikon nie wystarczają do wyceny nagród.
+**Implications for further loot research:** distinguish player, map and monster rarity, Atlas Drops and the actual fight outcome. Retain the patch and area level. The current contract does not have separate fields for these sources of rarity or the resulting equipment; additional observations can be described in `notes`, without adding unsupported fields. Item tier and mod tier do not belong in the card-tier field. Icon counts alone are insufficient for valuing rewards.
 
-## Nadal nieustalone
+## Still undetermined
 
-1. Pełny katalog ikon, progów i nagród oraz ich częstości.
-2. Czy trzeci duplikat ponownie mnoży nagrody, co dzieje się przy próbie dalszego łączenia karty T3 i jak łączą się różne tiery. Q&A opisuje endgame'owe T2/T3 i przejście T2 + T2 do T3. Pokaz DatModz zawiera tylko parę T2 + T2 i inną kartę T2, więc nie rozstrzyga pozostałych kombinacji.
-3. Czy po scaleniu można wykorzystać więcej niż trzy karty wejściowe. Pokaz DatModz potwierdza trzy wejścia i dwie karty wynikowe, ale miejsce po drugiej karcie jest zakryte piórami, a nie widocznie wolne. Hipoteza zachowania kosztu wejść jest zgodna z obrazem; nie przeprowadzono próby czwartego wejścia.
-4. Pełny algorytm oddziaływania duplikatów na combo, wielokrotne wypłaty i pozostałe kopie ikon.
-5. Dokładne ilości nagród, pula Exceptional Gems i zależności od poziomu obszaru.
-6. Dokładny wpływ rarity na każdą kategorię wymuszonych nagród, jej ilość i combo. Q&A potwierdza wpływ rarity potwora na szablony przedmiotów i ich tier, ale nie podaje wzorów, szans ani uniwersalnego mnożnika wszystkich nagród.
-7. Dokładny katalog efektów Fated, liczby gwarantowanych przedmiotów, pule i tiery ich modów oraz wpływ poziomu obszaru. Przykład kilku par butów nie daje konkretnej liczby ani stałego tieru moda.
+1. The full catalogue of icons, thresholds and rewards, and their frequencies.
+2. Whether a third duplicate multiplies rewards again, what happens when attempting to merge a T3 card further, and how different tiers combine. The Q&A describes endgame T2/T3 and the T2 + T2 to T3 transition. The DatModz showcase contains only a T2 + T2 pair and another T2 card, so it does not resolve the remaining combinations.
+3. Whether more than three input cards can be used after merging. The DatModz showcase confirms three inputs and two resulting cards, but the space left by the second card is covered with feathers, rather than visibly free. The hypothesis that the input cost is retained is consistent with the footage; no fourth input was attempted.
+4. The full algorithm for how duplicates affect combos, multiple payouts and remaining icon copies.
+5. Exact reward quantities, the Exceptional Gems pool and dependencies on area level.
+6. The exact effect of rarity on each category of forced rewards, its quantity and combos. The Q&A confirms that monster rarity affects item templates and their tier, but provides no formulas, probabilities or universal multiplier for all rewards.
+7. The exact catalogue of Fated effects, numbers of guaranteed items, their mod pools and tiers, and the effect of area level. The example of several pairs of boots provides neither a specific number nor a fixed mod tier.
 
-## Źródła uzupełniające
+## Supplementary sources
 
-- [Oficjalna strona ligi](https://www.pathofexile.com/covens).
-- [Pakiet prasowy GGG](https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip): wcześniej odczytano m.in. Fates_UI.png, Fates_UI_2.png, InvokeFates_1.png, InvokeFates_2.png. Potwierdzają różne zestawy ikon przy tej samej nazwie Fate'a.
-- [Relacja Output Lag](https://outputlag.com/news/path-of-exile-3-30-covens-of-umbra-invoke-fate-cards-on-area-bosses-for-bigger-loot/) pomogła odnaleźć nagranie. Główne ustalenia powyżej sprawdzono już bezpośrednio w materiale GGG.
-- [Relacja Karui Polska z Q&A](https://karuipolska.pl/newsy/exilecon-2026-developer-panel-path-of-exile-1-q-a) wskazała doprecyzowania do sprawdzenia. Nie stanowi podstawy statusu „zweryfikowane” — jest nią oryginalna transmisja dnia 2 i jej napisy.
+- [Official league page](https://www.pathofexile.com/covens).
+- [GGG press kit](https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip): previously inspected files include Fates_UI.png, Fates_UI_2.png, InvokeFates_1.png and InvokeFates_2.png. They confirm different icon sets for the same Fate name.
+- The [Output Lag report](https://outputlag.com/news/path-of-exile-3-30-covens-of-umbra-invoke-fate-cards-on-area-bosses-for-bigger-loot/) helped locate the recording. The main findings above have since been checked directly against GGG's material.
+- The [Karui Polska Q&A report](https://karuipolska.pl/newsy/exilecon-2026-developer-panel-path-of-exile-1-q-a) identified clarifications to check. It is not the basis for the “verified” status — that basis is the original day 2 broadcast and its captions.
 
-Aktualizacja dokumentacji z 11 listopada nie zmienia silnika rekomendacji, katalogu rozpoznawania ani schematu danych. Nie wykonano nowych testów mechaniki w grze. Nieustalone reguły wymienione powyżej zachowują ten status.
+The documentation update of 11 November does not change the recommendation engine, recognition catalogue or data schema. No new in-game tests of the mechanics were performed. The undetermined rules listed above retain that status.

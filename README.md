@@ -110,7 +110,7 @@ the website and API run together on Cloudflare. No GitHub Pages service is requi
 
 [Data contract](docs/data-contract.md) describes provenance, revisions and dataset
 limitations. [Architecture](docs/architecture.md) maps the modules and trust boundaries.
-The [repository audit and implementation status](docs/AUDYT_REPO_2026-11-09.md)
+The [repository audit and implementation status](docs/REPOSITORY_AUDIT_2026-11-09.md)
 tracks priorities, completed fixes and remaining native validation. Reproducible
 [scan measurements](docs/scan-performance.md) cover 1,000 and 10,000 capture files.
 

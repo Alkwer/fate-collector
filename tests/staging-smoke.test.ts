@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process'
+import { resolve } from 'node:path'
 import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { RETENTION_MS, diagnosticSubmissionSchema, diagnosticText } from '../shared/diagnostics'
 import { expect, it, vi } from 'vitest'
@@ -16,6 +18,18 @@ const status = {
   ingestionEnabled: true, captureIngestionEnabled: true, consentRequired: true, consentPolicyVersion: CONSENT_VERSION, diagnosticsEnabled: true,
 }
 const options = { url, expectedRevision, expectedReleaseId, captureKey, ingestKey }
+
+it('starts the standalone Node CLI and validates configuration before making requests', () => {
+  const result = spawnSync(process.execPath, ['scripts/smoke-staging.mjs'], {
+    cwd: resolve(import.meta.dirname, '..'),
+    env: { ...process.env, STAGING_URL: 'https://example.invalid', STAGING_READ_ONLY: 'true' },
+    encoding: 'utf8', timeout: 10_000, windowsHide: true,
+  })
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(1)
+  expect(result.stdout).toBe('')
+  expect(result.stderr.trim()).toBe('STAGING_URL must be an HTTPS app-staging.*.workers.dev origin.')
+})
 
 function mockStaging(override?: (path: string, method: string, init?: RequestInit) => Response | undefined) {
   const uploads = new Set<string>()
