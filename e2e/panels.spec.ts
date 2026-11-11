@@ -1,6 +1,35 @@
 import { test, expect } from '@playwright/test'
 import { closePanels, openPanel } from './ui'
 
+test('Back to advice keeps focus on the decision after the editor closes', async ({ page }) => {
+  await page.goto('/')
+  await openPanel(page, '.more-actions')
+  await page.getByRole('button', { name: 'Load example', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Back to advice', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Edit details', exact: true })).not.toBeVisible()
+  await expect(page.locator('#advisor-heading')).toBeFocused()
+})
+
+test('closing nested OCR preserves the editor save controls and draft', async ({ page }) => {
+  await page.goto('/')
+  await openPanel(page, '.advanced-panel')
+  const editor = page.getByRole('dialog', { name: 'Edit details', exact: true })
+  await page.getByRole('textbox', { name: 'Notes', exact: true }).fill('Preserve this correction')
+  await page.getByRole('button', { name: 'Original OCR text', exact: true }).click()
+  const ocr = page.getByRole('dialog', { name: 'Original OCR text', exact: true })
+  await ocr.getByRole('button', { name: 'Close panel', exact: true }).click()
+  await expect(ocr).not.toBeVisible()
+  await expect(editor).toBeVisible()
+  await expect(editor.locator('.action-band')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Notes', exact: true })).toHaveValue('Preserve this correction')
+  await expect(page.getByRole('button', { name: 'Original OCR text', exact: true })).toBeFocused()
+  await page.getByRole('button', { name: 'Original OCR text', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await expect(ocr).not.toBeVisible()
+  await expect(editor.locator('.action-band')).toBeVisible()
+})
+
 for (const theme of ['mineral', 'trail']) test(`${theme}: secondary tasks use focused panels without accordion rows`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')

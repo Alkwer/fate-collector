@@ -28,9 +28,14 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
   useEffect(() => { if (autoOpen) show() }, [autoOpen])
   return <div className={`detail-panel ${className}`}>
     {trigger && <button type="button" className="panel-trigger" aria-haspopup="dialog" aria-controls={id} onClick={show}>{title}</button>}
-    <dialog id={id} ref={dialog} className="detail-dialog" aria-labelledby={`${id}-title`} onClose={() => {
+    <dialog id={id} ref={dialog} className="detail-dialog" aria-labelledby={`${id}-title`} onClose={event => {
+      // React bubbles close events from nested panels; only this panel changed state.
+      if (event.target !== event.currentTarget) return
       onOpenChange?.(false)
-      if (returnFocus.current?.isConnected) returnFocus.current.focus()
+      // Native close normally restores focus. Preserve an explicit destination
+      // selected by the caller (for example Back to advice or another panel).
+      const active = document.activeElement
+      if ((!active || active === document.body || event.currentTarget.contains(active)) && returnFocus.current?.isConnected) returnFocus.current.focus()
     }}>
       <div className="detail-heading"><h2 id={`${id}-title`} ref={heading} tabIndex={-1}>{title}</h2><button type="button" onClick={close} aria-label="Close panel">Close</button></div>
       <div className="detail-body">{children}</div>
