@@ -64,7 +64,7 @@ test('explains no improvement without sending complete data back for correction'
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'No improvement for this goal.' })).toBeVisible()
   await expect(page.locator('.advisor-baseline')).toContainText('5')
-  await expect(page.locator('.candidate-gain')).toContainText('No gain over your collection')
+  await expect(page.locator('.candidate-gain')).toContainText('0No gain')
   await expect(page.getByRole('region', { name: 'Data to check' })).toHaveCount(0)
 })
 
@@ -105,7 +105,7 @@ for (const width of [1440, 820, 390]) {
     await expect(page.getByRole('heading', { name: 'Recommended: Torchbearer' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(1)
     await expect(page.locator('.advisor-outcome')).toHaveAttribute('data-state', 'ready')
-    await expect(page.locator('.recommended-fate')).toContainText('+3 toward Currency')
+    await expect(page.locator('.recommended-fate .candidate-gain')).toContainText('+3Currency icons vs collection')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: join(tmpdir(), `fate-guided-${width}.png`), fullPage: true })
     await closePanels(page)

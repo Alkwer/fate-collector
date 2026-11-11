@@ -8,9 +8,9 @@ export interface DetailPanelHandle {
 }
 
 /** Secondary tasks get a focused workspace, without expanding the map underneath. */
-export function DetailPanel({ title, children, className = '', autoOpen = false, trigger = true, ref, footer, onOpenChange }: {
+export function DetailPanel({ title, children, className = '', autoOpen = false, trigger = true, triggerLabel, ref, footer, onOpenChange }: {
   title: ReactNode; children: ReactNode; className?: string; autoOpen?: boolean
-  trigger?: boolean; ref?: Ref<DetailPanelHandle>; footer?: ReactNode; onOpenChange?: (open: boolean) => void
+  trigger?: boolean; triggerLabel?: ReactNode; ref?: Ref<DetailPanelHandle>; footer?: ReactNode; onOpenChange?: (open: boolean) => void
 }) {
   const id = useId()
   const dialog = useRef<HTMLDialogElement>(null)
@@ -27,7 +27,7 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
   useImperativeHandle(ref, () => ({ show, close, isOpen: () => !!dialog.current?.open, element: dialog.current }))
   useEffect(() => { if (autoOpen) show() }, [autoOpen])
   return <div className={`detail-panel ${className}`}>
-    {trigger && <button type="button" className="panel-trigger" aria-haspopup="dialog" aria-controls={id} onClick={show}>{title}</button>}
+    {trigger && <button type="button" className="panel-trigger" aria-haspopup="dialog" aria-controls={id} onClick={show}>{triggerLabel ?? title}</button>}
     <dialog id={id} ref={dialog} className="detail-dialog" aria-labelledby={`${id}-title`} onClose={event => {
       // React bubbles close events from nested panels; only this panel changed state.
       if (event.target !== event.currentTarget) return

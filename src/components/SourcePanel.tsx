@@ -2,11 +2,12 @@ import { DetailPanel } from './DetailPanel'
 import { useRef } from 'react'
 import type { Evidence, Offer } from '../../shared/schema'
 import { hasNewerHelper, HELPER_VERSION } from '../lib/helper-version'
+import { AppIcon } from './AppIcon'
 
-interface Props { evidence: Evidence | null; automatic?: boolean; onPick: () => void; onFile: (file: File) => void }
-export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Props) {
+interface Props { evidence: Evidence | null; automatic?: boolean; compact?: boolean; onPick: () => void; onFile: (file: File) => void }
+export function SourcePanel({ evidence, automatic = false, compact = false, onPick, onFile }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
-  return <section className="panel source-panel" aria-labelledby="source-heading">
+  return <section className={`panel source-panel${compact ? ' compact-source' : ''}`} aria-labelledby="source-heading">
     <h2 id="source-heading">Your capture</h2>
     {hasNewerHelper(evidence?.helperVersion) && <aside className="helper-update" aria-label="Windows helper update">
       <strong>Newer Windows helper available</strong>
@@ -23,6 +24,10 @@ export function SourcePanel({ evidence, automatic = false, onPick, onFile }: Pro
       {evidence ? <>
         <button className="evidence-button" onClick={() => dialog.current?.showModal()} aria-label="Enlarge source screenshot"><img src={evidence.imageDataUrl} alt="Captured Fate offer" /></button>
         <div className="evidence-caption"><span>Select image to enlarge</span><button className="text-button" onClick={onPick}>Replace</button></div>
+      </> : compact ? <>
+        <AppIcon name="capture" />
+        {automatic ? <strong>Waiting for F9 capture</strong> : <button className="outline-button" onClick={onPick}>Import capture</button>}
+        {!automatic && <small>or paste with Ctrl+V</small>}
       </> : <>
         <svg className="upload-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M16 22V4m-7 7 7-7 7 7M5 20v7h22v-7" /></svg>
         <strong>{automatic ? 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}

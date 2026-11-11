@@ -175,7 +175,7 @@ Mineral Depth uses petrol and mint. Light Trail pairs an olive shell with pale n
 **Key Characteristics**
 
 - One decision surface with adjacent evidence
-- Quiet navigation and compact, ruled comparison rows
+- Quiet navigation, visual reward comparisons and numbered invocation sequences
 - Secondary tasks in named panels, opened by buttons; no accordion rows
 - Uncertainty communicated in words and color
 
@@ -234,6 +234,14 @@ Panel headings use 24px Source Sans 3 (21px on mobile). Headers and footers stay
 ### Decision and evidence
 
 The mode switch presents **Choose a Fate** and **Plan invocation** with a persistent pressed state. Show the best recommendation or the next concrete check and reveal reward priorities, explanations and alternative plans as needed. The original capture opens at full size. Targeted review opens the relevant card and **Back to advice** returns focus to the decision.
+
+The current-map offer presents up to three comparison columns, separated by rules rather than nested surfaces. Each shows the Fate name, tier diamonds with a text label, reward symbols and counts, a signed gain, and one collect action. On a phone these become compact rows with the gain beside the collect action. Repeated prose belongs in explanation panels; card modifiers remain available through a named Modifiers action. Provisional advice and unknown rewards remain explicit.
+
+Invocation uses numbered input positions with connecting arrows, exact collection/offer references and the recorded rewards. Supported merges include a T2 + T2 → T3 diagram and short labels explaining which rewards survive. The primary action, **Done in game**, records completion in the local collection; it never implies game automation. Regular outcome totals are icon units, combo totals retain their threshold and activation state, and portfolio totals remain priority points.
+
+Reward imagery combines the existing three sourced tooltip-reference images with neutral interface symbols for familiar categories. These interface symbols are reading aids, not claimed game artwork or new recognition evidence. Unknown kinds/meanings use a question mark with **Kind unknown** or **Unidentified** and a review cue; never infer meaning from a motif. Source evidence and the capture flow remain available. A filled map uses a compact import control.
+
+Visual decision styles live in `src/decision-visuals.css`, loaded after the existing stylesheet. Reward symbols are 48px in comparison columns and 24px in collection/sequence summaries. Signed gains use 30px and plan totals use 40px (36px on mobile). Labels stay at least 13px. Large text and symbols use the existing semantic palette in both themes.
 
 ## Do's and Don'ts
 
