@@ -135,6 +135,23 @@ test('a stale tab cannot overwrite a newer durable profile', async ({ page, cont
   await other.close()
 })
 
+test('invocation abstains when collected Fates cannot advance any configured priority', async ({ page }) => {
+  await page.goto('/')
+  await load(page, [fate('Armour only', [reward('Armour', 2)])])
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await page.getByRole('combobox', { name: 'Add reward', exact: true }).selectOption('custom')
+  await page.getByLabel('Reward name', { exact: true }).fill('Currency')
+  await page.getByRole('button', { name: 'Add priority', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Armour only to collected', exact: true }).click()
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'No supported portfolio recommendation.', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Mark this invocation completed' })).toHaveCount(0)
+  await expect(page.getByRole('complementary')).toContainText('1/12')
+  await priority(page, 'regular:armour')
+  await expect(page.getByRole('heading', { name: 'Suggested portfolio plan', exact: true })).toBeVisible()
+  await expect(page.locator('.advisor-plans article[data-best]')).toContainText('2 priority points')
+})
+
 for (const width of [1440, 820, 390]) {
   test(`weighted planner is usable at ${width}px`, async ({ page }) => {
     const errors = errorsOn(page)

@@ -21,6 +21,20 @@ const gem = { kind: 'combo', label: 'Exceptional Gem', weight: 8 } as const
 const currencyProfile: SolverProfile = { goals: [currency], avoidModifiers: [] }
 
 describe('weighted invocation search', () => {
+  it('abstains without positive progress, omits neutral alternatives, and keeps useful merge enablers', () => {
+    const neutral = fate('neutral', [reward('Armour')], { name: 'Rot' })
+    expect(solveInvocation([neutral], currencyProfile)).toMatchObject({ status: 'insufficient', plans: [], tiedBestPlanCount: 0 })
+    const unknown = fate('unknown', [reward('Unread', 1, { kind: 'unknown', identified: false })])
+    expect(solveInvocation([unknown], currencyProfile)).toMatchObject({ status: 'insufficient', plans: [], tiedBestPlanCount: 0,
+      warnings: expect.arrayContaining([expect.stringMatching(/unidentified/)]) })
+    const useful = fate('useful', [reward('Currency', 2)], { name: 'Rot' })
+    const merged = solveInvocation([neutral, useful], currencyProfile)
+    expect(merged.plans.map(plan => plan.score)).toEqual([6, 2])
+    expect(merged.plans[0]).toMatchObject({ cardIds: ['useful', 'neutral'], discardedCardIds: ['neutral'] })
+    expect(solveInvocation([fate('partial', [combo(gem.label, 1)])], { goals: [gem], avoidModifiers: [] })).toMatchObject({
+      status: 'ready', plans: [{ score: 0, progress: expect.closeTo(8 / 3) }],
+    })
+  })
   it('finds the compromise outside the top three single-goal plans', () => {
     const specialists = Array.from({ length: 4 }, (_, i) => [
       fate(`currency-${i}`, [reward('Currency', 12), reward('Armour')]),
@@ -96,7 +110,7 @@ describe('weighted invocation search', () => {
       rewards: [{ label: 'Currency', count: 31 }, { label: gem.label, count: null, threshold: 3, activated: false, uncertain: true, points: 0 }],
     })
     expect(solveInvocation([first, second], currencyProfile)).toMatchObject({ status: 'ready', plans: [
-      { score: 30, warnings: expect.arrayContaining([expect.stringMatching(/Combo behavior after merging/)]) }, {}, {},
+      { score: 30, warnings: expect.arrayContaining([expect.stringMatching(/Combo behavior after merging/)]) }, {},
     ] })
   })
 
@@ -175,7 +189,7 @@ describe('portfolio recommendation', () => {
       warnings: expect.arrayContaining([expect.stringMatching(/Conflicting thresholds/)]),
     })
     expect(solveInvocation([fate('a', [combo(gem.label, 2, 2)])], { goals: [gem], avoidModifiers: [] })).toMatchObject({
-      status: 'provisional', plans: [{ score: 0, progress: 0, rewards: [{ threshold: null, uncertain: true }] }],
+      status: 'insufficient', plans: [], warnings: expect.arrayContaining([expect.stringMatching(/Conflicting thresholds/)]),
     })
   })
 
@@ -192,7 +206,7 @@ describe('portfolio recommendation', () => {
     ])
     expect(solveInvocation([fate('unknown-threshold', [combo('Custom Combo', 3)])], {
       goals: [{ ...gem, label: 'Custom Combo' }], avoidModifiers: [],
-    })).toMatchObject({ status: 'provisional', plans: [{ rewards: [{ threshold: null, uncertain: true, activated: false }] }] })
+    })).toMatchObject({ status: 'insufficient', plans: [], warnings: expect.arrayContaining([expect.stringMatching(/threshold.*unknown/)]) })
   })
 
   it('filters whole cards before comparison, matches literal modifier fragments and reports every exclusion reason', () => {

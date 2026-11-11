@@ -91,6 +91,9 @@ consumed cards, and unresolved outcomes. Unlisted rewards remain visible with ze
 weight. Relevant unknowns keep the result provisional instead of asserting a zero
 return. **Mark this invocation completed** consumes exactly the listed inputs;
 the existing collection undo also restores them.
+If no plan establishes positive points or combo progress, invocation advice
+abstains and offers no completion action. Neutral cards can still enable useful
+merges during the search, but zero-result plans are not suggested as alternatives.
 
 Build filters exclude whole cards whose recorded modifiers contain any supplied
 literal phrase (case-insensitive). Individual offered or collected cards can also

@@ -268,11 +268,14 @@ export function solveInvocation(cards: FateCard[], profile: SolverProfile, exclu
   const excluded: SolverResult['excluded'] = []
   const pool = prepareCards(cards, input.profile, input.excludedIds, excluded)
   const { plans, warnings } = searchPlans(pool, input.weights, comboThresholds(pool, input.weights))
-  const best = plans[0]
+  // Keep neutral inputs in the search: they can enable a useful duplicate merge.
+  // Only the final, positive-outcome plans are recommendations to consume cards.
+  const useful = plans.filter(plan => plan.score > 0 || plan.progress > 0)
+  const best = useful[0]
   const status = !best ? 'insufficient' : [...warnings.values()].some(Boolean) ? 'provisional' : 'ready'
-  if (!best) warnings.set('Collect an eligible Fate to plan an invocation.', false)
-  return { status, warnings: [...warnings.keys()], excluded, plans: plans.slice(0, MAX_DISPLAYED_PLANS),
-    tiedBestPlanCount: best ? plans.filter(plan => comparePlans(plan, best) === 0).length : 0 }
+  if (!best) warnings.set(pool.length ? 'No positive points or combo progress could be established for these priorities.' : 'Collect an eligible Fate to plan an invocation.', false)
+  return { status, warnings: [...warnings.keys()], excluded, plans: useful.slice(0, MAX_DISPLAYED_PLANS),
+    tiedBestPlanCount: best ? useful.filter(plan => comparePlans(plan, best) === 0).length : 0 }
 }
 
 export function recommendPortfolio(offered: FateCard[], collected: FateCard[], profile: SolverProfile, excludedCardIds: string[] = []): SolverPortfolio {
