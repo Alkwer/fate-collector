@@ -142,5 +142,8 @@ Windows upload integration cover privacy canaries, exact consent, false/lost
 receipts, duplicate submission, offline deletion, late-write prevention and
 30-day expiry. The staging workflow also submits a synthetic diagnostic, verifies
 rejection of a raw-log field, checks the receipt/expiry, deletes it and rejects replay.
-Before promotion, inspect the desktop/mobile UI and the downloaded helper, check
+For standard promotion, inspect the desktop/mobile UI and the downloaded helper, check
 D1 payload deletion, and verify the staging Worker has the `*/15 * * * *` schedule.
+The [temporary prelaunch policy](deployment.md#temporary-prelaunch-policy) relies
+on the automated CI and synthetic staging checks while explicitly deferring the
+full manual checklist; the native recognition evidence remains outstanding.

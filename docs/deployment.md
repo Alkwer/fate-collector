@@ -51,8 +51,9 @@ repo owners and Cloudflare administrators can still change protections or deploy
 directly. This is a controlled release process, not a restriction on account owners.
 
 Required environment reviewers can add another approval when the GitHub plan and
-repository visibility support them. The workflow also requires an explicit manual
-test confirmation, independently of that feature. Do not make the repository public
+repository visibility support them. The workflow also requires either full native
+validation or explicit acceptance of the time-limited prelaunch exception below.
+Do not make the repository public
 just to enable reviewers.
 
 ## 1. Validate changes
@@ -102,7 +103,7 @@ For a feature branch, review and merge the changes, then run **Deploy staging**
 again on `main`. Production promotion requires a staging run from the exact `main`
 commit selected when launching promotion.
 
-Before promotion, manually check:
+For the standard `native-holdout` promotion, manually check:
 
 - the gold STAGING notice and the version under `/api/status`;
 - F9 capture, crop calibration and OCR with the downloaded helper;
@@ -132,8 +133,43 @@ Withdrawal is intentionally destructive only for data attached to that consent.
 ## 3. Promote exactly that package
 
 In **Actions → Promote tested release → Run workflow**, select `main`, enter the
-successful **Deploy staging** run ID from its summary and confirm the manual tests.
-The confirmation defaults to **false**. No deployment starts without it.
+successful **Deploy staging** run ID from its summary and choose a validation mode.
+
+- `native-holdout` is the default. Confirm `manual_tests_passed` only after the
+  manual checks above and supply `recognition_run_id` from a successful
+  [native recognition verification](recognition-validation.md#required-promotion-artifact)
+  for this exact staging release. Both are mandatory, including before launch.
+- `prelaunch` is a temporary, explicitly accepted exception while live Fate
+  encounters are unavailable. It is allowed only **before 13 November 2026,
+  00:00 UTC** (01:00 in Poland), a conservative cutoff before the announced
+  Friday launch. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
+  empty, and leave `manual_tests_passed=false` if the full manual checklist was
+  not completed. This records deferred validation, never a passing native report.
+
+### Temporary prelaunch policy
+
+The repository owner requested this exception on 11 November because live Fate
+offers and invocations cannot be captured before the league launches. Full CI,
+Windows capture/OCR/queue/recovery tests, browser review tests, the real
+helper-to-local-Worker integration, and the live synthetic staging smoke remain
+required through the successful staging workflow. These automated checks replace
+the manual staging attestation for this temporary mode; they do not establish
+native Fate recognition accuracy or physical HDR/UI-scale coverage.
+
+A native Character-panel check on 11 November additionally exercised F6/F7,
+F8 and F9 with helper 0.3.4 from release `f8c39605593adb3202b44b3a79966d2b8fff4f48`:
+the 3840 × 2160 client produced a 1310 × 1715 crop, OCR returned 32 lines,
+the app proposed zero Fate cards, and local save/reopen passed without uploads.
+Private evidence is retained locally under `.qa/native-review-20261111/`.
+This single negative is supporting evidence, not a substitute holdout.
+
+The workflow summary explicitly records the deferral. The deadline is checked
+both before artifact verification and again in the production deployment script,
+so a job waiting for approval cannot use an expired exception. Expiry prevents
+new prelaunch promotions; it does not remove an already deployed version.
+After launch, complete the native sample plan and full manual checks on the
+intended staging package before the next production promotion. Extending the
+exception requires a reviewed code change; there is no caller-supplied deadline.
 
 Before accessing the production environment, the workflow verifies that:
 
@@ -142,6 +178,9 @@ Before accessing the production environment, the workflow verifies that:
 2. The downloaded artifact has the expected commit and unchanged checksums.
 3. The live staging still reports that same commit and package, both upload paths
    are enabled, and the homepage and helper are reachable.
+4. The selected validation policy is satisfied. Standard promotion verifies the
+   native report workflow identity and recomputes its gate against the package;
+   prelaunch records the explicit, unexpired deferral instead.
 
 Staging and promotion share one concurrency group, so a staging deployment cannot
 replace the tested version in the middle of promotion. The production job downloads
@@ -157,7 +196,8 @@ checks with a direct Wrangler deployment.
 ## Local validation and dry runs
 
 The [native recognition validation record](recognition-validation.md) defines the
-independent game/HDR/UI-scale coverage still required before broader release.
+independent game/HDR/UI-scale coverage required by standard promotion after the
+temporary prelaunch exception expires.
 Synthetic WGC float16 tests on an SDR display do not complete that gate. Run
 `npm run test:capture-backend -- -RequireCleanGdi` on an unobstructed interactive
 release desktop; the default fixture suite reports a skip if a system layer

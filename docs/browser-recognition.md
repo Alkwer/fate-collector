@@ -18,9 +18,11 @@ The production dictionary now also includes Dryad and Avalanche, read directly
 from the preserved GGG showcase headers. [Versioned catalog provenance](../shared/catalog-metadata.json)
 records the source/date and explicitly unresolved semantics. This expands name
 recognition only; it does not associate rewards with those names or establish
-native accuracy. [Production promotion](recognition-validation.md#required-promotion-artifact)
+native accuracy. Standard [production promotion](recognition-validation.md#required-promotion-artifact)
 requires an exact-release native holdout report with minimum scene and label
-coverage. The server verifies a local measurement; it does not replay private
+coverage. An explicitly accepted [prelaunch exception](deployment.md#temporary-prelaunch-policy)
+defers that requirement only before 13 November 2026, 00:00 UTC, without claiming
+native accuracy. The server verifies a local measurement; it does not replay private
 captures or attest the physical HDR state.
 
 The generated `shared/visual-templates.json` contains 11 small crops for eight
