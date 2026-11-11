@@ -9,7 +9,7 @@ does not establish native Fate recognition quality.
 | --- | --- | --- |
 | 1 | Damaged evidence blocked a valid offer | Metadata opens independently, with a recovery warning; browser regression covers malformed OCR and undecodable PNG. |
 | 2 | Invalid PNG survived backup validation | Full export decodes each image, omits damaged evidence and reports it; originals remain available for recovery. |
-| 3 | UUID case variants duplicated identities | Contract canonicalizes UUIDs; Worker lookups and migration 0008 deduplicate read views without rewriting payloads/hashes. Historical browser collisions require explicit recovery. |
+| 3 | UUID case variants duplicated identities | Contract canonicalizes UUIDs; Worker lookups and migration 0008 deduplicate read views without rewriting payloads/hashes. Historical browser collisions require explicit recovery. Evidence collisions leave metadata readable/exportable; recovery exports every original, and explicit repair archives all variants atomically. |
 | 4 | Corrupt withdrawal marker prevented retry | Original is preserved; recoverable credentials retry with an explicit recovery timestamp. |
 | 5 | Disabled upload skipped diagnostic withdrawal repair | Scheduler rechecks diagnostic receipts/markers even when capture upload is disabled. |
 | 6 | Staging smoke cleanup skipped on failure | Cleanup runs in finally, including ambiguous registration ACKs; cleanup errors remain visible. |

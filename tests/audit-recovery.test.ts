@@ -132,6 +132,39 @@ test('draft recovery preserves the saved revision and original record until an e
   expect((await getOffer(saved.offer.id))?.offer.revision).toBe(9)
 })
 
+test('conflicting historical evidence preserves metadata and exports both originals for recovery', async () => {
+  const id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', original = evidenceFor(id)
+  const variant = { ...evidenceFor(id.toUpperCase()), ocrText: 'Different historical OCR' }
+  const saved = await saveOffer({ ...newOffer(), captureId: id, notes: 'Keep metadata' }, original)
+  await rawPut('evidence', variant)
+  expect(await readEvidence(id, true)).toMatchObject({ status: 'damaged', evidence: null, warning: expect.any(String) })
+  expect(await getOffer(saved.offer.id)).toEqual(saved)
+  const entries: Archive['offers'] = []
+  expect(await readOfferArchive(true, entry => entries.push(entry))).toEqual({ offers: 1, omittedOffers: 0, missingEvidence: 0, damagedEvidence: 1 })
+  expect(entries).toEqual([{ offer: saved.offer, evidence: null }])
+  expect((await readOfferRecovery()).evidence).toEqual(expect.arrayContaining([
+    { key: id, value: original }, { key: id.toUpperCase(), value: variant },
+  ]))
+  expect(await rawGet('evidence', id)).toEqual(original)
+  expect(await rawGet('evidence', id.toUpperCase())).toEqual(variant)
+})
+
+test('explicit repair of historical evidence collisions preserves every original before replacing them', async () => {
+  const id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', original = evidenceFor(id)
+  const variant = { ...evidenceFor(id.toUpperCase()), ocrText: 'Second original' }
+  const saved = await saveOffer({ ...newOffer(), captureId: id }, original)
+  await rawPut('evidence', variant)
+  const replacement = { ...original, ocrText: 'Restored from the original capture' }
+  await repairEvidence(saved.offer.id, replacement)
+  expect(await readEvidence(id, true)).toMatchObject({ status: 'available', evidence: replacement })
+  expect(await rawGet('evidence', id.toUpperCase())).toBeUndefined()
+  expect((await readOfferRecovery()).isolated).toEqual(expect.arrayContaining([
+    { id: expect.stringMatching(/^recovery-evidence:/), key: id, value: original },
+    { id: expect.stringMatching(/^recovery-evidence:/), key: id.toUpperCase(), value: variant },
+  ]))
+  expect(await getOffer(saved.offer.id)).toEqual(saved)
+})
+
 function backupPart(setId: string, part: number, total: number): Archive {
   return exportSchema.parse({ kind: 'fate-collector.export', schemaVersion: 1, backup: { setId, part, total }, offers: [{ offer: newOffer(), evidence: null }] })
 }

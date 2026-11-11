@@ -60,11 +60,19 @@ function complete(transaction: IDBTransaction): Promise<void> {
   void result.catch(() => {})
   return result
 }
-async function storedKey(store: IDBObjectStore, id: string): Promise<IDBValidKey> {
+async function storedKeys(store: IDBObjectStore, id: string): Promise<IDBValidKey[]> {
   const key = id.toLowerCase()
-  const matches = (await value(store.getAllKeys())).filter(item => typeof item === 'string' && item.toLowerCase() === key)
+  return (await value(store.getAllKeys())).filter(item => typeof item === 'string' && item.toLowerCase() === key)
+}
+async function storedKey(store: IDBObjectStore, id: string): Promise<IDBValidKey> {
+  const matches = await storedKeys(store, id)
   if (matches.length > 1) throw new Error('Conflicting historical identifiers need recovery before this record can be changed.')
-  return matches[0] ?? key
+  return matches[0] ?? id.toLowerCase()
+}
+async function readStoredEvidence(store: IDBObjectStore, id: string, decode: boolean): ReturnType<typeof inspectEvidence> {
+  const matches = await storedKeys(store, id)
+  if (matches.length > 1) return { evidence: null, status: 'damaged', warning: 'Conflicting historical screenshots or OCR need recovery. Offer details are still available. Export recovery data, or restore evidence from the original capture.' }
+  return inspectEvidence(matches.length ? await value(store.get(matches[0])) : undefined, decode)
 }
 function decodeOffers(raw: unknown[], keys: IDBValidKey[]) {
   const records: SavedOffer[] = [], unreadable: UnreadableOffer[] = []
@@ -105,8 +113,7 @@ export async function readOfferArchive(includeEvidence: boolean, onEntry: (entry
     let evidence: Evidence | null = null
     if (includeEvidence && offer.captureId) {
       const store = transaction.objectStore('evidence')
-      const rawEvidence: unknown = await value(store.get(await storedKey(store, offer.captureId)))
-      const read = await inspectEvidence(rawEvidence, true)
+      const read = await readStoredEvidence(store, offer.captureId, true)
       evidence = read.evidence
       if (read.status === 'missing') missingEvidence++
       if (read.status === 'damaged') damagedEvidence++
@@ -130,13 +137,14 @@ export async function readOfferRecovery() {
   const damagedIndexes = raw.map((_, index) => unreadable.some(record => record.key === keys[index]) ? index : -1).filter(index => index >= 0)
   const captureIds = new Set(damagedIndexes.flatMap(index => {
     const record = raw[index] as { offer?: { captureId?: unknown } } | null
-    return typeof record?.offer?.captureId === 'string' ? [record.offer.captureId] : []
+    return typeof record?.offer?.captureId === 'string' ? [record.offer.captureId.toLowerCase()] : []
   }))
   const evidenceKeys = await value(evidence.getAllKeys())
   const damagedEvidence: { key: IDBValidKey; value: unknown }[] = []
   for (const key of evidenceKeys) {
     const entry = { key, value: await value(database.transaction('evidence').objectStore('evidence').get(key)) as unknown }
-    if (captureIds.has(String(entry.key)) || (await inspectEvidence(entry.value, true)).status === 'damaged') damagedEvidence.push(entry)
+    const collision = evidenceKeys.filter(item => String(item).toLowerCase() === String(key).toLowerCase()).length > 1
+    if (collision || captureIds.has(String(entry.key).toLowerCase()) || (await inspectEvidence(entry.value, true)).status === 'damaged') damagedEvidence.push(entry)
   }
   const isolated = (await value(database.transaction('settings').objectStore('settings').getAll()) as { id: string; key: IDBValidKey; value: unknown }[])
     .filter(record => record.id.startsWith('recovery-'))
@@ -154,7 +162,7 @@ export async function getOffer(id: string): Promise<SavedOffer | undefined> {
 export async function readEvidence(id: string | null, decode = false) {
   if (!id) return inspectEvidence(undefined)
   const store = (await db()).transaction('evidence').objectStore('evidence')
-  return inspectEvidence(await value(store.get(await storedKey(store, id))), decode)
+  return readStoredEvidence(store, id, decode)
 }
 export async function getEvidence(id: string | null): Promise<Evidence | null> {
   return (await readEvidence(id)).evidence
@@ -190,9 +198,12 @@ export async function repairEvidence(offerId: string, evidence: Evidence): Promi
     transaction.abort(); await done.catch(() => {})
     throw new Error('The replacement capture does not belong to this offer.')
   }
-  const key = await storedKey(images, evidence.id), previous: unknown = await value(images.get(key))
-  if (previous !== undefined) transaction.objectStore('settings').put({ id: `recovery-evidence:${crypto.randomUUID()}`, key, value: previous })
-  images.delete(key); images.put(evidence)
+  for (const key of await storedKeys(images, evidence.id)) {
+    const previous: unknown = await value(images.get(key))
+    transaction.objectStore('settings').put({ id: `recovery-evidence:${crypto.randomUUID()}`, key, value: previous })
+    images.delete(key)
+  }
+  images.put(evidence)
   transaction.objectStore('settings').put({ id: 'capture-restore-version', value: crypto.randomUUID() })
   await done; changed()
 }
