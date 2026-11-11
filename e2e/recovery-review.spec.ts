@@ -1,3 +1,4 @@
+import { openDisclosure } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -43,6 +44,7 @@ test('a damaged journal record cannot hide readable offers or prevent their back
   const data = JSON.parse(await readFile(await download.path(), 'utf8'))
   expect(data.records[0].value).toEqual(damaged)
   expect(data.evidence).toContainEqual({ key: bad.offer.captureId, value: bad.evidence })
+  await openDisclosure(page, '.archive-tools')
   await page.getByRole('button', { name: 'Export all data' }).click()
   await expect(page.getByRole('dialog')).toContainText('1 unreadable offer(s) excluded')
   await page.keyboard.press('Escape')
@@ -66,7 +68,9 @@ test('full backup downloads and restores images, OCR and revisions; metadata exp
   const entries = [await sampleEntry(), await sampleEntry()]
   await restore(page, entries)
   for (const mode of ['full', 'data']) {
+    await openDisclosure(page, '.archive-tools')
     await page.getByLabel('Backup contents').selectOption(mode)
+    await openDisclosure(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     const downloads = dialog.getByRole('link')

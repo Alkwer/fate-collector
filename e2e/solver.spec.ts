@@ -1,3 +1,4 @@
+import { openDisclosure, expectEmptyMap } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -33,6 +34,7 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   await page.goto('/')
   const cards = [fate('Currency specialist', [reward('Currency', 4)], ['Reflects damage']), fate('Balanced Fate', [reward('Currency', 1), reward('Armour', 2)], ['More monster life'])]
   await load(page, cards)
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await priority(page, 'regular:currency')
   await expect(page.getByRole('heading', { name: 'Recommended: Currency specialist', exact: true })).toBeVisible()
@@ -45,6 +47,7 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   await expect(page.getByRole('heading', { name: 'Recommended: Balanced Fate', exact: true })).toBeVisible()
   await page.getByLabel('Exclude Balanced Fate from plans', { exact: true }).check()
   await expect(page.getByRole('heading', { name: 'Recommended: Currency specialist', exact: true })).toBeVisible()
+  await openDisclosure(page, '.reward-settings')
   await page.locator('.solver-profile > summary').click()
   await page.getByLabel('Avoid modifiers containing').fill('reflect')
   await page.getByRole('button', { name: 'Apply modifier filters', exact: true }).click()
@@ -60,8 +63,9 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   await page.getByRole('button', { name: 'Undo collection change', exact: true }).click()
   await expect(page.getByRole('complementary')).toContainText('1/12')
   page.once('dialog', dialog => dialog.accept())
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'New map', exact: true }).click()
-  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await expectEmptyMap(page)
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
   expect(errors).toEqual([])
 })
@@ -69,6 +73,7 @@ test('weights, build exclusions, persistence, invocation and undo work together'
 test('merge breakdown preserves unknown combo results and removes exactly the invoked inputs', async ({ page }) => {
   await page.goto('/')
   await load(page, [fate('Rot', [reward('Currency', 10), reward('Exceptional Gem', 2, { kind: 'combo', threshold: 3 })])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await priority(page, 'regular:currency')
   await priority(page, 'combo:exceptional gem', 20)
@@ -90,6 +95,7 @@ test('merge breakdown preserves unknown combo results and removes exactly the in
 test('personal templates and profile import do not silently confirm visual observations', async ({ page, context }) => {
   await page.goto('/')
   await load(page, [fate('Custom', [reward('Personal combo', 2, { kind: 'combo', threshold: 2 })])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await priority(page, 'combo:personal combo', 7)
   await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
@@ -114,6 +120,8 @@ test('personal templates and profile import do not silently confirm visual obser
   await expect(page.getByLabel('Count', { exact: true })).toHaveValue('1')
   await expect(page.getByLabel('I checked all reward icons, kinds, counts and thresholds')).not.toBeChecked()
   await page.getByRole('button', { name: 'Back to advice', exact: true }).click()
+  await openDisclosure(page, '.reward-settings')
+  await openDisclosure(page, '.solver-profile')
   await page.getByLabel('Import solver profile').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{broken') })
   await expect(page.getByRole('alert').last()).toBeVisible()
   await page.getByLabel('Import solver profile').setInputFiles(profilePath!)
@@ -123,9 +131,11 @@ test('personal templates and profile import do not silently confirm visual obser
 
 test('a stale tab cannot overwrite a newer durable profile', async ({ page, context }) => {
   await page.goto('/')
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await priority(page, 'combo:exceptional gem')
   const other = await context.newPage(); await other.goto('/')
+  await openDisclosure(other, '.reward-settings')
   await other.locator('.solver-profile > summary').click()
   await other.getByLabel('Exceptional Gem combo weight').fill('9')
   await page.getByLabel('Exceptional Gem combo weight').fill('2')
@@ -138,6 +148,7 @@ test('a stale tab cannot overwrite a newer durable profile', async ({ page, cont
 test('invocation abstains when collected Fates cannot advance any configured priority', async ({ page }) => {
   await page.goto('/')
   await load(page, [fate('Armour only', [reward('Armour', 2)])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await page.getByRole('combobox', { name: 'Add reward', exact: true }).selectOption('custom')
   await page.getByLabel('Reward name', { exact: true }).fill('Currency')
@@ -158,10 +169,12 @@ for (const width of [1440, 820, 390]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto('/')
     await load(page, [fate('Balanced Fate with a long readable name', [reward('Currency', 2), reward('Armour', 3)])])
+    await openDisclosure(page, '.reward-settings')
     await page.getByLabel('Compare multiple rewards', { exact: true }).check()
     await priority(page, 'regular:currency')
     await priority(page, 'regular:armour', 2)
-    await page.locator('.solver-profile > summary').click()
+    await openDisclosure(page, '.reward-settings')
+  await page.locator('.solver-profile > summary').click()
     await expect(page.locator('.advisor-outcome')).toHaveAttribute('data-state', 'ready')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: join(tmpdir(), `portfolio-${width}.png`), fullPage: true })
@@ -179,6 +192,7 @@ test('denied profile storage keeps edits usable and exportable without claiming 
     Storage.prototype.setItem = function (key, value) { if (key === 'fate-collector.solver-profile.v1') throw new DOMException('Full', 'QuotaExceededError'); return original.call(this, key, value) }
   })
   await page.goto('/')
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await priority(page, 'combo:exceptional gem')
   await expect(page.getByRole('alert').filter({ hasText: 'could not be saved' })).toBeVisible()

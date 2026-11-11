@@ -1,3 +1,4 @@
+import { openDisclosure, expectEmptyMap } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newCard, newOffer, newReward } from '../shared/offers'
@@ -31,6 +32,7 @@ test('invalid image and malformed OCR preserve access to offer data and produce 
     await expect(page.getByRole('heading', { name: 'Archived offer', exact: true })).toBeVisible()
     await expect(page.getByRole('alert')).toContainText('screenshot or OCR is damaged')
     await page.getByRole('button', { name: /Saved offers/ }).click()
+    await openDisclosure(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     await expect(dialog).toContainText('1 damaged evidence record(s) excluded')
@@ -68,6 +70,7 @@ test('completed invocations consume cards, undo restores them, and source correc
   const offer = sample(); await importData(page, offer)
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
   await page.getByRole('button', { name: 'Add Alchemist to collected', exact: true }).click()
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
   await page.getByRole('button', { name: 'Mark this invocation completed' }).first().click()
@@ -82,8 +85,9 @@ test('completed invocations consume cards, undo restores them, and source correc
   await expect(page.getByText('#1 Alchemist', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Apply source correction: Alchemist' }).click()
   await expect(page.getByText('#1 Updated Alchemist', { exact: true })).toBeVisible()
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'New map', exact: true }).click()
-  await expect(page.getByText('No collected Fates yet.')).toBeVisible()
+  await expectEmptyMap(page)
   await page.getByRole('button', { name: 'Undo collection change' }).click()
   await expect(page.getByText('#1 Updated Alchemist', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Continue this map' })).toBeVisible()
@@ -104,6 +108,7 @@ test('journal refreshes across tabs and filters without discarding an edited dra
   await page.getByLabel('Search offers').fill('Karui')
   await expect(page.getByRole('button', { name: 'Open', exact: true })).toHaveCount(1)
   await expect(page.locator('.history-table')).toContainText('Tempest')
+  await openDisclosure(page, '.filter-options')
   await page.getByRole('combobox', { name: 'Review', exact: true }).selectOption('reviewed')
   await expect(page.getByRole('heading', { name: 'No matching offers.' })).toBeVisible()
 })

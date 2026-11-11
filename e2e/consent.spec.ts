@@ -1,3 +1,4 @@
+import { openDisclosure } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newCard, newOffer } from '../shared/offers'
@@ -12,6 +13,8 @@ async function openSharing(page: Page, withOffer = true) {
     await expect(page.getByRole('status')).toContainText('restored on this device')
   }
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
+  await openDisclosure(page, '.sharing-panel')
   await page.getByLabel('Collection access key').fill('e2e-local-only')
 }
 async function agree(page: Page) {
@@ -36,6 +39,7 @@ test('explicit agreement records exact text and dates, survives reload, and with
   await expect(page.getByRole('status')).toContainText('Reviewed offer shared')
   await page.reload()
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
   await expect(page.getByText('Sharing consent active.', { exact: false })).toBeVisible()
   await expect(page.getByLabel('Collection access key')).toHaveValue('')
   await page.getByRole('button', { name: 'Withdraw consent', exact: true }).click()
@@ -59,6 +63,7 @@ test('offline withdrawal stops sharing immediately and retries after reload with
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   await page.reload()
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
   await expect(page.getByLabel('Collection access key')).toHaveValue('')
   await expect(page.getByText('Sharing stopped locally.', { exact: false })).toBeVisible()
   await page.unroute('**/api/consents/*/withdraw')
@@ -86,6 +91,8 @@ test('withdrawal in one tab disables sharing in another tab', async ({ page, con
   const other = await context.newPage()
   await other.goto('/')
   await other.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(other, '.sharing-panel')
+  await openDisclosure(other, '.sharing-panel')
   await other.getByLabel('Collection access key').fill('e2e-local-only')
   await expect(other.getByRole('button', { name: 'Share', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: 'Withdraw consent', exact: true }).click()
@@ -124,6 +131,8 @@ test('a failed withdrawal audit save disables sharing across reload and can be r
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   await page.reload()
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
+  await openDisclosure(page, '.sharing-panel')
   await page.getByLabel('Collection access key').fill('e2e-local-only')
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   await page.getByText('Consent history (1)', { exact: true }).click()
