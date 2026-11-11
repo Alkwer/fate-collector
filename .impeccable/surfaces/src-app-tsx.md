@@ -10,10 +10,11 @@ related_targets: ["src/styles.css","src/decision-visuals.css","src/tokens.css","
 Scope: Current map, archived review, saved offers, settings, diagnostics and recovery. Visitor mode: Operate.
 Confirmed: prioritize fast map decisions; reduce visible options; Mineral Depth default with remembered Light Trail alternative. Keep English copy, all capture/storage/sharing/solver contracts and evidence access.
 
-Refinement: reduce reading through aligned visual reward comparisons, signed gains,
-numbered invocation inputs and supported-merge diagrams. Show original sourced
-reward references where available; generic symbols must not imply game artwork or
-recognition. Preserve unknown/suggested states, exact card identity and units.
+Refinement: lead with authentic Fate portraits and sourced game reward icons;
+invocation is a step-by-step picture guide and pictured merge. Preserve
+unknown/suggested states, exact duplicate identities and units. Portraits supply
+no tier/reward data. Missing artwork remains explicit. Every shipped raster has
+crop/source/hash provenance in public/game-art/credits.json.
 
 ## Direction contract
 

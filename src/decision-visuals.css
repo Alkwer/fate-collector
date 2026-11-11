@@ -8,13 +8,18 @@
 .reward-settings > .panel-trigger { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .reward-settings > .panel-trigger .summary-detail { display: inline; margin: 0; }
 .advisor-outcome p .app-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 8px; }
-.map-layout .advisor-outcome { padding-block: 20px 12px; }
+.map-layout .advisor-outcome { padding-block: 12px 8px; }
 .advisor-baseline { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
 .advisor-baseline strong { font-size: 18px; color: var(--text); }
 .advisor-baseline .reward-symbol { width: 24px; height: 24px; }
 .reward-symbol { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 48px; height: 48px; color: var(--text); }
 .reward-symbol .app-icon { width: 100%; height: 100%; stroke-width: 1.35; }
-.reward-symbol img { width: 36px; height: 36px; object-fit: contain; }
+.reward-symbol img { width: 100%; height: 100%; max-width: 36px; max-height: 36px; object-fit: contain; }
+.fate-art { width: 160px; max-width: 100%; aspect-ratio: 1; flex-shrink: 0; overflow: hidden; background: var(--evidence); }
+.fate-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fate-art.is-unavailable { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; color: var(--muted); text-align: center; }
+.fate-art.is-unavailable .app-icon { width: 36px; height: 36px; }
+.fate-art.is-unavailable span { padding-inline: 8px; font-size: 13px; }
 .tier-mark { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--muted); }
 .tier-mark svg { width: 34px; height: 14px; flex: 0 0 auto; }
 .tier-mark.is-suggested { color: var(--warning); }
@@ -27,11 +32,12 @@
 .reward-unit[data-unknown] .reward-symbol, .reward-unit[data-unknown] small { color: var(--warning); }
 .reward-review-note { flex-basis: 100%; justify-content: flex-start; color: var(--warning); font-size: 13px; }
 .reward-review-note .app-icon { width: 16px; height: 16px; flex-shrink: 0; }
-.map-layout .visual-offer { margin-top: 16px; }
+.map-layout .visual-offer { margin-top: 0; }
 .visual-offer .fate-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; gap: 0; }
 .map-layout .visual-offer .fate-list > li { position: relative; display: flex; flex-direction: column; padding: 20px 16px 16px; border-top: 1px solid var(--border); border-inline-end: 1px solid var(--border); min-width: 0; }
 .map-layout .visual-offer .fate-list > li:nth-child(3n), .map-layout .visual-offer .fate-list > li:last-child { border-inline-end: 0; }
 .visual-offer .fate-title { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.visual-offer .fate-list > li > .fate-art { width: 100%; max-width: 192px; margin: 0 auto 16px; }
 .map-layout .visual-offer .fate-title h3 { font-size: 21px; overflow-wrap: anywhere; }
 .visual-offer .fate-list:has(.recommendation-label) > li:not(:has(.recommendation-label)) { padding-top: 48px; }
 .visual-offer .recommendation-label { justify-content: flex-start; min-height: 20px; }
@@ -53,7 +59,7 @@
 .choice-reminder { justify-content: flex-start; margin-top: 12px; font-size: 13px; color: var(--muted); }
 .advisor-caveats.detail-panel > .panel-trigger { display: inline-flex; align-items: center; gap: 8px; }
 .advisor-caveats.detail-panel > .panel-trigger .app-icon { width: 18px; height: 18px; }
-.plan-result { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.plan-result { display: flex; align-items: center; gap: 12px; margin-block: 16px; }
 .plan-result > .app-icon { width: 40px; height: 40px; }
 .plan-result > strong { font: 650 40px/1 var(--display); color: var(--success); font-variant-numeric: tabular-nums; }
 .plan-result > strong > span { font-size: 25px; color: var(--muted); }
@@ -65,40 +71,53 @@
 .invocation-diagram .invocation-order[data-input-count='1'] { grid-template-columns: minmax(0, 1fr); }
 .invocation-diagram .invocation-order[data-input-count='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .invocation-diagram .invocation-order li { position: relative; padding: 0; margin: 0; min-width: 0; }
-.invoke-step { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 650; margin-bottom: 12px; }
-.invoke-card { border-top: 1px solid var(--border-light); padding: 12px 0 0; }
+.invoke-step-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 14px; }
+.invoke-step { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 650; flex: 0 0 auto; }
+.invoke-card { padding: 0; }
+.invoke-card > .fate-art { width: 100%; max-width: 160px; }
+.invoke-identity .tier-mark { margin-top: 8px; }
 .invoke-name { display: block; margin-top: 8px; font: 650 20px/1.2 var(--display); overflow-wrap: anywhere; }
 .invoke-source { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .sequence-arrow { position: absolute; top: 4px; right: -20px; color: var(--muted); }
 .sequence-arrow .app-icon { width: 20px; height: 20px; }
 .merge-diagram { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 16px 0; border-block: 1px solid var(--border); }
 .merge-equation { display: flex; align-items: center; gap: 12px; }
+.merge-equation figure { margin: 0; }
+.merge-equation .fate-art { width: 56px; }
+.merge-equation figcaption { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.merge-equation .tier-mark svg { display: none; }
+.merge-equation .fate-art.is-unavailable span { display: none; }
 .merge-equation .tier-mark { flex-direction: column; gap: 6px; color: var(--text); }
-.merge-equation .tier-mark:last-child { color: var(--success); }
+.merge-equation .merge-output .tier-mark { color: var(--success); }
 .merge-equation > .app-icon { width: 18px; height: 18px; color: var(--muted); }
 .merge-diagram > div:last-of-type { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .merge-diagram > div:last-of-type > span { font-size: 13px; color: var(--muted); }
+.invoke-final-step { display: flex; align-items: center; gap: 8px; margin-block: 16px; font-size: 14px; }
+.invoke-final-step .app-icon { width: 20px; height: 20px; color: var(--accent); }
 .plan-notes { margin-top: 12px; }
 .plan-notes > .panel-trigger { padding-inline: 0; border: 0; text-decoration: underline; text-underline-offset: 4px; }
 .reward-strip.is-compact { gap: 8px 12px; padding-block: 8px 0; }
 .is-compact .reward-symbol { width: 24px; height: 24px; }
-.is-compact .reward-symbol img { width: 24px; height: 24px; }
 .is-compact .reward-unit { gap: 8px; }
 .is-compact .reward-unit > div { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px; }
 .is-compact .reward-unit strong { font: 600 14px/1.4 var(--sans); }
 .is-compact .reward-unit span:not(.reward-symbol) { font-size: 13px; }
 .is-compact .reward-unit small { flex-basis: 100%; }
 .collected-fates li > div > .tier-mark { display: flex; margin-top: 4px; }
+.collected-fates li { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; }
+.collected-fates .fate-art { width: 48px; }
+.collected-fates .fate-art.is-unavailable span { display: none; }
+.collected-fates .fate-art.is-unavailable .app-icon { width: 24px; height: 24px; }
 .remove-collected { display: grid; place-items: center; width: 36px; height: 36px; padding: 6px; }
 .remove-collected .app-icon { width: 18px; height: 18px; }
 .map-sidebar .compact-source .dropzone:not(.has-image) { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; min-height: 0; padding: 12px 0 0; border: 0; }
 .compact-source .dropzone > .app-icon { width: 24px; height: 24px; }
 .compact-source .dropzone > small { flex-basis: 100%; font-size: 13px; color: var(--muted); }
 .reward-breakdown dt .reward-symbol { width: 24px; height: 24px; vertical-align: middle; margin-right: 8px; }
+.reward-uncertainty { color: var(--warning); }
 @media (min-width: 1001px) and (max-width: 1200px) {
-  .visual-offer .fate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .map-layout .visual-offer .fate-list > li { border-inline-end: 0; }
-  .map-layout .visual-offer .fate-list > li:nth-child(odd):not(:last-child) { border-inline-end: 1px solid var(--border); }
+  .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); }
+  .map-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 }
 @media (max-width: 760px) {
   .map-session[data-state='active'] { flex-wrap: nowrap; gap: 8px; margin-bottom: 16px; }
@@ -110,7 +129,13 @@
   .edit-current { width: 36px; min-width: 36px; padding-inline: 4px; justify-content: center; }
   .edit-current > span { display: none; }
   .visual-offer .fate-list { grid-template-columns: minmax(0, 1fr); }
-  .map-layout .visual-offer .fate-list > li { padding: 20px 0; border-inline-end: 0; }
+  .map-layout .visual-offer .fate-list > li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 20px 0; border-inline-end: 0; align-items: start; }
+  .visual-offer .fate-list > li > .fate-art { width: 96px; grid-column: 1; grid-row: 2 / span 2; margin: 0; }
+  .visual-offer .fate-list > li:not(:has(.recommendation-label)) > .fate-art { grid-row: 1 / span 2; }
+  .visual-offer .recommendation-label { grid-column: 1 / -1; margin: 0; }
+  .visual-offer .fate-title, .visual-offer .fate-list > li > .reward-strip { grid-column: 2; }
+  .visual-offer .fate-list > li > .reward-strip { padding-block: 0; }
+  .visual-offer .fate-modifiers, .visual-offer .advisor-candidates { grid-column: 1 / -1; }
   .visual-offer .fate-list:has(.recommendation-label) > li:not(:has(.recommendation-label)) { padding-top: 20px; }
   .visual-offer .fate-title { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
   .map-layout .visual-offer .advisor-candidates { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding-top: 0; }
@@ -119,15 +144,22 @@
   .visual-offer .collect-fate { min-width: 120px; }
   .visual-offer .exclusion-control, .visual-offer .exclusion-reason { grid-column: 1 / -1; }
   .reward-strip { padding-block: 12px; }
-  .invocation-diagram .invocation-order { gap: 8px; }
+  .invocation-diagram .invocation-order { gap: 24px; }
+  .invocation-diagram .invocation-order, .invocation-diagram .invocation-order[data-input-count] { grid-template-columns: minmax(0, 1fr); }
+  .invoke-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; }
+  .invoke-card > .fate-art { width: 96px; grid-row: 1 / span 2; }
+  .invoke-card .reward-strip { grid-column: 2; padding: 0; }
+  .invoke-step-label { margin-bottom: 8px; }
   .invoke-name { font-size: 16px; }
-  .invoke-card > .tier-mark svg { display: none; }
+  .invoke-identity .tier-mark svg { display: none; }
   .invoke-card .reward-unit { gap: 4px; }
   .invoke-card .reward-unit > div { flex-direction: column; gap: 0; }
   .invoke-card .reward-unit .reward-symbol { width: 20px; height: 20px; }
   .invoke-card .reward-unit span:not(.reward-symbol) { font-size: 13px; }
-  .sequence-arrow { right: -8px; }
-  .sequence-arrow .app-icon { width: 16px; }
+  .sequence-arrow { right: auto; left: 6px; top: auto; bottom: -24px; transform: rotate(90deg); }
+  .sequence-arrow .app-icon { width: 20px; }
+  .merge-equation { gap: 8px; align-items: flex-start; }
+  .merge-equation > .app-icon { margin-top: 20px; flex: 0 0 auto; }
   .plan-result > strong { font-size: 36px; }
   .remove-collected { width: 44px; height: 44px; }
 }

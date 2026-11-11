@@ -9,15 +9,15 @@ import { offerBelongsToMap, type AdvisorWorkspace } from '../lib/advisor-workspa
 import { cardReviewReasons } from '../lib/card-review'
 import { SolverControls, type SolverSettingsControl } from './SolverControls'
 import { PortfolioAdvice } from './PortfolioAdvice'
-import { GainMark, InvocationSequence, RewardStrip, RewardSymbol, TierMark } from './DecisionVisuals'
+import { FateArtwork, GainMark, InvocationSequence, RewardStrip, RewardSymbol, TierMark } from './DecisionVisuals'
 import { AppIcon } from './AppIcon'
 const goalKey = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.label)}`
 const cardName = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 
 function PlanDetails({ plan, cards, collected, goal }: { plan: InvocationPlan; cards: FateCard[]; collected: FateCard[]; goal: AdvisorGoal }) {
   return <div className="advisor-plan">
-    <div className="plan-result"><RewardSymbol label={goal.label} /><strong>{plan.targetCount}{goal.kind === 'combo' && <span>/{plan.threshold ?? '?'}</span>}</strong><div><span>{goal.label} icons</span>{goal.kind === 'combo' && <small>{plan.threshold === null ? 'Activation unresolved' : plan.activated ? 'Combo ready' : 'Combo incomplete'}</small>}</div></div>
     <InvocationSequence plan={plan} cards={cards} collected={collected} />
+    <div className="plan-result"><RewardSymbol label={goal.label} /><strong>{plan.targetCount}{goal.kind === 'combo' && <span>/{plan.threshold ?? '?'}</span>}</strong><div><span>{goal.label} icons</span>{goal.kind === 'combo' && <small>{plan.threshold === null ? 'Activation unresolved' : plan.activated ? 'Combo ready' : 'Combo incomplete'}</small>}</div></div>
     {plan.warnings.length > 0 && <DetailPanel className="plan-notes" title="Plan limitations"><ul className="advisor-warnings">{plan.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
   </div>
 }
@@ -145,7 +145,15 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
       <div className="map-sidebar">{source}<aside className="panel advisor-collection" aria-labelledby="collection-heading">
         <div className="section-heading"><h2 id="collection-heading">Collected in this map</h2><span className="muted">{collection.cards.length}/{MAX_COLLECTED_FATES}</span></div>
         {!!corrections.length && <div className="snapshot-corrections" role="status"><strong>Saved source offers have different card details.</strong><p>Your collected snapshots remain unchanged until you apply a correction.</p>{corrections.map(({ card, corrected }) => <button key={card.id} disabled={!mapReady} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.map(item => item.id === card.id ? structuredClone(corrected) : item) } })}>Apply source correction: {cardName(card)}</button>)}</div>}
-        {collection.cards.length ? <ul className="collected-fates">{collection.cards.map((card, index) => <li key={card.id}><div><strong>#{index + 1} {cardName(card)}</strong>{portfolioMode && <label className="checkbox-row exclusion-control"><input type="checkbox" disabled={!mapReady} checked={workspace.excludedCardIds.includes(card.id)} onChange={() => toggleExcluded(card.id)} />Exclude collected {cardName(card)} #{index + 1} from plans</label>}<TierMark tier={card.tier} suggested={!!card.visualReview && !card.visualReview.tierReviewed} /><RewardStrip rewards={card.rewards} compact suggested={!!card.visualReview && !card.visualReview.rewardsReviewed} /></div><button disabled={!mapReady} className="text-button remove-collected" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}><AppIcon name="close" /></button></li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
+        {collection.cards.length ? <ul className="collected-fates">{collection.cards.map((card, index) => <li key={card.id}>
+          <FateArtwork name={cardName(card)} />
+          <div className="collected-identity"><strong>#{index + 1} {cardName(card)}</strong>
+            {portfolioMode && <label className="checkbox-row exclusion-control"><input type="checkbox" disabled={!mapReady} checked={workspace.excludedCardIds.includes(card.id)} onChange={() => toggleExcluded(card.id)} />Exclude collected {cardName(card)} #{index + 1} from plans</label>}
+            <TierMark tier={card.tier} suggested={!!card.visualReview && !card.visualReview.tierReviewed} />
+            <RewardStrip rewards={card.rewards} compact suggested={!!card.visualReview && !card.visualReview.rewardsReviewed} />
+          </div>
+          <button disabled={!mapReady} className="text-button remove-collected" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}><AppIcon name="close" /></button>
+        </li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
         {mapReady && <DetailPanel ref={collectionEditor} className="collection-editor" title={<>Edit collected cards</>}><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview} onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></DetailPanel>}
         {mapReady && !!collection.cards.length && mode === 'offer' && !alreadyCollected && <button className="outline-button" onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan this collection</button>}
       </aside></div>

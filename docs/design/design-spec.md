@@ -22,9 +22,9 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
   supported advice, amber marks provisional advice or confirmation, blue
   identifies review, and red identifies errors. Text labels accompany each
   state. Ordinary Fate names and secondary actions use neutral text.
-- Use thin outlined icons, editable HTML controls and original captures for
-  evidence. Keep the workspace free of decorative game art, invented badges
-  and statistics, gradients and rasterized controls.
+- Use sourced game artwork to identify Fates and reward motifs, thin outlined
+  icons for application controls, and original captures for evidence. Keep
+  controls editable HTML; do not invent game graphics, badges or statistics.
 - Empty states lead with import. On mobile the archived review shows detected
   Fates before the source image. Source previews open at full size. Keep
   table scrolling within the table container where needed.
@@ -65,11 +65,16 @@ The preferred card contains the primary collect action; equal matches retain
 their individual actions. Show the next missing-data check directly and open
 the remaining checklist in a panel. Keep the best invocation visible and open alternatives on demand.
 Reward symbols and counts replace repeated reward prose on the current-map view.
-Unknown kinds or meanings retain a question mark, an explicit unknown label and a review cue. Use only
-existing sourced reference images for actual game icons; other symbols are
-generic interface aids. Modifiers open a named panel for their specific card.
-Invocation displays numbered cards with exact source references, reward counts,
-and a diagram for supported merges. Keep combo thresholds/activation and priority
+Unknown kinds or meanings retain an explicit unknown label and a review cue. A
+recorded visual motif may show its sourced game image without implying known
+meaning; otherwise use a question mark. Portraits show only verified artwork
+for the exact Fate name, with an explicit fallback for absent/failed images.
+Sources and coverage are recorded in [game-art.md](game-art.md). Modifiers open
+a named panel for their specific card.
+Invocation is a numbered picture guide with exact source references and reward
+counts: select in order, see the pictured merge, then Confirm in game. It runs
+left to right on desktop and top to bottom on mobile. Portfolio calculations
+open in Reward breakdown; unresolved outcomes stay visible. Keep combo thresholds/activation and priority
 point units distinct; never imply item quantities or resolved unknown mechanics.
 Keep the recommendation and its gain over the existing collection prominent, with
 equal matches and provisional results explicitly labelled. Missing data links to

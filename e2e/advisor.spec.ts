@@ -142,7 +142,7 @@ test('collects one Fate per offer, plans duplicate order, and restores the area 
   const best = page.locator('.advisor-plans article').first()
   await expect(best.locator('.plan-result')).toContainText('15Currency icons')
   await expect(best).toContainText('T2 + T2 → T3')
-  await expect(best).toContainText('2 / 3 slots')
+  await expect(best).toContainText('2 / 3 inputs')
   await expect(best.locator('.invocation-order li').nth(0)).toHaveAccessibleName('1. Torchbearer (collected #2)')
   await expect(best.locator('.invocation-order li').nth(1)).toHaveAccessibleName('2. Torchbearer (collected #1)')
   await page.reload()
