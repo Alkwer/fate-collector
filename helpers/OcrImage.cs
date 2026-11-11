@@ -15,14 +15,20 @@ public sealed class FateOcrImage
 
     public static FateOcrImage Prepare(byte[] png, int maxDimension)
     {
+        return Prepare(png, maxDimension, Rectangle.Empty);
+    }
+
+    public static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region)
+    {
         const int padding = 16;
         int limit = Math.Min(maxDimension, 4096) - padding * 2;
         if (limit < 16) throw new ArgumentOutOfRangeException("maxDimension");
         using (var input = new MemoryStream(png, false))
         using (var original = new Bitmap(input))
-        using (var source = new Bitmap(original.Width, original.Height, PixelFormat.Format24bppRgb))
+        using (var source = new Bitmap(region.IsEmpty ? original.Width : region.Width,
+            region.IsEmpty ? original.Height : region.Height, PixelFormat.Format24bppRgb))
         {
-            using (var graphics = Graphics.FromImage(source)) graphics.DrawImageUnscaled(original, 0, 0);
+            using (var graphics = Graphics.FromImage(source)) graphics.DrawImageUnscaled(original, -region.X, -region.Y);
             var rect = new Rectangle(0, 0, source.Width, source.Height);
             var data = source.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
             try

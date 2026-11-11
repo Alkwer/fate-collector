@@ -1,0 +1,56 @@
+import { useRef, useState } from 'react'
+import { bindOfferToMap, loadAdvisorWorkspace, newAdvisorWorkspace, saveAdvisorWorkspace, startMapWorkspace,
+  type AdvisorWorkspace } from './advisor-workspace'
+
+const unavailableStorage = 'Browser storage is unavailable. Planning notes will not survive a reload.'
+
+export function useAdvisorWorkspace() {
+  const [state, setState] = useState(() => {
+    try {
+      const { workspace, restored, error } = loadAdvisorWorkspace(window.sessionStorage)
+      return { workspace, needsMapConfirmation: restored, storageError: error }
+    } catch {
+      return { workspace: newAdvisorWorkspace(), needsMapConfirmation: false, storageError: unavailableStorage }
+    }
+  })
+  const current = useRef(state)
+
+  function commit(next: typeof state) {
+    current.current = next
+    setState(next)
+  }
+
+  function save(workspace: AdvisorWorkspace, needsMapConfirmation: boolean) {
+    let storageError: string | null
+    try { storageError = saveAdvisorWorkspace(window.sessionStorage, workspace) }
+    catch { storageError = unavailableStorage }
+    commit({ workspace, needsMapConfirmation, storageError })
+  }
+
+  function changeWorkspace(next: AdvisorWorkspace) {
+    const { workspace, needsMapConfirmation } = current.current
+    if (next.map?.id !== workspace.map?.id || (!workspace.map && next.collection.cards.length)) return
+    save({ ...next, map: workspace.map, offerIds: workspace.offerIds }, needsMapConfirmation)
+  }
+
+  function confirmMap() {
+    if (!current.current.needsMapConfirmation || state.workspace.map?.id !== current.current.workspace.map?.id) return
+    commit({ ...current.current, needsMapConfirmation: false })
+  }
+
+  function startMap(offerId?: string) {
+    const { workspace } = current.current
+    if (state.workspace.map?.id !== workspace.map?.id) return
+    const next = startMapWorkspace(workspace)
+    save(offerId === undefined ? next : bindOfferToMap(next, offerId), false)
+  }
+
+  function bindOffer(offerId: string) {
+    const { workspace, needsMapConfirmation } = current.current
+    if (needsMapConfirmation || state.workspace.map?.id !== workspace.map?.id) return
+    const next = bindOfferToMap(workspace, offerId)
+    if (next !== workspace) save(next, false)
+  }
+
+  return { ...state, changeWorkspace, confirmMap, startMap, bindOffer }
+}

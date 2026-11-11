@@ -1,6 +1,8 @@
 import { captureSchema, exportSchema, offerSchema, MAX_IMPORT_BYTES, formatValidationError, type Evidence, type Offer, type Archive } from '../../shared/schema'
 import { captureToDraft, newOffer } from '../../shared/offers'
 import { extractCards } from '../../shared/recognition'
+import { applyVisualSuggestions } from '../../shared/visual-suggestions'
+import { readVisualCapture } from './visual-recognition'
 
 export interface Imported { mode: 'draft' | 'restore'; entries: { offer: Offer; evidence: Evidence | null }[]; message: string }
 export async function verifyImage(dataUrl: string, expected?: { width: number; height: number }): Promise<void> {
@@ -26,8 +28,13 @@ export async function importJson(text: string, captureOnly = false): Promise<Imp
     const entry = captureToDraft(parsed.data)
     await verifyImage(entry.evidence.imageDataUrl, parsed.data.image)
     const recognition = extractCards(parsed.data)
-    entry.offer.cards = recognition.cards
-    return { mode: 'draft', entries: [entry], message: recognition.message }
+    const visual = recognition.cards.length ? await readVisualCapture(parsed.data) : null
+    entry.offer.cards = visual ? applyVisualSuggestions(recognition.cards, parsed.data, visual) : recognition.cards
+    if (visual) entry.evidence.visualRecognition = { version: visual.version, status: visual.status, warnings: visual.warnings }
+    const suggested = entry.offer.cards.some(card => card.visualReview)
+    return { mode: 'draft', entries: [entry], message: suggested
+      ? `${entry.offer.cards.length} candidate cards found. Check suggested tiers and rewards against the image and tooltips; the catalog covers only some icons.`
+      : recognition.message }
   }
   if (kind === 'fate-collector.offer') {
     const parsed = offerSchema.safeParse(body)

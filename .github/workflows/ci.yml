@@ -16,6 +16,7 @@ jobs:
           cache: pip
           cache-dependency-path: prototypes/vision/requirements.txt
       - run: python -m pip install -r prototypes/vision/requirements.txt
+      - run: python scripts/generate-visual-templates.py --check
       - run: python -m unittest discover -s prototypes/vision -p 'test_*.py' -v
   app:
     runs-on: ubuntu-latest

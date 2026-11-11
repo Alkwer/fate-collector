@@ -50,4 +50,38 @@ $unknown = New-Pass @((New-Line 'Unkn0wn Card' 250))
 $nearMatch = New-Pass @((New-Line 'Alchem1st' 250), (New-Line 'Sangu1ne' 140))
 Assert-Pass $unknown $nearMatch $unknown 'A near match should not count as a known header.'
 Assert-Pass $null $nearMatch $nearMatch 'The only OCR pass should preserve its exact unknown text.'
-Write-Output 'PASS: OCR fallback, conservative header matching, repeated names, and unknown text preservation.'
+
+$offer = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'NHR' 145 100))
+$confirmed = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'CONFIRM' 140 100))
+Assert-Pass $offer $confirmed $confirmed 'A centered Confirm can break a tie that preserves original headers.'
+$confirmConflict = New-Pass @((New-Line 'Fates' 140), (New-Line 'Sanguine' 20 60), (New-Line 'CONFIRM' 140 100))
+Assert-Pass $offer $confirmConflict $offer 'A readable button cannot displace an original known header.'
+$confirmOffAxis = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'CONFIRM' 250 100))
+Assert-Pass $offer $confirmOffAxis $offer 'A button outside the panel axis cannot break the tie.'
+$confirmNearMatch = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'CONFIR' 140 100))
+Assert-Pass $offer $confirmNearMatch $offer 'A partial button label cannot break the tie.'
+$confirmAmbiguous = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'CONFIRM' 140 100), (New-Line 'CONFIRM' 140 150))
+Assert-Pass $offer $confirmAmbiguous $offer 'An ambiguous button cannot break the tie.'
+Assert-Pass $confirmAmbiguous $confirmed $confirmAmbiguous 'A tie must keep existing ambiguous button evidence.'
+
+$splitInvocation = New-Pass @((New-Line 'Invoke' 140 5), (New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60))
+$moreOfferHeaders = New-Pass @((New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'Butcher' 260 60), (New-Line 'CONFIRM' 140 100))
+Assert-Pass $splitInvocation $confirmed $splitInvocation 'An OCR tie must preserve a split invocation title.'
+Assert-Pass $splitInvocation $moreOfferHeaders $splitInvocation 'Added headers cannot remove a split invocation title.'
+$invokedConfirm = New-Pass @((New-Line 'Invoke Fates' 140 5), (New-Line 'Fates' 140), (New-Line 'Alchemist' 20 60), (New-Line 'CONFIRM' 140 100))
+Assert-Pass $offer $invokedConfirm $offer 'An invocation pass cannot break a tie using its Confirm button.'
+
+$fragment = $confirmNearMatch.lines[2]
+$foundConfirm = New-Line 'CONFIRM' 142 99
+$merged = Merge-FateConfirmLine $confirmNearMatch $fragment @($foundConfirm, (New-Line 'Butcher' 260 60))
+if ($merged.lines.Count -ne 3 -or ![Object]::ReferenceEquals($merged.lines[0], $confirmNearMatch.lines[0]) -or
+    ![Object]::ReferenceEquals($merged.lines[1], $confirmNearMatch.lines[1]) -or
+    ![Object]::ReferenceEquals($merged.lines[2], $foundConfirm) -or $merged.text -cne "Fates`nAlchemist`nCONFIRM") {
+    throw 'A positioned reread should replace only the fragment with the exact text and rectangle returned by OCR.'
+}
+foreach ($unusable in @((New-Line 'CONFIR' 142 99), (New-Line 'CONFIRM' 142 150), (New-Line 'CONFIRM' 250 100))) {
+    if (![Object]::ReferenceEquals((Merge-FateConfirmLine $confirmNearMatch $fragment @($unusable)), $confirmNearMatch)) {
+        throw 'An incomplete or displaced reread must keep the original text and positions.'
+    }
+}
+Write-Output 'PASS: OCR fallback, conservative header matching, invocation titles, and exact button rereads.'

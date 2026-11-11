@@ -24,7 +24,7 @@ a { color: var(--gold); text-underline-offset: 4px; }
 .app-header { border-bottom: 1px solid var(--border); background: #151814; }
 .header-inner { max-width: 1470px; margin: auto; padding: 13px 32px; display: flex; align-items: center; gap: 42px; }
 .wordmark { font: 30px/1 Georgia, serif; letter-spacing: -.7px; white-space: nowrap; }
-nav { display: flex; gap: 14px; }
+nav { display: flex; flex-wrap: wrap; gap: 14px; }
 nav button { border: 1px solid transparent; font-size: 16px; }
 nav button.active { color: var(--gold); border-color: #7c6c40; background: #26291e; box-shadow: inset 0 -2px var(--gold); }
 .nav-count { font-size: 13px; margin-left: 8px; color: var(--muted); }
@@ -114,6 +114,8 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .reward-editor { margin: 14px 0 0; padding: 12px; border: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
 .reward-editor legend { font-size: 13px; color: var(--muted); padding: 0 5px; }
 .reward-label { grid-column: 1/-1; }
+.catalog-reference { display: flex; align-items: flex-start; gap: 10px; }
+.catalog-reference img { flex: 0 0 34px; object-fit: contain; }
 .checkbox-row { display: flex; flex-direction: row; align-items: center; gap: 10px; font-weight: 400; }
 .danger { color: #c49d8f; }
 .remove-card { font-size: 13px; margin-top: 12px; }
@@ -218,3 +220,60 @@ td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .backup-dialog a { display: inline-block; padding-block: .4rem; }
 .backup-dialog::backdrop { background: rgb(0 0 0 / .7); }
 .field-error { color: #f2aaa0; font-size: .875rem; }
+.visual-review { margin-top: 16px; }
+.visual-review .checkbox-row { margin-top: 10px; }
+.map-session, .archive-boundary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; margin-bottom: 20px; border-block: 1px solid var(--border-light); }
+.map-session strong { color: var(--gold); font-size: 18px; }
+.map-session p, .archive-boundary p { max-width: 760px; font-size: 14px; color: var(--muted); margin-top: 6px; }
+.map-session-actions, .archive-boundary > div { display: flex; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+.collector-grid.map-layout { grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); align-items: start; }
+.map-sidebar { display: grid; gap: 18px; min-width: 0; }
+.map-capture-connection { margin-top: 20px; }
+.map-offer-confirmation { padding: 16px 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.map-offer-confirmation p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+.map-layout .offer-preview { margin-top: 22px; }
+.map-layout .advisor-controls { margin-bottom: 20px; }
+.map-layout .collect-fate { margin-top: 8px; font-size: 14px; }
+.map-layout .candidate-plan > summary { color: var(--muted); }
+.map-layout .advisor-candidates { margin: 8px 0 0; }
+.map-layout .fate-list .advisor-value { color: var(--gold); }
+.map-layout .advisor-collection .section-heading { flex-wrap: wrap; }
+@media (max-width: 900px) { .collector-grid.map-layout { grid-template-columns: minmax(0, 1fr); }.map-session, .archive-boundary { flex-wrap: wrap; }.map-session-actions, .archive-boundary > div { flex-shrink: 1; } }
+.advisor-restore { flex-wrap: wrap; }
+.advisor-restore > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.advisor-restore button { font-size: 14px; line-height: 1.4; padding: 9px 12px; border: 1px solid var(--border-light); }
+.advisor-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr); gap: 18px; align-items: start; }
+.advisor-main, .advisor-collection { padding: 24px; }
+.advisor-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.advisor-outcome { margin: 24px 0 18px; padding: 18px 20px; background: #262c20; border-left: 3px solid var(--gold); overflow-wrap: anywhere; }
+.advisor-outcome h3 { color: var(--gold); font-size: 21px; line-height: 1.4; }
+.advisor-outcome p { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.advisor-caveats { margin-top: 16px; color: var(--muted); font-size: 14px; }
+.advisor-caveats p + p { margin-top: 10px; }
+.advisor-list-heading { margin-top: 24px; }
+.advisor-candidates, .collected-fates { list-style: none; margin: 12px 0; padding: 0; }
+.advisor-candidates > li, .advisor-plans > article { border-top: 1px solid var(--border); padding: 20px 0; overflow-wrap: anywhere; }
+.advisor-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.advisor-card-heading h3 { font-size: 18px; }
+.advisor-card-heading h3 span { font-size: 13px; font-weight: 400; padding-left: 8px; white-space: nowrap; }
+.advisor-card-heading button { padding: 7px 10px; font-size: 13px; }
+.advisor-modifiers { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.advisor-value { margin-top: 12px; color: var(--gold); }
+.invocation-order { display: flex; flex-wrap: wrap; gap: 8px 30px; padding-left: 20px; margin: 10px 0; font-size: 14px; }
+.invocation-order li { padding-right: 6px; }
+.advisor-merge { font-size: 14px; margin-top: 10px; }
+.advisor-warnings { color: var(--muted); font-size: 13px; padding-left: 20px; margin: 12px 0 0; }
+.advisor-warnings li + li { margin-top: 6px; }
+.advisor-empty { padding: 22px 0; color: var(--muted); }
+.collected-fates li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.collected-fates li > div { min-width: 0; }
+.collection-editor { margin: 18px 0; }
+.collection-editor .editor-panel { padding: 12px; }
+.collection-editor h2 { font-size: 17px; }
+.collection-editor .section-heading { flex-wrap: wrap; }
+.collection-editor .reward-editor { grid-template-columns: minmax(0, 1fr); }
+.collection-editor .cards-table { font-size: 13px; }
+.collection-editor .cards-table th, .collection-editor .cards-table td { padding-inline: 6px; }
+.collection-editor .reward-summary { min-width: 0; }
+@media (max-width: 1000px) { .advisor-layout { grid-template-columns: minmax(0, 1fr); }.advisor-main, .advisor-collection { padding: 20px; } }
+@media (max-width: 600px) { .advisor-controls { grid-template-columns: minmax(0, 1fr); }.advisor-main, .advisor-collection { padding: 16px; }.advisor-outcome { padding: 15px; }.advisor-outcome h3 { font-size: 19px; }.advisor-card-heading { align-items: flex-start; flex-direction: column; }.advisor-card-heading button { width: 100%; }.invocation-order { display: block; }.invocation-order li + li { margin-top: 6px; } }

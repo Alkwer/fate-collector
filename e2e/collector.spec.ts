@@ -1,6 +1,8 @@
 import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { newOffer, newCard } from '../shared/offers'
 import { HELPER_VERSION } from '../src/lib/helper-version'
 
@@ -201,6 +203,8 @@ test('phone review puts extracted Fates before the compact source and keeps sour
   await page.goto('/')
   const bundle = await helperCapture(page, true)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'capture.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) })
+  await expect(page.locator('.collector-grid')).toHaveAttribute('aria-busy', 'false')
+  await page.screenshot({ path: join(tmpdir(), 'fate-map-first-offer-mobile.png'), fullPage: true })
   await expect(page.getByText('Session capture #2 · Possible repeat (matching OCR)', { exact: true })).toBeInViewport()
   await expect(page.getByRole('heading', { name: 'Alchemist', exact: true })).toBeInViewport()
   const fate = await page.getByRole('heading', { name: 'Offered Fates' }).boundingBox()
@@ -261,7 +265,7 @@ test('pending corrections cannot share an older reviewed revision', async ({ pag
   await expect(page.getByRole('cell', { name: 'Unsaved changes', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toHaveAttribute('title', 'Save your changes before sharing this offer.')
-  await page.getByRole('button', { name: 'Collector', exact: true }).click()
+  await page.getByRole('button', { name: 'Resume archived review', exact: true }).click()
   await page.getByText('Edit details', { exact: true }).click()
   await page.getByRole('combobox', { name: 'Review status', exact: true }).selectOption('partial')
   await page.getByRole('button', { name: 'Save offer', exact: true }).click()

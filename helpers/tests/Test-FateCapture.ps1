@@ -29,12 +29,13 @@ function Read-FixtureBundle($Result, [guid]$Id) {
     Assert-True ((Get-Item -LiteralPath $path).Length -lt 12MB) 'Bundle exceeds the size limit.'
     $bundle = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-True ($bundle.kind -eq 'fate-collector.capture' -and $bundle.schemaVersion -eq 1) 'Incorrect bundle header.'
-    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.3.1') 'Incorrect producer metadata.'
+    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.3.3') 'Incorrect producer metadata.'
     Assert-True ($bundle.context.captureMode -eq 'fixture') 'The offline PNG was not marked as a fixture.'
     Assert-True ($bundle.captureId -eq $Id.ToString()) 'Incorrect capture ID.'
     Assert-True ([string]$bundle.capturedAt -match 'Z$' -or $bundle.capturedAt -is [DateTime]) 'Timestamp is not UTC ISO 8601.'
     [void][DateTimeOffset]::Parse($bundle.capturedAt)
     Assert-True ($bundle.image.mimeType -eq 'image/png' -and $bundle.image.width -eq 660 -and $bundle.image.height -eq 180) 'Incorrect image metadata.'
+    Assert-True ($null -eq $bundle.image.PSObject.Properties['frameHeight']) 'Offline image must not invent a game-client height.'
     $decoded = [Convert]::FromBase64String($bundle.image.dataBase64)
     Assert-True ([Convert]::ToBase64String([IO.File]::ReadAllBytes($fixture)) -ceq [Convert]::ToBase64String($decoded)) 'The PNG bytes changed.'
     Assert-True ($bundle.ocr.text.Length -le 20000 -and $bundle.ocr.lines.Count -le 500) 'OCR exceeds the bundle limits.'

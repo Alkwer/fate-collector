@@ -18,6 +18,12 @@ PoE visible panel
 | `helpers/` | Persistent/previewed crop calibration, SDR/HDR capture, Windows OCR, explicit upload setup, durable queue and retries |
 | `shared/` | Versioned Zod contracts, defaults and upload eligibility |
 | `shared/recognition.ts` | Shared browser/Worker prerelease text extraction adapter |
+| `shared/visual-recognition.ts` | Bounded OCR-guided pixel matcher using generated reference crops |
+| `shared/visual-suggestions.ts` | Unreviewed, position-based mapping from motifs to fresh card fields |
+| `src/lib/visual-worker.ts` | Local image decoding/matching off the main thread; bounded timeout/fallback |
+| `shared/advisor.ts` | Local goal-based ranking, bounded invocation search and explicit uncertainty |
+| `src/components/FateAdvisor.tsx` | Unified offer/advice screen and collection for the current map |
+| `src/lib/advisor-workspace.ts` | Map identity, explicit offer membership, validated tab persistence and v1 migration |
 | `src/lib/imports.ts` | Bounded imports, decoded-image validation, exports |
 | `src/lib/storage.ts` | Local evidence, revisions and atomic archive imports |
 | `src/lib/capture-sync.ts` | Bounded folder intake and duplicate-safe delivery |
@@ -62,8 +68,10 @@ and an assessed dataset, not inferred card-name-to-reward mappings.
 
 Helper 0.3.1 uses window-targeted Windows Graphics Capture for HDR and for detected
 SDR desktop occlusion, with guarded GDI otherwise. It compares multiple OCR passes.
-Both OCR passes come from one original screenshot. Only one pass is emitted, with
-geometry mapped to original pixels; capture/upload v1 contracts stay unchanged.
+Both OCR passes come from one original screenshot. Helper 0.3.3 can use an exact
+Confirm button to break a header-preserving tie, then optionally reread one bounded
+crop around a truncated `CONFIR`. Only an exact overlapping Confirm result replaces
+that line; all geometry maps to original pixels. Capture/upload v1 contracts stay unchanged.
 Calibration ratios are restored after process restarts, while a resolution change
 requires preview and an aspect-ratio change requires new corners. The helper
 captures evidence without automating game input.
@@ -75,5 +83,6 @@ the same connection. Warm scans preload receipt IDs without reading image blobs.
 See [scan measurements](scan-performance.md).
 
 `scripts/research-corpus-stats.mjs` validates exported archives using the shared
-schema and produces separate live/test quality counts. Future advice still needs
-verified Fate mechanics and its own uncertainty model.
+schema and produces separate live/test quality counts. The [Fate advisor](fate-advisor.md)
+uses a separate conservative rules engine and uncertainty model; research observations
+are not converted into drop probabilities or market values.
