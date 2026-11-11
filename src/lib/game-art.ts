@@ -4,7 +4,8 @@ import type { Reward } from '../../shared/schema'
 // Every raster's source, crop and digest is recorded in /game-art/credits.json.
 const portraits = new Set(['alchemist', 'sanguine', 'butcher', 'gravewalker',
   'torchbearer', 'tempest', 'stormcaller', 'houndmaster', 'bloodthirsty',
-  'deathbringer', 'dryad', 'conjurer', 'avalanche'])
+  'deathbringer', 'dryad', 'conjurer', 'avalanche', 'wildfire', 'doomsayer',
+  'incandescent', 'crowkeeper'])
 
 const normalize = (label: string) => label.normalize().trim().toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ')
 
