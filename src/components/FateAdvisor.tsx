@@ -48,6 +48,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
   const { collection, goal, mode, sources } = workspace
   const portfolioMode = solverControl.settings.mode === 'portfolio'
   const collectionEditor = useRef<HTMLDetailsElement>(null)
+  const priorities = useRef<HTMLDetailsElement>(null)
   const [collectionReview, setCollectionReview] = useState<{ cardId: string; sequence: number } | null>(null)
   const mapReady = !!workspace.map && !needsMapConfirmation
   const offerReady = mapReady && offerBelongsToMap(workspace, offer.id)
@@ -64,7 +65,6 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
     ...(mode === 'offer' && !alreadyCollected ? offer.cards.map(card => ({ card, collected: false })) : []),
     ...collection.cards.map(card => ({ card, collected: true })),
   ].map(item => ({ ...item, reasons: cardReviewReasons(item.card) })).filter(item => item.reasons.length)
-  const currentStep = !offer.cards.length && !collection.cards.length ? 0 : reviewCards.length ? 1 : mode === 'invoke' ? 3 : 2
   const nextReview = reviewCards[0]
   const featuredId = !alreadyCollected && recommendations?.recommendedCardIds.length === 1 ? recommendations.recommendedCardIds[0] : null
   const featured = offer.cards.find(card => card.id === featuredId)
@@ -92,24 +92,35 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
     onChange({ ...workspace, excludedCardIds: workspace.excludedCardIds.includes(cardId)
       ? workspace.excludedCardIds.filter(id => id !== cardId) : [...workspace.excludedCardIds, cardId] })
   }
-  return <div className={`collector-grid map-layout ${!offer.cards.length && !collection.cards.length ? 'awaiting-capture' : ''} ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
+  const empty = !offer.cards.length && !collection.cards.length && !offer.captureId
+  if (empty) return <div className={`capture-start ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
+    <div className="capture-intro"><h2 id="advisor-heading" tabIndex={-1}>Bring your next offer into focus.</h2><p>Capture a Fate offer. Check its rewards. Make your next choice.</p></div>
+    {source}
+    <p className="capture-start-note">Use the Windows helper for local text recognition, or keep a screenshot as evidence.</p>
+    <details className="reward-settings" open={!!solverControl.error}><summary>Reward priorities<span className="summary-detail">Optional setup</span></summary><SolverControls control={solverControl} availableGoals={goals} /></details>
+    {mapReady && <details className="collection-editor"><summary>Edit collected cards</summary><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></details>}
+  </div>
+  return <div className={`collector-grid map-layout ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
       <section className="panel advisor-main" aria-labelledby="advisor-heading">
-        <div className="section-heading"><h2 id="advisor-heading" tabIndex={-1}>Choose & invoke</h2><button className="text-button" onClick={() => onEditOffer()}>Edit current offer</button></div>
-        <ol className="advisor-steps" aria-label="Map workflow">{['Capture', 'Check rewards', 'Choose a Fate', 'Invoke'].map((label, index) => <li key={label} aria-current={index === currentStep ? 'step' : undefined}><span>{index + 1}</span>{label}</li>)}</ol>
-        {mapReady && <div className="advisor-controls">
-          <div className="decision-control"><span>Decision</span><div className="decision-switch" role="group" aria-label="Decision"><button aria-pressed={mode === 'offer'} onClick={() => onChange({ ...workspace, mode: 'offer' })}>Choose a Fate</button><button aria-pressed={mode === 'invoke'} onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan invocation</button></div></div>
-          {!portfolioMode && <label>Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => onChange({ ...workspace, goal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>
+        <div className="decision-toolbar">
+          <h2 id="advisor-heading" className="sr-only" tabIndex={-1}>Choose & invoke</h2>
+          {mapReady ? <div className="decision-switch" role="group" aria-label="Decision"><button aria-pressed={mode === 'offer'} onClick={() => onChange({ ...workspace, mode: 'offer' })}>Choose a Fate</button><button aria-pressed={mode === 'invoke'} onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan invocation</button></div> : <h2>Review this offer</h2>}
+          <button className="text-button" onClick={() => onEditOffer()}>Edit current offer</button>
+        </div>
+        <details ref={priorities} className="reward-settings" open={!!solverControl.error}>
+          <summary>Reward priorities<span className="summary-detail">{portfolioMode ? `${solverControl.settings.profile.goals.length} priorities` : goal?.label || 'Choose a reward'}</span></summary>
+          {!portfolioMode && <label className="reward-goal">Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => onChange({ ...workspace, goal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>
             <option value="">Select a reward</option>{goals.map(option => <option key={goalKey(option)} value={goalKey(option)}>{option.label} · {option.kind === 'combo' ? 'Combo' : 'Regular'}</option>)}
           </select></label>}
-        </div>}
-        {workspace.map && <SolverControls control={solverControl} availableGoals={goals} />}
+          <SolverControls control={solverControl} availableGoals={goals} />
+        </details>
         {mapReady && mode === 'offer' && !offerReady && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>Is this offer from your current map?</strong><p>New imports and folder captures need confirmation before they affect advice.</p><button className="outline-button" onClick={onUseOffer}>Use this offer in current map</button></div>}
         {!workspace.map && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>No active map</strong><p>Start with this offer. Fates can only be used in the instance where you collect them.</p><button className="outline-button" onClick={onUseOffer}>Start map with this offer</button></div>}
         {mapReady && (mode === 'invoke' || offerReady) && <>
         {nextReview && <section className="advisor-review" aria-label="Data to check"><div className="review-next"><div><strong>{reviewCards.length} {reviewCards.length === 1 ? 'card needs' : 'cards need'} a check</strong><p>{cardName(nextReview.card)}{nextReview.collected ? ' · collected' : ''}: {nextReview.reasons.join(' · ')}</p></div><button onClick={() => reviewCard(nextReview.card.id, nextReview.collected)}>Review {cardName(nextReview.card)}</button></div>{reviewCards.length > 1 && <details><summary>See the other {reviewCards.length - 1} {reviewCards.length === 2 ? 'card' : 'cards'}</summary><ul>{reviewCards.slice(1).map(({ card, collected, reasons }) => <li key={`${collected}:${card.id}`}><div><strong>{cardName(card)}{collected ? ' · collected' : ''}</strong><span>{reasons.join(' · ')}</span></div><button onClick={() => reviewCard(card.id, collected)}>Review {cardName(card)}</button></li>)}</ul></details>}</section>}
         {!portfolioMode && <><div className="advisor-outcome" data-state={outcomeState} aria-live="polite" aria-atomic="true">
           {mode === 'offer' && alreadyCollected ? <><h3>{chosen ? `Choice added: ${cardName(chosen)}` : 'Invocation recorded'}</h3><p>Capture the next offer, or plan the Fates you have collected.</p>{!!collection.cards.length && <button className="outline-button" onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan this collection</button>}</>
-            : !goal ? <><h3>Select the reward you want.</h3><p>Choose a goal to compare specific Fates. Unknown icons stay unknown.</p></>
+            : !goal ? <><h3>Select the reward you want.</h3><p>Choose a goal to compare specific Fates. Unknown icons stay unknown.</p><button className="outline-button" onClick={() => { if (priorities.current) { priorities.current.open = true; priorities.current.querySelector('select')?.focus() } }}>Set reward goal</button></>
             : mode === 'offer' && recommendations?.comparison === 'no-improvement' ? <><h3>No improvement for this goal.</h3><p>{recommendations.baseline?.activated ? 'Your collection already reaches this combo threshold.' : 'None of these Fates improves the best known plan from your collection.'} Choose another reward goal, or pick based on the modifiers in game.</p></>
             : result?.status === 'insufficient' ? <><h3>No supported recommendation yet.</h3><p>{mode === 'offer' ? `No offered Fate has a confirmed improvement for ${goal.label}. Check the cards and identify their rewards.` : `No confirmed progress toward ${goal.label} can be ranked. Add collected Fates and identify their rewards.`}</p></>
             : mode === 'offer' && recommendations ? <>
@@ -132,19 +143,18 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
           const content = <article data-best={index === 0 || undefined} data-state={invocation.status}><h3>{index === 0 ? 'Best supported plan' : `Alternative ${index + 1}`}</h3><PlanDetails plan={plan} cards={collection.cards} collected={collection.cards} goal={goal} /><button className={index === 0 ? 'primary-choice' : undefined} onClick={() => completeInvocation(plan)}>Mark this invocation completed</button><p className="hint">After invoking in game, remove these cards from your collection. You can undo this change.</p></article>
           return index === 0 ? <div key={plan.cardIds.join(':')}>{content}</div> : <details className="alternative-plan" key={plan.cardIds.join(':')}><summary>Alternative {index + 1} · {plan.targetCount}{plan.threshold ? `/${plan.threshold}` : ''} icons · {plan.cardIds.length} inputs</summary>{content}</details>
         })}</div>}
-        {!workspace.map && <SolverControls control={solverControl} availableGoals={goals} />}
+
         {offerReady && mode === 'offer' && <p className="hint">{workspace.usedOfferIds.includes(offer.id) ? 'A Fate from this offer has already been invoked.' : alreadyCollected ? 'A Fate from this offer is already collected. Remove it before changing your choice.' : 'Add only the Fate you actually chose in game. This does not control the game.'}</p>}
-        <details className="advisor-caveats"><summary>How advice works</summary><p>Choose one reward, or compare a weighted portfolio of rewards with your build filters. Points reflect your priorities, not measured prices or expected profit. Item quantities, automatic danger estimates and future offers remain unknown. Check the modifiers before choosing.</p><p>Duplicate combo scaling, mixed-tier merges and a third duplicate remain unresolved. Sources were checked on 11 November 2026; live-game validation is pending.</p><p><a href="https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11220s" target="_blank" rel="noreferrer">GGG Fate mechanics Q&A</a></p></details>
-        <details className="advisor-caveats"><summary>Viscera and boss rewards</summary><p>GGG confirms that Grim-Fate empowered Pinnacle bosses always drop their Viscera. Regular Fate-empowered bosses have a higher chance with more invoked Fates, and a further benefit from duplicates. Exact chances and duplicate interactions are unknown, so this does not change the icon ranking.</p><p><a href="https://www.pathofexile.com/forum/view-thread/4013527/page/1" target="_blank" rel="noreferrer">GGG Covens FAQ · 10 November 2026</a></p></details>
+        <details className="advice-notes"><summary>Advice notes & mechanics</summary><details className="advisor-caveats"><summary>How advice works</summary><p>Choose one reward, or compare a weighted portfolio of rewards with your build filters. Points reflect your priorities, not measured prices or expected profit. Item quantities, automatic danger estimates and future offers remain unknown. Check the modifiers before choosing.</p><p>Duplicate combo scaling, mixed-tier merges and a third duplicate remain unresolved. Sources were checked on 11 November 2026; live-game validation is pending.</p><p><a href="https://www.youtube.com/watch?v=8CEAhCzmXJM&t=11220s" target="_blank" rel="noreferrer">GGG Fate mechanics Q&A</a></p></details>
+        <details className="advisor-caveats"><summary>Viscera and boss rewards</summary><p>GGG confirms that Grim-Fate empowered Pinnacle bosses always drop their Viscera. Regular Fate-empowered bosses have a higher chance with more invoked Fates, and a further benefit from duplicates. Exact chances and duplicate interactions are unknown, so this does not change the icon ranking.</p><p><a href="https://www.pathofexile.com/forum/view-thread/4013527/page/1" target="_blank" rel="noreferrer">GGG Covens FAQ · 10 November 2026</a></p></details></details>
       </section>
       <div className="map-sidebar">{source}<aside className="panel advisor-collection" aria-labelledby="collection-heading">
         <div className="section-heading"><h2 id="collection-heading">Collected in this map</h2><span className="muted">{collection.cards.length}/{MAX_COLLECTED_FATES}</span></div>
-        <p className="hint">These Fates can only be invoked in the instance where you collected them.</p>
+        <p className="hint">Only for this map instance.</p>
         {!!corrections.length && <div className="snapshot-corrections" role="status"><strong>Saved source offers have different card details.</strong><p>Your collected snapshots remain unchanged until you apply a correction.</p>{corrections.map(({ card, corrected }) => <button key={card.id} disabled={!mapReady} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.map(item => item.id === card.id ? structuredClone(corrected) : item) } })}>Apply source correction: {cardName(card)}</button>)}</div>}
         {collection.cards.length ? <ul className="collected-fates">{collection.cards.map((card, index) => <li key={card.id}><div><strong>#{index + 1} {cardName(card)}</strong>{portfolioMode && <label className="checkbox-row exclusion-control"><input type="checkbox" disabled={!mapReady} checked={workspace.excludedCardIds.includes(card.id)} onChange={() => toggleExcluded(card.id)} />Exclude collected {cardName(card)} #{index + 1} from plans</label>}<span className="cell-sub">{card.tier === null ? 'Tier unknown' : `Tier ${card.tier}`} · {card.rewards.filter(reward => reward.identified).length} identified reward rows</span></div><button disabled={!mapReady} className="text-button" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}>Remove</button></li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
         {mapReady && <details ref={collectionEditor} className="collection-editor"><summary>Edit collected cards</summary><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview} onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></details>}
         {mapReady && !!collection.cards.length && mode === 'offer' && !alreadyCollected && <button className="outline-button" onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan this collection</button>}
-        <p className="hint">New map clears this collection. Saved offers stay in the archive.</p>
       </aside></div>
     </div>
 }

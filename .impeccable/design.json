@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T18:28:31Z",
+  "title": "Design System: Fate Collector",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Workbench background · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.010 233)", "oklch(25% 0.016 233)", "oklch(36% 0.019 233)", "oklch(48% 0.023 233)", "oklch(60% 0.023 233)", "oklch(72% 0.019 233)", "oklch(84% 0.013 233)", "oklch(95% 0.006 233)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Work surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.014 230)", "oklch(25% 0.022 230)", "oklch(36% 0.027 230)", "oklch(48% 0.032 230)", "oklch(60% 0.032 230)", "oklch(72% 0.026 230)", "oklch(84% 0.019 230)", "oklch(95% 0.008 230)"]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.016 225)", "oklch(25% 0.026 225)", "oklch(36% 0.033 225)", "oklch(48% 0.039 225)", "oklch(60% 0.039 225)", "oklch(72% 0.032 225)", "oklch(84% 0.022 225)", "oklch(95% 0.010 225)"]
+      },
+      "surface-quiet": {
+        "role": "neutral",
+        "displayName": "Quiet surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.013 228)", "oklch(25% 0.021 228)", "oklch(36% 0.026 228)", "oklch(48% 0.031 228)", "oklch(60% 0.031 228)", "oklch(72% 0.025 228)", "oklch(84% 0.018 228)", "oklch(95% 0.008 228)"]
+      },
+      "shell": {
+        "role": "neutral",
+        "displayName": "Navigation shell · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.013 228)", "oklch(25% 0.022 228)", "oklch(36% 0.027 228)", "oklch(48% 0.032 228)", "oklch(60% 0.032 228)", "oklch(72% 0.026 228)", "oklch(84% 0.018 228)", "oklch(95% 0.008 228)"]
+      },
+      "shell-text": {
+        "role": "neutral",
+        "displayName": "Navigation text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.005 197)", "oklch(25% 0.009 197)", "oklch(36% 0.011 197)", "oklch(48% 0.013 197)", "oklch(60% 0.013 197)", "oklch(72% 0.010 197)", "oklch(84% 0.007 197)", "oklch(95% 0.003 197)"]
+      },
+      "shell-muted": {
+        "role": "neutral",
+        "displayName": "Muted navigation text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.011 216)", "oklch(25% 0.017 216)", "oklch(36% 0.022 216)", "oklch(48% 0.025 216)", "oklch(60% 0.025 216)", "oklch(72% 0.021 216)", "oklch(84% 0.015 216)", "oklch(95% 0.006 216)"]
+      },
+      "shell-active": {
+        "role": "neutral",
+        "displayName": "Active navigation surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.016 225)", "oklch(25% 0.026 225)", "oklch(36% 0.033 225)", "oklch(48% 0.039 225)", "oklch(60% 0.039 225)", "oklch(72% 0.032 225)", "oklch(84% 0.022 225)", "oklch(95% 0.010 225)"]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Main text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.004 197)", "oklch(25% 0.006 197)", "oklch(36% 0.007 197)", "oklch(48% 0.008 197)", "oklch(60% 0.008 197)", "oklch(72% 0.007 197)", "oklch(84% 0.005 197)", "oklch(95% 0.002 197)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Supporting text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.010 224)", "oklch(25% 0.017 224)", "oklch(36% 0.021 224)", "oklch(48% 0.025 224)", "oklch(60% 0.025 224)", "oklch(72% 0.020 224)", "oklch(84% 0.014 224)", "oklch(95% 0.006 224)"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Divider · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.014 227)", "oklch(25% 0.022 227)", "oklch(36% 0.028 227)", "oklch(48% 0.033 227)", "oklch(60% 0.033 227)", "oklch(72% 0.027 227)", "oklch(84% 0.019 227)", "oklch(95% 0.008 227)"]
+      },
+      "border-light": {
+        "role": "neutral",
+        "displayName": "Control border · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.013 222)", "oklch(25% 0.021 222)", "oklch(36% 0.027 222)", "oklch(48% 0.031 222)", "oklch(60% 0.031 222)", "oklch(72% 0.026 222)", "oklch(84% 0.018 222)", "oklch(95% 0.008 222)"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Mineral Mint · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.033 175)", "oklch(25% 0.053 175)", "oklch(36% 0.066 175)", "oklch(48% 0.078 175)", "oklch(60% 0.078 175)", "oklch(72% 0.064 175)", "oklch(84% 0.045 175)", "oklch(95% 0.020 175)"]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Action text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.021 172)", "oklch(25% 0.033 172)", "oklch(36% 0.042 172)", "oklch(48% 0.049 172)", "oklch(60% 0.049 172)", "oklch(72% 0.040 172)", "oklch(84% 0.029 172)", "oklch(95% 0.012 172)"]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Hovered action · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.025 176)", "oklch(25% 0.041 176)", "oklch(36% 0.051 176)", "oklch(48% 0.060 176)", "oklch(60% 0.060 176)", "oklch(72% 0.049 176)", "oklch(84% 0.035 176)", "oklch(95% 0.015 176)"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Supported advice · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.033 175)", "oklch(25% 0.053 175)", "oklch(36% 0.066 175)", "oklch(48% 0.078 175)", "oklch(60% 0.078 175)", "oklch(72% 0.064 175)", "oklch(84% 0.045 175)", "oklch(95% 0.020 175)"]
+      },
+      "success-surface": {
+        "role": "secondary",
+        "displayName": "Supported state surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.016 177)", "oklch(25% 0.025 177)", "oklch(36% 0.032 177)", "oklch(48% 0.037 177)", "oklch(60% 0.037 177)", "oklch(72% 0.031 177)", "oklch(84% 0.022 177)", "oklch(95% 0.009 177)"]
+      },
+      "info": {
+        "role": "secondary",
+        "displayName": "Review · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.024 242)", "oklch(25% 0.038 242)", "oklch(36% 0.048 242)", "oklch(48% 0.056 242)", "oklch(60% 0.056 242)", "oklch(72% 0.046 242)", "oklch(84% 0.033 242)", "oklch(95% 0.014 242)"]
+      },
+      "info-surface": {
+        "role": "secondary",
+        "displayName": "Review surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.018 242)", "oklch(25% 0.030 242)", "oklch(36% 0.037 242)", "oklch(48% 0.043 242)", "oklch(60% 0.043 242)", "oklch(72% 0.036 242)", "oklch(84% 0.025 242)", "oklch(95% 0.011 242)"]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Provisional advice and confirmation · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.036 78)", "oklch(25% 0.059 78)", "oklch(36% 0.074 78)", "oklch(48% 0.087 78)", "oklch(60% 0.087 78)", "oklch(72% 0.071 78)", "oklch(84% 0.050 78)", "oklch(95% 0.022 78)"]
+      },
+      "warning-surface": {
+        "role": "secondary",
+        "displayName": "Warning surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.012 80)", "oklch(25% 0.019 80)", "oklch(36% 0.023 80)", "oklch(48% 0.028 80)", "oklch(60% 0.028 80)", "oklch(72% 0.023 80)", "oklch(84% 0.016 80)", "oklch(95% 0.007 80)"]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Error text · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.032 29)", "oklch(25% 0.052 29)", "oklch(36% 0.065 29)", "oklch(48% 0.077 29)", "oklch(60% 0.077 29)", "oklch(72% 0.063 29)", "oklch(84% 0.045 29)", "oklch(95% 0.019 29)"]
+      },
+      "danger-surface": {
+        "role": "secondary",
+        "displayName": "Error surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.016 17)", "oklch(25% 0.026 17)", "oklch(36% 0.032 17)", "oklch(48% 0.038 17)", "oklch(60% 0.038 17)", "oklch(72% 0.031 17)", "oklch(84% 0.022 17)", "oklch(95% 0.010 17)"]
+      },
+      "input": {
+        "role": "neutral",
+        "displayName": "Input surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.013 228)", "oklch(25% 0.021 228)", "oklch(36% 0.026 228)", "oklch(48% 0.031 228)", "oklch(60% 0.031 228)", "oklch(72% 0.025 228)", "oklch(84% 0.018 228)", "oklch(95% 0.008 228)"]
+      },
+      "evidence": {
+        "role": "neutral",
+        "displayName": "Evidence surface · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.007 233)", "oklch(25% 0.011 233)", "oklch(36% 0.014 233)", "oklch(48% 0.017 233)", "oklch(60% 0.017 233)", "oklch(72% 0.014 233)", "oklch(84% 0.010 233)", "oklch(95% 0.004 233)"]
+      },
+      "selection": {
+        "role": "neutral",
+        "displayName": "Selection · Mineral Depth",
+        "tonalRamp": ["oklch(15% 0.020 198)", "oklch(25% 0.032 198)", "oklch(36% 0.040 198)", "oklch(48% 0.047 198)", "oklch(60% 0.047 198)", "oklch(72% 0.039 198)", "oklch(84% 0.027 198)", "oklch(95% 0.012 198)"]
+      },
+      "trail-background": {
+        "role": "neutral",
+        "displayName": "Workbench background · Light Trail",
+        "tonalRamp": ["oklch(15% 0.004 135)", "oklch(25% 0.006 135)", "oklch(36% 0.008 135)", "oklch(48% 0.009 135)", "oklch(60% 0.009 135)", "oklch(72% 0.007 135)", "oklch(84% 0.005 135)", "oklch(95% 0.002 135)"]
+      },
+      "trail-surface": {
+        "role": "neutral",
+        "displayName": "Work surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.000 0)", "oklch(25% 0.000 0)", "oklch(36% 0.000 0)", "oklch(48% 0.000 0)", "oklch(60% 0.000 0)", "oklch(72% 0.000 0)", "oklch(84% 0.000 0)", "oklch(95% 0.000 0)"]
+      },
+      "trail-surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.006 135)", "oklch(25% 0.009 135)", "oklch(36% 0.012 135)", "oklch(48% 0.014 135)", "oklch(60% 0.014 135)", "oklch(72% 0.011 135)", "oklch(84% 0.008 135)", "oklch(95% 0.003 135)"]
+      },
+      "trail-surface-quiet": {
+        "role": "neutral",
+        "displayName": "Quiet surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.003 124)", "oklch(25% 0.005 124)", "oklch(36% 0.006 124)", "oklch(48% 0.007 124)", "oklch(60% 0.007 124)", "oklch(72% 0.006 124)", "oklch(84% 0.004 124)", "oklch(95% 0.002 124)"]
+      },
+      "trail-shell": {
+        "role": "neutral",
+        "displayName": "Navigation shell · Light Trail",
+        "tonalRamp": ["oklch(15% 0.015 166)", "oklch(25% 0.024 166)", "oklch(36% 0.030 166)", "oklch(48% 0.035 166)", "oklch(60% 0.035 166)", "oklch(72% 0.029 166)", "oklch(84% 0.020 166)", "oklch(95% 0.009 166)"]
+      },
+      "trail-shell-text": {
+        "role": "neutral",
+        "displayName": "Navigation text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.003 139)", "oklch(25% 0.005 139)", "oklch(36% 0.007 139)", "oklch(48% 0.008 139)", "oklch(60% 0.008 139)", "oklch(72% 0.006 139)", "oklch(84% 0.005 139)", "oklch(95% 0.002 139)"]
+      },
+      "trail-shell-muted": {
+        "role": "neutral",
+        "displayName": "Muted navigation text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.011 152)", "oklch(25% 0.018 152)", "oklch(36% 0.023 152)", "oklch(48% 0.027 152)", "oklch(60% 0.027 152)", "oklch(72% 0.022 152)", "oklch(84% 0.016 152)", "oklch(95% 0.007 152)"]
+      },
+      "trail-shell-active": {
+        "role": "neutral",
+        "displayName": "Active navigation surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.018 159)", "oklch(25% 0.029 159)", "oklch(36% 0.036 159)", "oklch(48% 0.043 159)", "oklch(60% 0.043 159)", "oklch(72% 0.035 159)", "oklch(84% 0.025 159)", "oklch(95% 0.011 159)"]
+      },
+      "trail-text": {
+        "role": "neutral",
+        "displayName": "Main text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.014 167)", "oklch(25% 0.022 167)", "oklch(36% 0.028 167)", "oklch(48% 0.033 167)", "oklch(60% 0.033 167)", "oklch(72% 0.027 167)", "oklch(84% 0.019 167)", "oklch(95% 0.008 167)"]
+      },
+      "trail-muted": {
+        "role": "neutral",
+        "displayName": "Supporting text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.013 160)", "oklch(25% 0.021 160)", "oklch(36% 0.027 160)", "oklch(48% 0.032 160)", "oklch(60% 0.032 160)", "oklch(72% 0.026 160)", "oklch(84% 0.018 160)", "oklch(95% 0.008 160)"]
+      },
+      "trail-border": {
+        "role": "neutral",
+        "displayName": "Divider · Light Trail",
+        "tonalRamp": ["oklch(15% 0.009 141)", "oklch(25% 0.014 141)", "oklch(36% 0.018 141)", "oklch(48% 0.021 141)", "oklch(60% 0.021 141)", "oklch(72% 0.017 141)", "oklch(84% 0.012 141)", "oklch(95% 0.005 141)"]
+      },
+      "trail-border-light": {
+        "role": "neutral",
+        "displayName": "Control border · Light Trail",
+        "tonalRamp": ["oklch(15% 0.013 152)", "oklch(25% 0.021 152)", "oklch(36% 0.026 152)", "oklch(48% 0.031 152)", "oklch(60% 0.031 152)", "oklch(72% 0.025 152)", "oklch(84% 0.018 152)", "oklch(95% 0.008 152)"]
+      },
+      "trail-accent": {
+        "role": "primary",
+        "displayName": "Trail Violet · Light Trail",
+        "tonalRamp": ["oklch(15% 0.051 309)", "oklch(25% 0.083 309)", "oklch(36% 0.104 309)", "oklch(48% 0.122 309)", "oklch(60% 0.122 309)", "oklch(72% 0.100 309)", "oklch(84% 0.071 309)", "oklch(95% 0.031 309)"]
+      },
+      "trail-accent-ink": {
+        "role": "primary",
+        "displayName": "Action text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.000 0)", "oklch(25% 0.000 0)", "oklch(36% 0.000 0)", "oklch(48% 0.000 0)", "oklch(60% 0.000 0)", "oklch(72% 0.000 0)", "oklch(84% 0.000 0)", "oklch(95% 0.000 0)"]
+      },
+      "trail-accent-hover": {
+        "role": "primary",
+        "displayName": "Hovered action · Light Trail",
+        "tonalRamp": ["oklch(15% 0.049 309)", "oklch(25% 0.079 309)", "oklch(36% 0.098 309)", "oklch(48% 0.116 309)", "oklch(60% 0.116 309)", "oklch(72% 0.095 309)", "oklch(84% 0.067 309)", "oklch(95% 0.029 309)"]
+      },
+      "trail-success": {
+        "role": "secondary",
+        "displayName": "Supported advice · Light Trail",
+        "tonalRamp": ["oklch(15% 0.036 163)", "oklch(25% 0.058 163)", "oklch(36% 0.072 163)", "oklch(48% 0.085 163)", "oklch(60% 0.085 163)", "oklch(72% 0.070 163)", "oklch(84% 0.049 163)", "oklch(95% 0.021 163)"]
+      },
+      "trail-success-surface": {
+        "role": "secondary",
+        "displayName": "Supported state surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.008 156)", "oklch(25% 0.012 156)", "oklch(36% 0.015 156)", "oklch(48% 0.018 156)", "oklch(60% 0.018 156)", "oklch(72% 0.015 156)", "oklch(84% 0.011 156)", "oklch(95% 0.005 156)"]
+      },
+      "trail-info": {
+        "role": "secondary",
+        "displayName": "Review · Light Trail",
+        "tonalRamp": ["oklch(15% 0.035 249)", "oklch(25% 0.057 249)", "oklch(36% 0.072 249)", "oklch(48% 0.084 249)", "oklch(60% 0.084 249)", "oklch(72% 0.069 249)", "oklch(84% 0.049 249)", "oklch(95% 0.021 249)"]
+      },
+      "trail-info-surface": {
+        "role": "secondary",
+        "displayName": "Review surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.005 240)", "oklch(25% 0.008 240)", "oklch(36% 0.010 240)", "oklch(48% 0.012 240)", "oklch(60% 0.012 240)", "oklch(72% 0.010 240)", "oklch(84% 0.007 240)", "oklch(95% 0.003 240)"]
+      },
+      "trail-warning": {
+        "role": "secondary",
+        "displayName": "Provisional advice and confirmation · Light Trail",
+        "tonalRamp": ["oklch(15% 0.041 71)", "oklch(25% 0.066 71)", "oklch(36% 0.082 71)", "oklch(48% 0.097 71)", "oklch(60% 0.097 71)", "oklch(72% 0.079 71)", "oklch(84% 0.056 71)", "oklch(95% 0.024 71)"]
+      },
+      "trail-warning-surface": {
+        "role": "secondary",
+        "displayName": "Warning surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.014 85)", "oklch(25% 0.022 85)", "oklch(36% 0.028 85)", "oklch(48% 0.032 85)", "oklch(60% 0.032 85)", "oklch(72% 0.027 85)", "oklch(84% 0.019 85)", "oklch(95% 0.008 85)"]
+      },
+      "trail-danger": {
+        "role": "secondary",
+        "displayName": "Error text · Light Trail",
+        "tonalRamp": ["oklch(15% 0.060 27)", "oklch(25% 0.097 27)", "oklch(36% 0.122 27)", "oklch(48% 0.143 27)", "oklch(60% 0.143 27)", "oklch(72% 0.117 27)", "oklch(84% 0.083 27)", "oklch(95% 0.036 27)"]
+      },
+      "trail-danger-surface": {
+        "role": "secondary",
+        "displayName": "Error surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.007 35)", "oklch(25% 0.012 35)", "oklch(36% 0.015 35)", "oklch(48% 0.017 35)", "oklch(60% 0.017 35)", "oklch(72% 0.014 35)", "oklch(84% 0.010 35)", "oklch(95% 0.004 35)"]
+      },
+      "trail-input": {
+        "role": "neutral",
+        "displayName": "Input surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.000 0)", "oklch(25% 0.000 0)", "oklch(36% 0.000 0)", "oklch(48% 0.000 0)", "oklch(60% 0.000 0)", "oklch(72% 0.000 0)", "oklch(84% 0.000 0)", "oklch(95% 0.000 0)"]
+      },
+      "trail-evidence": {
+        "role": "neutral",
+        "displayName": "Evidence surface · Light Trail",
+        "tonalRamp": ["oklch(15% 0.006 136)", "oklch(25% 0.010 136)", "oklch(36% 0.013 136)", "oklch(48% 0.015 136)", "oklch(60% 0.015 136)", "oklch(72% 0.013 136)", "oklch(84% 0.009 136)", "oklch(95% 0.004 136)"]
+      },
+      "trail-selection": {
+        "role": "neutral",
+        "displayName": "Selection · Light Trail",
+        "tonalRamp": ["oklch(15% 0.014 312)", "oklch(25% 0.022 312)", "oklch(36% 0.028 312)", "oklch(48% 0.033 312)", "oklch(60% 0.033 312)", "oklch(72% 0.027 312)", "oklch(84% 0.019 312)", "oklch(95% 0.008 312)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Page heading",
+        "purpose": "Main heading in the workspace."
+      },
+      "headline": {
+        "displayName": "Outcome heading",
+        "purpose": "The recommendation or next action."
+      },
+      "title": {
+        "displayName": "Section heading",
+        "purpose": "Panels and content sections."
+      },
+      "subsection": {
+        "displayName": "Subsection heading",
+        "purpose": "Standard third-level heading."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Product name in the navigation shell."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "General explanatory copy."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Default form and action labels."
+      },
+      "label": {
+        "displayName": "Field label",
+        "purpose": "Labels above editable fields."
+      },
+      "supporting": {
+        "displayName": "Supporting text",
+        "purpose": "Status, hints and compact metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow",
+        "value": "0 14px 36px rgb(0 0 0 / .18)",
+        "purpose": "Mineral Depth workspace elevation for the decision surface, import and journal."
+      },
+      {
+        "name": "menu-shadow",
+        "value": "0 12px 32px rgb(0 0 0 / .3)",
+        "purpose": "Mineral Depth overlay elevation for More actions and dialogs."
+      },
+      {
+        "name": "trail-shadow",
+        "value": "0 14px 36px rgb(35 59 49 / .08)",
+        "purpose": "Light Trail workspace elevation for the decision surface, import and journal."
+      },
+      {
+        "name": "trail-menu-shadow",
+        "value": "0 12px 32px rgb(35 59 49 / .18)",
+        "purpose": "Light Trail overlay elevation for More actions and dialogs."
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-feedback",
+        "value": "background-color .18s ease-out, border-color .18s ease-out",
+        "purpose": "Button hover and border feedback. Reduced motion disables transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "max-1200",
+        "value": "1200px"
+      },
+      {
+        "name": "max-1000",
+        "value": "1000px"
+      },
+      {
+        "name": "max-900",
+        "value": "900px"
+      },
+      {
+        "name": "max-760",
+        "value": "760px"
+      },
+      {
+        "name": "max-600",
+        "value": "600px"
+      },
+      {
+        "name": "max-500",
+        "value": "500px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary choice",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "A supported next action in the decision panel.",
+      "html": "<button class=\"ds-button ds-primary\">Choose this Fate</button>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; }"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A neutral control for a nearby secondary operation.",
+      "html": "<button class=\"ds-button\">Review card</button>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } }"
+    },
+    {
+      "name": "Provisional choice",
+      "kind": "button",
+      "refersTo": "button-provisional",
+      "description": "An amber action shown beside the explicit provisional status.",
+      "html": "<div class=\"ds-provisional\"><span>Provisional preference</span><button class=\"ds-button ds-primary\">Choose this Fate</button></div>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; } .ds-provisional { display: grid; justify-items: start; gap: 10px; color: var(--warning); font: 15px/1.6 var(--sans); } .ds-provisional .ds-button.ds-primary { background: var(--warning); color: var(--background); } .ds-provisional .ds-button.ds-primary:hover:not(:disabled) { background: var(--warning); }"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "An editable field in the review or journal.",
+      "html": "<label class=\"ds-label\">Search offers<input class=\"ds-input\" type=\"search\" placeholder=\"Fate, area or ID\"></label>",
+      "css": ".ds-label { display: flex; flex-direction: column; gap: 6px; font: 600 14px/1.6 var(--sans); color: var(--text); } .ds-input { font: 15px/1.4 var(--sans); min-height: 42px; min-width: 0; width: 100%; padding: 9px 12px; border-radius: var(--control-radius); background: var(--input); color: var(--text); border: 1px solid var(--border-light); caret-color: var(--accent); } .ds-input::placeholder { color: var(--muted); opacity: 1; } .ds-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }"
+    },
+    {
+      "name": "Navigation rail",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "The active screen uses the brighter shell text and raised shell tone.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main\"><button class=\"ds-button\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15\"/></svg>Current map</button><button class=\"ds-button\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8h16v13H4V8ZM3 3h18v5H3V3Zm6 9h6\"/></svg>Saved offers</button></nav>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-nav { display: flex; flex-direction: column; gap: 8px; background: var(--shell); padding: 16px; } .ds-nav .ds-button { display: flex; align-items: center; gap: 12px; border: 0; color: var(--shell-muted); text-align: left; padding: 13px 12px; font-size: 14px; } .ds-nav .ds-button[aria-current], .ds-nav .ds-button:hover { color: var(--shell-text); background: var(--shell-active); } .ds-nav .ds-button[aria-current] { font-weight: 650; } .ds-nav .ds-button:focus-visible { outline-color: var(--shell-text); }"
+    },
+    {
+      "name": "Decision switch",
+      "kind": "custom",
+      "refersTo": "decision-switch",
+      "description": "Two pressed-state buttons share a single track.",
+      "html": "<div class=\"ds-switch\" role=\"group\" aria-label=\"Decision\"><button class=\"ds-button\" aria-pressed=\"true\">Choose a Fate</button><button class=\"ds-button\" aria-pressed=\"false\">Plan invocation</button></div>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-switch { display: flex; padding: 4px; gap: 4px; border-radius: 10px; background: var(--background); } .ds-switch .ds-button { flex: 1; border: 0; padding: 10px 13px; color: var(--muted); font-size: 14px; white-space: nowrap; } .ds-switch .ds-button[aria-pressed='true'] { background: var(--surface-raised); color: var(--text); font-weight: 600; }"
+    },
+    {
+      "name": "Review callout",
+      "kind": "card",
+      "refersTo": "review-panel",
+      "description": "The next evidence check with a targeted review action.",
+      "html": "<section class=\"ds-review\"><div><strong>Data to check</strong><p>Check the rewards shown in your capture.</p></div><button class=\"ds-button\">Review card</button></section>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-review { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px; font: 15px/1.6 var(--sans); border-radius: var(--control-radius); background: var(--info-surface); color: var(--info); } .ds-review p { margin: 4px 0 0; color: var(--muted); font-size: 13px; } .ds-review .ds-button { border-color: var(--info); color: var(--info); font-size: 13px; } @media (max-width: 1000px) { .ds-review { flex-direction: column; align-items: flex-start; } }"
+    },
+    {
+      "name": "Decision outcome",
+      "kind": "card",
+      "refersTo": "decision-panel",
+      "description": "The heading, context and choice on the main decision surface.",
+      "html": "<section class=\"ds-decision\"><div class=\"ds-outcome\"><h3>Suggested invocation plan</h3><p>Uses only the Fates collected in this map.</p></div></section>",
+      "css": ".ds-decision { background: var(--surface); color: var(--text); padding: 0 26px 24px; border-radius: var(--radius); box-shadow: var(--shadow); font: 15px/1.6 var(--sans); } .ds-outcome { padding: 26px 0 22px; } .ds-outcome h3 { margin: 0; font: 600 25px/1.3 var(--display); letter-spacing: -.02em; text-wrap: pretty; } .ds-outcome p { margin: 10px 0 0; max-width: 65ch; color: var(--muted); font-size: 14px; } @media (max-width: 760px) { .ds-decision { padding: 0 20px 20px; } .ds-outcome h3 { font-size: 23px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Mineral specimen catalog",
+    "overview": "Fate Collector presents advice like a specimen catalog. Align names, tiers and reward values for comparison, and keep the source capture nearby so players can inspect unfamiliar rewards.\n\nMineral Depth uses petrol and mint. Light Trail pairs an olive shell with pale neutral work surfaces and violet. Both use the same spacing, hierarchy and interactions.",
+    "keyCharacteristics": [
+      "One decision surface with adjacent evidence",
+      "Quiet navigation and compact, ruled comparison rows",
+      "Secondary controls in labelled disclosures",
+      "Uncertainty communicated in words and color"
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Color Rule",
+        "body": "Reserve green for supported advice, amber for provisional results or confirmation, and blue for review. Include the state in text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Functional Elevation Rule",
+        "body": "Lift the decision, import and journal surfaces and the overlays. Group nested detail with tone, spacing and dividers.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the next action and its supporting evidence easy to find.",
+      "Do expose focus, pressed state and pending or saved status in both themes.",
+      "Do use real captures and game terms when showing evidence."
+    ],
+    "donts": [
+      "Don't use color alone to communicate confidence, selection or review status.",
+      "Don't add decorative game artwork or invented observations."
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+import { openDisclosure } from './ui'
 import { expect, test } from '@playwright/test'
 import { newCard, newOffer } from '../shared/offers'
 import { join } from 'node:path'
@@ -25,6 +26,7 @@ for (const width of [1280, 640]) {
     await expect(page.getByRole('button', { name: 'Open', exact: true })).toHaveCount(1)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     if (process.env.FATE_QA_DIR) await page.screenshot({ path: join(process.env.FATE_QA_DIR, `compat-${browserName}-${width}.png`), fullPage: true })
+    await openDisclosure(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     await expect(page.getByRole('dialog', { name: 'Download your backup' })).toBeVisible()
     await page.keyboard.press('Escape')

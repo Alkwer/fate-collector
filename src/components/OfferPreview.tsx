@@ -19,7 +19,7 @@ export function OfferPreview({ offer, saved = false, automatic = false, embedded
         {card.rewards.some(reward => reward.visualId && !reward.identified) && <p>Suggested icons: {card.rewards.filter(reward => reward.visualId && !reward.identified).map(reward => reward.label === VISUAL_LABELS[reward.visualId!] ? reward.label : `${reward.label} (${VISUAL_LABELS[reward.visualId!]}; ${reward.kind === 'unknown' ? 'kind unknown' : 'unidentified'})`).join(', ')}. Meanings need review.</p>}
         {renderAdvice?.(card)}
       </li>)}</ul>
-      <p className="preview-hint">{saved ? 'Spotted a misread? Open Edit details to correct it.' : 'Compare these cards with the image. Use Edit details only if something needs correcting.'}</p>
+      {!embedded && <p className="preview-hint">{saved ? 'Spotted a misread? Open Edit details to correct it.' : 'Compare these cards with the image. Use Edit details only if something needs correcting.'}</p>}
     </> : <div className="empty-offer"><h3>{offer.captureId ? saved ? 'Your capture is saved.' : 'Your capture is safe to save.' : 'Your Fates will appear here.'}</h3><p>{offer.captureId ? saved ? 'No cards were recognized. The image is preserved; you can add cards in Edit details later.' : 'No cards were recognized. Save the image for later, or open Edit details to add them.' : automatic ? 'Press F9 in game. Each capture appears here and saves automatically.' : 'Connect a captures folder, or import a capture. Known names and descriptions are filled in for you.'}</p></div>}
   </section>
 }

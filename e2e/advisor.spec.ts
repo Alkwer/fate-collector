@@ -1,3 +1,4 @@
+import { openDisclosure, expectEmptyMap } from './ui'
 import { test, expect, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -22,8 +23,10 @@ async function importOffer(page: Page, cards: FateCard[]): Promise<Offer> {
 test('specific reward goals change the recommendation; editing recomputes without recording a choice', async ({ page }) => {
   await page.goto('/')
   const offer = await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [reward('Gems', 2)])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await expect(page.getByRole('heading', { name: 'Recommended: Alchemist', exact: true })).toBeVisible()
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:gems')
   await expect(page.getByRole('heading', { name: 'Recommended: Sanguine', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Edit current offer' }).click()
@@ -86,9 +89,11 @@ test('a saved sibling editor never overwrites pending corrections to the same of
 test('unknown rewards abstain and partial knowledge remains provisional', async ({ page }) => {
   await page.goto('/')
   await importOffer(page, [card('Alchemist', []), card('Sanguine', [newReward()])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
   await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await expect(page.getByRole('heading', { name: 'Provisional preference: Alchemist' })).toBeVisible()
   await expect(page.getByText('Missing data or unresolved mechanics could change this ranking.', { exact: false })).toBeVisible()
@@ -97,6 +102,7 @@ test('unknown rewards abstain and partial knowledge remains provisional', async 
 test('collects one Fate per offer, plans duplicate order, and restores the area only after confirmation', async ({ page }) => {
   await page.goto('/')
   await importOffer(page, [card('Torchbearer', [reward('Currency', 2)]), card('Tempest', [reward('Gems')])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
   await expect(page.getByRole('button', { name: 'Add Tempest to collected' })).toBeDisabled()
@@ -122,16 +128,29 @@ test('collects one Fate per offer, plans duplicate order, and restores the area 
   await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Suggested invocation plan' })).toBeVisible()
   await page.reload()
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'New map', exact: true }).click()
-  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await expectEmptyMap(page)
   await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(0)
+})
+
+test('an empty active map still supports entering collected Fates manually', async ({ page }) => {
+  await page.goto('/')
+  await openDisclosure(page, '.more-actions')
+  await page.getByRole('button', { name: 'Start new map', exact: true }).click()
+  await openDisclosure(page, '.collection-editor')
+  await page.getByRole('button', { name: 'Add card', exact: true }).click()
+  await expect(page.getByRole('complementary', { name: 'Collected in this map' })).toContainText('1/12')
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Plan invocation', exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('archive browsing preserves the current offer; a new map excludes every previous card and offer', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Advisor', exact: true })).toHaveCount(0)
   const first = await importOffer(page, [card('Torchbearer', [reward('Currency', 2)])])
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
   const archived = { ...newOffer(), cards: [card('Alchemist', [reward('Currency', 100)])] }
@@ -143,8 +162,9 @@ test('archive browsing preserves the current offer; a new map excludes every pre
   await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Alchemist', exact: true })).toHaveCount(0)
   await expect(page.getByRole('complementary')).toContainText('1/12')
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'New map', exact: true }).click()
-  await expect(page.getByRole('complementary')).toContainText('0/12')
+  await expectEmptyMap(page)
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('button', { name: 'Open', exact: true })).toHaveCount(2)
   await page.getByRole('row').filter({ hasText: 'Torchbearer' }).getByRole('button', { name: 'Open', exact: true }).click()
@@ -161,6 +181,7 @@ test('archive browsing preserves the current offer; a new map excludes every pre
 
 test('an empty restored map also requires confirmation before an offer can join it', async ({ page }) => {
   await page.goto('/')
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'Start new map', exact: true }).click()
   await page.reload()
   await expect(page.getByText('Confirm your current map.', { exact: true })).toBeVisible()
@@ -172,6 +193,7 @@ test('an empty restored map also requires confirmation before an offer can join 
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await page.getByRole('button', { name: 'Resume archived review' }).click()
   await page.getByRole('button', { name: 'Use this offer in current map' }).click()
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('regular:currency')
   await expect(page.getByRole('heading', { name: 'Recommended: Alchemist' })).toBeVisible()
 })
@@ -213,6 +235,7 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['ta
       await page.getByRole('button', { name: `Add ${name} to collected` }).click()
     }
     await importOffer(page, [card('Deathbringer', [reward('Exceptional Gem', 1, 'combo')]), card('Wildfire', [reward("Dreadmaidens' Sacrament", 1, 'combo')])])
+    await openDisclosure(page, '.reward-settings')
     await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
     await expect(page.getByRole('heading', { name: 'Recommended: Deathbringer' })).toBeVisible()
     await expect(page.locator('.advisor-candidates').first()).toContainText('3/3 matching icons · Combo ready')
@@ -230,6 +253,7 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['ta
     await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
     await collectionEditor.getByLabel('Count', { exact: true }).fill('1')
     await expect(page.getByRole('heading', { name: 'Suggested invocation plan' })).toBeVisible()
+    await openDisclosure(page, '.reward-settings')
     await page.getByLabel('Reward goal').focus()
     await expect(page.getByLabel('Reward goal')).toBeFocused()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

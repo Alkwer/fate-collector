@@ -30,7 +30,6 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
   }
   const selected = records.find(item => item.report.id === report?.id)
   return <>
-    <div className="page-heading"><div><h1>Report a problem.</h1><p>Review a small diagnostic report before deciding to send it.</p></div></div>
     <section className="panel diagnostics-panel">
       <h2>1. Generate and inspect</h2>
       <p>Includes software versions, technical states and up to 100 recent event codes. Excludes keys, screenshots, OCR, offers, notes, file paths, account names and raw error messages.</p>

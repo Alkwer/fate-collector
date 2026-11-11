@@ -1,33 +1,47 @@
 # Collector design
 
-Original visual reference: `collector-concept-en.png`, generated with the built-in image tool.
-The earlier Polish concept is superseded by the user's English-only requirement.
+## Appearance and layout
 
-- Charcoal background `#111311`, surface `#191c19`, text `#eee9dc`, muted text
-  `#a9afa4`, olive borders `#424b3c`, gold accent `#d3b775`.
-- Gold identifies navigation. Green `#8dd5b1` identifies supported recommendations
-  and the main choice action; amber `#ecc17a` marks provisional advice and required
-  confirmation; blue `#9fc8ec` identifies data review. Text labels accompany each
+The interface uses **Mineral Depth** by default. Its petrol shell, blue-green
+surfaces and mint actions share a layout with **Light Trail**, which pairs an
+olive shell and pale surfaces with violet actions. **More actions → Appearance**
+is available on every screen. The choice is stored in the browser, restores
+on reload and takes effect without replacing the active map or draft. If local
+preference storage is unavailable, the change applies for the visit and the menu
+reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens.
+
+- A sticky navigation rail leads to **Current map**, **Saved offers** and
+  **Diagnostics**. It becomes a top navigation bar at narrow widths.
+- The main decision panel sits beside the source capture and current collection
+  on desktop. On tablet the decision comes first, followed by evidence and
+  collection side by side. On mobile those supporting panels stack.
+- Self-hosted upright Source Sans 3 serves headings and the wordmark. Body
+  and controls use the Segoe UI stack. The page title is 30px on desktop and
+  25px on mobile. Work surfaces use 14px corners and controls use 7px corners.
+- The theme accent identifies primary actions and focus. Green identifies
+  supported advice, amber marks provisional advice or confirmation, blue
+  identifies review, and red identifies errors. Text labels accompany each
   state. Ordinary Fate names and secondary actions use neutral text.
-- Georgia title/wordmark, system sans body and explicit control typography.
-- Compact header and 26–32px title, 40/60 source/preview columns, single-action save band.
-- Four-pixel corners, no decorative game art, statistics, badges or gradients.
-- Thin outlined upload icon, real editable HTML controls, no rasterized UI.
-- Mobile: detected Fates precede the source image; the 144px preview opens at full size.
-  Empty states keep the import control first. Tables scroll inside their containers.
+- Use thin outlined icons, editable HTML controls and original captures for
+  evidence. Keep the workspace free of decorative game art, invented badges
+  and statistics, gradients and rasterized controls.
+- Empty states lead with import. On mobile the archived review shows detected
+  Fates before the source image. Source previews open at full size. Keep
+  table scrolling within the table container where needed.
 - Supporting instructions and statuses use at least 13px text. Buttons and disclosure
-  headers have at least 36px targets on desktop and 44px targets on mobile;
-  keyboard focus stays visible.
+  headers have at least 36px targets on desktop and 44px targets on mobile.
+  Keyboard focus stays visible.
 
-Required extensions to the concept: saved-offer history, collection access panel,
-reward details, error/status feedback, deletion confirmation, source zoom and
-import guidance. These enable the requested capture/review/save/share workflow.
+## Interaction requirements
 
-User steering: minimize manual entry and reduce visible options further. The main
-screen contains no editable fields or checkboxes. Show source evidence and a read-only
-list of extracted names/descriptions. Put card corrections, the optional choice,
-context and a single Review status selector under one **Edit details** disclosure.
-Move examples, new offers, exports and unreviewed saves to **More actions**.
+Minimize manual entry and keep the default capture and advice view read-only.
+Show source evidence and extracted names and descriptions. Put card corrections,
+the optional archived choice, context and a single **Review status** selector
+under **Edit details**. Keep examples, new offers, individual offer export and
+unreviewed saves under **More actions**. The journal keeps search and its main
+offer filter visible, with additional filters, import, export, recovery and
+sharing under their labelled disclosures. Retain deletion confirmation, source
+zoom, import guidance and actionable error feedback.
 **Connect folder** links the local captures folder once. While connected, captures
 and corrections save automatically; there is no per-capture confirmation or save
 button. Display a compact connection status and local save state. New automatic
@@ -36,7 +50,8 @@ Support paste and drag/drop as fallbacks.
 The folder connection is optional and explicitly labelled as local review. The
 helper's independent cloud upload is configured in its tray menu and can work with
 the website closed. Do not show a cloud connection or upload status the browser
-cannot observe. The connection strip is secondary to the capture and extracted cards.
+cannot observe. The **Connect captures folder** disclosure is secondary to the capture
+and extracted cards.
 Do not require typing modifiers, area, tier, or rewards just to preserve a sample.
 Manual review means the user checked the extraction, not that every icon is known.
 Known Fate names and descriptions are extracted from local Windows OCR. The local
@@ -51,17 +66,20 @@ their individual actions. Show the next missing-data check directly and collapse
 the remaining checklist. Keep the best invocation visible and alternatives collapsed.
 Keep the recommendation and its gain over the existing collection prominent, with
 equal matches and provisional results explicitly labelled. Missing data links to
-the affected card rather than sending the user to an undirected form. Put the
-capture above the collection in the secondary column; stack at tablet width.
+the affected card. **Back to advice** closes current-offer editing and restores
+focus to the decision. Summarize **Reward priorities** in a disclosure and keep
+profile controls and advice notes available on demand. An active map offers
+**Edit collected cards** even before an offer is imported so players can rebuild
+their current collection.
 The map editor has no archive choice control. Keep capture saving, reward checking
 and local map choices distinct in the copy, without requiring duplicate input.
 
-Visible primary copy: Fate Collector; Collector; Saved offers; Review your captures.;
-Check detected Fates and correct any misreads.; More actions; Your capture;
-Paste your capture with Ctrl+V; Import capture; Offered Fates; Edit details;
-Connect folder; Local review connected; Saved locally. Confirm and save (or Save offer)
-is shown for captures that have not already been saved automatically.
-Unknown recognition and test-origin notices are functional.
+In the capture area, show **Your capture**, **Paste your capture with Ctrl+V**
+and **Import capture** when manual import is available. Use **Connect folder**
+and **Local review connected** for the local connection, and **Saved locally**
+for a confirmed automatic save. **Confirm and save** or **Save offer** appears
+for captures with an explicit save step. Unknown recognition and test-origin
+notices remain visible where they affect the task.
 After review is saved, the action band reports its complete/partial review status
 instead of asking for confirmation again. Pending corrections never display a
 saved claim. Automatic captures stay explicitly unreviewed until checked.
@@ -72,4 +90,5 @@ corrections. Importing original evidence after a metadata backup restores the im
 without replacing the user's corrected card data.
 
 The empty state intentionally contains no invented observations. The example
-state reproduces the two illustrative cards in the concept and stays test-only.
+state reproduces the two illustrative cards from the historical
+`collector-concept-en.png` and stays test-only. Application copy is English.

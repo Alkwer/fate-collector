@@ -1,3 +1,4 @@
+import { openDisclosure } from './ui'
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -21,6 +22,7 @@ for (const width of [1440, 390]) {
       await expect(page.locator('.notice[role="status"]')).toContainText('Imported 120 new offers')
     }
     await expect(page.getByRole('button', { name: /^Saved offers\s*240$/ })).toBeVisible()
+    await openDisclosure(page, '.archive-tools')
     await page.getByRole('button', { name: 'Export all data' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     await expect(dialog).toBeVisible()

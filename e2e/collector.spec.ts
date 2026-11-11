@@ -1,3 +1,4 @@
+import { openDisclosure } from './ui'
 import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
@@ -59,7 +60,7 @@ test('helper import auto-fills text, saves evidence, survives reload, and avoids
   await expect(page.getByRole('heading', { name: 'Sanguine', exact: true })).toBeVisible()
   await expect(page.getByText('Session capture #2 · Possible repeat (matching OCR)', { exact: true })).toBeVisible()
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
-  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
+  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await expect(page.getByAltText('Captured Fate offer')).toBeVisible()
   await expect(page.getByText('Newer Windows helper available', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: `Download helper ${HELPER_VERSION}`, exact: true })).toHaveAttribute('href', '/downloads/fate-collector-helper.zip')
@@ -123,6 +124,7 @@ test('reviewed live offer shares to local D1; retries are idempotent; evidence i
   await page.getByRole('button', { name: 'Save offer', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('saved on this device')
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
   await page.getByLabel('Collection access key').fill('e2e-local-only')
   await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
   await page.getByRole('button', { name: 'Accept data sharing', exact: true }).click()
@@ -165,7 +167,7 @@ test('phone layout keeps primary actions reachable without page overflow', async
   await page.getByRole('button', { name: 'Load example' }).click()
   await expect(page.getByRole('heading', { name: 'Alchemist', exact: true })).toBeVisible()
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
-  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
+  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await page.getByRole('button', { name: 'Save offer', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('saved on this device')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -179,7 +181,7 @@ test('a helper capture can be confirmed in one click without completing fields; 
   const bundle = await helperCapture(page)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'capture.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bundle)) })
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
-  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
+  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await page.getByRole('button', { name: 'Confirm and save' }).click()
   await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeDisabled()
   await expect(page.locator('.action-band')).toContainText('Review saved.')
@@ -215,7 +217,7 @@ test('phone review puts extracted Fates before the compact source and keeps sour
   expect(fate!.y).toBeLessThan(source!.y)
   expect((await page.getByAltText('Captured Fate offer').boundingBox())!.height).toBeLessThanOrEqual(160)
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
-  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
+  await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
   await page.getByRole('button', { name: 'Enlarge source screenshot' }).click()
   await expect(page.getByRole('dialog', { name: 'Source evidence' })).toBeVisible()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
@@ -262,6 +264,7 @@ test('pending corrections cannot share an older reviewed revision', async ({ pag
   await page.getByText('Edit details', { exact: true }).click()
   await page.getByLabel('Notes', { exact: true }).fill('Pending correction')
   await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openDisclosure(page, '.sharing-panel')
   await page.getByLabel('Collection access key').fill('e2e-local-only')
   await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
   await page.getByRole('button', { name: 'Accept data sharing', exact: true }).click()
@@ -315,6 +318,7 @@ for (const format of ['offer', 'archive'] as const) {
     const offer = { ...newOffer(), revision: 7, updatedAt: '2026-01-01T00:00:00.000Z', origin: 'live', gameVersion: 'backup-e2e', reviewed: true, completeness: 'partial', cards: [{ ...newCard(), name: 'Conjurer' }] }
     await page.goto('/')
     await page.getByRole('button', { name: /Saved offers/ }).click()
+    await openDisclosure(page, '.sharing-panel')
     await page.getByLabel('Collection access key').fill('e2e-local-only')
     await page.getByRole('checkbox', { name: 'I have read this information and agree to share reviewed offers.' }).check()
     const grantRequest = page.waitForRequest(r => r.url().endsWith('/api/consents'))

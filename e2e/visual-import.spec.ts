@@ -1,3 +1,4 @@
+import { openDisclosure, expectEmptyMap } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -48,9 +49,10 @@ for (const cropped of [false, true]) {
     await expect(page.getByText("Dreadmaidens' Sacrament · suggested; check the full reward row", { exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(1)
     await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
-    await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(1)
+    await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
     await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
     await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+    await openDisclosure(page, '.reward-settings')
     await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
     await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
     await page.screenshot({ path: join(tmpdir(), `fate-guided-source-${cropped ? 'mobile' : 'desktop'}.png`), fullPage: true })
@@ -100,6 +102,7 @@ test('missing crop scale or unavailable worker preserves capture and OCR without
 
 test('capture imports never infer map membership from a helper session or timestamp', async ({ page }) => {
   await page.goto('/')
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'Start new map', exact: true }).click()
   const capture = await pressCapture(page, true)
   capture.context = { captureMode: 'fixture', ...capture.context, session: { id: crypto.randomUUID(), startedAt: capture.capturedAt, sequence: 1 } }
@@ -108,8 +111,9 @@ test('capture imports never infer map membership from a helper session or timest
   await page.getByRole('button', { name: 'Use this offer in current map' }).click()
   await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
   await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
+  await openDisclosure(page, '.more-actions')
   await page.getByRole('button', { name: 'New map', exact: true }).click()
-  await expect(page.getByRole('complementary', { name: 'Collected in this map' })).toContainText('0/12')
+  await expectEmptyMap(page)
   await importCapture(page, capture)
   await expect(page.getByRole('button', { name: 'Use this offer in current map' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(0)
@@ -127,6 +131,7 @@ test('connected F9 folder intake saves visual candidates automatically and keeps
     const writable = await file.createWritable()
     await writable.write(JSON.stringify(capture)); await writable.close()
   }, capture)
+  await openDisclosure(page, '.map-capture-connection')
   await page.getByRole('button', { name: 'Connect folder', exact: true }).click()
   await expect(page.getByText('Tier 2 · suggested', { exact: true })).toHaveCount(4)
   await expect(page.getByText('Saved locally', { exact: true })).toBeVisible()
@@ -134,6 +139,7 @@ test('connected F9 folder intake saves visual candidates automatically and keeps
   await expect(page.getByLabel('Review status')).toHaveValue('unverified')
   await expect(page.getByLabel('I checked this tier against the image')).not.toBeChecked()
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+  await openDisclosure(page, '.reward-settings')
   await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
 })
@@ -149,6 +155,7 @@ for (const width of [1440, 390]) {
     const capture = await pressCapture(page, true)
     await importCapture(page, capture)
     await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+    await openDisclosure(page, '.reward-settings')
     await page.getByLabel('Reward goal').selectOption("combo:dreadmaidens' sacrament")
     await expect(page.getByRole('heading', { name: 'Provisional preference: Tempest', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
@@ -201,8 +208,9 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Continue this map', exact: true }).click()
     await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
     await expect(page.locator('.advisor-plans article').first()).toContainText('2/2 matching icons · Combo ready')
+    await openDisclosure(page, '.more-actions')
     await page.getByRole('button', { name: 'New map', exact: true }).click()
-    await expect(page.getByRole('complementary', { name: 'Collected in this map' })).toContainText('0/12')
+    await expectEmptyMap(page)
     await expect(page.getByRole('heading', { name: 'Wildfire', exact: true })).toHaveCount(0)
     await expect(page.locator('vite-error-overlay')).toHaveCount(0)
     expect(errors).toEqual([])
