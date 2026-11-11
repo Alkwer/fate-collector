@@ -40,6 +40,11 @@ Compatibility testing also found and fixed two issues: backup dialogs now return
 keyboard focus to their trigger, and browser schemas initialize with Zod's
 interpreted validation before any eval capability probe. The CSP remains unchanged.
 
+Codex Review identified three further regressions, now covered: negative/invocation
+measurements may legitimately skip visual suggestions, recovery exports include
+evidence referenced by isolated offers, and historical identity conflicts abort
+the entire pending write transaction (including saves, imports and deletion).
+
 ## Native negative run
 
 Before the user reported game servers going offline, helper 0.3.4 captured the

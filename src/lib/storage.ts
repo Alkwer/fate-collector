@@ -66,7 +66,12 @@ async function storedKeys(store: IDBObjectStore, id: string): Promise<IDBValidKe
 }
 async function storedKey(store: IDBObjectStore, id: string): Promise<IDBValidKey> {
   const matches = await storedKeys(store, id)
-  if (matches.length > 1) throw new Error('Conflicting historical identifiers need recovery before this record can be changed.')
+  if (matches.length > 1) {
+    // Callers may already have queued writes in this transaction. A rejected
+    // JavaScript promise alone does not roll those IndexedDB writes back.
+    if (store.transaction.mode === 'readwrite') store.transaction.abort()
+    throw new Error('Conflicting historical identifiers need recovery before this record can be changed.')
+  }
   return matches[0] ?? id.toLowerCase()
 }
 async function readStoredEvidence(store: IDBObjectStore, id: string, decode: boolean): ReturnType<typeof inspectEvidence> {
@@ -130,13 +135,16 @@ export async function readOfferRecovery() {
   const database = await db()
   const transaction = database.transaction(['offers', 'evidence', 'settings'])
   const offers = transaction.objectStore('offers'), evidence = transaction.objectStore('evidence')
-  const [raw, keys] = await Promise.all([
+  const [raw, keys, settings] = await Promise.all([
     value(offers.getAll()) as Promise<unknown[]>, value(offers.getAllKeys()),
+    value(transaction.objectStore('settings').getAll()) as Promise<{ id: string; key: IDBValidKey; value: unknown }[]>,
   ])
+  const isolated = settings.filter(record => record.id.startsWith('recovery-'))
   const { unreadable } = decodeOffers(raw, keys)
   const damagedIndexes = raw.map((_, index) => unreadable.some(record => record.key === keys[index]) ? index : -1).filter(index => index >= 0)
-  const captureIds = new Set(damagedIndexes.flatMap(index => {
-    const record = raw[index] as { offer?: { captureId?: unknown } } | null
+  const recoveryOffers = [...damagedIndexes.map(index => raw[index]), ...isolated.filter(record => record.id.startsWith('recovery-offer:')).map(record => record.value)]
+  const captureIds = new Set(recoveryOffers.flatMap(entry => {
+    const record = entry as { offer?: { captureId?: unknown } } | null
     return typeof record?.offer?.captureId === 'string' ? [record.offer.captureId.toLowerCase()] : []
   }))
   const evidenceKeys = await value(evidence.getAllKeys())
@@ -146,8 +154,6 @@ export async function readOfferRecovery() {
     const collision = evidenceKeys.filter(item => String(item).toLowerCase() === String(key).toLowerCase()).length > 1
     if (collision || captureIds.has(String(entry.key).toLowerCase()) || (await inspectEvidence(entry.value, true)).status === 'damaged') damagedEvidence.push(entry)
   }
-  const isolated = (await value(database.transaction('settings').objectStore('settings').getAll()) as { id: string; key: IDBValidKey; value: unknown }[])
-    .filter(record => record.id.startsWith('recovery-'))
   return { kind: 'fate-collector.recovery', schemaVersion: 1, exportedAt: new Date().toISOString(),
     records: damagedIndexes.map((index, position) => ({ key: keys[index], value: raw[index], problems: unreadable[position].problems })),
     evidence: damagedEvidence, isolated,

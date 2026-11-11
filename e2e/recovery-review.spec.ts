@@ -19,19 +19,20 @@ async function restore(page: Page, entries: Archive['offers']) {
 
 test('a damaged journal record cannot hide readable offers or prevent their backup', async ({ page }) => {
   await page.goto('/')
-  const good = await sampleEntry(), badId = crypto.randomUUID()
+  const good = await sampleEntry(), bad = await sampleEntry(), badId = bad.offer.id
   await restore(page, [good])
-  const damaged = { offer: { id: badId, revision: 'damaged' }, uploadedRevision: null, uploadedAt: null }
-  await page.evaluate(async record => {
+  const damaged = { offer: { ...bad.offer, revision: 'damaged' }, uploadedRevision: null, uploadedAt: null }
+  await page.evaluate(async ({ record, evidence }) => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('fate-collector', 3)
       request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error)
     })
-    const transaction = database.transaction('offers', 'readwrite')
+    const transaction = database.transaction(['offers', 'evidence'], 'readwrite')
     transaction.objectStore('offers').put(record)
+    transaction.objectStore('evidence').put(evidence)
     await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(transaction.error) })
     database.close()
-  }, damaged)
+  }, { record: damaged, evidence: bad.evidence })
   await page.reload()
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 unreadable offer(s)')
@@ -41,12 +42,23 @@ test('a damaged journal record cannot hide readable offers or prevent their back
   const download = await pending
   const data = JSON.parse(await readFile(await download.path(), 'utf8'))
   expect(data.records[0].value).toEqual(damaged)
+  expect(data.evidence).toContainEqual({ key: bad.offer.captureId, value: bad.evidence })
   await page.getByRole('button', { name: 'Export all data' }).click()
   await expect(page.getByRole('dialog')).toContainText('1 unreadable offer(s) excluded')
   await page.keyboard.press('Escape')
   await page.reload()
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 unreadable offer(s)')
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByText('Unreadable records', { exact: true }).click()
+  await page.getByRole('button', { name: 'Isolate original', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Storage recovery' })).toContainText('1 isolated original')
+  const isolatedDownload = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export recovery data', exact: true }).click()
+  const recovered = JSON.parse(await readFile(await (await isolatedDownload).path(), 'utf8'))
+  expect(recovered.records).toEqual([])
+  expect(recovered.isolated).toContainEqual({ id: expect.stringMatching(/^recovery-offer:/), key: badId, value: damaged })
+  expect(recovered.evidence).toContainEqual({ key: bad.offer.captureId, value: bad.evidence })
 })
 
 test('full backup downloads and restores images, OCR and revisions; metadata export omits evidence', async ({ page, browser }) => {

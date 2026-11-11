@@ -86,13 +86,18 @@ test('release verifier recomputes the gate and refuses spoofed status, wrong ide
     manifestSha256: digest, dictionarySha256: digest, templatesSha256: digest, browserVersion: 'test', status: 'FAIL',
     scenes: completeRows().map((row, i) => ({ ...row, provenance: { source: 'native-f9', independentlyLabeled: true, ...PROFILES[row.profile] },
       capture: { outcome: 'captured', pngSha256: i.toString(16).padStart(64, '0'), bundleSha256: i.toString(16).padStart(64, '0') },
-      helperVersion: 'test', imagePreserved: true, ocrPreserved: true, reviewRequired: true, ocrStatus: 'ok', ocrLines: 1, visual: { status: 'candidates' },
+      helperVersion: 'test', imagePreserved: true, ocrPreserved: true, reviewRequired: true, ocrStatus: 'ok', ocrLines: 1,
+      visual: { status: row.scene === 'offer' ? 'candidates' : 'not-run' },
     })) }
   expect(verifyRecognitionReport(report, release, expected).status).toBe('PASS')
   expect(() => verifyRecognitionReport({ ...report, scenes: [], status: 'PASS' }, release, expected)).toThrow()
   expect(() => verifyRecognitionReport(report, { ...release, releaseId: 'c'.repeat(64) }, expected)).toThrow(/exact release/)
   expect(() => verifyRecognitionReport(report, release, { ...expected, helperVersion: 'wrong' })).toThrow(/exact release/)
   expect(() => verifyRecognitionReport({ ...report, scenes: [report.scenes[0], ...report.scenes] }, release, expected)).toThrow(/Duplicate/)
+  const withStatus = (scene, status) => ({ ...report, scenes: report.scenes.map(row => row.scene === scene ? { ...row, visual: { status } } : row) })
+  expect(() => verifyRecognitionReport(withStatus('offer', 'not-run'), release, expected)).toThrow(/visual recognition/)
+  for (const scene of SCENES) expect(() => verifyRecognitionReport(withStatus(scene, 'unavailable'), release, expected)).toThrow()
+  expect(() => verifyRecognitionReport(withStatus('negative', 'made-up-status'), release, expected)).toThrow()
 })
 
 test('the checked-in empty holdout exits nonzero with a machine-readable failure', () => {

@@ -94,6 +94,7 @@ test('isolating a malformed offer preserves raw fields and blocks both sync and 
   expect(await listOffers()).toEqual([])
   expect((await readOfferHistory()).isolatedCount).toBe(1)
   expect((await readOfferRecovery()).isolated).toContainEqual({ id: expect.stringMatching(/^recovery-offer:/), key: id, value: malformed })
+  expect((await readOfferRecovery()).evidence).toContainEqual({ key: id, value: evidence })
   expect(await rawGet('evidence', id)).toEqual(evidence)
   expect(await hasCaptureReceipt(id)).toBe(true)
   expect(await handledCaptureIds()).toContain(id)
@@ -163,6 +164,33 @@ test('explicit repair of historical evidence collisions preserves every original
     { id: expect.stringMatching(/^recovery-evidence:/), key: id.toUpperCase(), value: variant },
   ]))
   expect(await getOffer(saved.offer.id)).toEqual(saved)
+})
+
+test('a rejected save or deletion rolls back pending writes when evidence keys conflict', async () => {
+  const id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', evidence = evidenceFor(id)
+  const saved = await saveOffer({ ...newOffer(), captureId: id, revision: 4, notes: 'Original' }, evidence)
+  await rawPut('evidence', evidenceFor(id.toUpperCase()))
+  await expect(saveOffer({ ...saved.offer, notes: 'Must not commit' }, evidence)).rejects.toThrow('Conflicting historical identifiers')
+  expect(await getOffer(saved.offer.id)).toEqual(saved)
+  await expect(deleteOffer(saved.offer.id)).rejects.toThrow('Conflicting historical identifiers')
+  expect(await getOffer(saved.offer.id)).toEqual(saved)
+  expect(await rawGet('deletedOffers', saved.offer.id)).toBeUndefined()
+  expect(await rawGet('captureReceipts', id)).toBeUndefined()
+})
+
+test('an evidence collision aborts the whole import including prior offers, evidence and tombstone changes', async () => {
+  const id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', evidence = evidenceFor(id)
+  await rawPut('evidence', evidence)
+  await rawPut('evidence', evidenceFor(id.toUpperCase()))
+  const firstId = crypto.randomUUID(), first = { offer: { ...newOffer(), captureId: firstId }, evidence: evidenceFor(firstId) }
+  const second = { offer: { ...newOffer(), captureId: id }, evidence }
+  await rawPut('deletedOffers', { id: first.offer.id })
+  await expect(importOffers([first, second])).rejects.toThrow('Conflicting historical identifiers')
+  expect(await listOffers()).toEqual([])
+  expect(await rawGet('evidence', firstId)).toBeUndefined()
+  expect(await rawGet('deletedOffers', first.offer.id)).toEqual({ id: first.offer.id })
+  expect(await rawGet('settings', 'capture-restore-version')).toBeUndefined()
+  expect(await rawGet('evidence', id)).toEqual(evidence)
 })
 
 function backupPart(setId: string, part: number, total: number): Archive {

@@ -17,7 +17,7 @@ const row = z.object({
   capture: z.object({ outcome: z.literal('captured'), bundleSha256: digest, pngSha256: digest }),
   helperVersion: z.string().min(1), imagePreserved: z.literal(true), ocrPreserved: z.literal(true),
   reviewRequired: z.literal(true), ocrStatus: z.literal('ok'), ocrLines: count.min(1),
-  visual: z.object({ status: z.string().refine(value => value !== 'unavailable' && value !== 'not-run') }),
+  visual: z.object({ status: z.enum(['candidates', 'unsupported', 'not-run']) }),
   metrics: z.object({ names: metric, tiers: metric, motifs: metric, wrongRows: count,
     visibleUnknownNames: count, unknownNameAbstentions: count }),
   coverage: z.object({ unknownName: z.boolean(), collectedRow: z.boolean(), tooltip: z.boolean() }),
@@ -46,6 +46,7 @@ export function verifyRecognitionReport(input, release, expected) {
   const ids = new Set(), pngs = new Set(), bundles = new Set()
   for (const scene of report.scenes) {
     const profile = PROFILES[scene.profile]
+    if (scene.scene === 'offer' && scene.visual.status === 'not-run') throw new Error('Offer measurements require visual recognition to run.')
     if (ids.has(scene.sceneId) || pngs.has(scene.capture.pngSha256) || bundles.has(scene.capture.bundleSha256)) throw new Error('Duplicate native scene or capture.')
     ids.add(scene.sceneId); pngs.add(scene.capture.pngSha256); bundles.add(scene.capture.bundleSha256)
     if (scene.helperVersion !== expected.helperVersion || scene.provenance.hdrActive !== profile.hdrActive
