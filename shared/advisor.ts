@@ -24,8 +24,10 @@ export type PlanResult = {
 
 export type Recommendation = {
   status: PlanResult['status']
+  comparison: 'improvement' | 'no-improvement' | 'unknown'
+  baseline: InvocationPlan | null
   recommendedCardIds: string[]
-  candidates: { cardId: string; plan: InvocationPlan | null; warnings: string[] }[]
+  candidates: { cardId: string; plan: InvocationPlan | null; gain: number | null; warnings: string[] }[]
   warnings: string[]
 }
 
@@ -218,7 +220,7 @@ export function planInvocation(cards: FateCard[], goal: AdvisorGoal): PlanResult
 export function recommendFates(offered: FateCard[], collected: FateCard[], goal: AdvisorGoal): Recommendation {
   const problem = inputProblem(offered, MAX_OFFERED_FATES, 'offered') ?? inputProblem(collected, MAX_COLLECTED_FATES, 'collected')
   if (problem || !validGoal(goal)) {
-    return { status: 'insufficient', candidates: [], recommendedCardIds: [], warnings: [problem ?? 'Choose a reward goal.'] }
+    return { status: 'insufficient', comparison: 'unknown', baseline: null, candidates: [], recommendedCardIds: [], warnings: [problem ?? 'Choose a reward goal.'] }
   }
 
   const collectedIds = new Set(collected.map(card => card.id))
@@ -231,7 +233,8 @@ export function recommendFates(offered: FateCard[], collected: FateCard[], goal:
   const candidates = analysis.cards.slice(collected.length).map(card => {
     const result = searchPlans(pool, goal, analysis.threshold, analysis.warnings, card)
     for (const warning of result.warnings) warnings.add(warning)
-    return { cardId: card.id, plan: result.plans[0] ?? null, warnings: result.warnings }
+    const plan = result.plans[0] ?? null
+    return { cardId: card.id, plan, gain: plan ? score(plan) - baselineScore : null, warnings: result.warnings }
   })
   candidates.sort((a, b) => a.plan && b.plan ? comparePlans(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
   const best = candidates[0]?.plan
@@ -239,9 +242,10 @@ export function recommendFates(offered: FateCard[], collected: FateCard[], goal:
     ? candidates.filter(({ plan }) => plan && comparePlans(plan, best) === 0).map(({ cardId }) => cardId)
     : []
   const status = !recommendedCardIds.length ? 'insufficient' : warnings.size ? 'provisional' : 'ready'
+  const comparison = recommendedCardIds.length ? 'improvement' : warnings.size ? 'unknown' : 'no-improvement'
   if (eligible.length < offered.length) warnings.add('Offered Fates already in the collected pool were excluded.')
   if (!best) warnings.add(NO_PROGRESS)
   else if (!recommendedCardIds.length) warnings.add('No offered Fate shows an improvement over the collected pool.')
   warnings.add(COMBAT_WARNING)
-  return { status, candidates, recommendedCardIds, warnings: [...warnings] }
+  return { status, comparison, baseline: baseline.plans[0] ?? null, candidates, recommendedCardIds, warnings: [...warnings] }
 }

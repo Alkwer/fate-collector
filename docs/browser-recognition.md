@@ -21,7 +21,7 @@ recognition only; it does not associate rewards with those names or establish
 native accuracy. Standard [production promotion](recognition-validation.md#required-promotion-artifact)
 requires an exact-release native holdout report with minimum scene and label
 coverage. An explicitly accepted [prelaunch exception](deployment.md#temporary-prelaunch-policy)
-defers that requirement only before 13 November 2026, 00:00 UTC, without claiming
+defers that requirement only before 13 November 2026, 19:00 UTC, without claiming
 native accuracy. The server verifies a local measurement; it does not replay private
 captures or attest the physical HDR state.
 

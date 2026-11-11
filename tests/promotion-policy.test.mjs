@@ -5,7 +5,7 @@ import { assertPromotionPolicy, PRELAUNCH_DEADLINE } from '../scripts/promotion-
 import { assertDeploymentContext } from '../scripts/release-lib.mjs'
 
 afterEach(() => vi.useRealTimers())
-const before = new Date('2026-11-12T23:59:59.999Z')
+const before = new Date('2026-11-13T18:59:59.999Z')
 const prelaunch = { RELEASE_VALIDATION_MODE: 'prelaunch', PRELAUNCH_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
 
 test('default native mode requires both manual confirmation and a report run even before launch', () => {
@@ -22,6 +22,9 @@ test('prelaunch permits explicit deferral without pretending manual tests or rec
 })
 
 test('prelaunch expires at the boundary and invalid clocks fail closed', () => {
+  expect(PRELAUNCH_DEADLINE).toBe('2026-11-13T19:00:00Z')
+  expect(assertPromotionPolicy(prelaunch, new Date('2026-11-13T19:59:59+01:00'))).toBe('prelaunch')
+  expect(() => assertPromotionPolicy(prelaunch, new Date('2026-11-13T20:00:00+01:00'))).toThrow('expired')
   for (const now of [new Date(PRELAUNCH_DEADLINE), new Date('2026-11-14T00:00:00Z'), new Date('invalid')]) {
     expect(() => assertPromotionPolicy(prelaunch, now)).toThrow('expired')
   }

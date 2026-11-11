@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       validation_mode:
-        description: Full native validation, or temporary prelaunch exception before 2026-11-13 00:00 UTC
+        description: Full native validation, or temporary prelaunch exception before 2026-11-13 19:00 UTC
         required: true
         default: native-holdout
         type: choice

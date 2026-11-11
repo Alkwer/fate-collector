@@ -141,8 +141,8 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   for this exact staging release. Both are mandatory, including before launch.
 - `prelaunch` is a temporary, explicitly accepted exception while live Fate
   encounters are unavailable. It is allowed only **before 13 November 2026,
-  00:00 UTC** (01:00 in Poland), a conservative cutoff before the announced
-  Friday launch. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
+  19:00 UTC** (20:00 in Poland), the Friday launch time confirmed by the owner on
+  11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 

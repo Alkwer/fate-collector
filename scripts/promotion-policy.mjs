@@ -1,5 +1,5 @@
 // Temporary exception approved before live Fate encounters are available.
-export const PRELAUNCH_DEADLINE = '2026-11-13T00:00:00Z'
+export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
 export function assertPromotionPolicy(env, now = new Date()) {
   const mode = env.RELEASE_VALIDATION_MODE || 'native-holdout'

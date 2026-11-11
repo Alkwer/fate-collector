@@ -20,7 +20,8 @@
     "status": "Existing tooltip meanings retained; no new motif meanings or thresholds inferred."
   },
   "freshSources": [
-    { "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1", "owner": "GGG", "published": "2026-11-10", "result": "FAQ: choice sequencing and rarity clarification; no mixed-tier, third-duplicate or general combo algorithm." },
+    { "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1", "owner": "GGG", "published": "2026-11-10", "result": "FAQ: choice sequencing, rarity clarification and qualitative Viscera benefits from more invoked Fates and duplicates. Grim-Fate empowered Pinnacles guarantee Viscera. No probabilities, new icon meanings, mixed-tier, third-duplicate or general combo algorithm." },
+    { "url": "https://www.pathofexile.com/forum/view-thread/4013680", "owner": "GGG", "result": "Official 3.30 notes rechecked on 11 November: item-generation context, no additional Fate icon meanings or combo thresholds. No numeric value model inferred." },
     { "url": "https://www.pathofexile.com/covens", "owner": "GGG", "result": "Web reader exposed navigation only; no names extracted." },
     { "url": "https://poedb.tw/us/Covens_league", "owner": "PoEDB community data", "result": "Overview; no complete Fate-name or reward table." },
     { "url": "https://poedb.tw/us/Dreadmaidens_Sacrament", "owner": "PoEDB community data", "result": "Corroborates existing unique name and Basalt Flask base, not combo threshold." },
