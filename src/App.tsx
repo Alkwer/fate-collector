@@ -250,6 +250,8 @@ export default function App() {
     <div className="main-area">
     <main id="main" className="workspace" tabIndex={-1}>
       <div className="page-heading"><div><h1>{tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current map'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'review' ? 'Review this observation separately from your current map.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p>}</div>
+        <div className="page-heading-actions">
+        <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>
         <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
           {(tab === 'collector' || tab === 'review') && <>
             <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
@@ -264,6 +266,7 @@ export default function App() {
           <label className="theme-picker">Appearance<select value={appearance.theme} onChange={event => appearance.changeTheme(event.target.value === 'trail' ? 'trail' : 'mineral')}><option value="mineral">Mineral Depth · dark</option><option value="trail">Light Trail · light</option></select></label>
           {appearance.error && <p className="hint" role="status">{appearance.error}</p>}
         </div></DetailPanel>
+        </div>
       </div>
       {notice && <WorkspaceNotice notice={notice} onDismiss={() => setNotice(null)} />}
       <DraftRecovery busy={busy} onRecover={record => { if (!mapEditor.recover(record)) return false; setTab('collector'); announce('Draft recovered. Check it before saving; your saved offer has not been replaced.'); return true }} />

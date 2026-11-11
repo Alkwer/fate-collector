@@ -4,6 +4,7 @@ const paths = {
   archive: 'M4 8h16v13H4V8ZM3 3h18v5H3V3Zm6 9h6',
   tools: 'M8 4H4v16h16v-4M10 14l10-10m-5 0h5v5M8 10v6h6',
   arrow: 'M4 12h16m-6-6 6 6-6 6',
+  download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
   check: 'm5 12 4 4L19 6',
   plus: 'M12 5v14M5 12h14',
   close: 'm6 6 12 12M6 18 18 6',
