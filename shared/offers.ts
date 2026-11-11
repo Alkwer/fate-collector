@@ -1,4 +1,4 @@
-import { MAX_API_BYTES, type Evidence, type FateCard, type Offer, type Reward, type Capture } from './schema'
+import { MAX_API_BYTES, type Evidence, type FateCard, type Offer, type Reward, type Capture } from './schema.ts'
 
 export function newReward(): Reward {
   return { id: crypto.randomUUID(), label: '', kind: 'unknown', count: 1, threshold: null, identified: false }
