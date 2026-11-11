@@ -2,13 +2,18 @@
 version: 1
 slug: "src-app-tsx"
 primary_target: "src/App.tsx"
-related_targets: ["src/styles.css","src/tokens.css","src/components"]
+related_targets: ["src/styles.css","src/decision-visuals.css","src/tokens.css","src/components"]
 ---
 
 # Application redesign
 
 Scope: Current map, archived review, saved offers, settings, diagnostics and recovery. Visitor mode: Operate.
 Confirmed: prioritize fast map decisions; reduce visible options; Mineral Depth default with remembered Light Trail alternative. Keep English copy, all capture/storage/sharing/solver contracts and evidence access.
+
+Refinement: reduce reading through aligned visual reward comparisons, signed gains,
+numbered invocation inputs and supported-merge diagrams. Show original sourced
+reward references where available; generic symbols must not imply game artwork or
+recognition. Preserve unknown/suggested states, exact card identity and units.
 
 ## Direction contract
 

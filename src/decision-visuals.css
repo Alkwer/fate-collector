@@ -1,0 +1,133 @@
+/* Visual reading aids for the current-map decision; shared by both themes. */
+.map-sidebar { align-items: start; }
+.decision-switch button, .collect-fate, .primary-choice, .recommendation-label,
+.choice-reminder, .reward-review-note { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.decision-switch .app-icon, .collect-fate .app-icon, .primary-choice .app-icon { width: 18px; height: 18px; flex: 0 0 auto; }
+.edit-current { display: inline-flex; align-items: center; gap: 8px; }
+.edit-current .app-icon { width: 18px; height: 18px; }
+.reward-settings > .panel-trigger { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.reward-settings > .panel-trigger .summary-detail { display: inline; margin: 0; }
+.advisor-outcome p .app-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 8px; }
+.map-layout .advisor-outcome { padding-block: 20px 12px; }
+.advisor-baseline { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+.advisor-baseline strong { font-size: 18px; color: var(--text); }
+.advisor-baseline .reward-symbol { width: 24px; height: 24px; }
+.reward-symbol { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 48px; height: 48px; color: var(--text); }
+.reward-symbol .app-icon { width: 100%; height: 100%; stroke-width: 1.35; }
+.reward-symbol img { width: 36px; height: 36px; object-fit: contain; }
+.tier-mark { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--muted); }
+.tier-mark svg { width: 34px; height: 14px; flex: 0 0 auto; }
+.tier-mark.is-suggested { color: var(--warning); }
+.reward-strip { display: flex; flex-wrap: wrap; gap: 16px; padding-block: 16px; }
+.reward-unit { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.reward-unit > div { display: flex; flex-direction: column; min-width: 0; }
+.reward-unit strong { font: 650 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.reward-unit span:not(.reward-symbol) { font-size: 14px; overflow-wrap: anywhere; }
+.reward-unit small { font-size: 13px; color: var(--muted); }
+.reward-unit[data-unknown] .reward-symbol, .reward-unit[data-unknown] small { color: var(--warning); }
+.reward-review-note { flex-basis: 100%; justify-content: flex-start; color: var(--warning); font-size: 13px; }
+.reward-review-note .app-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.map-layout .visual-offer { margin-top: 16px; }
+.visual-offer .fate-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; gap: 0; }
+.map-layout .visual-offer .fate-list > li { position: relative; display: flex; flex-direction: column; padding: 20px 16px 16px; border-top: 1px solid var(--border); border-inline-end: 1px solid var(--border); min-width: 0; }
+.map-layout .visual-offer .fate-list > li:nth-child(3n), .map-layout .visual-offer .fate-list > li:last-child { border-inline-end: 0; }
+.visual-offer .fate-title { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.map-layout .visual-offer .fate-title h3 { font-size: 21px; overflow-wrap: anywhere; }
+.visual-offer .fate-list:has(.recommendation-label) > li:not(:has(.recommendation-label)) { padding-top: 48px; }
+.visual-offer .recommendation-label { justify-content: flex-start; min-height: 20px; }
+.visual-offer .recommendation-label .app-icon { width: 16px; height: 16px; }
+.visual-offer .fate-modifiers > .panel-trigger { display: inline-flex; align-items: center; gap: 8px; padding-inline: 0; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+.visual-offer .fate-modifiers .app-icon { width: 16px; height: 16px; }
+.map-layout .visual-offer .advisor-candidates { margin-top: auto; padding-top: 16px; }
+.candidate-gain { display: flex; align-items: center; gap: 10px; margin-block: 0 12px; min-height: 44px; }
+.candidate-gain > strong { font: 650 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.candidate-gain > span { font-size: 13px; line-height: 1.35; }
+.candidate-gain small { display: block; margin-top: 4px; color: var(--warning); }
+.candidate-gain[data-gain='positive'] { color: var(--success); }
+.candidate-gain[data-gain='negative'], .candidate-gain[data-gain='unknown'] { color: var(--warning); }
+.visual-offer .collect-fate { width: 100%; margin: 0; padding-inline: 12px; }
+.visual-offer .candidate-plan { margin-top: 4px; }
+.visual-offer .candidate-plan > .panel-trigger { width: 100%; text-align: center; }
+.visual-offer .provisional-fate .primary-choice { background: var(--warning); color: var(--background); }
+.visual-offer .provisional-fate .primary-choice:hover:not(:disabled) { background: var(--warning); color: var(--background); }
+.choice-reminder { justify-content: flex-start; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.advisor-caveats.detail-panel > .panel-trigger { display: inline-flex; align-items: center; gap: 8px; }
+.advisor-caveats.detail-panel > .panel-trigger .app-icon { width: 18px; height: 18px; }
+.plan-result { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.plan-result > .app-icon { width: 40px; height: 40px; }
+.plan-result > strong { font: 650 40px/1 var(--display); color: var(--success); font-variant-numeric: tabular-nums; }
+.plan-result > strong > span { font-size: 25px; color: var(--muted); }
+.plan-result > div { display: flex; flex-direction: column; gap: 2px; }
+.plan-result small { font-size: 13px; color: var(--muted); }
+[data-state='provisional'] .plan-result > strong { color: var(--warning); }
+.sequence-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.invocation-diagram .invocation-order { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 0; margin: 0 0 20px; }
+.invocation-diagram .invocation-order[data-input-count='1'] { grid-template-columns: minmax(0, 1fr); }
+.invocation-diagram .invocation-order[data-input-count='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.invocation-diagram .invocation-order li { position: relative; padding: 0; margin: 0; min-width: 0; }
+.invoke-step { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 650; margin-bottom: 12px; }
+.invoke-card { border-top: 1px solid var(--border-light); padding: 12px 0 0; }
+.invoke-name { display: block; margin-top: 8px; font: 650 20px/1.2 var(--display); overflow-wrap: anywhere; }
+.invoke-source { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.sequence-arrow { position: absolute; top: 4px; right: -20px; color: var(--muted); }
+.sequence-arrow .app-icon { width: 20px; height: 20px; }
+.merge-diagram { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 16px 0; border-block: 1px solid var(--border); }
+.merge-equation { display: flex; align-items: center; gap: 12px; }
+.merge-equation .tier-mark { flex-direction: column; gap: 6px; color: var(--text); }
+.merge-equation .tier-mark:last-child { color: var(--success); }
+.merge-equation > .app-icon { width: 18px; height: 18px; color: var(--muted); }
+.merge-diagram > div:last-of-type { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.merge-diagram > div:last-of-type > span { font-size: 13px; color: var(--muted); }
+.plan-notes { margin-top: 12px; }
+.plan-notes > .panel-trigger { padding-inline: 0; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+.reward-strip.is-compact { gap: 8px 12px; padding-block: 8px 0; }
+.is-compact .reward-symbol { width: 24px; height: 24px; }
+.is-compact .reward-symbol img { width: 24px; height: 24px; }
+.is-compact .reward-unit { gap: 8px; }
+.is-compact .reward-unit > div { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+.is-compact .reward-unit strong { font: 600 14px/1.4 var(--sans); }
+.is-compact .reward-unit span:not(.reward-symbol) { font-size: 13px; }
+.is-compact .reward-unit small { flex-basis: 100%; }
+.collected-fates li > div > .tier-mark { display: flex; margin-top: 4px; }
+.remove-collected { display: grid; place-items: center; width: 36px; height: 36px; padding: 6px; }
+.remove-collected .app-icon { width: 18px; height: 18px; }
+.map-sidebar .compact-source .dropzone:not(.has-image) { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; min-height: 0; padding: 12px 0 0; border: 0; }
+.compact-source .dropzone > .app-icon { width: 24px; height: 24px; }
+.compact-source .dropzone > small { flex-basis: 100%; font-size: 13px; color: var(--muted); }
+.reward-breakdown dt .reward-symbol { width: 24px; height: 24px; vertical-align: middle; margin-right: 8px; }
+@media (min-width: 1001px) and (max-width: 1200px) {
+  .visual-offer .fate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .map-layout .visual-offer .fate-list > li { border-inline-end: 0; }
+  .map-layout .visual-offer .fate-list > li:nth-child(odd):not(:last-child) { border-inline-end: 1px solid var(--border); }
+}
+@media (max-width: 760px) {
+  .map-session[data-state='active'] { flex-wrap: nowrap; gap: 8px; margin-bottom: 16px; }
+  .map-session[data-state='active'] .map-session-actions { width: auto; }
+  .map-layout .decision-toolbar { flex-wrap: nowrap; align-items: center; gap: 8px; padding-block: 16px; }
+  .map-layout .decision-switch { width: auto; flex: 1; min-width: 0; }
+  .map-layout .decision-switch button { padding-inline: 8px; font-size: 13px; }
+  .map-layout .decision-switch .app-icon { display: none; }
+  .edit-current { width: 36px; min-width: 36px; padding-inline: 4px; justify-content: center; }
+  .edit-current > span { display: none; }
+  .visual-offer .fate-list { grid-template-columns: minmax(0, 1fr); }
+  .map-layout .visual-offer .fate-list > li { padding: 20px 0; border-inline-end: 0; }
+  .visual-offer .fate-list:has(.recommendation-label) > li:not(:has(.recommendation-label)) { padding-top: 20px; }
+  .visual-offer .fate-title { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+  .map-layout .visual-offer .advisor-candidates { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding-top: 0; }
+  .visual-offer .candidate-gain { margin-bottom: 0; }
+  .visual-offer .candidate-plan { grid-column: 1 / -1; margin: 0; }
+  .visual-offer .collect-fate { min-width: 120px; }
+  .visual-offer .exclusion-control, .visual-offer .exclusion-reason { grid-column: 1 / -1; }
+  .reward-strip { padding-block: 12px; }
+  .invocation-diagram .invocation-order { gap: 8px; }
+  .invoke-name { font-size: 16px; }
+  .invoke-card > .tier-mark svg { display: none; }
+  .invoke-card .reward-unit { gap: 4px; }
+  .invoke-card .reward-unit > div { flex-direction: column; gap: 0; }
+  .invoke-card .reward-unit .reward-symbol { width: 20px; height: 20px; }
+  .invoke-card .reward-unit span:not(.reward-symbol) { font-size: 13px; }
+  .sequence-arrow { right: -8px; }
+  .sequence-arrow .app-icon { width: 16px; }
+  .plan-result > strong { font-size: 36px; }
+  .remove-collected { width: 44px; height: 44px; }
+}

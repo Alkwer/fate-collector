@@ -61,9 +61,16 @@ require explicit review before firm advice.
 
 The current-map workspace follows capture, reward review, choice and invocation.
 Two pressed-state buttons switch between **Choose a Fate** and **Plan invocation**.
-The main result contains the single preferred card's action; equal matches retain
+The preferred card contains the primary collect action; equal matches retain
 their individual actions. Show the next missing-data check directly and open
 the remaining checklist in a panel. Keep the best invocation visible and open alternatives on demand.
+Reward symbols and counts replace repeated reward prose on the current-map view.
+Unknown kinds or meanings retain a question mark, an explicit unknown label and a review cue. Use only
+existing sourced reference images for actual game icons; other symbols are
+generic interface aids. Modifiers open a named panel for their specific card.
+Invocation displays numbered cards with exact source references, reward counts,
+and a diagram for supported merges. Keep combo thresholds/activation and priority
+point units distinct; never imply item quantities or resolved unknown mechanics.
 Keep the recommendation and its gain over the existing collection prominent, with
 equal matches and provisional results explicitly labelled. Missing data links to
 the affected card. **Back to advice** closes current-offer editing and restores
