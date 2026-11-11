@@ -102,7 +102,7 @@ test('release verifier recomputes the gate and refuses spoofed status, wrong ide
 
 test('the checked-in empty holdout exits nonzero with a machine-readable failure', () => {
   const result = spawnSync(process.execPath, ['scripts/recognition-validation.mjs'], { encoding: 'utf8' })
-  expect(result.status).toBe(1)
+  expect(result.status, result.stderr).toBe(1)
   expect(JSON.parse(result.stdout)).toMatchObject({ status: 'FAIL', independentReleaseGate: 'FAIL', measuredScenes: 0,
     summary: { recall: { names: null, tiers: null, motifs: null } },
     missingCoverage: expect.arrayContaining(['4k-hdr-default/offer', 'offer/visible-unknown-name']) })
@@ -119,7 +119,7 @@ test('hash mismatches fail before any browser or measurement is attempted', () =
       capture: { outcome: 'captured', file: 'capture.json', bundleSha256: 'a'.repeat(64), pngSha256: 'b'.repeat(64) },
     }] }))
     const result = spawnSync(process.execPath, ['scripts/recognition-validation.mjs', path], { encoding: 'utf8' })
-    expect(result.status).toBe(1)
+    expect(result.status, result.stderr).toBe(1)
     expect(JSON.parse(result.stdout)).toMatchObject({ status: 'FAIL', measuredScenes: 0, browserVersion: null,
       scenes: [expect.objectContaining({ outcome: 'failed', problems: ['Bundle SHA-256 does not match.'] })] })
   } finally {
