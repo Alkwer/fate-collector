@@ -48,7 +48,7 @@ export function InvocationSequence({ plan, cards, collected }: {
   }
   return <div className="invocation-diagram">
     <div className="sequence-heading"><span>Invoke in this order</span><span>{plan.cardIds.length} / 3 slots</span></div>
-    <ol className="invocation-order">{plan.cardIds.map((id, index) => {
+    <ol className="invocation-order" data-input-count={plan.cardIds.length}>{plan.cardIds.map((id, index) => {
       const card = cards.find(item => item.id === id)
       const merged = plan.merges.some(merge => merge.firstId === id || merge.consumedId === id)
       return <li key={id} data-merge={merged || undefined} aria-label={`${index + 1}. ${named(card)} (${source(id)})`}>
