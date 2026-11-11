@@ -1,0 +1,331 @@
+{
+  "copyright": "Path of Exile artwork © Grinding Gear Games.",
+  "purpose": "Unmodified portrait crops and reward references for identifying Fates. No depicted tier, modifier, reward or count is assigned from a portrait.",
+  "assets": [
+    {
+      "file": "alchemist.webp",
+      "name": "alchemist",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        574,
+        470,
+        112,
+        110
+      ],
+      "sha256": "be859ca3b3b3c7e9460831076e399da0d7fcb24137881a6e50013897d2ded0aa"
+    },
+    {
+      "file": "sanguine.webp",
+      "name": "sanguine",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        799,
+        470,
+        112,
+        110
+      ],
+      "sha256": "47a7839da1a5221299cc21ab4eb8ff3cd8a797384c29d60cf23758db394d9c71"
+    },
+    {
+      "file": "butcher.webp",
+      "name": "butcher",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        1024,
+        470,
+        112,
+        110
+      ],
+      "sha256": "3ae49839829aaa3e80a6e641249c54fddabb54f7dc07e93ac62f4590cb0eccde"
+    },
+    {
+      "file": "gravewalker.webp",
+      "name": "gravewalker",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        1249,
+        470,
+        112,
+        110
+      ],
+      "sha256": "51ce1cc8d9bdcb1259dd06c3e08de51278173c62fa02ebe01e3e0f2dc3284ccb"
+    },
+    {
+      "file": "torchbearer.webp",
+      "name": "torchbearer",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        574,
+        314,
+        112,
+        110
+      ],
+      "sha256": "91e4d5db847e3ebddbbec75b5d406fd640cc10e594a946d7b5e12b7c5ba7389b"
+    },
+    {
+      "file": "tempest.webp",
+      "name": "tempest",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        799,
+        314,
+        112,
+        110
+      ],
+      "sha256": "1805b8772eb8f6320f82be57c5998ed3f2b4a1f1697546c2b5c839ed8a58ac94"
+    },
+    {
+      "file": "stormcaller.webp",
+      "name": "stormcaller",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        1024,
+        314,
+        112,
+        110
+      ],
+      "sha256": "fd6e43ded87fd421f49f169657e8566602744422697f1102c6e2b6086f89e8a3"
+    },
+    {
+      "file": "houndmaster.webp",
+      "name": "houndmaster",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        1249,
+        294,
+        112,
+        110
+      ],
+      "sha256": "7c824a5950ece1aa2f44068f9f77e43f9c0d73a5c4b979d6371e2249e69c7ced"
+    },
+    {
+      "file": "bloodthirsty.webp",
+      "name": "bloodthirsty",
+      "source": "research/evidence/exceptional-combo-03h14m42.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
+      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
+      "box": [
+        600,
+        240,
+        112,
+        104
+      ],
+      "sha256": "9b832b301a09f94715af18b362786c182bb00ff566629e721c78e5faf1486901"
+    },
+    {
+      "file": "deathbringer.webp",
+      "name": "deathbringer",
+      "source": "research/evidence/exceptional-combo-03h14m42.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
+      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
+      "box": [
+        1220,
+        240,
+        112,
+        104
+      ],
+      "sha256": "2529cf5a41f2179cbe88906d3a6b27b46db8ea96da295ec868ea2e710c0c77c1"
+    },
+    {
+      "file": "dryad.webp",
+      "name": "dryad",
+      "source": "research/evidence/exceptional-combo-03h14m42.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
+      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
+      "box": [
+        574,
+        674,
+        112,
+        104
+      ],
+      "sha256": "85dd6400568f3bb8ea00865d629c381f0ae4322c58a4a1832b9d77ebd351582c"
+    },
+    {
+      "file": "conjurer.webp",
+      "name": "conjurer",
+      "source": "research/evidence/duplicates-before-03h15m02.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11702s",
+      "sourceSha256": "d13a1bf507cf0acf3bb36ecc0b02376091ec5011851696dc818ede14f533b360",
+      "box": [
+        600,
+        240,
+        112,
+        104
+      ],
+      "sha256": "7e5aadf03560a0440c178f201e856b1ea13b42897d8d42ec3420f9a1da133fd2"
+    },
+    {
+      "file": "avalanche.webp",
+      "name": "avalanche",
+      "source": "prototypes/vision/fixtures/v2/images/showcase.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s",
+      "sourceSha256": "bebe139c6384d1e7bdb8fa46179536a4cc28313bd318926dc46b2a2be78897df",
+      "box": [
+        762,
+        216,
+        65,
+        62
+      ],
+      "sha256": "f6d88a3bc1791eb230088e4b8d8eb64ae00495d1d1710d351718590025e1d19a"
+    },
+    {
+      "file": "reward-item-rarity.png",
+      "source": "prototypes/vision/fixtures/v2/images/invoke-fates.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "dfa9b3f5683a2eb2fad127dacaeac6a4d77798447a969c90a4bb3b2e42940274",
+      "box": [
+        626,
+        847,
+        34,
+        36
+      ],
+      "sha256": "917129e7ad8d0a92d30f88e18b9619bc143fd562383b422499e188ece2e5b079"
+    },
+    {
+      "file": "reward-exceptional-gem.png",
+      "source": "research/evidence/exceptional-combo-03h14m42.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11682s",
+      "sourceSha256": "9c91a53a64a3b336f8d4ff7415d00a466dd3349e43d6cddf317294d17ba99e25",
+      "box": [
+        531,
+        472,
+        34,
+        30
+      ],
+      "sha256": "af377242106b72ee680e51da065604c6391efa534dffca8e704d1308cd90b94e"
+    },
+    {
+      "file": "reward-dreadmaidens-sacrament.png",
+      "source": "research/evidence/item-rarity-03h13m57.png",
+      "sourceUrl": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11637s",
+      "sourceSha256": "af1e03cf1e2e3145039ebc79b9396ab97d41f4e02e1d2feb7866ee14ab64848d",
+      "box": [
+        851,
+        857,
+        34,
+        36
+      ],
+      "sha256": "a79bc0f46bf098de6e84219191ec0311aa2163d631dd39092133efdfce81dea0"
+    },
+    {
+      "file": "reward-blue-diamond.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        593,
+        665,
+        24,
+        24
+      ],
+      "sha256": "e0fd41125d6b4decc56c83b283450ad9876b8d7b61024d941154e052fcac3590"
+    },
+    {
+      "file": "reward-gold-stack.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        631,
+        665,
+        24,
+        24
+      ],
+      "sha256": "39f378b03a93aac5e625e93602bbf9e31b4288c7785f50c5c58f19b11ac4bb3e"
+    },
+    {
+      "file": "reward-gold-grid.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-a.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "b2fc5893a9558782c117cd535718fd8c9ab3810314e7a05afe5bd343332e0e0b",
+      "box": [
+        818,
+        665,
+        24,
+        24
+      ],
+      "sha256": "8f280c2c579c581870235298e229ded19358c892693c25b1945058d055b086eb"
+    },
+    {
+      "file": "reward-gold-ring.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        610,
+        509,
+        24,
+        24
+      ],
+      "sha256": "a9970fbc0eab81de3ad06096c2200ef028f8fbf5d3b09fe73914ed8d40d33cc6"
+    },
+    {
+      "file": "reward-silver-cluster.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        797,
+        509,
+        24,
+        24
+      ],
+      "sha256": "635f0f380288937dabfb5ca7a1b968f33d14abb11a581c5d0627b42a92071444"
+    },
+    {
+      "file": "reward-orange-feathers.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        835,
+        509,
+        24,
+        24
+      ],
+      "sha256": "c2d86be9d1cbea139fdaa0896e2f58e64df31de6dba9a3fe3d43bc21c78d1d1b"
+    },
+    {
+      "file": "reward-three-gems.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        1060,
+        509,
+        24,
+        24
+      ],
+      "sha256": "42db35508f58770767de7a27b85dc8bee49d0697adfc97628702c9f60264aa16"
+    },
+    {
+      "file": "reward-gold-axe.png",
+      "source": "prototypes/vision/fixtures/images/press-offer-b.png",
+      "sourceUrl": "https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip",
+      "sourceSha256": "40414f7646f01e3a0affb98dc3fa8e689e2984fab7fe893fc147565403e0d244",
+      "box": [
+        1285,
+        489,
+        24,
+        24
+      ],
+      "sha256": "2dc64cebf05a96342a3554033d9008cc69623bc21a8244bbcb2e02dca3028faa"
+    }
+  ]
+}

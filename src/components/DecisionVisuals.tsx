@@ -1,22 +1,27 @@
 import type { FateCard, Reward } from '../../shared/schema'
 import type { InvocationPlan } from '../../shared/advisor'
-import { REWARD_CATALOG } from '../../shared/reward-catalog'
-import rewardIcons from '../../shared/reward-icons.json'
+import { useState } from 'react'
+import { fateArt, rewardArt } from '../lib/game-art'
 import { AppIcon } from './AppIcon'
 
 const named = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 
-/** Interface symbols are a reading aid; only sourced catalog images represent game icons. */
-export function RewardSymbol({ label, identified = true }: { label: string; identified?: boolean }) {
-  const normalized = label.trim().toLowerCase()
-  const catalog = identified && REWARD_CATALOG.find(entry => entry.label.toLowerCase() === normalized)
-  const reference = catalog && rewardIcons.icons.find(icon => icon.id === catalog.id)
-  const symbol = !identified ? 'question' : ['currency', 'additional currency items'].includes(normalized) ? 'coins'
-    : ['gems', 'gem'].includes(normalized) ? 'gem' : ['armour', 'armor'].includes(normalized) ? 'shield'
-      : ['flask', 'flasks'].includes(normalized) ? 'flask' : ['map', 'maps'].includes(normalized) ? 'map' : 'reward'
-  return <span className="reward-symbol" aria-hidden="true">{reference
-    ? <img src={`data:image/png;base64,${reference.pngBase64}`} alt="" width={36} height={36} />
-    : <AppIcon name={symbol} />}</span>
+export function FateArtwork({ name }: { name: string }) {
+  const src = fateArt(name)
+  const [failed, setFailed] = useState<string | null>(null)
+  return <div className={`fate-art${!src || failed === src ? ' is-unavailable' : ''}`}>
+    {src && failed !== src ? <img src={src} alt={`${name} Fate artwork`} width={160} height={160} onError={() => setFailed(src)} />
+      : <><AppIcon name="cards" /><span>Artwork unavailable</span></>}
+  </div>
+}
+
+/** A recorded motif can be shown without claiming that its meaning is known. */
+export function RewardSymbol({ label, identified = true, visualId }: { label: string; identified?: boolean; visualId?: Reward['visualId'] }) {
+  const src = rewardArt(label, identified, visualId)
+  const [failed, setFailed] = useState<string | null>(null)
+  return <span className="reward-symbol" aria-hidden="true" data-game-icon={!!src || undefined}>{src && failed !== src
+    ? <img src={src} alt="" width={36} height={36} onError={() => setFailed(src)} />
+    : <AppIcon name={identified ? 'reward' : 'question'} />}</span>
 }
 
 export function TierMark({ tier, suggested = false }: { tier: number | null; suggested?: boolean }) {
@@ -29,7 +34,7 @@ export function TierMark({ tier, suggested = false }: { tier: number | null; sug
 export function RewardStrip({ rewards, suggested = false, compact = false }: { rewards: Reward[]; suggested?: boolean; compact?: boolean }) {
   return <div className={`reward-strip${compact ? ' is-compact' : ''}`}>
     {rewards.length ? rewards.map(reward => <div className="reward-unit" key={reward.id} data-unknown={!reward.identified || reward.kind === 'unknown' || undefined}>
-      <RewardSymbol label={reward.label} identified={reward.identified && reward.kind !== 'unknown'} />
+      <RewardSymbol label={reward.label} identified={reward.identified && reward.kind !== 'unknown'} visualId={reward.visualId} />
       <div><strong>{reward.count}×</strong><span>{reward.label || 'Unknown reward'}</span>
         {!reward.identified || reward.kind === 'unknown' ? <small>{reward.kind === 'unknown' ? 'Kind unknown' : 'Unidentified'} · review</small>
           : reward.kind === 'combo' ? <small>Combo · needs {reward.threshold ?? '?'}</small> : null}</div>
@@ -47,24 +52,35 @@ export function InvocationSequence({ plan, cards, collected }: {
     return collectedIndex >= 0 ? `collected #${collectedIndex + 1}` : `offer #${offeredIndex + 1}`
   }
   return <div className="invocation-diagram">
-    <div className="sequence-heading"><span>Invoke in this order</span><span>{plan.cardIds.length} / 3 slots</span></div>
+    <div className="sequence-heading"><strong>Select in this order</strong><span>{plan.cardIds.length} / 3 inputs</span></div>
     <ol className="invocation-order" data-input-count={plan.cardIds.length}>{plan.cardIds.map((id, index) => {
       const card = cards.find(item => item.id === id)
       const merged = plan.merges.some(merge => merge.firstId === id || merge.consumedId === id)
       return <li key={id} data-merge={merged || undefined} aria-label={`${index + 1}. ${named(card)} (${source(id)})`}>
-        <span className="invoke-step" aria-hidden="true">{index + 1}</span>
-        <div className="invoke-card"><TierMark tier={card?.tier ?? null} suggested={!!card?.visualReview && !card.visualReview.tierReviewed} />
-          <strong className="invoke-name">{named(card)}</strong><span className="invoke-source">{source(id)}</span>
+        <div className="invoke-step-label"><span className="invoke-step" aria-hidden="true">{index + 1}</span><span>Select {index + 1 === 1 ? 'first' : index + 1 === 2 ? 'second' : 'third'}</span></div>
+        <div className="invoke-card"><FateArtwork name={named(card)} />
+          <div className="invoke-identity"><strong className="invoke-name">{named(card)}</strong><span className="invoke-source">{source(id)}</span>
+          <TierMark tier={card?.tier ?? null} suggested={!!card?.visualReview && !card.visualReview.tierReviewed} /></div>
           {card && <RewardStrip rewards={card.rewards} compact suggested={!!card.visualReview && !card.visualReview.rewardsReviewed} />}
         </div>
         {index < plan.cardIds.length - 1 && <span className="sequence-arrow"><AppIcon name="arrow" /></span>}
       </li>
     })}</ol>
-    {plan.merges.map(merge => <div className="merge-diagram" key={merge.firstId}>
-      <div className="merge-equation" aria-label="Tier 2 plus Tier 2 becomes Tier 3"><TierMark tier={2} /><AppIcon name="plus" /><TierMark tier={2} /><AppIcon name="arrow" /><TierMark tier={3} /></div>
-      <div><strong>{named(cards.find(card => card.id === merge.firstId))} merge</strong><span>First regular rewards ×3 · second rewards discarded</span></div>
-      <p className="sr-only">{named(cards.find(card => card.id === merge.firstId))} ({source(merge.firstId)}): T2 + T2 → T3. {named(cards.find(card => card.id === merge.consumedId))} ({source(merge.consumedId)}) is consumed. Both input slots are used.</p>
-    </div>)}
+    {plan.merges.map(merge => {
+      const first = cards.find(card => card.id === merge.firstId), second = cards.find(card => card.id === merge.consumedId)
+      return <div className="merge-diagram" key={merge.firstId}>
+        <div className="merge-equation" aria-label={`${named(first)}: Tier 2 plus Tier 2 becomes Tier 3`}>
+          <figure><FateArtwork name={named(first)} /><figcaption><TierMark tier={2} /><span>Step {plan.cardIds.indexOf(merge.firstId) + 1}</span></figcaption></figure>
+          <AppIcon name="plus" />
+          <figure><FateArtwork name={named(second)} /><figcaption><TierMark tier={2} /><span>Step {plan.cardIds.indexOf(merge.consumedId) + 1}</span></figcaption></figure>
+          <AppIcon name="arrow" />
+          <figure className="merge-output"><FateArtwork name={named(first)} /><figcaption><TierMark tier={3} /></figcaption></figure>
+        </div>
+        <div className="merge-explanation"><strong>First regular rewards ×3</strong><span>Second rewards discarded</span></div>
+        <p className="sr-only">{named(first)} ({source(merge.firstId)}): T2 + T2 → T3. {named(second)} ({source(merge.consumedId)}) is consumed. Both input slots are used.</p>
+      </div>
+    })}
+    <div className="invoke-final-step"><AppIcon name="check" /><strong>Then Confirm in game</strong></div>
   </div>
 }
 

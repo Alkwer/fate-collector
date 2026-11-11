@@ -13,12 +13,13 @@ const signed = (value: number) => `${value > 0 ? '+' : ''}${number(value)}`
 
 export function PortfolioPlan({ plan, cards, collected }: { plan: SolverPlan; cards: FateCard[]; collected: FateCard[] }) {
   return <div className="portfolio-plan">
-    <div className="plan-result"><AppIcon name="reward" /><strong>{number(plan.score)}</strong><div><span>priority points</span><small>{number(plan.progress)} combo progress · tie-breaker</small></div></div>
     <InvocationSequence plan={plan} cards={cards} collected={collected} />
-    <dl className="reward-breakdown" aria-label="Reward breakdown">{plan.rewards.map((reward, i) => <div key={`${reward.kind}:${reward.label}:${i}`}>
+    <div className="plan-result"><AppIcon name="reward" /><strong>{number(plan.score)}</strong><div><span>priority points</span><small>{number(plan.progress)} combo progress · tie-breaker</small></div></div>
+    {plan.rewards.some(reward => reward.uncertain || reward.count === null) && <p className="hint reward-uncertainty">Unresolved reward outcomes · check breakdown</p>}
+    <DetailPanel className="plan-notes" title="Reward breakdown"><dl className="reward-breakdown" aria-label="Reward breakdown">{plan.rewards.map((reward, i) => <div key={`${reward.kind}:${reward.label}:${i}`}>
       <dt><RewardSymbol label={reward.label} identified={reward.kind !== 'unknown'} />{reward.label || 'Unidentified reward'} <span className="muted">{reward.kind}</span></dt>
       <dd><span>{reward.count === null ? 'Unresolved outcome' : reward.kind === 'combo' ? `${reward.count}/${reward.threshold ?? '?'} icons · ${reward.activated ? 'active once' : 'not activated'}` : `${reward.count} icon units`}{reward.uncertain ? ' · incomplete evidence' : ''}</span><span>{number(reward.weight)} weight → <strong>{number(reward.points)} points</strong></span></dd>
-    </div>)}</dl>
+    </div>)}</dl></DetailPanel>
     {plan.warnings.length > 0 && <DetailPanel className="plan-notes" title="Plan limitations"><ul className="advisor-warnings">{plan.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
   </div>
 }
