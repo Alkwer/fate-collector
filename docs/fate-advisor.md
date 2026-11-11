@@ -4,8 +4,10 @@ The **Current map** screen combines the current offer, next-Fate recommendation,
 collected cards and the order of up to three invocation inputs. Ordinary Fates
 can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation
-schemas. The rule baseline is the [prerelease research checked on 8 November
-2026](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md), not live-game validation.
+schemas. The rule baseline is the [prerelease research updated on 11 November
+2026](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md). Video evidence was checked
+on 8 November; the update adds FAQ and patch-note context, not live-game validation
+or additional engine rules.
 
 ## Use
 
@@ -58,10 +60,18 @@ schemas. The rule baseline is the [prerelease research checked on 8 November
 
 ## Rules and uncertainty
 
+- The [GGG FAQ](https://www.pathofexile.com/forum/view-thread/4013527) confirms
+  that the next offer stays hidden until the pending choice is made. Advice uses
+  the current offer and explicitly collected cards; it does not forecast unseen offers.
+  Do not add the same pending choice again from a separate capture: the per-offer
+  guard recognizes an imported offer ID, not the identity of an in-game roll.
 - Reward labels match after case, whitespace, Unicode and apostrophe normalization;
   regular and combo rewards remain separate. Names never imply a reward.
 - A regular goal ranks matching icon units. Counts do not estimate item quantity,
   price, profit, modifier value, build suitability or fight difficulty.
+  The [loot research update](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md#aktualizacja-z-11-listopada-2026)
+  does not supply a conversion from rarity to reward value. No rarity or Atlas Drops
+  multiplier is applied by this engine. Card tier remains separate from item/modifier tier.
 - Combo goals use identified matching icons and a consistent threshold. The small
   verified catalog supplies Item Rarity (3), Exceptional Gem (3) and Dreadmaidens'
   Sacrament (2). A conflicting explicit threshold leaves activation unresolved.

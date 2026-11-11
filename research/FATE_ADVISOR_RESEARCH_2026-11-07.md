@@ -1,6 +1,6 @@
-# Fate Advisor — reguły Covens of Umbra z prezentacji i Q&A
+# Fate Advisor — reguły Covens of Umbra i granice ich interpretacji
 
-Stan: **8 listopada 2026**, po sprawdzeniu oryginalnego Q&A oraz pokazu DatModz i Octaviana. Materiał przedpremierowy, bez własnych testów mechaniki w grze. Nazwa pliku zachowuje datę pierwszego rozpoznania.
+Stan: **11 listopada 2026**, po uzupełnieniu o oficjalne FAQ i patch notes 3.30.0. Weryfikacja nagrań Q&A oraz pokazu DatModz i Octaviana pochodzi z 8 listopada. Materiał przedpremierowy, bez własnych testów mechaniki w grze. Nazwa pliku zachowuje datę pierwszego rozpoznania.
 
 ## Wynik i zakres weryfikacji
 
@@ -75,7 +75,27 @@ Pokaz ponownie potwierdza znaczenie kolejności: około 07:23:55–07:24:09 i 07
 
 Dodatkowo [tooltip z ok. 07:25:55](evidence/showcase-fated-07h25m55.png) jednoznacznie pokazuje pisownię **Fated Apex Rapier**. Widoczne na nim „Tier 3” dotyczy przedmiotu, nie karty Fate. [Fragment łupu](https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26735s).
 
-## Konsekwencje dla Fate Advisor — propozycja projektu
+## Aktualizacja z 11 listopada 2026
+
+Ponownie sprawdzono tekst [oficjalnego FAQ GGG](https://www.pathofexile.com/forum/view-thread/4013527) oraz sekcje „The Covens of Umbra Challenge League” i „Item Generation Changes” w [patch notes 3.30.0](https://www.pathofexile.com/forum/view-thread/4013680). Oba źródła odczytano 11 listopada 2026. Jest to weryfikacja zapowiedzi, nie zachowania gry.
+
+### FAQ: wybór kolejnych ofert i źródła rarity
+
+- Następny zestaw Fate'ów pozostaje ukryty, dopóki gracz nie wybierze karty z poprzedniej oferty. Interakcja z kolejnym spotkaniem może ponownie pokazać nierozstrzygnięty zestaw.
+- Rarity z ekwipunku gracza nie wpływa na walutę wypadającą z przeciwników; rarity map i potworów może na nią wpływać. Sprzeczna kartka z gry karcianej ExileCon była według GGG błędna i nieaktualna.
+
+### Patch notes: ogólne zasady łupu
+
+- Rarity potwora lub skrzyni wpływa na wybór puli dropu. Walutę rozdzielono na Magic Currency oraz Rare Currency, obejmującą m.in. Chaos, Divine i Mirror. Usunięto wcześniejsze ograniczenia dropu przedmiotów bez rarity z magicznych, rzadkich i unikalnych potworów.
+- Od aktu 6 magiczny lub rzadki przedmiot może mieć **Item Tier 2–5**. Wpływa on na mody, bazę, jakość, sockety i linki. T5 może otrzymać +1 do item level lub wypaść jako fractured magic. Ruthless nie ma Item Tiers.
+- Rarity potwora wpływa na szansę przedmiotów z tierem, a na wyższych poziomach na rzadszego unique, gdy wypada unique. Player rarity również wpływa na szansę tierowanego ekwipunku.
+- **Atlas Drops** zastępuje Item Quantity w modyfikatorach map; skaluje mapy, Threads, określone dodatkowe dropy i zasoby ligowe, nie cały łup.
+
+Patch notes nie podają algorytmu scalania Fate'ów, pełnego katalogu combo ani prawdopodobieństw. Ogólnych reguł dropu nie należy automatycznie stosować do każdej gwarantowanej nagrody Fate.
+
+## Konsekwencje dla Fate Advisor
+
+Bieżącą implementację i ograniczenia opisuje [instrukcja Advisora](../docs/fate-advisor.md). Poniższe wnioski wyznaczają zakres interpretacji dowodów, nie potwierdzają wdrożenia wszystkich proponowanych funkcji.
 
 Warto zbudować doradcę wyboru w obrębie obszaru. Dane pojedynczej karty powinny zawierać typ, tier, zwykłe nagrody oraz ikony combo z progami. Nazwa nie wystarcza.
 
@@ -86,6 +106,10 @@ Q&A uzasadnia zachowanie osobnych danych o tierze karty, efektach nagród i wyni
 Pokaz DatModz uzasadnia osobne liczenie **kart wejściowych** i **kart po scaleniu**: trzy wejścia dają tu dwie aktywne karty. Nie należy z liczby kart wynikowych wyprowadzać pozwolenia na czwarte wejście. Mieszane tiery w zestawie wynikowym nie potwierdzają możliwości ich dalszego scalania.
 
 Nie należy jeszcze obiecywać optymalizacji zysku w divine/hour. Pierwsza wersja może rekomendować warianty pod cel gracza: wybrany przedmiot, kategoria nagrody albo ograniczenie trudności. Reguły niezweryfikowane powinny zwracać „nieustalone”, zamiast udawać brak synergii.
+
+**Wnioski z FAQ dla planowania i zbierania danych:** rekomendacja kolejnej karty może korzystać z bieżącej oferty i już zebranych kart, bez znajomości przyszłych ofert. Plan przywołania dotyczy natomiast zgromadzonego zestawu. Ponownie pokazana oferta nie jest dowodem nowego losowania. Nowy capture ID ani przekroczenie 15-sekundowego okna wskazówki o duplikacie nie dowodzą niezależności obserwacji; nie należy jednak automatycznie scalać podobnych ofert bez dowodu ich tożsamości.
+
+**Wnioski dla dalszych badań łupu:** rozdzielać rarity gracza, mapy i potwora, Atlas Drops oraz rzeczywisty wynik walki. Zachowywać patch i poziom obszaru. Obecny kontrakt nie ma osobnych pól na te źródła rarity ani wynikowy ekwipunek; dodatkowe obserwacje można opisać w `notes`, bez dopisywania nieobsługiwanych pól. Tier przedmiotu i jego moda nie należą do pola tieru karty. Same liczby ikon nie wystarczają do wyceny nagród.
 
 ## Nadal nieustalone
 
@@ -104,4 +128,4 @@ Nie należy jeszcze obiecywać optymalizacji zysku w divine/hour. Pierwsza wersj
 - [Relacja Output Lag](https://outputlag.com/news/path-of-exile-3-30-covens-of-umbra-invoke-fate-cards-on-area-bosses-for-bigger-loot/) pomogła odnaleźć nagranie. Główne ustalenia powyżej sprawdzono już bezpośrednio w materiale GGG.
 - [Relacja Karui Polska z Q&A](https://karuipolska.pl/newsy/exilecon-2026-developer-panel-path-of-exile-1-q-a) wskazała doprecyzowania do sprawdzenia. Nie stanowi podstawy statusu „zweryfikowane” — jest nią oryginalna transmisja dnia 2 i jej napisy.
 
-Aktualizacja z 8 listopada obejmuje ustalenia badawcze. Nie zmieniano kodu aplikacji, nie publikowano zmian ani nie wykonywano testów mechaniki w grze.
+Aktualizacja dokumentacji z 11 listopada nie zmienia silnika rekomendacji, katalogu rozpoznawania ani schematu danych. Nie wykonano nowych testów mechaniki w grze. Nieustalone reguły wymienione powyżej zachowują ten status.

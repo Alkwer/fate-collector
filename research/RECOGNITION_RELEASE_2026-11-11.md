@@ -19,6 +19,14 @@ Reviewed on 2026-11-11:
 
 Queries included `site:pathofexile.com Covens Fates tier`, `site:poedb.tw Fates Torchbearer`, `site:pathofexile.com Fate Avalanche Rot` and mixed-tier/third-duplicate searches. Secondary guides were discovery leads, not grounds for new mechanics. No new supported motif meaning or combo threshold was established. Existing tooltip evidence is recorded in `REWARD_CATALOG_2026-11-10.md`; the new versioned ledger is `shared/catalog-metadata.json`.
 
+### Later documentation update — 11 November
+
+The official [3.30.0 patch notes](https://www.pathofexile.com/forum/view-thread/4013680)
+are now available. The earlier PoEDB/TCG entry above records the initial review,
+not the current availability of official notes. The [research update](FATE_ADVISOR_RESEARCH_2026-11-07.md#aktualizacja-z-11-listopada-2026)
+records the direct source recheck and relevant findings. This documentation
+update adds no recognition labels, catalog rules or native release evidence.
+
 ## Deliberately unresolved
 
 Mixed-tier duplicates, third duplicates, slot recovery and general duplicate/combo interactions still need a specific primary explanation or controlled native experiment. The conservative advisor remains unchanged. The historical T2+T2 example must not be generalized. A newly visible source is not evidence for an unstated rule.
