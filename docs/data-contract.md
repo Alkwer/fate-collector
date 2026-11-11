@@ -37,6 +37,12 @@ exclude either record. It is not visual identity detection or proof of a duplica
 The source context is retained as optional `offer.captureContext`, including through
 reviewed corrections, export/import and the research view. Self-references are invalid.
 
+The [GGG FAQ](https://www.pathofexile.com/forum/view-thread/4013527) confirms that
+an unresolved Fate choice can be shown again at a later encounter. Therefore a new
+capture ID, encounter location or missing 15-second repeat hint does not establish
+a new roll. Resolve suspected repeats from evidence before frequency analysis;
+do not automatically merge similar offers or interpret capture counts as independent rolls.
+
 The imported source image and raw OCR are stored separately from edited card fields.
 Current extraction first requires a unique `Fates`/`Select a Fate` heading and
 `Confirm` button to bound the offered area, then looks up names in its first text
@@ -140,6 +146,15 @@ optional selected card, review/coverage flags and notes. Each card has its own I
 name, nullable tier, modifiers and reward annotations. Rewards have a label, kind
 (`regular`, `combo`, `unknown`), count, optional threshold and identification flag.
 These are observations entered by a reviewer, not validated recipes.
+
+`card.tier` describes the Fate card only. It is not the dropped item's Item Tier,
+item level or modifier tier. Reward counts describe icon occurrences, not actual
+loot quantities. Version 1 has no structured fields for resulting equipment,
+separate player/map/monster rarity or Atlas Drops. Preserve extra observed context
+in `notes` until a versioned contract supports it; do not add unknown JSON fields.
+See the [research implications](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md).
+
+Review and coverage fields have the following meanings:
 
 - `unverified`: coverage has not been checked. It can be saved locally.
 - `partial`: the reviewer knows some offered cards are missing.
