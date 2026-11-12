@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-11T18:28:31Z",
+  "generatedAt": "2026-11-12T00:05:46.434Z",
   "title": "Design System: Fate Collector",
   "extensions": {
     "colorMeta": {
@@ -365,8 +365,8 @@
       "kind": "button",
       "refersTo": "button-primary",
       "description": "A supported next action in the decision panel.",
-      "html": "<button class=\"ds-button ds-primary\">Choose this Fate</button>",
-      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; }"
+      "html": "<button class=\"ds-button ds-primary\"><svg class=\"ds-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Collect Fate</button>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; } .ds-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; } .ds-icon { flex: 0 0 auto; }"
     },
     {
       "name": "Secondary action",
@@ -381,8 +381,8 @@
       "kind": "button",
       "refersTo": "button-provisional",
       "description": "An amber action shown beside the explicit provisional status.",
-      "html": "<div class=\"ds-provisional\"><span>Provisional preference</span><button class=\"ds-button ds-primary\">Choose this Fate</button></div>",
-      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; } .ds-provisional { display: grid; justify-items: start; gap: 10px; color: var(--warning); font: 15px/1.6 var(--sans); } .ds-provisional .ds-button.ds-primary { background: var(--warning); color: var(--background); } .ds-provisional .ds-button.ds-primary:hover:not(:disabled) { background: var(--warning); }"
+      "html": "<div class=\"ds-provisional\"><span>Provisional preference</span><button class=\"ds-button ds-primary\"><svg class=\"ds-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Collect Fate</button></div>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-button.ds-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 12px 20px; font-weight: 650; } .ds-button.ds-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; } .ds-provisional { display: grid; justify-items: start; gap: 10px; color: var(--warning); font: 15px/1.6 var(--sans); } .ds-provisional .ds-button.ds-primary { background: var(--warning); color: var(--background); } .ds-provisional .ds-button.ds-primary:hover:not(:disabled) { background: var(--warning); } .ds-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; } .ds-icon { flex: 0 0 auto; }"
     },
     {
       "name": "Text field",
@@ -405,8 +405,8 @@
       "kind": "custom",
       "refersTo": "decision-switch",
       "description": "Two pressed-state buttons share a single track.",
-      "html": "<div class=\"ds-switch\" role=\"group\" aria-label=\"Decision\"><button class=\"ds-button\" aria-pressed=\"true\">Choose a Fate</button><button class=\"ds-button\" aria-pressed=\"false\">Plan invocation</button></div>",
-      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-switch { display: flex; padding: 4px; gap: 4px; border-radius: 10px; background: var(--background); } .ds-switch .ds-button { flex: 1; border: 0; padding: 10px 13px; color: var(--muted); font-size: 14px; white-space: nowrap; } .ds-switch .ds-button[aria-pressed='true'] { background: var(--surface-raised); color: var(--text); font-weight: 600; }"
+      "html": "<div class=\"ds-switch\" role=\"group\" aria-label=\"Decision\"><button class=\"ds-button\" aria-pressed=\"true\"><svg class=\"ds-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 5h13v16H7V5ZM4 17H2V2h13v1\"/></svg>Choose a Fate</button><button class=\"ds-button\" aria-pressed=\"false\"><svg class=\"ds-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16m-6-6 6 6-6 6\"/></svg>Plan invocation</button></div>",
+      "css": ".ds-button { font: 15px/1.4 var(--sans); min-height: 40px; padding: 9px 15px; border: 1px solid var(--border-light); border-radius: var(--control-radius); background: transparent; color: var(--text); cursor: pointer; transition: background-color .18s ease-out, border-color .18s ease-out; } .ds-button:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--accent); } .ds-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; } .ds-button:disabled { opacity: .45; cursor: default; } @media (max-width: 760px) { .ds-button { min-height: 44px; } } @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } } .ds-switch { display: flex; padding: 4px; gap: 4px; border-radius: 10px; background: var(--background); } .ds-switch .ds-button { flex: 1; border: 0; padding: 10px 13px; color: var(--muted); font-size: 14px; white-space: nowrap; } .ds-switch .ds-button[aria-pressed='true'] { background: var(--surface-raised); color: var(--text); font-weight: 600; } .ds-switch .ds-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; } .ds-switch .ds-icon { flex: 0 0 auto; } @media (max-width: 760px) { .ds-switch { flex: 1; min-width: 0; } .ds-switch .ds-button { padding-inline: 8px; font-size: 13px; } .ds-switch .ds-icon { display: none; } }"
     },
     {
       "name": "Review callout",
@@ -422,7 +422,7 @@
       "refersTo": "decision-panel",
       "description": "The heading, context and choice on the main decision surface.",
       "html": "<section class=\"ds-decision\"><div class=\"ds-outcome\"><h3>Suggested invocation plan</h3><p>Uses only the Fates collected in this map.</p></div></section>",
-      "css": ".ds-decision { background: var(--surface); color: var(--text); padding: 0 26px 24px; border-radius: var(--radius); box-shadow: var(--shadow); font: 15px/1.6 var(--sans); } .ds-outcome { padding: 26px 0 22px; } .ds-outcome h3 { margin: 0; font: 600 25px/1.3 var(--display); letter-spacing: -.02em; text-wrap: pretty; } .ds-outcome p { margin: 10px 0 0; max-width: 65ch; color: var(--muted); font-size: 14px; } @media (max-width: 760px) { .ds-decision { padding: 0 20px 20px; } .ds-outcome h3 { font-size: 23px; } }"
+      "css": ".ds-decision { background: var(--surface); color: var(--text); padding: 0 26px 24px; border-radius: var(--radius); box-shadow: var(--shadow); font: 15px/1.6 var(--sans); } .ds-outcome { padding: 12px 0 8px; } .ds-outcome h3 { margin: 0; font: 600 25px/1.3 var(--display); letter-spacing: -.02em; text-wrap: pretty; } .ds-outcome p { margin: 10px 0 0; max-width: 65ch; color: var(--muted); font-size: 14px; } @media (max-width: 760px) { .ds-decision { padding: 0 20px 20px; } .ds-outcome h3 { font-size: 23px; } }"
     }
   ],
   "narrative": {
@@ -430,7 +430,7 @@
     "overview": "Fate Collector presents advice like a specimen catalog. Align names, tiers and reward values for comparison, and keep the source capture nearby so players can inspect unfamiliar rewards.\n\nMineral Depth uses petrol and mint. Light Trail pairs an olive shell with pale neutral work surfaces and violet. Both use the same spacing, hierarchy and interactions.",
     "keyCharacteristics": [
       "One decision surface with adjacent evidence",
-      "Quiet navigation and compact, ruled comparison rows",
+      "Quiet navigation, visual reward comparisons and numbered invocation sequences",
       "Secondary tasks in named panels, opened by buttons; no accordion rows",
       "Uncertainty communicated in words and color"
     ],
@@ -453,7 +453,7 @@
     ],
     "donts": [
       "Don't use color alone to communicate confidence, selection or review status.",
-      "Don't add decorative game artwork or invented observations."
+      "Don't invent game artwork, assign fixed rewards from an illustration, or add invented observations."
     ]
   }
 }
