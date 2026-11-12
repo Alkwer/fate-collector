@@ -10,11 +10,11 @@ on reload and takes effect without replacing the active map or draft. If local
 preference storage is unavailable, the change applies for the visit and the menu
 reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens.
 
-- A sticky navigation rail leads to **Current map**, **Saved offers** and
-  **Diagnostics**. It becomes a top navigation bar at narrow widths.
+- A sticky navigation rail leads to **Current map**, **Saved offers**, **Guide**
+  and **Diagnostics**. It becomes a two-row top navigation at narrow widths.
 - **Download Windows helper** stays visible beside **More actions** in the page
   header on every screen, with a direct ZIP download. The actions move below the
-  title on mobile; capture setup instructions remain in the help panel.
+  title on mobile; setup instructions are available from **Guide**.
 - The main decision panel sits beside the source capture and current collection
   on desktop. On tablet the decision comes first, followed by evidence and
   collection side by side. On mobile those supporting panels stack.
@@ -53,8 +53,13 @@ The folder connection is optional and explicitly labelled as local review. The
 helper's independent cloud upload is configured in its tray menu and can work with
 the website closed. Do not show a cloud connection or upload status the browser
 cannot observe. **More actions → Connect captures folder** opens a dedicated local-review panel.
-Only an active connection or a problem appears on the map. Capture setup and help
-also live in **More actions**, without expanding text rows on the main screen.
+Only an active connection or a problem appears on the map. **More actions →
+Setup & usage guide** opens the same guide as the main navigation. The guide is
+a reading surface with four setup/use steps, backups/sharing and troubleshooting.
+Its interactive F6/F7/F8 diagram is explicitly illustrative and controls no game
+or helper state. Local review opens the existing folder panel; returning to the
+map preserves the draft and collection. Chapter navigation moves keyboard focus
+to the heading. The guide inherits both themes and uses no automatic animation.
 Do not require typing modifiers, area, tier, or rewards just to preserve a sample.
 Manual review means the user checked the extraction, not that every icon is known.
 Known Fate names and descriptions are extracted from local Windows OCR. The local

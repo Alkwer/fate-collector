@@ -54,6 +54,12 @@ offers → Shared research collection**. Never use the example key in production
 
 ## Capture from Windows
 
+Open **Guide** in the website navigation for illustrated setup and usage steps:
+install the helper, try the F6/F7/F8 framing diagram, connect local review, and
+capture with F9. The guide also covers map choices, invocation, backups,
+optional sharing and troubleshooting. **More actions → Setup & usage guide**
+opens the same instructions.
+
 Download the helper ZIP from the website, extract it, and run `FateCollector.ahk`
 with AutoHotkey v2. Right-click its tray icon and open **Cloud upload settings** to
 enable direct uploads to your deployed collection. Calibrate the panel with F6/F7

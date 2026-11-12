@@ -11,7 +11,6 @@ export async function openPanel(page: Page, selector: string) {
   const actions: Record<string, string | RegExp> = {
     '.advanced-panel': 'Edit details',
     '.map-capture-connection': /^(Connect captures folder|Local review connected|Folder access needed|Local review needs attention)$/,
-    '.setup-help': 'How to capture from Path of Exile',
   }
   if (actions[selector]) {
     await openPanel(page, '.more-actions')
