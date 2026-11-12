@@ -74,6 +74,20 @@ export async function withdrawSymbolReport(id: string, key = '') {
   await update(id, latest => ({ ...latest, withdrawnAt: receipt.data.withdrawnAt }))
 }
 export function symbolImageUrl(image: SymbolReport['icon']) { return `data:image/png;base64,${image.dataBase64}` }
+/** Canvas encoders may add ancillary chunks (including browser debug metadata).
+ * Keep only image data and the sRGB rendering intent before preview and submission. */
+export function stripCanvasPngMetadata(base64: string): string {
+  const binary = atob(base64), bytes = Uint8Array.from(binary, char => char.charCodeAt(0)), view = new DataView(bytes.buffer)
+  let output = binary.slice(0, 8), offset = 8
+  while (offset + 12 <= bytes.length) {
+    const size = view.getUint32(offset), end = offset + size + 12, kind = binary.slice(offset + 4, offset + 8)
+    if (end > bytes.length) throw new Error('Could not prepare the PNG image.')
+    if (['IHDR', 'IDAT', 'IEND', 'sRGB'].includes(kind)) output += binary.slice(offset, end)
+    offset = end
+  }
+  if (offset !== bytes.length) throw new Error('Could not prepare the PNG image.')
+  return btoa(output)
+}
 export async function prepareSymbolImage(source: Blob | string, kind: 'icon' | 'tooltip', crop?: { x: number; y: number; width: number; height: number }): Promise<SymbolReport['icon']> {
   let blob: Blob
   if (typeof source === 'string') {
@@ -92,7 +106,7 @@ export async function prepareSymbolImage(source: Blob | string, kind: 'icon' | '
     const context = canvas.getContext('2d')
     if (!context) throw new Error('Image processing is unavailable.')
     context.drawImage(bitmap, box.x, box.y, box.width, box.height, 0, 0, canvas.width, canvas.height)
-    const dataBase64 = canvas.toDataURL('image/png').split(',')[1]
+    const dataBase64 = stripCanvasPngMetadata(canvas.toDataURL('image/png').split(',')[1])
     if (dataBase64.length > (kind === 'icon' ? 87384 : 524288)) throw new Error('Image is too large. Crop more tightly around the symbol or tooltip.')
     return { mimeType: 'image/png', width: canvas.width, height: canvas.height, dataBase64 }
   } finally { bitmap.close() }

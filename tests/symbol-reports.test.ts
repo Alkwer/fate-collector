@@ -5,11 +5,22 @@ import { IDBFactory } from 'fake-indexeddb'
 import { crc32, deflateSync } from 'node:zlib'
 import worker, { type Env } from '../worker'
 import { SYMBOL_REPORT_VERSION, SYMBOL_RETENTION_MS, symbolConsentText, symbolReportSchema, type SymbolSubmission } from '../shared/symbol-reports'
-import { saveSymbolSubmission, sendSymbolReport, symbolReportHistory, withdrawSymbolReport } from '../src/lib/symbol-reports'
+import { saveSymbolSubmission, sendSymbolReport, stripCanvasPngMetadata, symbolReportHistory, withdrawSymbolReport } from '../src/lib/symbol-reports'
 // @ts-expect-error Maintainer CLI is plain JavaScript.
 import { reviewReports } from '../scripts/export-symbol-reports.mjs'
 
 const databases: DatabaseSync[] = []
+test('canvas metadata is removed before preview without changing the PNG image chunks', () => {
+  const body = submission(), original = Buffer.from(body.report.icon.dataBase64, 'base64')
+  const metadata = Buffer.from('browser debug metadata'), chunk = Buffer.alloc(metadata.length + 12)
+  chunk.writeUInt32BE(metadata.length); chunk.write('deBG', 4); metadata.copy(chunk, 8)
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, -4)), chunk.length - 4)
+  const encoded = Buffer.concat([original.subarray(0, -12), chunk, original.subarray(-12)]).toString('base64')
+  expect(symbolReportSchema.safeParse({ ...body.report, icon: { ...body.report.icon, dataBase64: encoded } }).success).toBe(false)
+  const cleaned = stripCanvasPngMetadata(encoded)
+  expect(cleaned).toBe(stripCanvasPngMetadata(body.report.icon.dataBase64))
+  expect(symbolReportSchema.safeParse({ ...body.report, icon: { ...body.report.icon, dataBase64: cleaned } }).success).toBe(true)
+})
 test('valid PNG checksums cannot hide invalid scanlines, compressed payloads, metadata or pixel bombs', async () => {
   const { env } = setup(), body = submission()
   function chunk(kind: string, data: Buffer) {
