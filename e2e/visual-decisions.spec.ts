@@ -58,7 +58,7 @@ test('observed game motifs stay unknown and a missing portrait has a usable fall
   const card = page.locator('.visual-offer .fate-list > li')
   await expect(card.locator('.fate-art')).toContainText('Artwork unavailable')
   await expect(card.locator('.reward-symbol img')).toHaveAttribute('src', '/game-art/reward-blue-diamond.png')
-  expect(await card.locator('.reward-symbol img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(36)
+  await expect.poll(() => card.locator('.reward-symbol img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(36)
   await expect(card.locator('.reward-unit')).toContainText('Kind unknown · review')
   await expect(page.getByRole('button', { name: 'Review Tempest', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()

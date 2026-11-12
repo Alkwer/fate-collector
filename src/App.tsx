@@ -24,13 +24,14 @@ import { DraftRecovery } from './components/LocalRecovery'
 import { AppIcon } from './components/AppIcon'
 import { useTheme } from './lib/theme'
 import { WorkspaceNotice } from './components/WorkspaceNotice'
+import { UsageGuide } from './components/UsageGuide'
 
 export default function App() {
   const appearance = useTheme()
   const consentState = useSharingConsent()
   useDiagnosticWithdrawals()
   useEffect(installDiagnosticLog, [])
-  const [tab, setTab] = useState<'collector' | 'review' | 'saved' | 'diagnostics'>('collector')
+  const [tab, setTab] = useState<'collector' | 'review' | 'saved' | 'diagnostics' | 'guide'>('collector')
   const advisor = useAdvisorWorkspace()
   const solver = useSolverSettings()
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
@@ -51,7 +52,6 @@ export default function App() {
   const recoveryInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<DetailPanelHandle>(null)
   const connectionPanel = useRef<DetailPanelHandle>(null)
-  const helpPanel = useRef<DetailPanelHandle>(null)
   function editCurrentOffer(cardId?: string) {
     if (!detailsPanel.current) return
     detailsPanel.current.show()
@@ -63,6 +63,13 @@ export default function App() {
     document.getElementById('advisor-heading')?.focus()
   }
   function closeActions() { if (moreActions.current) moreActions.current.close() }
+  function leaveGuide(destination: 'collector' | 'saved' | 'diagnostics') {
+    setTab(destination)
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>('.page-heading h1')?.focus()
+      window.scrollTo(0, 0)
+    })
+  }
   const announce = useCallback((text: string, error = false) => setNotice({ text, error }), [])
   const refresh = useCallback(async () => {
     const history = await storage.readOfferHistory()
@@ -243,13 +250,14 @@ export default function App() {
       <nav aria-label="Main">
         <button className={tab === 'collector' ? 'active' : ''} aria-current={tab === 'collector' ? 'page' : undefined} onClick={() => setTab('collector')}><AppIcon name="map" />Current map</button>
         <button className={tab === 'saved' || tab === 'review' ? 'active' : ''} aria-current={tab === 'saved' || tab === 'review' ? 'page' : undefined} onClick={() => setTab('saved')}><AppIcon name="archive" />Saved offers{records.length > 0 && <span className="nav-count">{records.length}</span>}</button>
+        <button className={tab === 'guide' ? 'active' : ''} aria-current={tab === 'guide' ? 'page' : undefined} onClick={() => setTab('guide')}><AppIcon name="question" />Guide</button>
         <button className={`diagnostics-nav ${tab === 'diagnostics' ? 'active' : ''}`} aria-current={tab === 'diagnostics' ? 'page' : undefined} onClick={() => setTab('diagnostics')}><AppIcon name="tools" />Diagnostics</button>
       </nav>
       <p className="shell-note">Your evidence.<br />Your next decision.</p>
     </div></header>
     <div className="main-area">
     <main id="main" className="workspace" tabIndex={-1}>
-      <div className="page-heading"><div><h1>{tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current map'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'review' ? 'Review this observation separately from your current map.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p>}</div>
+      <div className="page-heading"><div><h1 tabIndex={-1}>{tab === 'guide' ? 'Helper & website guide' : tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current map'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'guide' ? 'From your first capture to your next Fate.' : tab === 'review' ? 'Review this observation separately from your current map.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p>}</div>
         <div className="page-heading-actions">
         <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>
         <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
@@ -262,7 +270,7 @@ export default function App() {
               <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button></>}
           </>}
           {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
-          <button onClick={() => { closeActions(); helpPanel.current?.show() }}>How to capture from Path of Exile</button>
+          <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
           <label className="theme-picker">Appearance<select value={appearance.theme} onChange={event => appearance.changeTheme(event.target.value === 'trail' ? 'trail' : 'mineral')}><option value="mineral">Mineral Depth · dark</option><option value="trail">Light Trail · light</option></select></label>
           {appearance.error && <p className="hint" role="status">{appearance.error}</p>}
         </div></DetailPanel>
@@ -283,7 +291,6 @@ export default function App() {
         <FateAdvisor solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel compact={!!draft.cards.length || !!advisor.workspace.collection.cards.length} evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
         {sync.status !== 'off' && <button className="connection-status text-button" onClick={() => connectionPanel.current?.show()}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Local review settings'}</button>}
         {sync.problem && <p className="connection-warning field-error" role="alert">{sync.problem}</p>}
-        <DetailPanel trigger={false} className="map-capture-connection" ref={connectionPanel} title="Local review"><CaptureConnection sync={sync} /></DetailPanel>
         </> : <>
         <div className="archive-boundary"><p>This archived offer is not used in current-map advice. Only transfer it if it belongs to the instance you are playing now.{archiveEditor.dirty ? ' Save corrections before transferring.' : ''}{advisor.needsMapConfirmation ? ' Confirm your map on the Current map screen first.' : ''}</p><div><button onClick={() => setTab('collector')}>Return to current map</button><button disabled={busy || autoSaving || archiveEditor.dirty || advisor.needsMapConfirmation} onClick={useArchivedOffer}>{advisor.workspace.map ? 'Use this offer in current map' : 'Start map with this offer'}</button></div></div>
         <div className={`collector-grid ${draft.cards.length ? 'has-fates' : ''} ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
@@ -295,11 +302,11 @@ export default function App() {
           <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
         </div></DetailPanel>
         {!editing && saveBar}
-      </> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={includeEvidence => void exportAll(includeEvidence)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
+      </> : tab === 'guide' ? <UsageGuide onConnect={() => connectionPanel.current?.show()} onMap={() => leaveGuide('collector')} onSaved={() => leaveGuide('saved')} onDiagnostics={() => leaveGuide('diagnostics')} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={includeEvidence => void exportAll(includeEvidence)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       {backup && <BackupDownload {...backup} onRecovery={() => void exportRecovery()} onClose={() => { setBackup(null); requestAnimationFrame(() => backupReturnFocus.current?.focus()) }} />}
       <input ref={fileInput} className="file-input" type="file" multiple accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const files = Array.from(event.target.files ?? []); if (files.length) void loadFile(files); event.target.value = '' }} />
       <input ref={recoveryInput} className="file-input" type="file" accept=".json" aria-label="Recover damaged backup" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file, true); event.target.value = '' }} />
-      <DetailPanel trigger={false} ref={helpPanel} className="setup-help" title="How to capture from Path of Exile"><p>Run the Windows helper. Select the panel with F6 and F7 once; the helper remembers it. F8 previews the saved frame. Press F9 for each new offer. To send new captures to the shared database with this page closed, open Cloud upload settings in the helper's tray menu. Enter the collection owner's site URL and capture upload key, then enable upload.</p><p>For local review, use Connect folder to select its captures folder in desktop Chrome or Edge. Captures and corrections save locally without pasting or clicking Save. Keep this page open for local intake; it catches up from disk when reopened. Browser folder permission may need renewing. Manual import and paste remain available.</p><p>Windows 10/11, AutoHotkey v2 and an installed Windows OCR language are required. The helper uses GDI for SDR and Windows Graphics Capture for HDR. Live game and HDR monitor compatibility still need validation.</p><a href="/downloads/fate-collector-helper.zip" download>Download Windows helper</a><p className="hint">Cloud upload sends OCR text and capture metadata; screenshots stay on disk. Automatic records remain unverified. Website corrections are shared separately from Saved offers.</p></DetailPanel>
+      <DetailPanel trigger={false} className="map-capture-connection" ref={connectionPanel} title="Local review"><CaptureConnection sync={sync} /></DetailPanel>
     </main>
     <footer className="app-footer">Advisor uses identified rewards and preview rules. Unknown icons need manual review.<span>Independent community tool · Not affiliated with Grinding Gear Games</span></footer>
     </div></div>
