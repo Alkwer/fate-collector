@@ -11,7 +11,6 @@ interface VerificationRequest {
 }
 
 interface Turnstile {
-  ready: (callback: () => void) => void
   render: (element: HTMLElement, options: {
     sitekey: string
     action: Action
@@ -47,11 +46,11 @@ function loadTurnstile() {
     script.onerror = fail
     script.onload = () => {
       const turnstile = (window as Window & { turnstile?: Turnstile }).turnstile
-      if (!turnstile || typeof turnstile.ready !== 'function') { fail(); return }
-      turnstile.ready(() => {
-        window.clearTimeout(timer)
-        resolve(turnstile)
-      })
+      if (!turnstile || typeof turnstile.render !== 'function') { fail(); return }
+      // The load event already follows script execution. Turnstile rejects ready()
+      // when its script is asynchronous; render directly after this event instead.
+      window.clearTimeout(timer)
+      resolve(turnstile)
     }
     document.head.appendChild(script)
   }).catch(error => {
