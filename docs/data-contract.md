@@ -106,6 +106,12 @@ on disk. The feature is designed for desktop Chrome/Edge and a secure origin.
 
 ## Direct automatic upload
 
+Separate image research uses `fate-collector.symbol-report` version 1 at
+`POST /api/symbol-reports`. This does not extend capture/offer v1 or their consent.
+The strict contract, limits, independent consent, private maintainer export and
+withdrawal/expiry behavior are described in [symbol reports](symbol-reports.md).
+
+
 `POST /api/captures` accepts `fate-collector.upload` schema version 1, authorized by
 `COLLECTOR_CAPTURE_KEY` and a current capture consent (see below). Its fields are `captureId`, `capturedAt`, `source`,
 `helperVersion`, required `context.captureMode`, `image: {width, height}` and the

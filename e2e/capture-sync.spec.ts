@@ -140,7 +140,7 @@ test('folder capture auto-saves, corrections auto-save, reconnect deduplicates, 
   await expect(page.locator('.action-band')).toContainText('Not reviewed yet.')
   await expect(page.getByRole('button', { name: 'Confirm and save', exact: true })).toHaveCount(0)
   // The optional solver switch is visible; capture intake still needs no form fields.
-  await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
+  await expect(page.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
   await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
 
   await toggleEditor(page)

@@ -1,0 +1,113 @@
+import { z } from 'zod'
+import { SYMBOL_REPORT_LIMIT, symbolReceiptSchema, symbolSubmissionSchema, type SymbolReport, type SymbolSubmission, type SymbolReceipt } from '../../shared/symbol-reports'
+
+export interface LocalSymbolReport { id: string; origin: string; submission: SymbolSubmission; receipt: SymbolReceipt | null; withdrawRequestedAt: string | null; withdrawnAt: string | null; expired?: boolean }
+const localSchema = z.object({ id: z.string().uuid(), origin: z.string().url(), submission: symbolSubmissionSchema,
+  receipt: symbolReceiptSchema.nullable(),
+  withdrawRequestedAt: z.string().nullable(), withdrawnAt: z.string().nullable(),
+  expired: z.boolean().optional(),
+})
+async function database() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open('fate-collector-symbol-reports', 1)
+    request.onupgradeneeded = () => request.result.createObjectStore('reports', { keyPath: 'id' })
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(new Error('Symbol report storage is unavailable. Keep the images and retry.'))
+    request.onblocked = () => reject(new Error('Close other collector tabs and retry.'))
+  })
+}
+async function transact<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore, finish: (value: T) => void) => void): Promise<T> {
+  const db = await database()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('reports', mode)
+    let result: T
+    transaction.oncomplete = () => { db.close(); resolve(result) }
+    transaction.onerror = transaction.onabort = () => { db.close(); reject(new Error('Could not save the symbol report. Keep the images and retry.')) }
+    action(transaction.objectStore('reports'), value => { result = value })
+  })
+}
+export async function symbolReportHistory(): Promise<LocalSymbolReport[]> {
+  const rows = await transact<unknown[]>('readonly', (store, finish) => { const request = store.getAll(); request.onsuccess = () => finish(request.result) })
+  return rows.map(value => {
+    const parsed = localSchema.safeParse(value)
+    if (!parsed.success) throw new Error('A saved symbol report is unreadable. Its original data is preserved; do not clear browser storage.')
+    return parsed.data as LocalSymbolReport
+  }).filter(row => row.origin === location.origin).sort((a, b) => b.submission.report.createdAt.localeCompare(a.submission.report.createdAt))
+}
+async function update(id: string, change: (row: LocalSymbolReport) => LocalSymbolReport) {
+  return transact<LocalSymbolReport>('readwrite', (store, finish) => {
+    const request = store.get(id)
+    request.onsuccess = () => {
+      const parsed = localSchema.safeParse(request.result)
+      if (!parsed.success || parsed.data.origin !== location.origin) { store.transaction.abort(); return }
+      const row = change(parsed.data as LocalSymbolReport)
+      store.put(row); finish(row)
+    }
+  })
+}
+export async function saveSymbolSubmission(submission: SymbolSubmission): Promise<LocalSymbolReport> {
+  symbolSubmissionSchema.parse(submission)
+  if (new TextEncoder().encode(JSON.stringify(submission)).length > SYMBOL_REPORT_LIMIT) throw new Error('Images are too large. Crop them more tightly and retry.')
+  const row: LocalSymbolReport = { id: submission.report.id, origin: location.origin, submission, receipt: null, withdrawRequestedAt: null, withdrawnAt: null }
+  await transact('readwrite', (store, finish) => { store.add(row); finish(undefined) })
+  return row
+}
+export async function sendSymbolReport(id: string, key: string) {
+  const row = await update(id, row => row)
+  if (row.withdrawRequestedAt) throw new Error('This report has a withdrawal request; it will not be sent.')
+  if (row.expired) throw new Error('This report expired or was removed from the collection.')
+  const response = await fetch('/api/symbol-reports', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(row.submission), signal: AbortSignal.timeout(30000) })
+  const body = await response.json().catch(() => ({}))
+  if (response.status === 410) await update(id, latest => ({ ...latest, expired: true }))
+  if (!response.ok) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Report not confirmed. Retry the saved report below.')
+  const receipt = symbolReceiptSchema.safeParse(body)
+  const { consent } = row.submission
+  if (!receipt.success || receipt.data.id !== id || receipt.data.consent.version !== consent.version || receipt.data.consent.text !== consent.text || receipt.data.consent.acceptedAt !== consent.acceptedAt || receipt.data.consent.recordedAt !== receipt.data.receivedAt) throw new Error('Unexpected receipt. Retry the saved report below.')
+  await update(id, latest => ({ ...latest, receipt: receipt.data }))
+}
+export async function withdrawSymbolReport(id: string, key = '') {
+  const row = await update(id, latest => ({ ...latest, withdrawRequestedAt: latest.withdrawRequestedAt || new Date().toISOString() }))
+  const response = await fetch(`/api/symbol-reports/${id}/withdraw`, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Symbol-Token': row.submission.token, ...(key ? { Authorization: `Bearer ${key}` } : {}) }, body: JSON.stringify({ withdrawnAt: row.withdrawRequestedAt }), signal: AbortSignal.timeout(15000) })
+  const body = await response.json().catch(() => ({}))
+  const receipt = z.object({ id: z.string().uuid(), status: z.literal('withdrawn'), withdrawnAt: z.string().datetime({ offset: true }) }).safeParse(body)
+  if (!response.ok || !receipt.success || receipt.data.id !== id) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Withdrawal not confirmed. Retry withdrawal below; sending is blocked locally.')
+  await update(id, latest => ({ ...latest, withdrawnAt: receipt.data.withdrawnAt }))
+}
+export function symbolImageUrl(image: SymbolReport['icon']) { return `data:image/png;base64,${image.dataBase64}` }
+/** Canvas encoders may add ancillary chunks (including browser debug metadata).
+ * Keep only image data and the sRGB rendering intent before preview and submission. */
+export function stripCanvasPngMetadata(base64: string): string {
+  const binary = atob(base64), bytes = Uint8Array.from(binary, char => char.charCodeAt(0)), view = new DataView(bytes.buffer)
+  let output = binary.slice(0, 8), offset = 8
+  while (offset + 12 <= bytes.length) {
+    const size = view.getUint32(offset), end = offset + size + 12, kind = binary.slice(offset + 4, offset + 8)
+    if (end > bytes.length) throw new Error('Could not prepare the PNG image.')
+    if (['IHDR', 'IDAT', 'IEND', 'sRGB'].includes(kind)) output += binary.slice(offset, end)
+    offset = end
+  }
+  if (offset !== bytes.length) throw new Error('Could not prepare the PNG image.')
+  return btoa(output)
+}
+export async function prepareSymbolImage(source: Blob | string, kind: 'icon' | 'tooltip', crop?: { x: number; y: number; width: number; height: number }): Promise<SymbolReport['icon']> {
+  let blob: Blob
+  if (typeof source === 'string') {
+    const match = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/]+={0,2})$/.exec(source)
+    if (!match || source.length > 16 * 1024 * 1024) throw new Error('The local capture image is invalid or too large.')
+    blob = new Blob([Uint8Array.from(atob(match[2]), char => char.charCodeAt(0))], { type: match[1] })
+  } else blob = source
+  if (blob.size > 12 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(blob.type)) throw new Error('Choose a PNG, JPEG or WebP image up to 12 MiB.')
+  const bitmap = await createImageBitmap(blob)
+  try {
+    if (bitmap.width * bitmap.height > 16_777_216) throw new Error('Image is too large. Crop it before importing.')
+    const box = crop || { x: 0, y: 0, width: bitmap.width, height: bitmap.height }
+    if (![box.x, box.y, box.width, box.height].every(Number.isInteger) || box.width < 8 || box.height < 8 || box.x < 0 || box.y < 0 || box.x + box.width > bitmap.width || box.y + box.height > bitmap.height) throw new Error('Select a rectangle of at least 8 × 8 pixels inside the image.')
+    const limit = kind === 'icon' ? 256 : 1600, scale = Math.min(1, limit / Math.max(box.width, box.height))
+    const canvas = document.createElement('canvas'); canvas.width = Math.max(8, Math.round(box.width * scale)); canvas.height = Math.max(8, Math.round(box.height * scale))
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Image processing is unavailable.')
+    context.drawImage(bitmap, box.x, box.y, box.width, box.height, 0, 0, canvas.width, canvas.height)
+    const dataBase64 = stripCanvasPngMetadata(canvas.toDataURL('image/png').split(',')[1])
+    if (dataBase64.length > (kind === 'icon' ? 87384 : 524288)) throw new Error('Image is too large. Crop more tightly around the symbol or tooltip.')
+    return { mimeType: 'image/png', width: canvas.width, height: canvas.height, dataBase64 }
+  } finally { bitmap.close() }
+}

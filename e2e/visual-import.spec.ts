@@ -1,4 +1,4 @@
-import { openPanel, closePanels, toggleEditor, expectEmptyMap } from './ui'
+import { openPanel, closePanels, toggleEditor, expectEmptyMap, selectRewardGoal } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -52,13 +52,12 @@ for (const cropped of [false, true]) {
     await expect(page.locator('.visual-offer .reward-unit').filter({ hasText: "Dreadmaidens' Sacrament" })).toContainText('Combo · needs 2')
     await expect(page.locator('.visual-offer .reward-review-note').first()).toContainText('Suggested · check reward row')
     await expect(page.getByRole('heading', { name: 'Torchbearer', exact: true })).toHaveCount(1)
-    await expect(page.getByLabel('Compare multiple rewards', { exact: true })).not.toBeChecked()
+    await expect(page.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
     await expect(page.locator('input:visible, textarea:visible, select:visible')).toHaveCount(0)
     await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
     await closePanels(page)
     await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
-    await openPanel(page, '.reward-settings')
-    await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+    await selectRewardGoal(page, 'combo:exceptional gem')
     await closePanels(page)
     await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
     await page.screenshot({ path: join(tmpdir(), `fate-guided-source-${cropped ? 'mobile' : 'desktop'}.png`), fullPage: true })
@@ -152,8 +151,7 @@ test('connected F9 folder intake saves visual candidates automatically and keeps
   await expect(page.getByLabel('I checked this tier against the image')).not.toBeChecked()
   await closePanels(page)
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+  await selectRewardGoal(page, 'combo:exceptional gem')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
 })
@@ -170,8 +168,7 @@ for (const width of [1440, 390]) {
     await importCapture(page, capture)
     await closePanels(page)
     await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
-    await openPanel(page, '.reward-settings')
-    await page.getByLabel('Reward goal').selectOption("combo:dreadmaidens' sacrament")
+    await selectRewardGoal(page, "combo:dreadmaidens' sacrament")
     await closePanels(page)
     await expect(page.getByRole('heading', { name: 'Provisional preference: Tempest', exact: true })).toBeVisible()
     await closePanels(page)

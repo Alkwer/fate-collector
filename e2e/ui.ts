@@ -27,6 +27,12 @@ export async function toggleEditor(page: Page) {
   else await openPanel(page, '.advanced-panel')
 }
 
+export async function selectRewardGoal(page: Page, goal: string) {
+  await openPanel(page, '.reward-settings')
+  await page.getByLabel('Compare multiple rewards', { exact: true }).uncheck()
+  await page.getByRole('combobox', { name: 'Reward goal', exact: true }).selectOption(goal)
+}
+
 /** A new map clears its planning data and returns to the capture entry point. */
 export async function expectEmptyMap(page: Page) {
   await expect(page.getByRole('heading', { name: 'Bring your next offer into focus.' })).toBeVisible()

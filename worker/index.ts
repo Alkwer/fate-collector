@@ -3,6 +3,7 @@ import { handleConsent, uploadConsent, activeConsent, type ConsentRecord } from 
 import { CONSENT_VERSION } from '../shared/consent'
 import { APP_VERSION } from '../shared/diagnostics'
 import { expireDiagnostics, handleDiagnostics } from './diagnostics'
+import { expireSymbolReports, handleSymbolReports } from './symbol-reports'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
 import { newOffer, submissionProblem } from '../shared/offers'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
@@ -49,6 +50,7 @@ export default {
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     if (!env.DB) throw new Error('Diagnostic cleanup database is unavailable.')
     await expireDiagnostics(env.DB)
+    await expireSymbolReports(env.DB)
   },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -64,6 +66,7 @@ export default {
     }
     if (url.pathname === '/api/consents' || /^\/api\/consents\/[^/]+\/withdraw$/.test(url.pathname)) return handleConsent(request, env)
     if (url.pathname === '/api/diagnostics' || /^\/api\/diagnostics\/[^/]+\/withdraw$/.test(url.pathname)) return handleDiagnostics(request, env)
+    if (url.pathname === '/api/symbol-reports' || /^\/api\/symbol-reports\/[^/]+\/withdraw$/.test(url.pathname)) return handleSymbolReports(request, env)
     const isCapture = url.pathname === '/api/captures'
     if (!isCapture && url.pathname !== '/api/observations') return json({ error: 'Not found.' }, 404)
     if (request.method !== 'POST') return json({ error: 'Use POST to submit data.' }, 405)

@@ -18,7 +18,7 @@ export async function authorized(request: Request, secret: string): Promise<bool
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return diff === 0
 }
-export async function boundedText(request: Request): Promise<string> {
+export async function boundedText(request: Request, limit = MAX_API_BYTES): Promise<string> {
   const reader = request.body?.getReader()
   if (!reader) throw new Error('empty')
   const chunks: Uint8Array[] = []
@@ -27,7 +27,7 @@ export async function boundedText(request: Request): Promise<string> {
     const { done, value } = await reader.read()
     if (done) break
     total += value.byteLength
-    if (total > MAX_API_BYTES) { await reader.cancel(); throw new Error('too-large') }
+    if (total > limit) { await reader.cancel(); throw new Error('too-large') }
     chunks.push(value)
   }
   const all = new Uint8Array(total)

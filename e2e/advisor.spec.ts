@@ -1,4 +1,4 @@
-import { openPanel, closePanels, toggleEditor, expectEmptyMap } from './ui'
+import { openPanel, closePanels, toggleEditor, expectEmptyMap, selectRewardGoal } from './ui'
 import { test, expect, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -27,12 +27,10 @@ async function importOffer(page: Page, cards: FateCard[]): Promise<Offer> {
 test('specific reward goals change the recommendation; editing recomputes without recording a choice', async ({ page }) => {
   await page.goto('/')
   const offer = await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [reward('Gems', 2)])])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'Recommended: Alchemist', exact: true })).toBeVisible()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:gems')
+  await selectRewardGoal(page, 'regular:gems')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'Recommended: Sanguine', exact: true })).toBeVisible()
   await closePanels(page)
@@ -104,13 +102,11 @@ test('a saved sibling editor never overwrites pending corrections to the same of
 test('unknown rewards abstain and partial knowledge remains provisional', async ({ page }) => {
   await page.goto('/')
   await importOffer(page, [card('Alchemist', []), card('Sanguine', [newReward()])])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+  await selectRewardGoal(page, 'combo:exceptional gem')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'No supported recommendation yet.' })).toBeVisible()
   await importOffer(page, [card('Alchemist', [reward('Currency', 2)]), card('Sanguine', [])])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'Provisional preference: Alchemist' })).toBeVisible()
   await expect(page.getByText('Missing data or unresolved mechanics may change this ranking.', { exact: false })).toBeVisible()
@@ -119,8 +115,7 @@ test('unknown rewards abstain and partial knowledge remains provisional', async 
 test('collects one Fate per offer, plans duplicate order, and restores the area only after confirmation', async ({ page }) => {
   await page.goto('/')
   await importOffer(page, [card('Torchbearer', [reward('Currency', 2)]), card('Tempest', [reward('Gems')])])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
   await expect(page.getByRole('button', { name: 'Add Tempest to collected' })).toBeDisabled()
@@ -182,8 +177,7 @@ test('archive browsing preserves the current offer; a new map excludes every pre
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Advisor', exact: true })).toHaveCount(0)
   const first = await importOffer(page, [card('Torchbearer', [reward('Currency', 2)])])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await page.getByRole('button', { name: 'Add Torchbearer to collected' }).click()
   const archived = { ...newOffer(), cards: [card('Alchemist', [reward('Currency', 100)])] }
@@ -241,8 +235,7 @@ test('an empty restored map also requires confirmation before an offer can join 
   await page.getByRole('button', { name: 'Resume archived review' }).click()
   await closePanels(page)
   await page.getByRole('button', { name: 'Use this offer in current map' }).click()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'Recommended: Alchemist' })).toBeVisible()
 })
@@ -292,8 +285,7 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['ta
       await page.getByRole('button', { name: `Add ${name} to collected` }).click()
     }
     await importOffer(page, [card('Deathbringer', [reward('Exceptional Gem', 1, 'combo')]), card('Wildfire', [reward("Dreadmaidens' Sacrament", 1, 'combo')])])
-    await openPanel(page, '.reward-settings')
-    await page.getByLabel('Reward goal').selectOption('combo:exceptional gem')
+    await selectRewardGoal(page, 'combo:exceptional gem')
     await closePanels(page)
     await expect(page.getByRole('heading', { name: 'Recommended: Deathbringer' })).toBeVisible()
     await expect(page.locator('.advisor-candidates').first().locator('.plan-result')).toContainText('3/3Exceptional Gem iconsCombo ready')

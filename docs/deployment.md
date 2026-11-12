@@ -208,6 +208,13 @@ adds a capture-conflict inspection view and changes research counting to one
 canonical reviewed offer per capture. Inspect `observation_capture_conflicts`
 on staging before promoting; corrections must retain their original capture ID.
 
+Migration `0008_symbol_reports.sql` adds independent image-research storage and
+withdrawal tombstones without changing existing data. Staging smoke verifies a
+synthetic two-image submission, explicit consent/key rejection, duplicate receipt,
+withdrawal and replay denial. Scheduled cleanup also expires symbol payloads after
+30 days. It reuses the existing rate-limiter binding under separate operation keys;
+no new secret or cloud storage resource is required.
+
 ```sh
 npm ci
 npm run check
