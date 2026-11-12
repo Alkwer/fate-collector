@@ -73,6 +73,13 @@ and any supported comparison remains provisional where the missing data matters.
 
 ## Combined priorities and reusable profiles
 
+New profiles use the provisional [trade starter](trade-starter.md): Exceptional Gem
+combo 10, Item Rarity combo 4, Dreadmaidens' Sacrament combo 2 and Additional Currency
+Items regular 3. Existing saved profiles retain their mode and weights. **Use trade
+starter** updates those four priorities explicitly, preserving other goals/filters.
+Currency only scores after its regular kind and meaning have been confirmed.
+
+
 Enable **Compare multiple rewards** to optimize several rewards together. Open
 **Priorities, build filters & profile**, add observed, catalog or custom rewards,
 and give each a relative weight (0 disables it). Regular icons earn that weight

@@ -20,9 +20,40 @@ export type SolverSettings = z.infer<typeof solverSettingsSchema>
 export type RewardDefinition = z.infer<typeof rewardDefinitionSchema>
 export const SOLVER_SETTINGS_KEY = 'fate-collector.solver-profile.v1'
 export const MAX_PROFILE_BYTES = 64_000
+
+type Priority = SolverSettings['profile']['goals'][number]
+const TRADE_STARTER_PRIORITIES: readonly Priority[] = [
+  { kind: 'combo', label: 'Exceptional Gem', weight: 10 },
+  { kind: 'combo', label: 'Item Rarity', weight: 4 },
+  { kind: 'combo', label: "Dreadmaidens' Sacrament", weight: 2 },
+  { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
+]
+const priorityKey = ({ kind, label }: Priority) => `${kind}:${normalizeRewardLabel(label)}`
+
 export function newSolverSettings(): SolverSettings {
-  return { kind: 'fate-collector.solver-profile', schemaVersion: 1, mode: 'single', profile: { goals: [], avoidModifiers: [] }, definitions: [] }
+  return {
+    kind: 'fate-collector.solver-profile',
+    schemaVersion: 1,
+    mode: 'portfolio',
+    profile: { goals: TRADE_STARTER_PRIORITIES.map(priority => ({ ...priority })), avoidModifiers: [] },
+    definitions: [],
+  }
 }
+
+export function applyTradeStarter(settings: SolverSettings): SolverSettings | null {
+  const missing = new Map(TRADE_STARTER_PRIORITIES.map(priority => [priorityKey(priority), priority]))
+  const goals = settings.profile.goals.map(priority => {
+    const key = priorityKey(priority)
+    const starter = missing.get(key)
+    if (!starter) return priority
+    missing.delete(key)
+    return { ...priority, weight: starter.weight }
+  })
+  goals.push(...Array.from(missing.values(), priority => ({ ...priority })))
+  if (!solverProfileSchema.shape.goals.safeParse(goals).success) return null
+  return { ...settings, mode: 'portfolio', profile: { ...settings.profile, goals } }
+}
+
 export function parseSolverSettings(text: string): SolverSettings {
   if (new TextEncoder().encode(text).byteLength > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KB maximum).')
   const result = solverSettingsSchema.safeParse(JSON.parse(text))

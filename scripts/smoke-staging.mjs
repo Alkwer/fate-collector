@@ -1,4 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { SYMBOL_REPORT_VERSION, SYMBOL_RETENTION_MS, symbolConsentText, symbolReceiptSchema } from '../shared/symbol-reports.ts'
 import { pathToFileURL } from 'node:url'
 import { newCard, newOffer } from '../shared/offers.ts'
 import policy from '../shared/consent-policy.json' with { type: 'json' }
@@ -171,13 +173,30 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   if (deleted.id !== report.id) throw new Error('Diagnostic withdrawal returned a different ID.')
   cleanup.delete(`/api/diagnostics/${report.id}/withdraw`)
   await post('/api/diagnostics', 'Diagnostic replay after withdrawal', 410, diagnostic, ingestKey)
+  const png = readFileSync(new URL('../public/game-art/reward-gold-grid.png', import.meta.url))
+  const image = { mimeType: 'image/png', width: png.readUInt32BE(16), height: png.readUInt32BE(20), dataBase64: png.toString('base64') }
+  const symbol = { report: { kind: 'fate-collector.symbol-report', schemaVersion: 1, id: randomUUID(), createdAt: new Date().toISOString(),
+    offer: { id: offer.id, revision: offer.revision, captureId: capture.captureId, cardId: offer.cards[0].id, cardName: 'SYNTHETIC STAGING', rewardId: null, gameVersion: 'staging-smoke', origin: 'test', areaLevel: null },
+    label: 'SYNTHETIC symbol test', rewardKind: 'unknown', threshold: null, description: 'Synthetic staging validation, not a game observation.', icon: image, tooltip: image },
+    token: randomBytes(32).toString('hex'), consent: { version: SYMBOL_REPORT_VERSION, text: symbolConsentText(origin), acceptedAt: new Date().toISOString() } }
+  const symbolPath = `/api/symbol-reports/${symbol.report.id}/withdraw`
+  cleanup.set(symbolPath, { token: symbol.token, header: 'X-Symbol-Token', id: symbol.report.id, key: ingestKey })
+  await post('/api/symbol-reports', 'Symbol without key', 401, symbol)
+  await post('/api/symbol-reports', 'Symbol without consent', 400, { report: symbol.report }, ingestKey)
+  const symbolReceipt = symbolReceiptSchema.parse(await readJson(await post('/api/symbol-reports', 'Symbol image upload', 200, symbol, ingestKey), 'Symbol image upload'))
+  if (symbolReceipt.id !== symbol.report.id || symbolReceipt.consent.text !== symbol.consent.text || Date.parse(symbolReceipt.expiresAt) - Date.parse(symbolReceipt.receivedAt) !== SYMBOL_RETENTION_MS) throw new Error('Symbol report receipt mismatch.')
+  const symbolRetry = await readJson(await post('/api/symbol-reports', 'Symbol image retry', 200, symbol, ingestKey), 'Symbol image retry')
+  if (JSON.stringify(symbolRetry) !== JSON.stringify(symbolReceipt)) throw new Error('Symbol retry changed the receipt.')
+  await verifyReceipt(await post(symbolPath, 'Symbol withdrawal', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Symbol-Token': symbol.token }), 'Symbol withdrawal', { id: symbol.report.id, status: 'withdrawn' })
+  cleanup.delete(symbolPath)
+  await post('/api/symbol-reports', 'Symbol replay after withdrawal', 410, symbol, ingestKey)
   } catch (error) { failure = error }
   finally {
     const failures = []
     for (const [path, entry] of cleanup) {
       try {
         const response = await request(path, 'Staging cleanup withdrawal', 200, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', [entry.header]: entry.token },
+          method: 'POST', headers: { 'Content-Type': 'application/json', [entry.header]: entry.token, ...(entry.key ? { Authorization: `Bearer ${entry.key}` } : {}) },
           body: JSON.stringify({ withdrawnAt: new Date().toISOString() }),
         })
         await verifyReceipt(response, 'Staging cleanup withdrawal', { id: entry.id, status: 'withdrawn' })

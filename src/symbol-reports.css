@@ -1,0 +1,27 @@
+.symbol-reports .detail-dialog { width: min(960px, calc(100vw - 48px)); }
+.symbol-report-form { margin-block: 24px; padding: 0; border: 0; min-width: 0; }
+.symbol-report-form > legend { font: 650 21px/1.4 var(--display); margin-bottom: 16px; }
+.symbol-report-images { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin-block: 24px; }
+.symbol-report-images > section { min-width: 0; }
+.symbol-report-images h3 { margin-top: 0; }
+.symbol-report-images input { max-width: 100%; }
+.symbol-image-preview { display: block; max-width: 100%; max-height: 160px; margin-top: 16px; object-fit: contain; }
+.symbol-tooltip-preview { display: block; max-width: 100%; max-height: 420px; object-fit: contain; margin-block: 16px; }
+.symbol-tooltip-full { display: block; max-width: 100%; height: auto; }
+.symbol-references dd { overflow-wrap: anywhere; }
+.symbol-consent { max-width: 75ch; padding: 16px; background: var(--surface-quiet); font-size: 14px; line-height: 1.6; }
+.symbol-crop { position: relative; max-width: 720px; touch-action: none; cursor: crosshair; }
+.symbol-crop > img { display: block; width: 100%; height: auto; user-select: none; }
+.symbol-crop-selection { position: absolute; outline: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); pointer-events: none; }
+.symbol-crop-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-block: 16px; }
+.symbol-crop-fields input { width: 100%; }
+.symbol-report-history { margin-top: 32px; border-top: 1px solid var(--border); }
+.symbol-report-history article { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; padding-block: 20px; border-bottom: 1px solid var(--border); }
+.symbol-report-history article > img { object-fit: contain; }
+.symbol-report-history p { margin-block: 4px 8px; }
+.symbol-report-history small { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .symbol-reports .detail-dialog { width: calc(100vw - 16px); }
+  .symbol-report-images { grid-template-columns: minmax(0, 1fr); }
+  .symbol-crop-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

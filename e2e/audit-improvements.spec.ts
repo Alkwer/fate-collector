@@ -1,4 +1,4 @@
-import { openPanel, closePanels, toggleEditor, expectEmptyMap } from './ui'
+import { openPanel, closePanels, toggleEditor, expectEmptyMap, selectRewardGoal } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newCard, newOffer, newReward } from '../shared/offers'
@@ -76,8 +76,7 @@ test('completed invocations consume cards, undo restores them, and source correc
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
   await closePanels(page)
   await page.getByRole('button', { name: 'Add Alchemist to collected', exact: true }).click()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
   await page.getByRole('button', { name: 'Mark this invocation completed' }).first().click()

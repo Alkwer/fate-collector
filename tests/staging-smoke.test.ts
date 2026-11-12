@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { CONSENT_VERSION, consentText } from '../shared/consent'
 import { RETENTION_MS, diagnosticSubmissionSchema, diagnosticText } from '../shared/diagnostics'
+import { SYMBOL_RETENTION_MS, symbolSubmissionSchema, symbolConsentText } from '../shared/symbol-reports'
 import { expect, it, vi } from 'vitest'
 import { submissionProblem } from '../shared/offers'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
@@ -36,6 +37,7 @@ function mockStaging(override?: (path: string, method: string, init?: RequestIni
   const grants = new Map<string, { id: string; token: string; scope: string }>()
   const withdrawn = new Set<string>()
   const diagnostics = new Map<string, { token: string; receipt: unknown }>()
+  const symbols = new Map<string, { token: string; receipt: unknown }>()
   return vi.fn<typeof fetch>(async (input, init) => {
     const path = new URL(String(input)).pathname
     const method = init?.method ?? 'GET'
@@ -69,9 +71,24 @@ function mockStaging(override?: (path: string, method: string, init?: RequestIni
       diagnostics.set(report.id, { token, receipt })
       return Response.json(receipt, { status: 201 })
     }
+    if (method === 'POST' && path === '/api/symbol-reports') {
+      if (new Headers(init?.headers).get('Authorization') !== 'Bearer ' + ingestKey) return new Response(null, { status: 401 })
+      const parsed = symbolSubmissionSchema.safeParse(JSON.parse(String(init?.body)))
+      if (!parsed.success) return new Response(null, { status: 400 })
+      const { report, consent, token } = parsed.data
+      expect(consent.text).toBe(symbolConsentText(url))
+      if (withdrawn.has(report.id)) return new Response(null, { status: 410 })
+      const existing = symbols.get(report.id)
+      if (existing) return Response.json(existing.receipt)
+      const receivedAt = new Date().toISOString()
+      const receipt = { id: report.id, status: 'received', receivedAt, expiresAt: new Date(Date.parse(receivedAt) + SYMBOL_RETENTION_MS).toISOString(), consent: { ...consent, recordedAt: receivedAt } }
+      symbols.set(report.id, { token, receipt })
+      return Response.json(receipt)
+    }
     if (method === 'POST' && path.endsWith('/withdraw')) {
       const id = path.split('/')[3]
       if (path.startsWith('/api/diagnostics/')) expect(new Headers(init?.headers).get('X-Diagnostic-Token')).toBe(diagnostics.get(id)?.token)
+      else if (path.startsWith('/api/symbol-reports/')) expect(new Headers(init?.headers).get('X-Symbol-Token')).toBe(symbols.get(id)?.token)
       else expect(new Headers(init?.headers).get('X-Consent-Token')).toBe(grants.get(id)?.token)
       withdrawn.add(id)
       return Response.json({ id, status: 'withdrawn', withdrawnAt: new Date().toISOString() })
@@ -164,7 +181,8 @@ it('requires consent, uploads both channels, and rejects reuse after withdrawing
   expect(submissionProblem(observation)).toBeNull()
   expect(captures[1][1]?.body).toBe(captures[0][1]?.body)
   expect(observations[1][1]?.body).toBe(observations[0][1]?.body)
-  expect(posts.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(3)
+  expect(posts.filter(([input]) => String(input).endsWith('/withdraw'))).toHaveLength(4)
+  expect(posts.some(([input, init]) => String(input).endsWith('/api/symbol-reports') && JSON.parse(String(init?.body)).report?.icon?.dataBase64)).toBe(true)
   for (const [, init] of fetch.mock.calls) expect(init).toMatchObject({ redirect: 'error', signal: expect.any(AbortSignal) })
 })
 

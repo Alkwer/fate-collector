@@ -12,6 +12,18 @@ can be closed. Offline captures wait on disk and retry automatically. Only new g
 captures after enabling are sent. Screenshots remain local; OCR and capture metadata
 reach the shared database as unverified observations.
 
+New profiles start with provisional trade priorities: Exceptional Gem combo 10,
+Item Rarity combo 4, Dreadmaidens' Sacrament combo 2 and confirmed regular
+Additional Currency Items 3 per icon. Existing saved profiles are preserved;
+**Use trade starter** applies these four weights explicitly. These are priority
+points, not prices or expected profit. See [trade starter](docs/trade-starter.md).
+
+To submit a new symbol with visual evidence, open an offer and use **More actions
+→ Report symbol**. Preview an icon crop and tooltip, then accept the separate
+image-sharing consent. This explicit path sends those two images to the shared
+database; normal helper uploads and **Share** still send no images. Report history
+supports retry and withdrawal. See [symbol reports](docs/symbol-reports.md).
+
 For local review, use **Connect folder** to select the `captures` folder in desktop
 Chrome or Edge. The browser reads completed files and saves them locally; no paste,
 confirmation or save click is required. This local review connection needs an open page.

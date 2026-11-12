@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
-import { MAX_PROFILE_BYTES, newSolverSettings, parseSolverSettings, serializeSolverSettings, type SolverSettings } from '../lib/solver-settings'
+import { applyTradeStarter, MAX_PROFILE_BYTES, newSolverSettings, parseSolverSettings, serializeSolverSettings, type SolverSettings } from '../lib/solver-settings'
 
 export interface SolverSettingsControl {
   settings: SolverSettings
@@ -17,6 +17,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   const [customKind, setCustomKind] = useState<'regular' | 'combo'>('regular')
   const [filterText, setFilterText] = useState(settings.profile.avoidModifiers.join('\n'))
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
+  const starterDescription = useId()
   const fileInput = useRef<HTMLInputElement>(null)
   const current = useRef(settings); current.current = settings
   useEffect(() => { setFilterText(settings.profile.avoidModifiers.join('\n')) }, [settings.profile.avoidModifiers])
@@ -35,6 +36,17 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
     if (!goal?.label) { setMessage({ text: 'Choose or enter a reward first.', error: true }); return }
     if (update({ ...settings, profile: { ...settings.profile, goals: [...settings.profile.goals, { ...goal, weight: 1 }] } })) {
       setSelected(''); setCustomLabel('')
+    }
+  }
+  function useTradeStarter() {
+    const next = applyTradeStarter(settings)
+    if (!next) {
+      setMessage({ text: 'The trade starter would exceed 30 priorities. Remove some priorities and try again.', error: true })
+      return
+    }
+    if (update(next)) {
+      if (next.profile.goals.some(goal => key(goal) === selected)) setSelected('')
+      setMessage({ text: 'Trade starter applied.', error: false })
     }
   }
   function exportProfile() {
@@ -57,8 +69,10 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
     {settings.mode === 'portfolio' && <p className="hint">Maximize your combined priorities with up to three input Fates.</p>}
     <section className="solver-profile">
       <h3>Priorities, build filters & profile <span className="muted">{settings.profile.goals.length} priorities · {settings.profile.avoidModifiers.length} filters</span></h3>
-      <p>Set relative points, or your own estimated value in a consistent unit. A regular reward earns its weight per icon; a combo earns its weight once when completed. These are your assumptions, not measured prices or profit.</p>
+      <p>Weights are provisional priority points. A regular reward earns points per icon. A combo earns its points once when completed. Set weights based on what matters to you, independently of market prices or expected profit.</p>
       <p className="hint">Incomplete combo progress breaks equal-score ties. Unlisted rewards remain visible but add no points. A weight of 0 disables that priority.</p>
+      <p id={starterDescription} className="hint">The trade starter enables comparison and sets weights for Exceptional Gem, Item Rarity, Dreadmaidens' Sacrament and Additional Currency Items. The currency priority applies only to confirmed regular rewards.</p>
+      <button className="outline-button" aria-describedby={starterDescription} onClick={useTradeStarter}>Use trade starter</button>
       {!!settings.profile.goals.length && <ul className="priority-list">{settings.profile.goals.map((goal, index) => <li key={key(goal)}>
         <div><strong>{goal.label}</strong><span className="cell-sub">{goal.kind === 'combo' ? 'Per completed combo' : 'Per regular icon'}</span></div>
         <label>Weight<input aria-label={`${goal.label} ${goal.kind} weight`} type="number" min={0} max={1_000_000} step="any" value={goal.weight} onChange={event => update({ ...settings, profile: { ...settings.profile, goals: settings.profile.goals.map((row, i) => i === index ? { ...row, weight: Number(event.target.value) } : row) } })} /></label>
@@ -74,6 +88,6 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       {!!settings.definitions.length && <section className="personal-definitions"><h3>Personal reward templates ({settings.definitions.length})</h3><ul>{settings.definitions.map(row => <li key={row.id}><span>{row.label} · {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}{row.note ? ` · ${row.note}` : ''}</span><button className="text-button" aria-label={`Delete template ${row.label} ${row.kind}`} onClick={() => update({ ...settings, definitions: settings.definitions.filter(item => item.id !== row.id) })}>Delete</button></li>)}</ul></section>}
     </section>
     {message && <p role={message.error ? 'alert' : 'status'} className={message.error ? 'field-error' : 'hint'}>{message.text}</p>}
-    {control.error && <div className="storage-warning" role="alert"><p>{control.error}</p><button onClick={control.reload}>Reload saved profile</button>{control.error.startsWith('Your saved profile') && <button onClick={() => { if (window.confirm('Replace the unreadable profile with empty settings?')) change(newSolverSettings(), true) }}>Replace unreadable profile</button>}</div>}
+    {control.error && <div className="storage-warning" role="alert"><p>{control.error}</p><button onClick={control.reload}>Reload saved profile</button>{control.error.startsWith('Your saved profile') && <button onClick={() => { if (window.confirm('Replace the unreadable profile with the default trade starter?')) change(newSolverSettings(), true) }}>Replace unreadable profile</button>}</div>}
   </section>
 }

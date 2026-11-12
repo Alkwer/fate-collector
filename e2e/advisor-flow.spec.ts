@@ -1,4 +1,4 @@
-import { openPanel, closePanels } from './ui'
+import { closePanels, selectRewardGoal } from './ui'
 import { test, expect, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -21,8 +21,7 @@ test('guides a review to the requested card and returns focus to a recomputed re
   unknown.rewards[0].identified = false
   unknown.visualReview = { version: 'test', tierReviewed: false, rewardsReviewed: false }
   await load(page, [card('Rot', 1), unknown])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await expect(page.getByRole('heading', { name: 'Provisional preference: Rot' })).toBeVisible()
   await page.getByRole('button', { name: 'Review Tempest', exact: true }).click()
@@ -54,8 +53,7 @@ test('guides a review to the requested card and returns focus to a recomputed re
 test('explains no improvement without sending complete data back for correction', async ({ page }) => {
   await page.goto('/')
   await load(page, [card('Rot', 5)])
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   await page.getByRole('button', { name: 'Add Rot to collected' }).click()
   const neutral = card('Tempest', 1)
@@ -99,8 +97,7 @@ for (const width of [1440, 820, 390]) {
     await page.goto('/')
     await expect(page).toHaveTitle('Fate Collector')
     await load(page, [card('Torchbearer', 3), card('Tempest', 1)])
-    await openPanel(page, '.reward-settings')
-    await page.getByLabel('Reward goal').selectOption('regular:currency')
+    await selectRewardGoal(page, 'regular:currency')
     await closePanels(page)
     await expect(page.getByRole('heading', { name: 'Recommended: Torchbearer' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Add Torchbearer to collected' })).toHaveCount(1)

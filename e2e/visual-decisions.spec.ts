@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { newCard, newOffer, newReward } from '../shared/offers'
-import { openPanel, closePanels } from './ui'
+import { openPanel, closePanels, selectRewardGoal } from './ui'
 
 for (const theme of ['mineral', 'trail']) test(`${theme}: visual rewards preserve unknowns, modifiers and invocation identity`, async ({ page }) => {
   await page.goto('/')
@@ -14,8 +14,7 @@ for (const theme of ['mineral', 'trail']) test(`${theme}: visual rewards preserv
   ] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'visual-example.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   const cards = page.locator('.visual-offer .fate-list > li')
   await expect(cards.nth(0).getByRole('img', { name: 'Alchemist Fate artwork' })).toBeVisible()
@@ -56,10 +55,10 @@ test('observed game motifs stay unknown and a missing portrait has a usable fall
   await page.getByLabel('Import capture file').setInputFiles({ name: 'unknown-motif.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
   const card = page.locator('.visual-offer .fate-list > li')
-  await expect(card.locator('.fate-art')).toContainText('Artwork unavailable')
-  await expect(card.locator('.reward-symbol img')).toHaveAttribute('src', '/game-art/reward-blue-diamond.png')
-  await expect.poll(() => card.locator('.reward-symbol img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(36)
-  await expect(card.locator('.reward-unit')).toContainText('Kind unknown · review')
+  await expect(card.locator(':scope > .fate-art')).toContainText('Artwork unavailable')
+  await expect(card.locator(':scope > .reward-strip .reward-symbol img')).toHaveAttribute('src', '/game-art/reward-blue-diamond.png')
+  await expect.poll(() => card.locator(':scope > .reward-strip .reward-symbol img').evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThanOrEqual(36)
+  await expect(card.locator(':scope > .reward-strip .reward-unit')).toContainText('Kind unknown · review')
   await expect(page.getByRole('button', { name: 'Review Tempest', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
   await expect(page.getByRole('complementary')).toContainText('Kind unknown · review')
@@ -75,8 +74,7 @@ for (const theme of ['mineral', 'trail']) test(`${theme}: all four newly sourced
     rewards: [{ ...newReward(), label: 'Currency', count: 1, kind: 'regular', identified: true }] })) }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'new-artwork.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
   await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
-  await openPanel(page, '.reward-settings')
-  await page.getByLabel('Reward goal').selectOption('regular:currency')
+  await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 })

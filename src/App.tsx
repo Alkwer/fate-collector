@@ -25,6 +25,7 @@ import { AppIcon } from './components/AppIcon'
 import { useTheme } from './lib/theme'
 import { WorkspaceNotice } from './components/WorkspaceNotice'
 import { UsageGuide } from './components/UsageGuide'
+import { SymbolReports, type SymbolReportsHandle } from './components/SymbolReports'
 
 export default function App() {
   const appearance = useTheme()
@@ -52,6 +53,7 @@ export default function App() {
   const recoveryInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<DetailPanelHandle>(null)
   const connectionPanel = useRef<DetailPanelHandle>(null)
+  const symbolReportsPanel = useRef<SymbolReportsHandle>(null)
   function editCurrentOffer(cardId?: string) {
     if (!detailsPanel.current) return
     detailsPanel.current.show()
@@ -267,6 +269,7 @@ export default function App() {
               <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
               {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
               <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
+              <button disabled={busy || !draft.cards.length} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>
             </div>
           </section>}
           {tab === 'collector' && <section className="action-menu-group" aria-labelledby="new-actions-heading">
@@ -282,6 +285,7 @@ export default function App() {
             <div className="action-menu-items">
               {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
               <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
+              <button onClick={() => { closeActions(); symbolReportsPanel.current?.showHistory() }}>Symbol report history</button>
               {tab === 'collector' && <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button>}
             </div>
           </section>
@@ -317,6 +321,7 @@ export default function App() {
         </div></DetailPanel>
         {!editing && saveBar}
       </> : tab === 'guide' ? <UsageGuide onConnect={() => connectionPanel.current?.show()} onMap={() => leaveGuide('collector')} onSaved={() => leaveGuide('saved')} onDiagnostics={() => leaveGuide('diagnostics')} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onExport={includeEvidence => void exportAll(includeEvidence)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
+      <SymbolReports ref={symbolReportsPanel} offer={draft} evidence={evidence} accessKey={accessKey} />
       {backup && <BackupDownload {...backup} onRecovery={() => void exportRecovery()} onClose={() => { setBackup(null); requestAnimationFrame(() => backupReturnFocus.current?.focus()) }} />}
       <input ref={fileInput} className="file-input" type="file" multiple accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const files = Array.from(event.target.files ?? []); if (files.length) void loadFile(files); event.target.value = '' }} />
       <input ref={recoveryInput} className="file-input" type="file" accept=".json" aria-label="Recover damaged backup" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file, true); event.target.value = '' }} />

@@ -37,7 +37,9 @@ PoE visible panel
 
 React/Vite produces static files. Cloudflare Workers static assets and the API share
 one origin, keeping deployment and browser requests simple. D1 holds structured
-observations and optional raw OCR; screenshots need no cloud object storage in this first version.
+observations and optional raw OCR. The separate opt-in symbol-report endpoint stores
+two bounded PNG images in its own D1 table with 30-day retention and withdrawal;
+normal capture and observation endpoints remain text-only. See [symbol reports](symbol-reports.md).
 No server-rendering framework or paid OCR service is required.
 
 Direct cloud delivery runs in Windows PowerShell 5.1, launched asynchronously by
