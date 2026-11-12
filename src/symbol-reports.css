@@ -10,6 +10,9 @@
 .symbol-image-preview { display: block; max-width: 100%; max-height: 160px; margin-top: 16px; object-fit: contain; }
 .symbol-tooltip-preview { display: block; max-width: 100%; max-height: 420px; object-fit: contain; margin-block: 16px; }
 .symbol-tooltip-full { display: block; max-width: 100%; height: auto; }
+.symbol-report-details { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.symbol-report-description { grid-column: 1 / -1; }
+.symbol-report-send { margin-inline-end: 12px; }
 .symbol-references dd { overflow-wrap: anywhere; }
 .symbol-consent { max-width: 75ch; padding: 16px; background: var(--surface-quiet); font-size: 14px; line-height: 1.6; }
 .symbol-crop { position: relative; max-width: 720px; touch-action: none; cursor: crosshair; }

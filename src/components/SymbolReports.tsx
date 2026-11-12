@@ -93,16 +93,9 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
     {storageError && <p role="alert" className="storage-warning">{storageError}</p>}
     {savedId ? <p role="status">Report saved on this device. Its upload status is shown in history below.</p> : context?.cards.length ? <fieldset disabled={busy} className="symbol-report-form" onChange={() => setAgreed(false)}>
       <legend>New report</legend>
-      <div className="context-fields">
+      {context.cards.length > 1 ? <div className="context-fields">
         <label>Fate<select value={cardId} onChange={event => { setCardId(event.target.value); setRewardId(''); setLabel(''); setKind('unknown'); setThreshold('') }}>{context.cards.map(card => <option key={card.id} value={card.id}>{card.name || 'Unnamed Fate'}</option>)}</select></label>
-        <label>Reward<select value={rewardId} onChange={event => {
-          setRewardId(event.target.value); const reward = card?.rewards.find(reward => reward.id === event.target.value)
-          setLabel(reward?.label || ''); setKind(reward?.kind || 'unknown'); setThreshold(reward?.threshold?.toString() || '')
-        }}><option value="">New / unrecorded symbol</option>{card?.rewards.map((reward, index) => <option key={reward.id} value={reward.id}>{index + 1}. {reward.label || 'Unidentified'}</option>)}</select></label>
-        <label>Game version<input value={gameVersion} maxLength={64} onChange={event => setGameVersion(event.target.value)} /></label>
-      </div>
-      <p className="hint">{context.origin === 'test' ? 'Test / showcase evidence' : 'Live game evidence'} · Offer {context.id} · revision {context.revision}. This report keeps these references; it does not share or change the full offer.</p>
-      <DetailPanel title="References included in this report"><dl className="symbol-references"><dt>Capture ID</dt><dd>{context.captureId || 'None'}</dd><dt>Card ID</dt><dd>{cardId}</dd><dt>Reward ID</dt><dd>{rewardId || 'None'}</dd><dt>Area level</dt><dd>{context.areaLevel ?? 'Unknown'}</dd></dl><p>These identifiers can link the report to an offer or OCR capture already in the collection.</p></DetailPanel>
+      </div> : <p>Fate <strong>{card?.name || 'Unnamed Fate'}</strong></p>}
       <div className="symbol-report-images">
         <section><h3>Symbol image</h3><p className="hint">Crop tightly around one icon, including its border.</p>
           {source && <CaptureCrop key={renderGeneration} source={source} onCrop={image => { if (renderGeneration !== generation.current) return; setIcon(image); setAgreed(false); setMessage('Crop selected. Check its preview below.') }} />}
@@ -114,20 +107,41 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
           {tooltip && <><img className="symbol-tooltip-preview" src={symbolImageUrl(tooltip)} alt="Tooltip image to send" /><DetailPanel title="Enlarge tooltip"><img className="symbol-tooltip-full" src={symbolImageUrl(tooltip)} alt="Full size tooltip to send" /></DetailPanel></>}
         </section>
       </div>
-      <div className="context-fields">
-        <label>Reward name (optional)<input value={label} maxLength={160} onChange={event => setLabel(event.target.value)} /></label>
-        <label>Reward kind<select value={kind} onChange={event => { setKind(event.target.value as typeof kind); setThreshold('') }}><option value="unknown">Unknown</option><option value="regular">Regular</option><option value="combo">Combo</option></select></label>
-        {kind === 'combo' && <label>Combo threshold (if known)<input type="number" min={1} max={100} value={threshold} onChange={event => setThreshold(event.target.value)} /></label>}
+      <div className="symbol-report-details">
+        <DetailPanel title="Optional details">
+          <div className="context-fields">
+            <label>Reward<select value={rewardId} onChange={event => {
+              setRewardId(event.target.value); const reward = card?.rewards.find(reward => reward.id === event.target.value)
+              setLabel(reward?.label || ''); setKind(reward?.kind || 'unknown'); setThreshold(reward?.threshold?.toString() || '')
+            }}><option value="">New / unrecorded symbol</option>{card?.rewards.map((reward, index) => <option key={reward.id} value={reward.id}>{index + 1}. {reward.label || 'Unidentified'}</option>)}</select></label>
+            <label>Reward name<input value={label} maxLength={160} onChange={event => setLabel(event.target.value)} /></label>
+            <label>Reward kind<select value={kind} onChange={event => { setKind(event.target.value as typeof kind); setThreshold('') }}><option value="unknown">Unknown</option><option value="regular">Regular</option><option value="combo">Combo</option></select></label>
+            {kind === 'combo' && <label>Combo threshold<input type="number" min={1} max={100} value={threshold} onChange={event => setThreshold(event.target.value)} /></label>}
+            <label>Game version<input value={gameVersion} placeholder={context.gameVersion.trim() || 'Unknown'} maxLength={64} onChange={event => setGameVersion(event.target.value)} /></label>
+            <label className="symbol-report-description">Description / tooltip text<textarea rows={3} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></label>
+          </div>
+        </DetailPanel>
+        <DetailPanel title="References included in this report" triggerLabel="Source references">
+          <dl className="symbol-references">
+            <dt>Evidence</dt><dd>{context.origin === 'test' ? 'Test / showcase evidence' : 'Live game evidence'}</dd>
+            <dt>Offer ID</dt><dd>{context.id}</dd>
+            <dt>Offer revision</dt><dd>{context.revision}</dd>
+            <dt>Capture ID</dt><dd>{context.captureId || 'None'}</dd>
+            <dt>Card ID</dt><dd>{cardId}</dd>
+            <dt>Reward ID</dt><dd>{rewardId || 'None'}</dd>
+            <dt>Area level</dt><dd>{context.areaLevel ?? 'Unknown'}</dd>
+          </dl>
+          <p>These references can link the report to an offer or OCR capture already in the collection.</p>
+        </DetailPanel>
       </div>
-      <label>Description / tooltip text (optional)<textarea rows={3} maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} /></label>
     </fieldset> : <p>Open or import an offer with at least one Fate to report a symbol. Existing reports remain available below.</p>}
     {!savedId && card && <>
       <p className="symbol-consent">{symbolConsentText(location.origin)}</p>
       <label className="checkbox-row"><input type="checkbox" checked={agreed} disabled={busy} onChange={event => setAgreed(event.target.checked)} />I checked both previews and agree to send this report.</label>
-      <button disabled={busy || !!storageError || !agreed || !icon || !tooltip || !gameVersion.trim()} onClick={() => void act(async (isCurrent, verify) => {
+      <button className="primary-button symbol-report-send" disabled={busy || !!storageError || !agreed || !icon || !tooltip} onClick={() => void act(async (isCurrent, verify) => {
         if (!context || !card || !icon || !tooltip || !agreed) return
         const report = symbolReportSchema.parse({ kind: 'fate-collector.symbol-report', schemaVersion: 1, id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          offer: { id: context.id, revision: context.revision, captureId: context.captureId, cardId, cardName: card.name, rewardId: rewardId || null, gameVersion, origin: context.origin, areaLevel: context.areaLevel },
+          offer: { id: context.id, revision: context.revision, captureId: context.captureId, cardId, cardName: card.name, rewardId: rewardId || null, gameVersion: gameVersion.trim() || context.gameVersion.trim() || 'unknown', origin: context.origin, areaLevel: context.areaLevel },
           label, rewardKind: kind, threshold: kind === 'combo' && threshold ? Number(threshold) : null, description, icon, tooltip })
         const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('')
         await saveSymbolSubmission({ report, token, consent: { version: SYMBOL_REPORT_VERSION, text: symbolConsentText(location.origin), acceptedAt: new Date().toISOString() } })

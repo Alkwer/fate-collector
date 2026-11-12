@@ -1,11 +1,12 @@
 # Reward symbol reports
 
 Open a captured offer and choose **More actions → Report symbol**. Select the Fate
-and reward (or **New / unrecorded symbol**). Crop one icon from the original capture,
-including its border, or choose a tightly cropped image. Add a separate image of the
-tooltip with its effect and threshold. Optional names and descriptions may stay unknown.
-Check the game version and both image previews, then accept the independent
-image-sharing consent. No collection key or account is required. **Send symbol report**
+if the offer has several cards. Crop one icon from the original capture, including
+its border, or choose a tightly cropped image. Add a separate image of the tooltip
+with its effect and threshold. Check both previews and accept the independent
+image-sharing consent. The report uses the offer's game version when available.
+Use **Optional details** to adjust the game version, link a recorded reward, or
+add reward details. No collection key or account is required. **Send symbol report**
 saves the immutable submission locally and opens Cloudflare Turnstile verification
 before contacting the server. Allow its verification script and complete any prompt.
 
