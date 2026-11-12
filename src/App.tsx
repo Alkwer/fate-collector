@@ -261,16 +261,30 @@ export default function App() {
         <div className="page-heading-actions">
         <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>
         <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
-          {(tab === 'collector' || tab === 'review') && <>
-            <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
-            {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
-            <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
-            {tab === 'collector' && <><button disabled={busy || autoSaving} onClick={() => { closeActions(); startMap() }}>{advisor.workspace.map ? 'New map' : 'Start new map'}</button>
+          {(tab === 'collector' || tab === 'review') && <section className="action-menu-group" aria-labelledby="offer-actions-heading">
+            <h3 id="offer-actions-heading">{tab === 'review' ? 'Archived offer' : 'Current offer'}</h3>
+            <div className="action-menu-items">
+              <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
+              {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
+              <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
+            </div>
+          </section>}
+          {tab === 'collector' && <section className="action-menu-group" aria-labelledby="new-actions-heading">
+            <h3 id="new-actions-heading">Start fresh</h3>
+            <div className="action-menu-items">
+              <button disabled={busy || autoSaving} aria-describedby="new-map-description" onClick={() => { closeActions(); startMap() }}>{advisor.workspace.map ? 'New map' : 'Start new map'}</button>
+              <p id="new-map-description" className="action-menu-description">Resets map planning. Saved offers stay in your journal.</p>
               <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(newOffer(), null); setNotice(null) } }}>New offer</button>
-              <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button></>}
-          </>}
-          {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
-          <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
+            </div>
+          </section>}
+          <section className="action-menu-group" aria-labelledby="setup-actions-heading">
+            <h3 id="setup-actions-heading">Setup & help</h3>
+            <div className="action-menu-items">
+              {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
+              <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
+              {tab === 'collector' && <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button>}
+            </div>
+          </section>
           <label className="theme-picker">Appearance<select value={appearance.theme} onChange={event => appearance.changeTheme(event.target.value === 'trail' ? 'trail' : 'mineral')}><option value="mineral">Mineral Depth · dark</option><option value="trail">Light Trail · light</option></select></label>
           {appearance.error && <p className="hint" role="status">{appearance.error}</p>}
         </div></DetailPanel>
