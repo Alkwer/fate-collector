@@ -1,6 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { newCard, newOffer } from '../shared/offers'
+import { newCard, newOffer, newReward } from '../shared/offers'
 import { mockTurnstile, testVerificationToken, turnstileScript } from './turnstile'
 import { closePanels, openPanel } from './ui'
 
@@ -16,7 +16,7 @@ async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[
   await closePanels(page)
   const png = await readFile('public/game-art/reward-gold-grid.png')
   const captureId = crypto.randomUUID()
-  const offer = { ...newOffer(), captureId, gameVersion: 'symbol-e2e', cards: [{ ...newCard(), name: 'Alchemist' }] }
+  const offer = { ...newOffer(), captureId, gameVersion: '', cards: [{ ...newCard(), name: 'Alchemist' }] }
   const evidence = { id: captureId, imageDataUrl: `data:image/png;base64,${png.toString('base64')}`, ocrText: '', ocrStatus: 'not-run', helperVersion: null, ocrLines: [] }
   const archive = { kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer, evidence }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'symbol-offer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(archive)) })
@@ -25,21 +25,27 @@ async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[
   await page.getByRole('button', { name: 'Open', exact: true }).click()
   await closePanels(page)
   const panel = await openReports(page)
+  await attachReportImages(panel)
+  return panel
+}
+async function attachReportImages(panel: Locator) {
   await panel.getByLabel('Choose symbol image').setInputFiles('public/game-art/reward-gold-grid.png')
   await expect(panel.getByAltText('Symbol image to send')).toBeVisible()
   await panel.getByLabel('Choose tooltip image').setInputFiles('public/game-art/reward-item-rarity.png')
   await expect(panel.getByAltText('Tooltip image to send')).toBeVisible()
   await panel.getByRole('button', { name: 'Enlarge tooltip', exact: true }).click()
-  await expect(page.getByAltText('Full size tooltip to send')).toBeVisible()
-  await page.getByRole('dialog', { name: 'Enlarge tooltip', exact: true }).getByRole('button', { name: 'Close panel' }).click()
-  await panel.getByLabel('Reward name (optional)').fill('SYNTHETIC symbol report')
-  return panel
+  const tooltip = panel.getByRole('dialog', { name: 'Enlarge tooltip', exact: true })
+  await expect(tooltip.getByAltText('Full size tooltip to send')).toBeVisible()
+  await tooltip.getByRole('button', { name: 'Close panel' }).click()
 }
-test('image report requires explicit consent, uploads both images and survives reload with withdrawal', async ({ page, request }) => {
+test('image report submits without typing, requires consent and survives reload with withdrawal', async ({ page, request }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
   let scriptsLoaded = 0
   page.on('request', request => { if (request.url().startsWith('https://challenges.cloudflare.com/turnstile/')) scriptsLoaded++ })
   const panel = await prepare(page)
+  await expect(panel.getByText('Alchemist', { exact: true })).toBeVisible()
+  await expect(panel.getByRole('combobox', { name: 'Fate', exact: true })).toHaveCount(0)
+  await expect(panel.getByRole('textbox')).toHaveCount(0)
   const checkbox = panel.getByRole('checkbox', { name: 'I checked both previews and agree to send this report.' })
   await expect(checkbox).not.toBeChecked()
   await expect(panel.getByRole('button', { name: 'Send symbol report', exact: true })).toBeDisabled()
@@ -47,9 +53,6 @@ test('image report requires explicit consent, uploads both images and survives r
   await panel.locator(':scope > .detail-body').evaluate(node => { node.scrollTop = 0 })
   await page.screenshot({ path: '.qa/symbol-reports-desktop-top.png', fullPage: true })
   await checkbox.scrollIntoViewIfNeeded()
-  await panel.getByLabel('Description / tooltip text (optional)').fill('Text changed after consent')
-  await expect(checkbox).not.toBeChecked()
-  await checkbox.check()
   await page.screenshot({ path: '.qa/symbol-reports-desktop.png', fullPage: true })
   expect(scriptsLoaded).toBe(0)
   await expect(panel.locator('input[type="password"]')).toHaveCount(0)
@@ -57,6 +60,7 @@ test('image report requires explicit consent, uploads both images and survives r
   await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
   const upload = await sent
   const body = upload.postDataJSON()
+  expect(body.report).toMatchObject({ label: '', description: '', rewardKind: 'unknown', threshold: null, offer: { cardName: 'Alchemist', gameVersion: 'unknown', rewardId: null } })
   expect(upload.headers().authorization).toBeUndefined()
   expect(upload.headers()['x-turnstile-token']).toContain(`e2e:symbol-report:${body.report.id}:`)
   expect(scriptsLoaded).toBe(1)
@@ -204,11 +208,12 @@ for (const source of ['file', 'crop']) test(`late ${source} preparation cannot p
   await expect(fresh.getByAltText('Symbol image to send')).toBeVisible()
 })
 
-test('report action snapshots the newly opened offer and renders the light tablet layout', async ({ page }) => {
+test('report snapshots the opened offer, keeps optional details and renders the light tablet layout', async ({ page }) => {
   await page.setViewportSize({ width: 820, height: 1180 })
   await prepare(page)
   await closePanels(page)
-  const next = { ...newOffer(), gameVersion: 'new-offer-version', cards: [{ ...newCard(), name: 'Second report source' }] }
+  const reward = { ...newReward(), label: 'Combo reward', kind: 'combo' as const, threshold: 3 }
+  const next = { ...newOffer(), gameVersion: 'new-offer-version', cards: [{ ...newCard(), name: 'Second report source' }, { ...newCard(), name: 'Other Fate', rewards: [reward] }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'next.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(next)) })
   await expect(page.getByRole('status')).toContainText('restored on this device')
   await closePanels(page)
@@ -219,10 +224,42 @@ test('report action snapshots the newly opened offer and renders the light table
   await page.getByRole('combobox', { name: 'Appearance', exact: true }).selectOption('trail')
   await closePanels(page)
   const panel = await openReports(page)
-  await expect(panel.getByRole('combobox', { name: 'Fate', exact: true })).toHaveValue(next.cards[0].id)
-  await expect(panel.getByLabel('Game version', { exact: true })).toHaveValue('new-offer-version')
-  await expect(panel.getByText(new RegExp(next.id))).toBeVisible()
+  const fate = panel.getByRole('combobox', { name: 'Fate', exact: true })
+  await expect(fate).toHaveValue(next.cards[0].id)
+  await expect(panel.getByText(next.id, { exact: true })).toBeHidden()
   await expect(panel.getByAltText('Symbol image to send')).toHaveCount(0)
+  await fate.selectOption(next.cards[1].id)
+  await attachReportImages(panel)
+  await panel.locator(':scope > .detail-body').evaluate(node => { node.scrollTop = 0 })
   await page.screenshot({ path: '.qa/symbol-reports-tablet-light.png', fullPage: true })
   expect(await panel.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
+  const checkbox = panel.getByRole('checkbox')
+  await checkbox.check()
+  await panel.getByRole('button', { name: 'Optional details', exact: true }).click()
+  const details = panel.getByRole('dialog', { name: 'Optional details', exact: true })
+  await expect(details.getByLabel('Game version', { exact: true })).toHaveValue('new-offer-version')
+  await details.getByRole('combobox', { name: 'Reward', exact: true }).selectOption(reward.id)
+  await expect(details.getByRole('combobox', { name: 'Reward kind', exact: true })).toHaveValue('combo')
+  await expect(details.getByLabel('Combo threshold', { exact: true })).toHaveValue('3')
+  await details.getByLabel('Reward name', { exact: true }).fill('Edited combo reward')
+  await details.getByLabel('Combo threshold', { exact: true }).fill('5')
+  await details.getByLabel('Game version', { exact: true }).fill('')
+  await details.getByLabel('Description / tooltip text', { exact: true }).fill('Optional tooltip transcription')
+  await page.screenshot({ path: '.qa/symbol-report-optional-details.png', fullPage: true })
+  await details.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(checkbox).not.toBeChecked()
+  await panel.getByRole('button', { name: 'Source references', exact: true }).click()
+  const references = panel.getByRole('dialog', { name: 'References included in this report', exact: true })
+  await expect(references.getByText(next.id, { exact: true })).toBeVisible()
+  await expect(references.getByText(next.cards[1].id, { exact: true })).toBeVisible()
+  await expect(references.getByText(reward.id, { exact: true })).toBeVisible()
+  await references.getByRole('button', { name: 'Done', exact: true }).click()
+  await checkbox.check()
+  const sent = page.waitForRequest(request => request.url().endsWith('/api/symbol-reports'))
+  await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
+  expect((await sent).postDataJSON().report).toMatchObject({
+    label: 'Edited combo reward', rewardKind: 'combo', threshold: 5, description: 'Optional tooltip transcription',
+    offer: { id: next.id, cardId: next.cards[1].id, rewardId: reward.id, gameVersion: 'new-offer-version' },
+  })
+  await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
 })
