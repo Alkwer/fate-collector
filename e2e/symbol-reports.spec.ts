@@ -18,6 +18,7 @@ async function prepare(page: Page) {
   const evidence = { id: captureId, imageDataUrl: `data:image/png;base64,${png.toString('base64')}`, ocrText: '', ocrStatus: 'not-run', helperVersion: null, ocrLines: [] }
   const archive = { kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer, evidence }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'symbol-offer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(archive)) })
+  await expect(page.getByRole('status')).toContainText('restored on this device')
   await page.getByRole('button', { name: /Saved offers/ }).click()
   await page.getByRole('button', { name: 'Open', exact: true }).click()
   await closePanels(page)
