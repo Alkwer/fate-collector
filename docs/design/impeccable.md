@@ -81,5 +81,12 @@ uses React, Vite, TypeScript and plain CSS, with a Cloudflare Worker and D1 API.
   changes; browser tests do not validate real game captures.
 
 Live variant mode is optional and has not been started or injected into the app.
-No standing image-generation build preference is recorded; application screens
-use Impeccable's task-oriented code workflow.
+The project records `buildPath: "code"`: new promotional and showcase surfaces
+start directly in code, following the established design system. An explicit
+request can still use a generated comp. Application screens and documents use
+the code-led workflow regardless of this setting.
+
+When `DESIGN.md` changes, refresh `.impeccable/design.json` from the current
+document and relevant component styles. Keep token primitives in `DESIGN.md`;
+the sidecar carries preview snippets and extra metadata. Validate configuration
+with `scripts/impeccable.cmd doctor --json` from the installed skill.
