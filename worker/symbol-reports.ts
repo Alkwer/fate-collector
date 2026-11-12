@@ -1,25 +1,38 @@
 import { z } from 'zod'
 import { SYMBOL_REPORT_LIMIT, SYMBOL_RETENTION_MS, symbolConsentText, symbolId, symbolSubmissionSchema, symbolToken, validateSymbolPixels } from '../shared/symbol-reports'
-import { authorized, boundedText, digest, json } from './http'
+import { boundedText, digest, json } from './http'
+import { symbolReportingEnabled, verifySymbolRequest, type SymbolVerificationEnv } from './symbol-verification'
 
-interface Env { DB?: D1Database; COLLECTOR_INGEST_KEY?: string; APP_ENV?: string; DIAGNOSTIC_RATE_LIMITER?: RateLimit }
+type Env = SymbolVerificationEnv
 interface Stored { id: string; token_hash: string; content_hash: string; report_json: string | null; consent_version: string; consent_text: string; accepted_at: string; recorded_at: string; expires_at: string; withdrawn_at: string | null }
-const DAILY_LIMIT = 50, MAX_STORED_BYTES = 100 * 1024 * 1024
+const DAILY_LIMIT = 200, SOURCE_DAILY_LIMIT = 5, MAX_STORED_BYTES = 100 * 1024 * 1024
 function limited() {
   const response = json({ error: 'Symbol report limit reached. Your local report is kept; retry later.' }, 429)
   response.headers.set('Retry-After', '3600'); return response
 }
 export async function expireSymbolReports(db: D1Database, now = new Date().toISOString()) {
   await db.prepare('UPDATE symbol_reports SET report_json = NULL WHERE expires_at <= ? AND report_json IS NOT NULL').bind(now).run()
+  await db.prepare('UPDATE symbol_reports SET source_hash = NULL WHERE recorded_at < ? AND source_hash IS NOT NULL').bind(now.slice(0, 10) + 'T00:00:00.000Z').run()
+  await db.prepare('UPDATE symbol_withdrawals SET source_hash = NULL WHERE withdrawn_at < ? AND source_hash IS NOT NULL').bind(now.slice(0, 10) + 'T00:00:00.000Z').run()
+  await db.prepare('DELETE FROM symbol_challenges WHERE expires_at <= ?').bind(now).run()
 }
 export async function handleSymbolReports(request: Request, env: Env): Promise<Response> {
+  if (new URL(request.url).pathname === '/api/symbol-reports/config') {
+    if (request.method !== 'GET') return json({ error: 'Use GET for symbol report configuration.' }, 405)
+    const enabled = symbolReportingEnabled(env)
+    return json({ enabled, sitekey: enabled ? env.TURNSTILE_SITEKEY : null })
+  }
   if (request.method !== 'POST') return json({ error: 'Use POST. Symbol reports are private.' }, 405)
   if (!env.DB || !env.DIAGNOSTIC_RATE_LIMITER) return json({ error: 'Symbol reporting is unavailable. Keep the images locally.' }, 503)
   const url = new URL(request.url), withdrawal = /^\/api\/symbol-reports\/([^/]+)\/withdraw$/.exec(url.pathname)
-  if (!withdrawal && (!env.COLLECTOR_INGEST_KEY || !await authorized(request, env.COLLECTOR_INGEST_KEY))) return json({ error: 'A reviewed-offer collection access key is required.' }, 401)
+  if (request.headers.get('Origin') !== url.origin) return json({ error: 'Submit symbol reports from this website.' }, 403)
+  if (!withdrawal && !symbolReportingEnabled(env)) return json({ error: 'Symbol reporting verification is unavailable. Your local report is kept.' }, 503)
   if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return json({ error: 'Send application/json.' }, 415)
+  let source: string
   try {
-    const source = await digest(`${new Date().toISOString().slice(0, 10)}:${request.headers.get('CF-Connecting-IP') || 'local'}:${env.COLLECTOR_INGEST_KEY || ''}`)
+    const ip = request.headers.get('CF-Connecting-IP')
+    if (!ip && env.APP_ENV !== 'local') return json({ error: 'Symbol reporting protection is unavailable.' }, 503)
+    source = await digest(`${new Date().toISOString().slice(0, 10)}:${ip || 'local'}:${env.TURNSTILE_SECRET || ''}`)
     if (!(await env.DIAGNOSTIC_RATE_LIMITER.limit({ key: `fate-symbols:${env.APP_ENV || 'local'}:${withdrawal ? 'withdraw' : 'send'}:${source}` })).success) return limited()
   } catch { return json({ error: 'Symbol reporting protection is unavailable.' }, 503) }
   let body: unknown
@@ -33,13 +46,17 @@ export async function handleSymbolReports(request: Request, env: Env): Promise<R
       if (!id.success || !token.success || !input.success) return json({ error: 'Invalid withdrawal.' }, 400)
       const hash = await digest(token.data)
       const known = await env.DB.prepare('SELECT id FROM symbol_reports WHERE id = ? UNION ALL SELECT id FROM symbol_withdrawals WHERE id = ? LIMIT 1').bind(id.data, id.data).first()
-      if (!known && (!env.COLLECTOR_INGEST_KEY || !await authorized(request, env.COLLECTOR_INGEST_KEY))) return json({ error: 'Enter the collection key to cancel an upload that has not reached the server yet.' }, 401)
-      await env.DB.prepare(`INSERT INTO symbol_withdrawals (id, token_hash, requested_at, withdrawn_at)
-        SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM symbol_reports WHERE id = ? AND token_hash <> ?)
+      if (!known) {
+        const rejected = await verifySymbolRequest(request, env, 'symbol-withdraw', id.data)
+        if (rejected) return rejected
+      }
+      await env.DB.prepare(`INSERT INTO symbol_withdrawals (id, token_hash, requested_at, withdrawn_at, source_hash)
+        SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM symbol_reports WHERE id = ? AND token_hash <> ?)
         AND NOT EXISTS (SELECT 1 FROM symbol_withdrawals WHERE id = ? AND token_hash <> ?)
         AND (EXISTS (SELECT 1 FROM symbol_reports WHERE id = ?) OR EXISTS (SELECT 1 FROM symbol_withdrawals WHERE id = ?)
-          OR (SELECT count(*) FROM symbol_withdrawals WHERE withdrawn_at >= ? AND unknown_report = 1) < ?)
-        ON CONFLICT(id) DO NOTHING`).bind(id.data, hash, input.data.withdrawnAt, now, id.data, hash, id.data, hash, id.data, id.data, day, DAILY_LIMIT).run()
+          OR ((SELECT count(*) FROM symbol_withdrawals WHERE withdrawn_at >= ? AND unknown_report = 1) < ?
+            AND (SELECT count(*) FROM symbol_withdrawals WHERE source_hash = ? AND withdrawn_at >= ? AND unknown_report = 1) < ?))
+        ON CONFLICT(id) DO NOTHING`).bind(id.data, hash, input.data.withdrawnAt, now, known ? null : source, id.data, hash, id.data, hash, id.data, id.data, day, DAILY_LIMIT, source, day, SOURCE_DAILY_LIMIT).run()
       const saved = await env.DB.prepare('SELECT withdrawn_at FROM symbol_withdrawals WHERE id = ? AND token_hash = ?').bind(id.data, hash).first<{ withdrawn_at: string }>()
       if (!saved) {
         const exists = await env.DB.prepare('SELECT id FROM symbol_reports WHERE id = ? UNION ALL SELECT id FROM symbol_withdrawals WHERE id = ? LIMIT 1').bind(id.data, id.data).first()
@@ -47,6 +64,10 @@ export async function handleSymbolReports(request: Request, env: Env): Promise<R
       }
       return json({ id: id.data, status: 'withdrawn', withdrawnAt: saved.withdrawn_at })
     }
+    const identity = z.object({ report: z.object({ id: symbolId }) }).safeParse(body)
+    if (!identity.success) return json({ error: 'Invalid symbol report.' }, 400)
+    const rejected = await verifySymbolRequest(request, env, 'symbol-report', identity.data.report.id)
+    if (rejected) return rejected
     const parsed = symbolSubmissionSchema.safeParse(body)
     if (!parsed.success) return json({ error: 'Check the symbol, tooltip, reward details and game version.' }, 400)
     const { report, token, consent } = parsed.data
@@ -56,11 +77,12 @@ export async function handleSymbolReports(request: Request, env: Env): Promise<R
     const payload = JSON.stringify(report), bytes = new TextEncoder().encode(payload).length
     const hash = await digest(JSON.stringify({ report, consent })), tokenHash = await digest(token)
     await expireSymbolReports(env.DB, now)
-    await env.DB.prepare(`INSERT INTO symbol_reports (id, token_hash, content_hash, report_json, consent_version, consent_text, accepted_at, recorded_at, expires_at, payload_bytes)
-      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM symbol_withdrawals WHERE id = ?)
+    await env.DB.prepare(`INSERT INTO symbol_reports (id, token_hash, content_hash, report_json, consent_version, consent_text, accepted_at, recorded_at, expires_at, payload_bytes, source_hash)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM symbol_withdrawals WHERE id = ?)
       AND (EXISTS (SELECT 1 FROM symbol_reports WHERE id = ?) OR ((SELECT count(*) FROM symbol_reports WHERE recorded_at >= ?) < ?
+        AND (SELECT count(*) FROM symbol_reports WHERE source_hash = ? AND recorded_at >= ?) < ?
         AND (SELECT coalesce(sum(payload_bytes), 0) FROM symbol_reports WHERE report_json IS NOT NULL) + ? <= ?))
-      ON CONFLICT(id) DO NOTHING`).bind(report.id, tokenHash, hash, payload, consent.version, consent.text, consent.acceptedAt, now, new Date(Date.parse(now) + SYMBOL_RETENTION_MS).toISOString(), bytes, report.id, report.id, day, DAILY_LIMIT, bytes, MAX_STORED_BYTES).run()
+      ON CONFLICT(id) DO NOTHING`).bind(report.id, tokenHash, hash, payload, consent.version, consent.text, consent.acceptedAt, now, new Date(Date.parse(now) + SYMBOL_RETENTION_MS).toISOString(), bytes, source, report.id, report.id, day, DAILY_LIMIT, source, day, SOURCE_DAILY_LIMIT, bytes, MAX_STORED_BYTES).run()
     const saved = await env.DB.prepare('SELECT * FROM symbol_reports WHERE id = ?').bind(report.id).first<Stored>()
     if (!saved) {
       const removed = await env.DB.prepare('SELECT id FROM symbol_withdrawals WHERE id = ?').bind(report.id).first()

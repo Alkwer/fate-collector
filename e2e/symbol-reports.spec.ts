@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { newCard, newOffer } from '../shared/offers'
+import { mockTurnstile, testVerificationToken, turnstileScript } from './turnstile'
 import { closePanels, openPanel } from './ui'
 
 async function openReports(page: Page, history = false) {
@@ -8,7 +9,8 @@ async function openReports(page: Page, history = false) {
   await page.getByRole('button', { name: history ? 'Symbol report history' : 'Report symbol', exact: true }).click()
   return page.locator('.symbol-reports > .detail-dialog')
 }
-async function prepare(page: Page) {
+async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[1]) {
+  await mockTurnstile(page, turnstile)
   await page.goto('/')
   await openReports(page, true)
   await closePanels(page)
@@ -31,11 +33,12 @@ async function prepare(page: Page) {
   await expect(page.getByAltText('Full size tooltip to send')).toBeVisible()
   await page.getByRole('dialog', { name: 'Enlarge tooltip', exact: true }).getByRole('button', { name: 'Close panel' }).click()
   await panel.getByLabel('Reward name (optional)').fill('SYNTHETIC symbol report')
-  await panel.getByLabel('Collection access key', { exact: true }).fill('e2e-local-only')
   return panel
 }
 test('image report requires explicit consent, uploads both images and survives reload with withdrawal', async ({ page, request }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
+  let scriptsLoaded = 0
+  page.on('request', request => { if (request.url().startsWith('https://challenges.cloudflare.com/turnstile/')) scriptsLoaded++ })
   const panel = await prepare(page)
   const checkbox = panel.getByRole('checkbox', { name: 'I checked both previews and agree to send this report.' })
   await expect(checkbox).not.toBeChecked()
@@ -48,17 +51,33 @@ test('image report requires explicit consent, uploads both images and survives r
   await expect(checkbox).not.toBeChecked()
   await checkbox.check()
   await page.screenshot({ path: '.qa/symbol-reports-desktop.png', fullPage: true })
+  expect(scriptsLoaded).toBe(0)
+  await expect(panel.locator('input[type="password"]')).toHaveCount(0)
   const sent = page.waitForRequest(request => request.url().endsWith('/api/symbol-reports'))
   await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
-  const body = (await sent).postDataJSON()
+  const upload = await sent
+  const body = upload.postDataJSON()
+  expect(upload.headers().authorization).toBeUndefined()
+  expect(upload.headers()['x-turnstile-token']).toContain(`e2e:symbol-report:${body.report.id}:`)
+  expect(scriptsLoaded).toBe(1)
   expect(body.report.icon.mimeType).toBe('image/png'); expect(body.report.tooltip.dataBase64.length).toBeGreaterThan(50)
   expect(body.report.offer.origin).toBe('test'); expect(body.report).not.toHaveProperty('rawScreenshot')
   await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
+  const origin = new URL(upload.url()).origin
+  const unverified = await request.post('/api/symbol-reports', { data: body, headers: { Origin: origin } })
+  expect(unverified.status()).toBe(403)
+  expect(await unverified.json()).toMatchObject({ code: 'verification-required' })
   await page.reload(); const restored = await openReports(page, true)
   await expect(restored.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
+  const withdrew = page.waitForRequest(request => request.url().endsWith('/withdraw'))
   await restored.getByRole('button', { name: 'Withdraw report', exact: true }).click()
+  const withdrawHeaders = (await withdrew).headers()
+  expect(withdrawHeaders['x-symbol-token']).toBe(body.token)
+  expect(withdrawHeaders['x-turnstile-token']).toBeUndefined()
+  expect(withdrawHeaders.authorization).toBeUndefined()
   await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
-  const replay = await request.post('/api/symbol-reports', { data: body, headers: { Authorization: 'Bearer e2e-local-only' } })
+  expect(scriptsLoaded).toBe(1)
+  const replay = await request.post('/api/symbol-reports', { data: body, headers: { Origin: origin, 'X-Turnstile-Token': testVerificationToken('symbol-report', body.report.id) } })
   expect(replay.status()).toBe(410); expect(errors).toEqual([])
 })
 test('lost receipt is retried with same report, mobile crop works and withdrawal remains durable offline', async ({ page, context }) => {
@@ -73,9 +92,9 @@ test('lost receipt is retried with same report, mobile crop works and withdrawal
   await page.screenshot({ path: '.qa/symbol-reports-mobile.png', fullPage: true })
   expect(await panel.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
   await panel.getByRole('checkbox', { name: 'I checked both previews and agree to send this report.' }).check()
-  const ids: string[] = []
+  const sent: { id: string; token: string }[] = []
   await page.route('**/api/symbol-reports', async route => {
-    ids.push(route.request().postDataJSON().report.id)
+    sent.push({ id: route.request().postDataJSON().report.id, token: route.request().headers()['x-turnstile-token'] })
     await route.fetch(); await route.abort('failed')
   })
   await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
@@ -83,7 +102,10 @@ test('lost receipt is retried with same report, mobile crop works and withdrawal
   await page.unroute('**/api/symbol-reports')
   const retry = page.waitForRequest(request => request.url().endsWith('/api/symbol-reports'))
   await panel.getByRole('button', { name: 'Retry upload', exact: true }).click()
-  expect((await retry).postDataJSON().report.id).toBe(ids[0])
+  const retried = await retry
+  expect(retried.postDataJSON().report.id).toBe(sent[0].id)
+  expect(retried.headers()['x-turnstile-token']).toContain(`e2e:symbol-report:${sent[0].id}:`)
+  expect(retried.headers()['x-turnstile-token']).not.toBe(sent[0].token)
   await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
   await context.setOffline(true)
   await panel.getByRole('button', { name: 'Withdraw report', exact: true }).click()
@@ -93,6 +115,65 @@ test('lost receipt is retried with same report, mobile crop works and withdrawal
   const restored = await openReports(page, true)
   await restored.getByRole('button', { name: 'Retry withdrawal', exact: true }).click()
   await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
+})
+
+test('expired and cancelled verification preserve the saved report and unconfirmed withdrawal uses a fresh challenge', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  const panel = await prepare(page, { interactive: true })
+  const requests: { url: string; headers: Record<string, string> }[] = []
+  page.on('request', request => {
+    if (request.method() === 'POST' && request.url().includes('/api/symbol-reports')) {
+      requests.push({ url: request.url(), headers: request.headers() })
+    }
+  })
+  await panel.getByRole('checkbox').check()
+  await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
+  const verification = page.getByRole('dialog', { name: 'Verify your request', exact: true })
+  const complete = verification.getByRole('button', { name: 'Complete test verification' })
+  await expect(complete).toBeVisible()
+  expect(await verification.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
+  await page.screenshot({ path: '.qa/symbol-verification-mobile.png', fullPage: true })
+  await verification.getByRole('button', { name: 'Expire test verification' }).click()
+  await expect(verification.getByRole('alert')).toHaveText('Verification expired. Try again.')
+  await expect(complete).toHaveCount(0)
+  await verification.getByRole('button', { name: 'Try again' }).click()
+  await expect(complete).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(verification).not.toBeVisible()
+  await expect(panel.getByRole('alert')).toContainText('Verification cancelled.')
+  await expect(panel.getByRole('button', { name: 'Retry upload' })).toBeEnabled()
+  expect(requests).toEqual([])
+  await page.reload()
+  const restored = await openReports(page, true)
+  await expect(restored.getByText('Saved locally — upload not confirmed')).toBeVisible()
+  await restored.getByRole('button', { name: 'Withdraw report', exact: true }).click()
+  await expect(verification.getByText('Complete the security check to confirm withdrawal.')).toBeVisible()
+  await complete.click()
+  await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
+  expect(requests).toHaveLength(2)
+  const [tokenOnly, verified] = requests
+  const id = tokenOnly.url.split('/').at(-2)
+  expect(tokenOnly.headers['x-turnstile-token']).toBeUndefined()
+  expect(verified.url).toBe(tokenOnly.url)
+  expect(verified.headers.authorization).toBeUndefined()
+  expect(verified.headers['x-symbol-token']).toBe(tokenOnly.headers['x-symbol-token'])
+  expect(verified.headers['x-turnstile-token']).toContain(`e2e:symbol-withdraw:${id}:`)
+})
+
+test('blocked verification script can be retried without losing consent or images', async ({ page }) => {
+  const panel = await prepare(page)
+  await page.route(turnstileScript, route => route.abort('blockedbyclient'), { times: 1 })
+  await panel.getByRole('checkbox').check()
+  await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
+  const verification = page.getByRole('dialog', { name: 'Verify your request', exact: true })
+  await expect(verification.getByRole('alert')).toContainText('Verification could not load.')
+  const upload = page.waitForRequest(request => request.url().endsWith('/api/symbol-reports'))
+  await verification.getByRole('button', { name: 'Try again', exact: true }).click()
+  const body = (await upload).postDataJSON()
+  expect(body.report.icon.dataBase64.length).toBeGreaterThan(50)
+  expect(body.report.tooltip.dataBase64.length).toBeGreaterThan(50)
+  expect(body.consent.acceptedAt).toBeTruthy()
+  await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
 })
 
 for (const source of ['file', 'crop']) test(`late ${source} preparation cannot populate a new report`, async ({ page }) => {

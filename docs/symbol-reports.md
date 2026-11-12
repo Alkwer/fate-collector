@@ -4,9 +4,10 @@ Open a captured offer and choose **More actions → Report symbol**. Select the 
 and reward (or **New / unrecorded symbol**). Crop one icon from the original capture,
 including its border, or choose a tightly cropped image. Add a separate image of the
 tooltip with its effect and threshold. Optional names and descriptions may stay unknown.
-Check the game version and both image previews, enter the reviewed-offer collection
-key and accept the independent image-sharing consent. **Send symbol report** saves
-the immutable submission locally before contacting the server.
+Check the game version and both image previews, then accept the independent
+image-sharing consent. No collection key or account is required. **Send symbol report**
+saves the immutable submission locally and opens Cloudflare Turnstile verification
+before contacting the server. Allow its verification script and complete any prompt.
 
 **More actions → Symbol report history** works on every screen, including without
 an active map. It distinguishes saved/pending, received, withdrawal pending,
@@ -14,15 +15,16 @@ withdrawn and expired reports. Retry sends the same report ID and payload; it ca
 create another observation. Receipt validation includes the accepted consent.
 Withdrawal is saved locally before the request, blocks later retries and can be
 retried after reopening the panel. Received reports need only the per-report token;
-cancelling an upload that has not reached the server also requires the collection
-key, preventing anonymous requests from exhausting cancellation capacity. Keep browser site
+cancelling an upload that has not reached the server also requires fresh Turnstile
+verification, preventing unchecked requests from exhausting cancellation capacity. Keep browser site
 data until withdrawal is confirmed. Uploaded credentials are never stored in reports;
 the locally retained per-report token authorizes withdrawal only.
 
 ## Data and limits
 
-`POST /api/symbol-reports` requires `COLLECTOR_INGEST_KEY` and a separate per-report
-consent. Existing helper OCR consent and reviewed-offer consent do not authorize
+`POST /api/symbol-reports` requires a fresh Turnstile token and separate per-report
+consent. The server validates the token's hostname, action, report ID and age, and
+atomically rejects reused tokens. Existing helper OCR consent and reviewed-offer consent do not authorize
 image submission. The existing capture and observation upload paths remain text-only.
 The report references the local offer ID/revision, capture ID if available, card and
 reward IDs, game version, origin and area level. Its source offer need not already be
@@ -36,8 +38,19 @@ Text/profile metadata, animation and unsupported chunks are rejected. Payloads r
 below D1's 2 MB row limit.
 The independent `symbol_reports` D1 table retains images as bounded base64 JSON.
 The existing rate-limit binding uses separate `fate-symbols` keys. Atomic database
-limits allow 50 new reports/day and at most 100 MiB of active report payloads.
-There is no public list/read API and no anonymous image intake.
+limits allow 5 new reports per network per UTC day, 200 across the site per UTC day,
+and at most 100 MiB of active report payloads. A separate 20 requests/minute rate limit
+applies per network and operation. Shared networks share their allowance. Retries of
+an existing report do not consume a new daily slot but require fresh verification.
+Unknown-report cancellations have separate limits of 5/network/day and 200/site/day;
+withdrawing an already received report remains possible when those limits are full.
+There is no public list/read API. Raw IP addresses are not stored in report tables;
+daily secret-derived source hashes are cleared after their UTC day. Used challenge
+hashes expire after ten minutes and are capped at 2,000 records.
+
+`GET /api/symbol-reports/config` exposes only availability and the public sitekey.
+The secret stays in the Worker. Intake fails closed when verification is unavailable;
+received reports can still be withdrawn with their locally retained report token.
 
 Images/descriptions expire after 30 days through the scheduled cleanup and on new
 uploads. Withdrawal immediately clears the live payload and keeps a minimal audit

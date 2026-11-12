@@ -44,6 +44,16 @@ The previous `CLOUDFLARE_D1_DATABASE_ID` production variable is no longer used;
 the reviewed target configuration is the source of truth. Never store upload keys
 in source, frontend variables, release artifacts or workflow inputs.
 
+Symbol reports use separate managed Cloudflare Turnstile widgets for staging and
+production. Their public sitekeys and exact permitted request hostnames are reviewed
+in `deployment/environments.json`; deploy passes them as `TURNSTILE_SITEKEY` and
+`TURNSTILE_HOSTNAMES`. Set each widget's secret directly on its corresponding Worker
+as `TURNSTILE_SECRET` before deployment. Never put that secret in frontend code,
+GitHub workflow inputs, artifacts or logs. Wrangler preserves this binding when the
+staging secrets file updates only the two collection keys. Production configuration
+rejects test sitekeys and localhost allowlists. Both release verification and staging
+smoke require public reporting to be enabled with the expected real sitekey.
+
 Restrict the `production` environment to branch `main`. Protect `main` with the
 `app`, `windows-helper` and `vision-prototype` checks, up-to-date branches, resolved conversations,
 no force pushes and no deletions. These settings complement the workflow checks;
@@ -209,11 +219,19 @@ canonical reviewed offer per capture. Inspect `observation_capture_conflicts`
 on staging before promoting; corrections must retain their original capture ID.
 
 Migration `0008_symbol_reports.sql` adds independent image-research storage and
-withdrawal tombstones without changing existing data. Staging smoke verifies a
-synthetic two-image submission, explicit consent/key rejection, duplicate receipt,
-withdrawal and replay denial. Scheduled cleanup also expires symbol payloads after
-30 days. It reuses the existing rate-limiter binding under separate operation keys;
-no new secret or cloud storage resource is required.
+withdrawal tombstones. Additive migration `0009_public_symbol_reports.sql` adds daily
+source hashes and a short-lived, atomic Turnstile replay ledger. Scheduled cleanup
+expires symbol payloads after 30 days, source hashes after their UTC day and used
+challenge hashes after ten minutes. Intake reuses the rate-limit binding and D1.
+
+Automated staging smoke checks public configuration and rejection of missing or
+forged Turnstile tokens, including attempts to bypass it with a collection key.
+Successful submission, retry, consent, quotas and withdrawal run against the real
+local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
+that transport is never packaged for deployment. Before promotion, also verify a
+fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
+check replay rejection and withdraw it. Real user evidence must not enter staging.
+Never disable production verification or deploy a test-key bypass to run smoke tests.
 
 ```sh
 npm ci

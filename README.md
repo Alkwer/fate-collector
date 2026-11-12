@@ -20,7 +20,9 @@ points, not prices or expected profit. See [trade starter](docs/trade-starter.md
 
 To submit a new symbol with visual evidence, open an offer and use **More actions
 → Report symbol**. Preview an icon crop and tooltip, then accept the separate
-image-sharing consent. This explicit path sends those two images to the shared
+image-sharing consent and complete Turnstile verification. No collection key is
+needed; limits are 5 new reports per network per day and 200 per site per day (UTC).
+This explicit path sends those two images to the shared
 database; normal helper uploads and **Share** still send no images. Report history
 supports retry and withdrawal. See [symbol reports](docs/symbol-reports.md).
 
@@ -192,10 +194,11 @@ Its [whole-offer reader](prototypes/vision/OFFERS-V2.md) adds positioned Windows
 offered/collected/invoked card grouping and tooltip masking, with explicit unknowns.
 
 The small tooltip catalog does not establish every motif's kind, exact outcomes or probabilities. There is no
-continuous screen watcher, automatic choice detection or public anonymous ingestion.
+continuous screen watcher or automatic choice detection.
 Capture each offer once: importing the same file is deduplicated, but pressing F9
-again creates a new capture. Shared collection is currently for trusted testers
-with a private key, not an open crowd-sourcing launch.
+again creates a new capture. Shared capture/offer collection is currently for trusted
+testers with a private key. The separate symbol-report flow is open to everyone,
+with explicit image consent, rate limits and Turnstile protection.
 
 For a local dataset quality report, run `npm run research:stats -- path/to/export.json`.
 The [report guide](docs/research-statistics.md) explains Markdown/JSON output,

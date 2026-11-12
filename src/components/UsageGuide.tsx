@@ -117,7 +117,7 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
           <li>Keep the helper running. <strong>Uploaded</strong> means the server acknowledged the capture; <strong>Queued</strong> means it is waiting for a connection or retry. The website can be closed.</li>
         </ol>
         <p>Only new captures after consent are sent. Upload includes OCR text and capture metadata; screenshots stay local. Automatic uploads remain unverified and do not appear in the browser’s journal unless you import the local files.</p>
-        <p>To contribute visual evidence for a new reward, open its offer and choose <strong>More actions → Report symbol</strong>. Preview a symbol crop and a tooltip image, then accept the separate image-sharing consent. <strong>Symbol report history</strong> lets you retry or withdraw a report. Reports need verification before the catalog changes.</p>
+        <p>To contribute visual evidence for a new reward, open its offer and choose <strong>More actions → Report symbol</strong>. Preview a symbol crop and a tooltip image, accept the separate image-sharing consent and complete the security check. No collection key is needed. <strong>Symbol report history</strong> lets you retry or withdraw a report. Reports need review before the catalog changes.</p>
         <p>Website corrections are shared separately under <strong>Saved offers → Shared research collection</strong>, with its own consent and reviewed-offer key. To stop helper sharing, use <strong>Cloud upload settings → Consent history → Withdraw consent</strong>; disconnecting the website folder does not stop uploads.</p>
       </section>
 

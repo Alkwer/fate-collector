@@ -18,7 +18,8 @@ const config = {
   ...JSON.parse(await readFile('.release/runtime.json', 'utf8')),
   name: target.worker, account_id: settings.accountId,
   main: resolve('.release/worker/index.js'), no_bundle: true,
-  vars: { APP_ENV: environment, RELEASE_REVISION: manifest.revision, RELEASE_ID: manifest.releaseId },
+  vars: { APP_ENV: environment, RELEASE_REVISION: manifest.revision, RELEASE_ID: manifest.releaseId,
+    TURNSTILE_SITEKEY: target.turnstileSitekey, TURNSTILE_HOSTNAMES: target.turnstileHostnames.join(',') },
   d1_databases: [{ binding: 'DB', database_name: target.databaseName, database_id: target.databaseId, migrations_dir: resolve('.release/migrations') }],
 }
 config.assets.directory = resolve('.release/assets')

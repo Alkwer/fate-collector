@@ -4,11 +4,12 @@ import { CONSENT_VERSION } from '../shared/consent'
 import { APP_VERSION } from '../shared/diagnostics'
 import { expireDiagnostics, handleDiagnostics } from './diagnostics'
 import { expireSymbolReports, handleSymbolReports } from './symbol-reports'
+import { symbolReportingEnabled, type SymbolVerificationEnv } from './symbol-verification'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
 import { newOffer, submissionProblem } from '../shared/offers'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
 
-export interface Env extends Partial<WorkerBindings> { ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
+export interface Env extends Partial<WorkerBindings>, SymbolVerificationEnv { ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
 function samePayload(previous: { payload_json: string }, expected: unknown, schema: { safeParse(value: unknown): { success: boolean; data?: unknown } }): boolean {
   try {
     const parsed = schema.safeParse(JSON.parse(previous.payload_json))
@@ -62,11 +63,11 @@ export default {
       return new Response(response.body, { status: response.status, statusText: response.statusText, headers })
     }
     if (url.pathname === '/api/status' && request.method === 'GET') {
-      return json({ schemaVersion: 1, version: APP_VERSION, diagnosticsEnabled: Boolean(env.DB && env.DIAGNOSTIC_RATE_LIMITER && (env.COLLECTOR_INGEST_KEY || env.COLLECTOR_CAPTURE_KEY)), consentRequired: true, consentPolicyVersion: CONSENT_VERSION, environment: env.APP_ENV || 'local', revision: env.RELEASE_REVISION || 'local', releaseId: env.RELEASE_ID || 'local', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
+      return json({ schemaVersion: 1, version: APP_VERSION, diagnosticsEnabled: Boolean(env.DB && env.DIAGNOSTIC_RATE_LIMITER && (env.COLLECTOR_INGEST_KEY || env.COLLECTOR_CAPTURE_KEY)), symbolReportingEnabled: symbolReportingEnabled(env), consentRequired: true, consentPolicyVersion: CONSENT_VERSION, environment: env.APP_ENV || 'local', revision: env.RELEASE_REVISION || 'local', releaseId: env.RELEASE_ID || 'local', ingestionEnabled: Boolean(env.DB && env.COLLECTOR_INGEST_KEY), captureIngestionEnabled: Boolean(env.DB && env.COLLECTOR_CAPTURE_KEY) })
     }
     if (url.pathname === '/api/consents' || /^\/api\/consents\/[^/]+\/withdraw$/.test(url.pathname)) return handleConsent(request, env)
     if (url.pathname === '/api/diagnostics' || /^\/api\/diagnostics\/[^/]+\/withdraw$/.test(url.pathname)) return handleDiagnostics(request, env)
-    if (url.pathname === '/api/symbol-reports' || /^\/api\/symbol-reports\/[^/]+\/withdraw$/.test(url.pathname)) return handleSymbolReports(request, env)
+    if (url.pathname === '/api/symbol-reports' || url.pathname === '/api/symbol-reports/config' || /^\/api\/symbol-reports\/[^/]+\/withdraw$/.test(url.pathname)) return handleSymbolReports(request, env)
     const isCapture = url.pathname === '/api/captures'
     if (!isCapture && url.pathname !== '/api/observations') return json({ error: 'Not found.' }, 404)
     if (request.method !== 'POST') return json({ error: 'Use POST to submit data.' }, 405)

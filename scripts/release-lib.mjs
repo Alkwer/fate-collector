@@ -40,6 +40,8 @@ export function selectTarget(settings, environment) {
     if (!target || !uuid.test(target.databaseId) || /^00000000-/.test(target.databaseId)) throw new Error('A real database ID is required.')
     const url = new URL(target.url)
     if (url.origin !== target.url || url.protocol !== 'https:' || !url.hostname.startsWith(`${target.worker}.`)) throw new Error('Invalid deployment origin.')
+    if (typeof target.turnstileSitekey !== 'string' || !/^0x[a-zA-Z0-9_-]+$/.test(target.turnstileSitekey) || !Array.isArray(target.turnstileHostnames) ||
+      !target.turnstileHostnames.includes(url.hostname) || target.turnstileHostnames.some(host => !/^[a-z0-9.-]+$/.test(host) || ['localhost', '127.0.0.1'].includes(host))) throw new Error('A real Turnstile sitekey and deployment hostnames are required.')
   }
   if (staging.worker !== 'app-staging' || production.worker !== 'app' || staging.databaseId === production.databaseId || staging.databaseName === production.databaseName || staging.url === production.url) throw new Error('Staging must be isolated from production.')
   return settings[environment]
@@ -57,5 +59,8 @@ export async function verifyLiveRelease(target, environment, manifest) {
   const response = await fetch(`${target.url}/api/status`, { redirect: 'error', signal: AbortSignal.timeout(10000), cache: 'no-store' })
   if (!response.ok) throw new Error(`Release status returned HTTP ${response.status}.`)
   const status = await response.json()
-  if (status.environment !== environment || status.revision !== manifest.revision || status.releaseId !== manifest.releaseId || status.ingestionEnabled !== true || status.captureIngestionEnabled !== true) throw new Error(`The live ${environment} does not match the tested release or its upload keys are missing.`)
+  if (status.environment !== environment || status.revision !== manifest.revision || status.releaseId !== manifest.releaseId || status.ingestionEnabled !== true || status.captureIngestionEnabled !== true || status.symbolReportingEnabled !== true) throw new Error(`The live ${environment} does not match the tested release or its upload/verification configuration is missing.`)
+  const config = await fetch(`${target.url}/api/symbol-reports/config`, { redirect: 'error', signal: AbortSignal.timeout(10000), cache: 'no-store' })
+  const symbols = await config.json()
+  if (!config.ok || symbols.enabled !== true || symbols.sitekey !== target.turnstileSitekey) throw new Error('Symbol verification does not match the release target.')
 }

@@ -50,6 +50,8 @@ test('deployment requires an explicit environment with a different database', ()
   expect(() => selectTarget(settings, undefined)).toThrow('explicitly')
   expect(() => selectTarget({ ...settings, staging: { ...settings.staging, databaseId: settings.production.databaseId } }, 'staging')).toThrow('isolated')
   expect(() => selectTarget({ ...settings, staging: { ...settings.staging, databaseId: '00000000-0000-0000-0000-000000000000' } }, 'staging')).toThrow('real database')
+  expect(() => selectTarget({ ...settings, production: { ...settings.production, turnstileHostnames: ['localhost'] } }, 'production')).toThrow('deployment hostnames')
+  expect(() => selectTarget({ ...settings, production: { ...settings.production, turnstileSitekey: '1x00000000000000000000AA' } }, 'production')).toThrow('real Turnstile')
 })
 test('production cannot be deployed locally, from a branch or with a different staging package', () => {
   const manifest = { revision, releaseId: 'b'.repeat(64) }
