@@ -29,7 +29,8 @@ function Read-FixtureBundle($Result, [guid]$Id) {
     Assert-True ((Get-Item -LiteralPath $path).Length -lt 12MB) 'Bundle exceeds the size limit.'
     $bundle = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
     Assert-True ($bundle.kind -eq 'fate-collector.capture' -and $bundle.schemaVersion -eq 1) 'Incorrect bundle header.'
-    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq '0.3.4') 'Incorrect producer metadata.'
+    $release = Get-Content -Raw (Join-Path $PSScriptRoot '..\..\shared\helper-release.json') | ConvertFrom-Json
+    Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq $release.version) 'Incorrect producer metadata.'
     Assert-True ($bundle.context.captureMode -eq 'fixture') 'The offline PNG was not marked as a fixture.'
     Assert-True ($bundle.captureId -eq $Id.ToString()) 'Incorrect capture ID.'
     Assert-True ([string]$bundle.capturedAt -match 'Z$' -or $bundle.capturedAt -is [DateTime]) 'Timestamp is not UTC ISO 8601.'

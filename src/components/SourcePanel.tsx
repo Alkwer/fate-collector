@@ -14,8 +14,8 @@ export function SourcePanel({ evidence, automatic = false, compact = false, onPi
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
       <DetailPanel title={<>What's new and how to update</>}>
-        <p>Helper 0.3.4 verifies queued uploads before sending and recovers damaged withdrawal requests. It also preserves the game-window height for local icon suggestions.</p>
-        <p>Exit the running helper, replace its program files and start it again. Keep your captures and fate-collector.ini.</p>
+        <p>Helper 0.4.0 captures a symbol and its tooltip with Ctrl+Shift+F9. Paste both crops on the website, check the previews and approve sending.</p>
+        <p>Exit the running helper, replace its program files and start it again. Keep your captures, symbol-reports and fate-collector.ini.</p>
       </DetailPanel>
     </aside>}
     <div className={`dropzone ${evidence ? 'has-image' : ''}`} onDragOver={event => event.preventDefault()} onDrop={event => {

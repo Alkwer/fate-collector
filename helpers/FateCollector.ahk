@@ -17,6 +17,8 @@ cancelled := false
 uploaderPid := 0
 settingsPid := 0
 diagnosticsPid := 0
+symbolReportPid := 0
+lastSymbolOffer := 0
 captureSession := 0
 feedbackCaptureId := ""
 feedbackRepeat := false
@@ -38,6 +40,7 @@ F6::CalibrateTopLeft()
 F7::CalibrateBottomRight()
 F8::PreviewCalibration()
 F9::CapturePanel()
+^+F9::CaptureSymbolReport()
 F10::CancelCapture()
 #HotIf
 
@@ -165,8 +168,9 @@ CalibrateBottomRight() {
 }
 
 CapturePanel() {
-    global calibration, calibrationFile, capturing, cancelled, captureSession
+    global calibration, capturing, cancelled, captureSession
     global feedbackCaptureId, feedbackRepeat, feedbackOcr, feedbackSeen
+    global lastSymbolOffer
     if capturing
         return
     capturing := true
@@ -174,6 +178,7 @@ CapturePanel() {
     try {
         ClearCalibrationPreview()
         poe := VerifyCalibration()
+        gameStarted := PoeProcessStarted(poe.pid)
         if !calibration.last
             throw Error("Press F7 at the lower-right corner of the panel.")
         left := calibration.first.x
@@ -189,9 +194,7 @@ CapturePanel() {
         outputDir := captureDir "\.pending"
         outputFile := outputDir "\fate-" captureId ".json"
         powershell := WindowsPowerShellPath()
-        backend := IniRead(calibrationFile, "capture", "Backend", "auto")
-        if !(backend = "auto" || backend = "gdi" || backend = "wgc")
-            throw Error("Capture Backend must be auto, gdi or wgc in fate-collector.ini.")
+        backend := FateCaptureBackend()
         script := A_ScriptDir "\Export-FateCapture.ps1"
         if !FileExist(powershell) || !FileExist(script)
             throw Error("Windows PowerShell or Export-FateCapture.ps1 is missing.")
@@ -228,6 +231,7 @@ CapturePanel() {
             RecordDiagnosticEvent("capture", "ok")
             captureSession.sequence += 1
             captureSession.lastFile := readyFile
+            lastSymbolOffer := {id: captureId, pid: poe.pid, hwnd: poe.hwnd, start: gameStarted}
             feedbackCaptureId := captureId
             feedbackRepeat := code = 12
             feedbackOcr := suffix
@@ -260,6 +264,57 @@ CapturePanel() {
         Notice(err.Message)
     } finally {
         capturing := false
+    }
+}
+
+CaptureSymbolReport() {
+    global capturing, lastSymbolOffer, symbolReportPid
+    if capturing || symbolReportPid && ProcessExist(symbolReportPid)
+        return
+    try {
+        poe := GetForegroundPoe()
+        backend := FateCaptureBackend()
+        powershell := WindowsPowerShellPath()
+        script := A_ScriptDir "\Report-Symbol.ps1"
+        if !FileExist(powershell) || !FileExist(script)
+            throw Error("Windows PowerShell or Report-Symbol.ps1 is missing.")
+        ; Hide the console from PowerShell itself so the selection dialog can show.
+        command := '"' powershell '" -WindowStyle Hidden -NoLogo -NoProfile -NonInteractive -STA -ExecutionPolicy RemoteSigned -File "' script '"'
+            . ' -WindowHandle ' poe.hwnd ' -WindowPid ' poe.pid
+            . ' -ClientWidth ' poe.width ' -ClientHeight ' poe.height ' -CaptureBackend ' backend
+        if lastSymbolOffer && lastSymbolOffer.pid = poe.pid && lastSymbolOffer.hwnd = poe.hwnd
+            && lastSymbolOffer.start && lastSymbolOffer.start = PoeProcessStarted(poe.pid)
+            command .= ' -CaptureId ' lastSymbolOffer.id
+        ClearCalibrationPreview()
+        SetTimer ClearNotice, 0
+        ToolTip
+        Run(command, A_ScriptDir, , &symbolReportPid)
+    } catch as err {
+        Notice(err.Message)
+    }
+}
+
+FateCaptureBackend() {
+    global calibrationFile
+    backend := IniRead(calibrationFile, "capture", "Backend", "auto")
+    if !(backend = "auto" || backend = "gdi" || backend = "wgc")
+        throw Error("Capture Backend must be auto, gdi or wgc in fate-collector.ini.")
+    return backend
+}
+
+PoeProcessStarted(pid) {
+    ; A recycled PID or window handle must not link a new game to an old F9.
+    process := DllCall("OpenProcess", "UInt", 0x1000, "Int", false, "UInt", pid, "Ptr")
+    if !process
+        return 0
+    try {
+        times := Buffer(32)
+        if DllCall("GetProcessTimes", "Ptr", process, "Ptr", times.Ptr, "Ptr", times.Ptr + 8,
+            "Ptr", times.Ptr + 16, "Ptr", times.Ptr + 24, "Int")
+            return NumGet(times, 0, "Int64")
+        return 0
+    } finally {
+        DllCall("CloseHandle", "Ptr", process)
     }
 }
 

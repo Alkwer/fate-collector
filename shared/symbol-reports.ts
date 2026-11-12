@@ -66,7 +66,7 @@ export const symbolSubmissionSchema = z.object({
 export type SymbolReport = z.infer<typeof symbolReportSchema>
 /** Decode the bounded zlib stream before accepting/exporting pixels. Native streaming
  * decompression enforces the checksum and stops as soon as dimensions are exceeded. */
-export async function validateSymbolPixels(report: SymbolReport): Promise<boolean> {
+export async function validateSymbolPixels(report: Pick<SymbolReport, 'icon' | 'tooltip'>): Promise<boolean> {
   try {
     for (const image of [report.icon, report.tooltip]) {
       if (!pngMatches(image)) return false

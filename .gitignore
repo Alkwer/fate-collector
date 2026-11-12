@@ -19,3 +19,4 @@ test-results-compat/
 public/downloads/
 helpers/fate-collector.ini
 .DS_Store
+/helpers/symbol-reports/

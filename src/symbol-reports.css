@@ -13,6 +13,9 @@
 .symbol-report-details { display: flex; flex-wrap: wrap; gap: 8px 12px; }
 .symbol-report-description { grid-column: 1 / -1; }
 .symbol-report-send { margin-inline-end: 12px; }
+.symbol-helper-import { margin-block: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.symbol-helper-import h3 { margin-top: 0; }
+.symbol-helper-import > button { margin-right: 12px; margin-bottom: 8px; }
 .symbol-references dd { overflow-wrap: anywhere; }
 .symbol-consent { max-width: 75ch; padding: 16px; background: var(--surface-quiet); font-size: 14px; line-height: 1.6; }
 .symbol-crop { position: relative; max-width: 720px; touch-action: none; cursor: crosshair; }

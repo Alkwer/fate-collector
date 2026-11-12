@@ -269,7 +269,7 @@ export default function App() {
               <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
               {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
               <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
-              <button disabled={busy || !draft.cards.length} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>
+              <button disabled={busy} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>
             </div>
           </section>}
           {tab === 'collector' && <section className="action-menu-group" aria-labelledby="new-actions-heading">

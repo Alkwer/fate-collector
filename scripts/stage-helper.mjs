@@ -1,9 +1,13 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { zipSync } from 'fflate'
-const files = ['FateCollector.ahk', 'Calibration.ahk', 'CaptureProcess.ahk', 'Export-FateCapture.ps1', 'CaptureImage.cs', 'OcrImage.cs', 'Ocr.Common.ps1', 'CaptureContext.Common.ps1', 'Consent.Common.ps1', 'Diagnostics.Common.ps1', 'Report-Problem.ps1', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.third-party.txt']
+const files = ['FateCollector.ahk', 'Calibration.ahk', 'CaptureProcess.ahk', 'Export-FateCapture.ps1', 'CaptureImage.cs', 'WindowCapture.Common.ps1', 'OcrImage.cs', 'Ocr.Common.ps1', 'CaptureContext.Common.ps1', 'Consent.Common.ps1', 'Diagnostics.Common.ps1', 'Report-Problem.ps1', 'Report-Symbol.ps1', 'SymbolReport.Common.ps1', 'SymbolReport.cs', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.third-party.txt']
 const release = JSON.parse(await readFile(new URL('../shared/helper-release.json', import.meta.url), 'utf8'))
-const exporter = await readFile(new URL('../helpers/Export-FateCapture.ps1', import.meta.url), 'utf8')
-if (exporter.match(/helperVersion = '([^']+)'/)?.[1] !== release.version) throw new Error('Helper release version does not match the exporter.')
+for (const name of ['Export-FateCapture.ps1', 'SymbolReport.Common.ps1']) {
+  const producer = await readFile(new URL(`../helpers/${name}`, import.meta.url), 'utf8')
+  if (producer.match(/helperVersion = '([^']+)'/)?.[1] !== release.version) {
+    throw new Error(`Helper release version does not match ${name}.`)
+  }
+}
 const archive = {}
 for (const name of files) {
   const data = await readFile(new URL(`../helpers/${name}`, import.meta.url))
