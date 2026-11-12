@@ -13,7 +13,8 @@ export async function mockTurnstile(page: Page, { interactive = false } = {}) {
     body: `
       const widgets = new Map();
       window.turnstile = {
-        ready: callback => callback(),
+        // Match the real SDK: ready() is incompatible with our async script tag.
+        ready: () => { throw new Error('Use the async script load event, not turnstile.ready()'); },
         render(container, options) {
           if (options.sitekey !== 'local-e2e-sitekey') throw new Error('Unexpected sitekey');
           const id = crypto.randomUUID();
