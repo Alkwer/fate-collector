@@ -4,12 +4,16 @@
     "worker": "app-staging",
     "databaseName": "fate-collector-staging",
     "databaseId": "b2f3ee5a-b4f4-46ef-8488-8488d3795bd7",
-    "url": "https://app-staging.fate-collector.workers.dev"
+    "url": "https://app-staging.fate-collector.workers.dev",
+    "turnstileSitekey": "0x4AAAAAAF99bOzYAR5hN6Rd",
+    "turnstileHostnames": ["app-staging.fate-collector.workers.dev"]
   },
   "production": {
     "worker": "app",
     "databaseName": "fate-collector",
     "databaseId": "b464a0f3-b966-4070-af9b-ee1fca27a7ea",
-    "url": "https://app.fate-collector.workers.dev"
+    "url": "https://app.fate-collector.workers.dev",
+    "turnstileSitekey": "0x4AAAAAAF99bnNXskBF-Aji",
+    "turnstileHostnames": ["app.fate-collector.workers.dev", "fate-collector.fate-collector.workers.dev"]
   }
 }

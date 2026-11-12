@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { SYMBOL_REPORT_VERSION, SYMBOL_RETENTION_MS, symbolConsentText, symbolReceiptSchema } from '../shared/symbol-reports.ts'
+import { SYMBOL_REPORT_VERSION, symbolConsentText } from '../shared/symbol-reports.ts'
 import { pathToFileURL } from 'node:url'
 import { newCard, newOffer } from '../shared/offers.ts'
 import policy from '../shared/consent-policy.json' with { type: 'json' }
@@ -81,6 +81,8 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
   if (zip.length <= 4 || zip[0] !== 0x50 || zip[1] !== 0x4b || zip[2] !== 0x03 || zip[3] !== 0x04) {
     throw new Error('Staging helper download did not return a nonempty ZIP archive.')
   }
+  const symbolConfig = await readJson(await request('/api/symbol-reports/config', 'Symbol verification configuration', 200), 'Symbol verification configuration')
+  if (status.symbolReportingEnabled !== true || symbolConfig.enabled !== true || !/^0x[a-zA-Z0-9_-]+$/.test(symbolConfig.sitekey || '')) throw new Error('Staging symbol verification must be configured with a real sitekey.')
   if (readOnly) return
   if (status.consentRequired !== true || status.consentPolicyVersion !== policy.version) throw new Error('Staging must require the current consent policy.')
   if (status.diagnosticsEnabled !== true) throw new Error('Staging diagnostics must be enabled.')
@@ -93,7 +95,7 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     const consent = grants[path]
     return request(path, operation, expectedStatus, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(key && { Authorization: `Bearer ${key}` }), ...(consent && { 'X-Consent-Id': consent.id, 'X-Consent-Token': consent.token }), ...extraHeaders },
+      headers: { 'Content-Type': 'application/json', Origin: origin, ...(key && { Authorization: `Bearer ${key}` }), ...(consent && { 'X-Consent-Id': consent.id, 'X-Consent-Token': consent.token }), ...extraHeaders },
       body: JSON.stringify(payload),
     })
   }
@@ -179,17 +181,11 @@ export async function smokeStaging({ url, expectedRevision, expectedReleaseId, c
     offer: { id: offer.id, revision: offer.revision, captureId: capture.captureId, cardId: offer.cards[0].id, cardName: 'SYNTHETIC STAGING', rewardId: null, gameVersion: 'staging-smoke', origin: 'test', areaLevel: null },
     label: 'SYNTHETIC symbol test', rewardKind: 'unknown', threshold: null, description: 'Synthetic staging validation, not a game observation.', icon: image, tooltip: image },
     token: randomBytes(32).toString('hex'), consent: { version: SYMBOL_REPORT_VERSION, text: symbolConsentText(origin), acceptedAt: new Date().toISOString() } }
-  const symbolPath = `/api/symbol-reports/${symbol.report.id}/withdraw`
-  cleanup.set(symbolPath, { token: symbol.token, header: 'X-Symbol-Token', id: symbol.report.id, key: ingestKey })
-  await post('/api/symbol-reports', 'Symbol without key', 401, symbol)
-  await post('/api/symbol-reports', 'Symbol without consent', 400, { report: symbol.report }, ingestKey)
-  const symbolReceipt = symbolReceiptSchema.parse(await readJson(await post('/api/symbol-reports', 'Symbol image upload', 200, symbol, ingestKey), 'Symbol image upload'))
-  if (symbolReceipt.id !== symbol.report.id || symbolReceipt.consent.text !== symbol.consent.text || Date.parse(symbolReceipt.expiresAt) - Date.parse(symbolReceipt.receivedAt) !== SYMBOL_RETENTION_MS) throw new Error('Symbol report receipt mismatch.')
-  const symbolRetry = await readJson(await post('/api/symbol-reports', 'Symbol image retry', 200, symbol, ingestKey), 'Symbol image retry')
-  if (JSON.stringify(symbolRetry) !== JSON.stringify(symbolReceipt)) throw new Error('Symbol retry changed the receipt.')
-  await verifyReceipt(await post(symbolPath, 'Symbol withdrawal', 200, { withdrawnAt: new Date().toISOString() }, undefined, { 'X-Symbol-Token': symbol.token }), 'Symbol withdrawal', { id: symbol.report.id, status: 'withdrawn' })
-  cleanup.delete(symbolPath)
-  await post('/api/symbol-reports', 'Symbol replay after withdrawal', 410, symbol, ingestKey)
+  // Real widgets are never bypassed by automation. Positive live verification is
+  // performed in the staging browser with a fresh challenge before promotion.
+  await post('/api/symbol-reports', 'Symbol without verification', 403, symbol)
+  await post('/api/symbol-reports', 'Symbol key cannot bypass verification', 403, symbol, ingestKey)
+  await post('/api/symbol-reports', 'Symbol forged verification', 403, symbol, undefined, { 'X-Turnstile-Token': 'synthetic-invalid-token' })
   } catch (error) { failure = error }
   finally {
     const failures = []

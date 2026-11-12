@@ -36,7 +36,9 @@ must not require filling every field or interpreting every unknown icon.
   profiles change only through explicit controls. Points are not profit estimates.
 - **Report symbol** is an independent, opt-in image-research flow with preview,
   source references, durable local retries and withdrawal. Normal capture/offer
-  sharing stays text-only. Reports require verification before any catalog update.
+  sharing stays text-only. Symbol reports are public, with no account or collection
+  key, separate consent, Turnstile and bounded intake. Reports require maintainer
+  verification before any catalog update.
 
 ## Capabilities and Constraints
 
@@ -49,8 +51,9 @@ must not require filling every field or interpreting every unknown icon.
 - Report only observable save/connection states. Pending corrections are not
   saved. The browser must not invent the helper's cloud upload/queue status.
 - Preserve original local evidence, corrected metadata, recovery and revision
-  handling. Sharing must respect the existing explicit consent and access key
-  flow; examples must remain test-only observations.
+  handling. Capture/offer sharing must respect the existing explicit consent and
+  access key flow; public symbol reports have independent consent and anti-bot
+  verification. Examples must remain test-only observations.
 - UI changes must not silently alter capture, storage, sharing or solver
   contracts. Product facts and mechanics require evidence, not visual inference.
 

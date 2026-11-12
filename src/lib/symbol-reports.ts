@@ -52,11 +52,21 @@ export async function saveSymbolSubmission(submission: SymbolSubmission): Promis
   await transact('readwrite', (store, finish) => { store.add(row); finish(undefined) })
   return row
 }
-export async function sendSymbolReport(id: string, key: string) {
-  const row = await update(id, row => row)
+export type SymbolVerification = (action: 'symbol-report' | 'symbol-withdraw', id: string) => Promise<string>
+
+function checkUpload(row: LocalSymbolReport) {
   if (row.withdrawRequestedAt) throw new Error('This report has a withdrawal request; it will not be sent.')
   if (row.expired) throw new Error('This report expired or was removed from the collection.')
-  const response = await fetch('/api/symbol-reports', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(row.submission), signal: AbortSignal.timeout(30000) })
+}
+
+export async function sendSymbolReport(id: string, verify: SymbolVerification) {
+  checkUpload(await update(id, row => row))
+  const token = await verify('symbol-report', id)
+  // Another tab may have requested withdrawal while verification was open.
+  const row = await update(id, row => row)
+  checkUpload(row)
+  const response = await fetch('/api/symbol-reports', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Turnstile-Token': token }, body: JSON.stringify(row.submission), signal: AbortSignal.timeout(30000) })
+    .catch(() => { throw new Error('Upload not confirmed. Check your connection and retry the saved report.') })
   const body = await response.json().catch(() => ({}))
   if (response.status === 410) await update(id, latest => ({ ...latest, expired: true }))
   if (!response.ok) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Report not confirmed. Retry the saved report below.')
@@ -65,10 +75,20 @@ export async function sendSymbolReport(id: string, key: string) {
   if (!receipt.success || receipt.data.id !== id || receipt.data.consent.version !== consent.version || receipt.data.consent.text !== consent.text || receipt.data.consent.acceptedAt !== consent.acceptedAt || receipt.data.consent.recordedAt !== receipt.data.receivedAt) throw new Error('Unexpected receipt. Retry the saved report below.')
   await update(id, latest => ({ ...latest, receipt: receipt.data }))
 }
-export async function withdrawSymbolReport(id: string, key = '') {
+export async function withdrawSymbolReport(id: string, verify?: SymbolVerification) {
   const row = await update(id, latest => ({ ...latest, withdrawRequestedAt: latest.withdrawRequestedAt || new Date().toISOString() }))
-  const response = await fetch(`/api/symbol-reports/${id}/withdraw`, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Symbol-Token': row.submission.token, ...(key ? { Authorization: `Bearer ${key}` } : {}) }, body: JSON.stringify({ withdrawnAt: row.withdrawRequestedAt }), signal: AbortSignal.timeout(15000) })
-  const body = await response.json().catch(() => ({}))
+  async function send(token?: string) {
+    const headers = new Headers({ 'Content-Type': 'application/json', 'X-Symbol-Token': row.submission.token })
+    if (token) headers.set('X-Turnstile-Token', token)
+    const response = await fetch(`/api/symbol-reports/${id}/withdraw`, { method: 'POST', redirect: 'error', headers, body: JSON.stringify({ withdrawnAt: row.withdrawRequestedAt }), signal: AbortSignal.timeout(15000) })
+      .catch(() => { throw new Error('Withdrawal not confirmed. Check your connection and retry withdrawal.') })
+    return { response, body: await response.json().catch(() => ({})) }
+  }
+  let { response, body } = await send()
+  const verificationRequired = z.object({ code: z.literal('verification-required') }).safeParse(body).success
+  if (verify && response.status === 403 && verificationRequired) {
+    ({ response, body } = await send(await verify('symbol-withdraw', id)))
+  }
   const receipt = z.object({ id: z.string().uuid(), status: z.literal('withdrawn'), withdrawnAt: z.string().datetime({ offset: true }) }).safeParse(body)
   if (!response.ok || !receipt.success || receipt.data.id !== id) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Withdrawal not confirmed. Retry withdrawal below; sending is blocked locally.')
   await update(id, latest => ({ ...latest, withdrawnAt: receipt.data.withdrawnAt }))
