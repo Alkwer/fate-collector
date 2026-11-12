@@ -39,6 +39,11 @@ must not require filling every field or interpreting every unknown icon.
   sharing stays text-only. Symbol reports are public, with no account or collection
   key, separate consent, Turnstile and bounded intake. Reports require maintainer
   verification before any catalog update.
+- The helper's Ctrl+Shift+F9 freezes the verified game window for two crops:
+  a symbol and its visible tooltip. A local draft goes through the clipboard
+  to the website for preview, separate consent and verification. The helper
+  never uploads symbol images. A matching local F9 offer supplies context;
+  otherwise the symbol can be reported without identifying its Fate.
 
 ## Capabilities and Constraints
 

@@ -63,6 +63,9 @@ jobs:
       - name: Validate persistent upload queue
         shell: powershell
         run: ./helpers/tests/Test-CloudUpload.ps1
+      - name: Validate local symbol report capture
+        shell: powershell
+        run: ./helpers/tests/Test-SymbolReport.ps1 -FixtureDraft (Join-Path $PWD '.qa/symbol-native-contract.json')
       - name: Validate diagnostic privacy and consent
         shell: powershell
         run: ./helpers/tests/Test-Diagnostics.ps1
@@ -83,6 +86,10 @@ jobs:
           Expand-Archive -LiteralPath $archive -DestinationPath $install
           "AUTOHOTKEY_EXE=$(Join-Path $install 'AutoHotkey64.exe')" >> $env:GITHUB_ENV
       - run: npm run test:calibration
+      - name: Validate native symbol draft in the website parser
+        run: npx vitest run tests/symbol-drafts.test.ts
+        env:
+          HELPER_SYMBOL_FIXTURE: .qa/symbol-native-contract.json
       - run: npm run build
       - run: npm run test:upload:integration
       - name: Install compatibility browsers

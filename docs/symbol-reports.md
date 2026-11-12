@@ -1,5 +1,19 @@
 # Reward symbol reports
 
+With helper 0.4.0+, show the reward tooltip in the game and press
+**Ctrl+Shift+F9**. Select the icon and tooltip on the same frozen game image,
+then continue to the website. **Paste from helper** (or Ctrl+V in the report
+panel) imports both crops. The helper also saves a JSON draft in its
+`symbol-reports` folder for the **Import saved helper draft** fallback.
+Neither capture nor pasting uploads images; preview, consent and Turnstile
+are still required on the website. The clipboard replaces its previous content.
+
+The website opens directly at `/#report-symbol`, without image data in the URL.
+Only a matching local F9 capture supplies offer/card context. Otherwise an
+independent draft uses an unidentified Fate, with an optional name; it does not
+create or overwrite an offer in the archive or current map. Source references
+distinguish this local draft from a matched offer. No typed description is required.
+
 Open a captured offer and choose **More actions → Report symbol**. Select the Fate
 if the offer has several cards. Crop one icon from the original capture, including
 its border, or choose a tightly cropped image. Add a separate image of the tooltip
@@ -31,7 +45,9 @@ The report references the local offer ID/revision, capture ID if available, card
 reward IDs, game version, origin and area level. Its source offer need not already be
 shared. No full offer, raw OCR, file name or full screenshot is silently attached.
 
-Images are decoded and re-encoded as PNG in the browser, dropping source metadata.
+Manually chosen images are decoded and re-encoded as PNG in the browser, dropping source metadata.
+Helper crops are encoded without source metadata locally and strictly validated,
+including bounded pixel decompression, before the website previews them.
 Only the two displayed images are submitted: icon at most 256 × 256 / 64 KiB;
 tooltip at most 1600 × 1600 / 384 KiB; request at most 640 KiB. The server checks PNG
 structure, chunk checksums, dimensions, bounded pixel decompression and strict fields.

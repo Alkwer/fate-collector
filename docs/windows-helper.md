@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.3.4 verifies queued payloads and recovers damaged withdrawal markers; 0.3.3 improves Confirm OCR, and 0.3.2 added full-client-height metadata for local visual suggestions on cropped panels. Saved calibration, the second OCR pass, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.4.0 adds **Ctrl+Shift+F9** for symbol reports. Saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Direct cloud upload: no browser required
 
@@ -36,7 +36,16 @@ Without a folder connection, paste with **Ctrl+V** or import the JSON backup and
 
 The helper checks the foreground window class, executable name, and the installation's `Content.ggpk` or `Bundles2/_.index.bin` marker. Calibration is saved in `fate-collector.ini` beside the helper as ratios of the game client area. It follows a moved window and survives a restart at the same resolution. **F8** briefly outlines the saved panel without taking a screenshot or moving the pointer. After a resolution change at the same aspect ratio, F9 is blocked until you use F8 to preview the scaled panel; if the outline is wrong, repeat **F6/F7**. A changed aspect ratio requires F6/F7. Also recalibrate after changing the game's UI scale or moving the panel within the game; these changes cannot be detected automatically. **F10** clears both saved and current calibration. During an export it also discards that export when the worker finishes.
 
-The helper captures only on **F9**. It reads the selected screen region, replaces the clipboard contents and saves a local backup. Captures are staged in `captures/.pending` until cancellation is checked, then published into `captures`; the website and uploader read only completed top-level files. The helper does not automate game actions.
+**F9** reads the calibrated screen region, replaces the clipboard contents and saves a local backup. Captures are staged in `captures/.pending` until cancellation is checked, then published into `captures`. The website and uploader read only completed top-level files. The helper does not automate game actions.
+
+## Report a symbol from the game
+
+1. Hover over the symbol so its tooltip is fully visible. Keep Path of Exile in front on one monitor and press **Ctrl+Shift+F9**.
+2. Drag a tight rectangle around the symbol and select **Use icon**. Select the tooltip on the same frozen image, then choose **Use tooltip**. Arrow keys move the crosshair, Shift extends the selection, and Ctrl increases the step. The limits are 256 × 256 pixels and 64 KiB for the icon, and 1600 × 1600 pixels and 384 KiB for the tooltip.
+3. Review both previews. Use **Reselect icon**, **Reselect tooltip** or **Cancel** as needed. **Continue to website** saves both crops in a draft in `helpers/symbol-reports`, copies the draft to the clipboard and opens **Report symbol**.
+4. Paste the draft on the website with **Ctrl+V**, or choose the saved JSON file. Review the report and confirm the separate consent there before sending. The form may link the previous F9 offer if it came from the same game session and exists in your saved offers.
+
+The full screenshot is kept in memory while selecting. The draft contains only the two crops and limited capture metadata. It stays outside `captures`, and the helper's cloud uploader does not process it. You can cancel in the helper without saving a draft. The website handles sending and withdrawal without an account or collection key.
 
 ## If capture or OCR fails
 
@@ -90,7 +99,7 @@ The exporter prints the saved path and marks offline PNG bundles as fixtures. Ex
 
 Capture failure code `4` means WGC failed and no capture bundle was published. The focused native checks are `npm run test:calibration`, `npm run test:capture-image`, `npm run test:ocr` and `npm run test:capture-backend`. The last command briefly opens its own generated fixture window and checks WGC dimensions/colors in memory; it does not capture the game, save desktop images or upload anything. AHK tests use the standard v2 installation, or the `AUTOHOTKEY_EXE` environment variable.
 
-When updating, exit the running helper, replace all bundled program files, and restart it. Retain `captures` and `fate-collector.ini`. A website notice compares the version recorded in the opened capture with the bundled helper version; it does not inspect the currently running helper or update it automatically.
+When updating, exit the running helper, replace all bundled program files, and restart it. Retain `captures`, `symbol-reports` and `fate-collector.ini`. A website notice compares the version recorded in the opened capture with the bundled helper version. It does not inspect the currently running helper or update it automatically.
 
 Version 0.3.4 writes an atomic queue envelope with a SHA-256 digest of the payload,
 capture ID and consent scope. Each send checks that digest; a verified queued copy

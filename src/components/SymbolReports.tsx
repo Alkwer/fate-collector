@@ -1,9 +1,13 @@
-import { useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import type { Evidence, Offer } from '../../shared/schema'
 import { SYMBOL_REPORT_VERSION, symbolConsentText, symbolReportSchema, type SymbolReport } from '../../shared/symbol-reports'
 import { prepareSymbolImage, saveSymbolSubmission, sendSymbolReport, symbolImageUrl, symbolReportHistory, withdrawSymbolReport, type LocalSymbolReport, type SymbolVerification } from '../lib/symbol-reports'
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
 import { SymbolReportVerification, type SymbolReportVerificationHandle } from './SymbolReportVerification'
+import { parseSymbolDraft, type SymbolDraft } from '../../shared/symbol-drafts'
+import { SYMBOL_REPORT_LIMIT } from '../../shared/symbol-reports'
+import { symbolDraftContext } from '../lib/symbol-drafts'
+import { getOffer } from '../lib/storage'
 import '../symbol-reports.css'
 
 function CaptureCrop({ source, onCrop }: { source: string; onCrop: (image: SymbolReport['icon']) => void }) {
@@ -42,6 +46,7 @@ export interface SymbolReportsHandle { showNew: () => void; showHistory: () => v
 export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence: Evidence | null; ref: Ref<SymbolReportsHandle> }) {
   const panel = useRef<DetailPanelHandle>(null)
   const verification = useRef<SymbolReportVerificationHandle>(null)
+  const helperFilePanel = useRef<DetailPanelHandle>(null)
   const generation = useRef(0)
   const renderGeneration = generation.current
   const [context, setContext] = useState<Offer | null>(null), [source, setSource] = useState<string | null>(null)
@@ -52,6 +57,8 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
   const [agreed, setAgreed] = useState(false), [busy, setBusy] = useState(false)
   const [rows, setRows] = useState<LocalSymbolReport[]>([]), [message, setMessage] = useState(''), [error, setError] = useState(''), [storageError, setStorageError] = useState('')
   const [savedId, setSavedId] = useState<string | null>(null)
+  const [helperDraft, setHelperDraft] = useState<SymbolDraft | null>(null), [linkedHelperOffer, setLinkedHelperOffer] = useState(false)
+  const [helperEntry, setHelperEntry] = useState(false)
   const card = context?.cards.find(card => card.id === cardId)
   async function refresh() {
     try { setRows(await symbolReportHistory()); setStorageError('') } catch (error) { setStorageError(error instanceof Error ? error.message : 'Report history is unavailable.') }
@@ -62,8 +69,48 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
     setContext(structuredClone(offer)); setSource(evidence?.imageDataUrl || null); setCardId(offer.cards[0]?.id || ''); setRewardId('')
     setLabel(''); setKind('unknown'); setThreshold(''); setDescription(''); setGameVersion(offer.gameVersion || '')
     setIcon(null); setTooltip(null); setAgreed(false); setSavedId(null); setMessage(''); setError('')
+    setHelperDraft(null); setLinkedHelperOffer(false); setHelperEntry(false)
   }
   useImperativeHandle(ref, () => ({ showNew() { newReport(); panel.current?.show() }, showHistory() { panel.current?.show() } }))
+  useEffect(() => {
+    const openHelper = () => {
+      if (location.hash !== '#report-symbol') return
+      setHelperEntry(true); panel.current?.show()
+      history.replaceState(history.state, '', location.pathname + location.search)
+    }
+    openHelper(); window.addEventListener('hashchange', openHelper)
+    return () => window.removeEventListener('hashchange', openHelper)
+  }, [])
+  async function importHelper(read: () => Promise<string>) {
+    if (busy) return
+    if (!savedId && (icon || tooltip) && !window.confirm('Replace the current symbol report draft with the helper images?')) return
+    const current = ++generation.current
+    verification.current?.cancel(); setBusy(true); setAgreed(false); setError(''); setMessage('')
+    try {
+      const draft = await parseSymbolDraft(await read())
+      const candidate = draft.captureId ? offer.captureId === draft.captureId ? offer : (await getOffer(draft.captureId))?.offer : null
+      const prepared = symbolDraftContext(draft, candidate)
+      if (generation.current !== current) return
+      setContext(prepared.offer); setSource(null); setCardId(prepared.offer.cards[0].id); setRewardId('')
+      setLabel(''); setKind('unknown'); setThreshold(''); setDescription(''); setGameVersion(prepared.offer.gameVersion)
+      setIcon(draft.icon); setTooltip(draft.tooltip); setAgreed(false); setSavedId(null)
+      setHelperDraft(draft); setLinkedHelperOffer(prepared.linked); setHelperEntry(false)
+      helperFilePanel.current?.close()
+      setMessage('Both helper images are ready. Check the previews before sending. Nothing has been uploaded.')
+    } catch (error) { if (generation.current === current) setError(error instanceof Error ? error.message : 'Could not import the helper draft.') }
+    finally { if (generation.current === current) setBusy(false) }
+  }
+  useEffect(() => {
+    const paste = (event: ClipboardEvent) => {
+      if (!panel.current?.isOpen() || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
+      const text = event.clipboardData?.getData('text/plain') || ''
+      if (!helperEntry && !text.includes('fate-collector.symbol-draft')) return
+      event.preventDefault(); event.stopImmediatePropagation()
+      void importHelper(async () => text)
+    }
+    window.addEventListener('paste', paste, true)
+    return () => window.removeEventListener('paste', paste, true)
+  })
   async function act(action: (isCurrent: () => boolean, verify: SymbolVerification) => Promise<void>) {
     const current = generation.current, isCurrent = () => generation.current === current
     const verify: SymbolVerification = async (action, id) => {
@@ -85,31 +132,51 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
   }
   return <DetailPanel ref={panel} trigger={false} title="Report a reward symbol" className="symbol-reports" onOpenChange={open => {
     if (open) void refresh()
-    else verification.current?.cancel()
+    else { verification.current?.cancel(); generation.current++; setBusy(false) }
   }}>
-    <p>Send a symbol image and its tooltip for review. Reports go to the shared collection; recognition changes only after verification and a catalog update.</p>
+    <p>{helperDraft ? 'Check the symbol and tooltip captured by your helper. Reports are reviewed before the catalog changes.' : 'Send a symbol image and its tooltip for review. Reports go to the shared collection; recognition changes only after verification and a catalog update.'}</p>
     <p className="hint">No collection key is needed. Complete a security check when sending. Limit: 5 new reports per network per day, resetting at midnight UTC.</p>
     <SymbolReportVerification ref={verification} />
     {storageError && <p role="alert" className="storage-warning">{storageError}</p>}
+    {(!helperDraft || helperEntry) && <section className="symbol-helper-import" aria-label="Import from Windows helper">
+      <h3>{helperDraft ? 'Images from Windows helper' : 'Captured with the helper?'}</h3>
+      <p>{helperDraft ? 'You can replace the images by pasting a new helper draft.' : 'After Ctrl+Shift+F9 in the game, paste both selected images here. Nothing is sent until you approve the previews.'}</p>
+      <button disabled={busy} onClick={() => void importHelper(async () => {
+        try { return await navigator.clipboard.readText() } catch { throw new Error('Clipboard access is unavailable. Press Ctrl+V in this panel, or import the saved helper draft.') }
+      })}>{busy ? 'Preparing…' : 'Paste from helper'}</button>
+      <DetailPanel ref={helperFilePanel} title="Import saved helper draft">
+        <p>If the clipboard changed, choose the JSON draft in the helper’s symbol-reports folder.</p>
+        <label>Helper draft file<input type="file" accept="application/json,.json" disabled={busy} onChange={event => {
+          const file = event.target.files?.[0]; event.target.value = ''
+          if (file) void importHelper(async () => {
+            if (file.size > SYMBOL_REPORT_LIMIT) throw new Error('This helper draft is too large. Capture tighter symbol and tooltip crops.')
+            return file.text()
+          })
+        }} /></label>
+      </DetailPanel>
+    </section>}
     {savedId ? <p role="status">Report saved on this device. Its upload status is shown in history below.</p> : context?.cards.length ? <fieldset disabled={busy} className="symbol-report-form" onChange={() => setAgreed(false)}>
-      <legend>New report</legend>
+      <legend>{helperDraft ? 'Check your images' : 'New report'}</legend>
       {context.cards.length > 1 ? <div className="context-fields">
         <label>Fate<select value={cardId} onChange={event => { setCardId(event.target.value); setRewardId(''); setLabel(''); setKind('unknown'); setThreshold('') }}>{context.cards.map(card => <option key={card.id} value={card.id}>{card.name || 'Unnamed Fate'}</option>)}</select></label>
-      </div> : <p>Fate <strong>{card?.name || 'Unnamed Fate'}</strong></p>}
+      </div> : <p>Fate <strong>{card?.name || (helperDraft ? 'Not identified' : 'Unnamed Fate')}</strong></p>}
+      {helperDraft && linkedHelperOffer && <p className="hint">Context comes from the last F9 offer. Check that the selected Fate matches these images.</p>}
       <div className="symbol-report-images">
-        <section><h3>Symbol image</h3><p className="hint">Crop tightly around one icon, including its border.</p>
+        <section><h3>Symbol image</h3>{!helperDraft && <p className="hint">Crop tightly around one icon, including its border.</p>}
           {source && <CaptureCrop key={renderGeneration} source={source} onCrop={image => { if (renderGeneration !== generation.current) return; setIcon(image); setAgreed(false); setMessage('Crop selected. Check its preview below.') }} />}
-          <label>Choose symbol image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { void imageFile(event.target.files?.[0], 'icon'); event.target.value = '' }} /></label>
+          {!helperDraft && <label>Choose symbol image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { void imageFile(event.target.files?.[0], 'icon'); event.target.value = '' }} /></label>}
           {icon && <img className="symbol-image-preview" src={symbolImageUrl(icon)} alt="Symbol image to send" />}
         </section>
-        <section><h3>Tooltip image</h3><p className="hint">Include the effect and combo threshold, if shown.</p>
-          <label>Choose tooltip image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { void imageFile(event.target.files?.[0], 'tooltip'); event.target.value = '' }} /></label>
+        <section><h3>Tooltip image</h3>{!helperDraft && <p className="hint">Include the effect and combo threshold, if shown.</p>}
+          {!helperDraft && <label>Choose tooltip image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => { void imageFile(event.target.files?.[0], 'tooltip'); event.target.value = '' }} /></label>}
           {tooltip && <><img className="symbol-tooltip-preview" src={symbolImageUrl(tooltip)} alt="Tooltip image to send" /><DetailPanel title="Enlarge tooltip"><img className="symbol-tooltip-full" src={symbolImageUrl(tooltip)} alt="Full size tooltip to send" /></DetailPanel></>}
         </section>
       </div>
       <div className="symbol-report-details">
+        {helperDraft && <button type="button" className="text-button" onClick={() => setHelperEntry(value => !value)}>{helperEntry ? 'Keep these images' : 'Replace helper images'}</button>}
         <DetailPanel title="Optional details">
           <div className="context-fields">
+            {helperDraft && !linkedHelperOffer && <label>Fate name<input value={card?.name || ''} maxLength={160} onChange={event => setContext({ ...context, cards: context.cards.map(row => row.id === cardId ? { ...row, name: event.target.value } : row) })} /></label>}
             <label>Reward<select value={rewardId} onChange={event => {
               setRewardId(event.target.value); const reward = card?.rewards.find(reward => reward.id === event.target.value)
               setLabel(reward?.label || ''); setKind(reward?.kind || 'unknown'); setThreshold(reward?.threshold?.toString() || '')
@@ -124,17 +191,17 @@ export function SymbolReports({ offer, evidence, ref }: { offer: Offer; evidence
         <DetailPanel title="References included in this report" triggerLabel="Source references">
           <dl className="symbol-references">
             <dt>Evidence</dt><dd>{context.origin === 'test' ? 'Test / showcase evidence' : 'Live game evidence'}</dd>
-            <dt>Offer ID</dt><dd>{context.id}</dd>
+            <dt>{helperDraft && !linkedHelperOffer ? 'Local draft ID' : 'Offer ID'}</dt><dd>{context.id}</dd>
             <dt>Offer revision</dt><dd>{context.revision}</dd>
             <dt>Capture ID</dt><dd>{context.captureId || 'None'}</dd>
             <dt>Card ID</dt><dd>{cardId}</dd>
             <dt>Reward ID</dt><dd>{rewardId || 'None'}</dd>
             <dt>Area level</dt><dd>{context.areaLevel ?? 'Unknown'}</dd>
           </dl>
-          <p>These references can link the report to an offer or OCR capture already in the collection.</p>
+          <p>{helperDraft && !linkedHelperOffer ? 'No matching offer was found on this device. This independent draft does not add or change an offer. The capture reference, if present, comes from the helper’s last F9 capture.' : 'These references can link the report to an offer or OCR capture already in the collection.'}</p>
         </DetailPanel>
       </div>
-    </fieldset> : <p>Open or import an offer with at least one Fate to report a symbol. Existing reports remain available below.</p>}
+    </fieldset> : <p>Paste a helper draft, or open an offer with at least one Fate to choose images manually. Existing reports remain available below.</p>}
     {!savedId && card && <>
       <p className="symbol-consent">{symbolConsentText(location.origin)}</p>
       <label className="checkbox-row"><input type="checkbox" checked={agreed} disabled={busy} onChange={event => setAgreed(event.target.checked)} />I checked both previews and agree to send this report.</label>

@@ -4,6 +4,7 @@ Start with the [Windows capture guide](../docs/windows-helper.md). Keep all bund
 
 ## Capture and OCR
 
+- Press **F9** for a calibrated offer capture. Hover a symbol and press **Ctrl+Shift+F9** to select the icon and tooltip from one frozen game client frame. **Continue to website** saves only the two crops in `symbol-reports` for manual review and submission in the browser.
 - `Calibration.ahk` stores the panel rectangle as client-relative coordinates, requires a preview after a same-aspect resolution change, and rejects a changed aspect ratio.
 - `CaptureImage.cs` checks visible windows above the game immediately before and after copying a GDI crop. In auto mode, SDR uses GDI for a clear crop and switches to window-targeted Windows Graphics Capture (WGC) if another window intersects it. HDR uses window-targeted WGC with float16 and reports backend failures. Explicit GDI rejects intersecting windows. Both backends return PNG bytes in memory and require the complete crop on one monitor.
 - `Ocr.Common.ps1` and `OcrImage.cs` compare multiple OCR passes using percentile-contrast processing. Original pixels remain intact. Auto mode can resolve a tied pass using an exact, aligned Confirm label, or reread a small crop around a truncated `CONFIR`. Only the exact overlapping button result can replace that line; other text and positions stay intact.
