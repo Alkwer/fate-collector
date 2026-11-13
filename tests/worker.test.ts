@@ -146,6 +146,21 @@ test('automatic retries deduplicate immutable input and reject conflicting OCR',
   expect(databases[0].prepare('SELECT parsed_offer_json FROM capture_uploads').get()?.parsed_offer_json).toBe(original)
 })
 
+test('area classification reaches research and reviewed manual corrections supersede it', async () => {
+  const bindings = env(); const sample = upload()
+  sample.context.area = { source: 'client-log', category: 'map', areaId: 'MapWorldsDunes', areaLevel: 83 }
+  expect((await worker.fetch(capturePost(sample), bindings)).status).toBe(201)
+  const db = databases[0]
+  const candidate = offerSchema.parse(JSON.parse(db.prepare('SELECT parsed_offer_json FROM capture_uploads').get()!.parsed_offer_json as string))
+  expect(candidate).toMatchObject({ areaCategory: 'map', area: 'MapWorldsDunes', areaLevel: 83 })
+  const corrected = { ...candidate, revision: 2, areaCategory: 'other', reviewed: true, completeness: 'partial' }
+  expect((await worker.fetch(post(corrected), bindings)).status).toBe(201)
+  const research = JSON.parse(db.prepare('SELECT offer_json FROM research_observations').get()!.offer_json as string)
+  expect(research).toMatchObject({ areaCategory: 'other', captureContext: { area: sample.context.area } })
+  expect((await worker.fetch(capturePost(sample), bindings)).status).toBe(200)
+  expect(JSON.parse(db.prepare('SELECT offer_json FROM research_observations').get()!.offer_json as string).areaCategory).toBe('other')
+})
+
 test('unread offered names preserve raw OCR without storing collected cards as candidates', async () => {
   const bindings = env(); const sample = upload()
   sample.ocr.lines = sample.ocr.lines.filter(entry => entry.y < 479 || entry.y > 523)

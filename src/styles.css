@@ -28,6 +28,7 @@ h3 { font-size: 16px; font-weight: 600; }
 a { color: var(--accent); text-underline-offset: 4px; }
 .muted, .hint, .cell-sub { color: var(--muted); }
 .hint { font-size: 13px; font-weight: 400; margin-top: 8px; }
+.area-context { overflow-wrap: anywhere; }
 .mono { font: 13px ui-monospace, monospace; overflow-wrap: anywhere; }
 .app-header { border-bottom: 1px solid var(--border); }
 .header-inner { max-width: 1470px; margin: auto; }

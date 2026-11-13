@@ -82,6 +82,7 @@ function Write-TestCapture {
     if ($WithContext) {
         $value.context.session = @{ id = [guid]::NewGuid().ToString(); startedAt = $CapturedAt.AddMinutes(-1).ToString('o'); sequence = 2; extra = 'LOCAL ONLY' }
         $value.context.possibleDuplicate = @{ ofCaptureId = [guid]::NewGuid().ToString(); reason = 'same-ocr-within-15s'; extra = 'LOCAL ONLY' }
+        $value.context.area = @{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 83; rawLog = 'LOCAL ONLY' }
     }
     $path = Join-Path $Directory "fate-$Id.json"
     [IO.File]::WriteAllText($path, (ConvertTo-Json -InputObject $value -Depth 6), [Text.UTF8Encoding]::new($false))
@@ -178,6 +179,9 @@ try {
         $payload.ocr.lines[0].x -eq 1.25 -and $payload.ocr.language -eq 'en-US') 'Incorrect projected transport data.'
     Assert-True ($original -notmatch 'dataBase64|DO-NOT-SEND|mimeType|LOCAL ONLY') 'The payload contains local image data or extra fields.'
     Assert-True ($payload.context.session.sequence -eq 2 -and $payload.context.possibleDuplicate.reason -ceq 'same-ocr-within-15s') 'Upload lost session/repeat metadata.'
+    Assert-True ($payload.context.area.source -ceq 'client-log' -and $payload.context.area.category -ceq 'map' -and
+        $payload.context.area.areaId -ceq 'MapWorldsDunes' -and $payload.context.area.areaLevel -eq 83 -and
+        !$payload.context.area.PSObject.Properties['rawLog']) 'Upload lost area metadata or exposed raw log.'
     Assert-True ((Get-TestState $fixture).status -eq 'ignored' -and (Get-TestState $old).status -eq 'ignored' -and
         $null -eq (Get-TestState $pending) -and (Get-TestState $wrongId).status -eq 'rejected' -and
         (Get-TestState $largeFile).status -eq 'rejected' -and (Get-TestState $largePayload).status -eq 'rejected') 'Invalid, old, staged, or fixture filtering failed.'

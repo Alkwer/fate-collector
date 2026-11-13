@@ -8,7 +8,7 @@ function Save-FateSymbolDraft {
         [Parameter(Mandatory)][string]$OutputDirectory
     )
 
-    $helperVersion = '0.4.0'
+    $helperVersion = '0.5.0'
     $draftId = [guid]::NewGuid()
     $draft = [ordered]@{
         kind = 'fate-collector.symbol-draft'

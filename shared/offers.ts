@@ -1,4 +1,5 @@
 import { MAX_API_BYTES, type Evidence, type FateCard, type Offer, type Reward, type Capture } from './schema.ts'
+import { capturedAreaFields } from './area-context.ts'
 
 export function newReward(): Reward {
   return { id: crypto.randomUUID(), label: '', kind: 'unknown', count: 1, threshold: null, identified: false }
@@ -9,7 +10,7 @@ export function newCard(): FateCard {
 export function newOffer(): Offer {
   const now = new Date().toISOString()
   return { kind: 'fate-collector.offer', schemaVersion: 1, id: crypto.randomUUID(), revision: 1, capturedAt: now, updatedAt: now,
-    captureId: null, source: 'manual', origin: 'test', gameVersion: '3.30 preview', area: '', areaLevel: null,
+    captureId: null, source: 'manual', origin: 'test', gameVersion: '3.30 preview', area: '', areaLevel: null, areaCategory: 'unknown',
     encounterNumber: 1, completeness: 'unverified', reviewed: false, cards: [], selectedCardId: null, notes: '' }
 }
 export function exampleOffer(): Offer {
@@ -20,6 +21,7 @@ export function captureToDraft(capture: Capture): { offer: Offer; evidence: Evid
   return {
     offer: { ...newOffer(), id: capture.captureId, captureId: capture.captureId, capturedAt: capture.capturedAt, source: 'windows-helper',
       ...(capture.context && { captureContext: capture.context }),
+      ...capturedAreaFields(capture.context),
       origin: capture.context?.captureMode === 'game' ? 'live' : 'test', gameVersion: capture.context?.captureMode === 'game' ? 'unknown' : '3.30 preview' },
     evidence: { id: capture.captureId, imageDataUrl: `data:image/png;base64,${capture.image.dataBase64}`, ocrText: capture.ocr.text,
       ocrLines: capture.ocr.lines, ocrStatus: capture.ocr.status, helperVersion: capture.helperVersion },
