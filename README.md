@@ -5,6 +5,9 @@ Fate offer, preserve the evidence, and compare specific Fates with a local advis
 Advice uses identified rewards and conservative prerelease rules; unknown icons
 still need manual identification.
 
+**[Open Fate Collector](https://app.fate-collector.workers.dev)** — choose **Guide**
+in the app for setup instructions and help.
+
 The collection routine is **F9 in the game → automatically queued → shared Cloudflare database**.
 Enable **Cloud upload settings** once in the Windows helper with the deployed
 collector's HTTPS URL and capture upload key. Keep the helper running; the website
