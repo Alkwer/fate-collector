@@ -34,7 +34,7 @@ function save(record: LocalConsent) {
   const previous = localStorage.getItem(prefix + record.id)
   const saved = previous ? recordSchema.parse(JSON.parse(previous)) : null
   // A delayed registration response cannot undo a withdrawal from another tab.
-  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt, withdrawalRetryAt: record.withdrawalRetryAt || saved.withdrawalRetryAt }
+  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt || record.withdrawalConfirmedAt, withdrawalRetryAt: record.withdrawalRetryAt || saved.withdrawalRetryAt }
   localStorage.setItem(prefix + record.id, JSON.stringify(recordSchema.parse(record)))
   window.dispatchEvent(new Event(changedEvent))
 }

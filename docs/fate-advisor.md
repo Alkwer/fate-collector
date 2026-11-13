@@ -1,6 +1,6 @@
 # Fate advisor
 
-The **Current map** screen combines the current offer, next-Fate recommendation,
+The **Current area** screen combines the current offer, next-Fate recommendation,
 collected cards and the order of up to three invocation inputs. Ordinary Fates
 can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation

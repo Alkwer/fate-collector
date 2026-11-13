@@ -45,10 +45,13 @@ mechanics, economic values or recognition labels are inferred from that absence.
 
 ## Local validation
 
-- Node 24.14.0: lint, typecheck, **310 unit/integration tests passed**, one optional
+- Node 24.14.0: lint, typecheck, **311 unit/integration tests passed**, one optional
   native symbol fixture test skipped locally. The Windows CI job generates and
   validates that fixture separately.
 - Chromium: **128 browser tests passed** against an isolated real local Worker/D1.
+- CI Windows: **30 Edge/Firefox tests passed**. Local Edge scenarios passed but
+  teardown stalled removing its temporary profile; that local suite was not counted
+  as a complete pass. The clean Windows CI run completed normally.
 - Windows Chromium visual comparisons: **20 passed** after creating and inspecting
   the baselines. Scene coverage includes unknown, recommendation, invocation,
   editing and symbol reporting in both themes at 1440×1000 and 390×844.
@@ -61,8 +64,8 @@ mechanics, economic values or recognition labels are inferred from that absence.
 - Existing CI remains responsible for the complete Windows helper/OCR/queue,
   helper-to-Worker upload integration, Python vision checks and exact release package.
 
-Build comparison: main JavaScript decreased from 592.71 to 453.18 kB (gzip
-193.64 → 152.30 kB). A shared 94.26 kB chunk also loads initially, and a 16.56 kB
+Build comparison: main JavaScript decreased from 592.71 to 453.21 kB (gzip
+193.64 → 152.29 kB). A shared 94.26 kB chunk also loads initially, and a 16.56 kB
 diagnostic module supports background withdrawal retry. The main-chunk reduction
 is not a claim that total startup bytes or startup time improved by the same ratio.
 Guide, diagnostics UI and symbols are separate optional chunks.
@@ -100,6 +103,12 @@ Each schema imports the shared configured validator. This preserves interpreted
 validation before lazy/shared chunks construct schemas and prevents Firefox CSP
 eval-probe errors without adding `unsafe-eval`. Compatibility tests keep asserting
 that there are no console or page errors.
+
+Codex Review identified one valid restore edge case: a pending local withdrawal
+overrode an imported server acknowledgement in the lower-level save helper. Both
+collection and diagnostic stores now retain the acknowledgement monotonically.
+A regression verifies pending → confirmed restore, older-backup replay and no
+unnecessary network retry.
 
 Migration 0010 adds review metadata only. Rolling back the Worker leaves this
 table in place; do not reverse migrations or erase report data. A rollback after

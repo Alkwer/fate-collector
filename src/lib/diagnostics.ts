@@ -43,7 +43,7 @@ function save(record: DiagnosticRecord) {
   const previous = localStorage.getItem(prefix + record.report.id)
   if (previous) {
     const old = localSchema.parse(JSON.parse(previous))
-    if (old.withdrawnAt) record = { ...record, withdrawnAt: old.withdrawnAt, withdrawalConfirmedAt: old.withdrawalConfirmedAt }
+    if (old.withdrawnAt) record = { ...record, withdrawnAt: old.withdrawnAt, withdrawalConfirmedAt: old.withdrawalConfirmedAt || record.withdrawalConfirmedAt }
   }
   localStorage.setItem(prefix + record.report.id, JSON.stringify(localSchema.parse(record)))
   window.dispatchEvent(new Event(changed))

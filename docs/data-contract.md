@@ -234,7 +234,7 @@ captures still open as drafts when imported manually.
 
 Capture and plain-image imports remain limited to 12 MiB. Archive imports accept
 up to 32 MiB, so an already valid capture plus later corrections can be restored
-together. **Export all data** splits a journal into numbered, independently importable
+together. **Export all offers** splits a journal into numbered, independently importable
 files, normally at 12 MiB. An individual pair over that size gets its own part, up
 to 32 MiB. Download every part. Full backups include local image/OCR evidence;
 metadata-only backups omit it. Each part includes a backup set UUID, part number
