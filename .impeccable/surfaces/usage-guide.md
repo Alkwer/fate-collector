@@ -7,9 +7,12 @@ related_targets: ["src/usage-guide.css", "src/App.tsx"]
 
 # Helper and website guide
 
-Mode: Read. Extend the existing help content with a dedicated, accessible Guide
-entry and four sequential setup/use chapters, followed by backups/sharing and
-troubleshooting. Inherit Mineral Depth and Light Trail, typography and controls.
+Mode: Read. Keep one accessible Guide entry with four separate views: Quick start
+(default), Using Fate Collector, Backup & sharing, and Troubleshooting. Quick
+start ends at the first captured and checked offer. Show calibration details,
+manual entry/import, sharing tasks and troubleshooting symptoms on demand as
+individual topics. Focus the new heading on navigation and restore the topic's
+entry button on return. Inherit Mineral Depth and Light Trail, typography and controls.
 Keep instructions in English and match actual helper keys and application labels.
 
 Use an interactive geometric calibration diagram, explicitly labelled as a

@@ -60,11 +60,16 @@ the website closed. Do not show a cloud connection or upload status the browser
 cannot observe. **More actions → Connect captures folder** opens a dedicated local-review panel.
 Only an active connection or a problem appears on the map. **More actions →
 Setup & usage guide** opens the same guide as the main navigation. The guide is
-a reading surface with four setup/use steps, backups/sharing and troubleshooting.
-Its interactive F6/F7/F8 diagram is explicitly illustrative and controls no game
-or helper state. Local review opens the existing folder panel; returning to the
-map preserves the draft and collection. Chapter navigation moves keyboard focus
-to the heading. The guide inherits both themes and uses no automatic animation.
+a reading surface with four separate views: **Quick start** (the default),
+**Using Fate Collector**, **Backup & sharing**, and **Troubleshooting**.
+Quick start ends with the first captured and checked offer. Calibration details,
+manual entry/import, individual sharing tasks and troubleshooting symptoms open
+as separate guide topics; only the selected content is shown. Its interactive
+F6/F7/F8 diagram is explicitly illustrative and controls no game or helper state.
+Local review opens the existing folder panel; returning to the map preserves
+the draft and collection. Navigation focuses the new heading; returning from a
+topic restores focus to its entry button. The guide inherits both themes and
+uses no automatic animation.
 Do not require typing modifiers, area, tier, or rewards just to preserve a sample.
 Manual review means the user checked the extraction, not that every icon is known.
 Known Fate names and descriptions are extracted from local Windows OCR. The local
