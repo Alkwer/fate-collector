@@ -87,6 +87,6 @@ export function InvocationSequence({ plan, cards, collected }: {
 export function GainMark({ gain, label, provisional = false }: { gain: number | null; label: string; provisional?: boolean }) {
   const value = gain === null ? '?' : `${gain > 0 ? '+' : ''}${new Intl.NumberFormat('en', { maximumSignificantDigits: 5 }).format(gain)}`
   return <div className="candidate-gain" data-gain={gain === null ? 'unknown' : gain > 0 ? 'positive' : gain < 0 ? 'negative' : 'neutral'}>
-    <strong>{value}</strong><span>{gain === null ? 'Unknown gain' : gain === 0 ? 'No gain' : gain < 0 ? `${label} if used` : `${label} vs collection`}{provisional && <small>Provisional</small>}</span>
+    <strong>{value}</strong><span>{gain === null ? 'Unknown gain' : provisional ? `Known gain · ${label}` : gain === 0 ? 'No gain' : gain < 0 ? `${label} if used` : `${label} vs collection`}{provisional && <small>Total unresolved</small>}</span>
   </div>
 }

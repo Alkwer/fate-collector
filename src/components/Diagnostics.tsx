@@ -68,13 +68,3 @@ export function Diagnostics({ environment, folderConnection, sharing }: Props) {
     </section>
   </>
 }
-
-// Deletion retries run while the site is open, regardless of the selected tab.
-export function useDiagnosticWithdrawals() {
-  useEffect(() => {
-    const retry = () => { void retryDiagnosticWithdrawals().catch(() => { /* The durable pending receipt stays visible. */ }) }
-    retry(); window.addEventListener('online', retry)
-    const timer = setInterval(retry, 30000)
-    return () => { window.removeEventListener('online', retry); clearInterval(timer) }
-  }, [])
-}

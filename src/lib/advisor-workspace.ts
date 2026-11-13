@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '../../shared/validation'
 import { offerSchema } from '../../shared/schema'
 import { newOffer } from '../../shared/offers'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'

@@ -1,36 +1,41 @@
 import { captureSchema, exportSchema, offerSchema, MAX_IMPORT_BYTES, MAX_ARCHIVE_BYTES, formatValidationError, type Evidence, type Offer, type Archive } from '../../shared/schema'
 import { captureToDraft, newOffer } from '../../shared/offers'
-import { extractCards, findOfferedRegion, knownFateName } from '../../shared/recognition'
+import { extractCards, findOfferedRegion, offeredCardHeaders } from '../../shared/recognition'
 import { applyVisualSuggestions } from '../../shared/visual-suggestions'
 import { readVisualCapture } from './visual-recognition'
 import { verifyImage } from './evidence'
 import { combineBackupParts } from '../../shared/backups'
 import { evidenceSchema } from '../../shared/schema'
+import { applyCaptureVersion } from './capture-version'
 export { verifyImage } from './evidence'
 
 export interface Imported { mode: 'draft' | 'restore'; entries: { offer: Offer; evidence: Evidence | null }[]; message: string }
+const newerFormatMessage = 'This file uses a format this website does not support. Save or export open drafts, then refresh Fate Collector and update the helper if needed. Keep the original file; nothing was imported.'
 export async function importJson(text: string, captureOnly = false): Promise<Imported> {
   const bytes = new TextEncoder().encode(text).byteLength
   if (bytes > MAX_ARCHIVE_BYTES) throw new Error('Backup exceeds 32 MiB. Import each exported part separately.')
   let body: unknown
   try { body = JSON.parse(text.replace(/^\uFEFF/, '')) } catch { throw new Error('This is not a valid JSON file.') }
   const kind = typeof body === 'object' && body !== null && 'kind' in body ? body.kind : null
+  if (typeof kind === 'string' && kind.startsWith('fate-collector.') && body && typeof body === 'object' && 'schemaVersion' in body && body.schemaVersion !== 1) throw new Error(newerFormatMessage)
   if (bytes > MAX_IMPORT_BYTES && kind !== 'fate-collector.export') throw new Error('Import exceeds 12 MiB. Use a tighter screenshot crop.')
   if (captureOnly && kind !== 'fate-collector.capture') throw new Error('Auto-import accepts helper captures only.')
   if (kind === 'fate-collector.capture') {
     const parsed = captureSchema.safeParse(body)
-    if (!parsed.success) throw new Error(formatValidationError(parsed.error))
+    if (!parsed.success) throw new Error(parsed.error.issues.some(issue => issue.code === 'unrecognized_keys') ? newerFormatMessage : formatValidationError(parsed.error))
     const entry = captureToDraft(parsed.data)
+    entry.offer = applyCaptureVersion(entry.offer)
     await verifyImage(entry.evidence.imageDataUrl, parsed.data.image)
     const recognition = extractCards(parsed.data)
     const visual = recognition.cards.length ? await readVisualCapture(parsed.data) : null
     entry.offer.cards = visual ? applyVisualSuggestions(recognition.cards, parsed.data, visual) : recognition.cards
     const region = findOfferedRegion(parsed.data)
     if (region) {
-      const headers = region.headers.filter(header => knownFateName(header.text))
+      const headers = offeredCardHeaders(region.headers)
       if (headers.length === entry.offer.cards.length) entry.evidence.cardRegions = headers.map((header, index) => {
         const center = header.x + header.width / 2
-        const previous = headers[index - 1], next = headers[index + 1]
+        const position = region.headers.indexOf(header)
+        const previous = region.headers[position - 1], next = region.headers[position + 1]
         const left = previous ? (previous.x + previous.width / 2 + center) / 2 : Math.max(0, header.x - header.width / 2)
         const right = next ? (next.x + next.width / 2 + center) / 2 : Math.min(parsed.data.image.width, header.x + header.width * 1.5)
         return { cardId: entry.offer.cards[index].id, x: left / parsed.data.image.width, y: header.y / parsed.data.image.height,
@@ -63,8 +68,13 @@ export async function importFiles(files: File[]): Promise<Imported> {
   for (const file of files) {
     if (file.size > MAX_ARCHIVE_BYTES) throw new Error('A backup part exceeds 32 MiB.')
     const text = await file.text()
-    await importJson(text) // Validate image bytes before any storage mutation.
-    archives.push(exportSchema.parse(JSON.parse(text.replace(/^\uFEFF/, ''))))
+    let body: unknown
+    try { body = JSON.parse(text.replace(/^\uFEFF/, '')) } catch { throw new Error('This is not a valid JSON file.') }
+    const parsed = exportSchema.safeParse(body)
+    if (!parsed.success) throw new Error(formatValidationError(parsed.error))
+    // Parse each part once, and validate all image bytes before storage mutation.
+    for (const entry of parsed.data.offers) if (entry.evidence) await verifyImage(entry.evidence.imageDataUrl)
+    archives.push(parsed.data)
   }
   const archive = combineBackupParts(archives)
   return { mode: 'restore', entries: archive.offers, message: `Complete backup set read from ${files.length} files.` }

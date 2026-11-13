@@ -31,10 +31,10 @@ for (const width of [1280, 640]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     if (process.env.FATE_QA_DIR) await page.screenshot({ path: join(process.env.FATE_QA_DIR, `compat-${browserName}-${width}.png`), fullPage: true })
     await openPanel(page, '.archive-tools')
-    await page.getByRole('button', { name: 'Export all data' }).click()
+    await page.getByRole('button', { name: 'Export all offers' }).click()
     await expect(page.getByRole('dialog', { name: 'Download your backup' })).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.getByRole('button', { name: 'Export all data' })).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Export all offers' })).toBeFocused()
     expect(errors).toEqual([]); expect(posts).toEqual([])
   })
 }

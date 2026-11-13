@@ -12,6 +12,7 @@ async function helperDraft() {
     origin: 'test', captureId: null, icon: await image('reward-gold-grid'), tooltip: await image('reward-item-rarity') }
 }
 async function paste(page: Page, text: string) {
+  await expect(page.locator('.symbol-reports > dialog')).toBeVisible()
   await page.evaluate(text => {
     // Firefox clears data supplied to a synthetic ClipboardEvent. Supply the
     // browser-delivered clipboard interface explicitly; exercise our paste listener.

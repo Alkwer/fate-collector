@@ -21,6 +21,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
   const rewardFields = useRef(new Map<string, HTMLFieldSetElement>())
   const cardHeading = useRef<HTMLHeadingElement>(null), focusSelection = useRef(false)
+  const handledReview = useRef('')
   const pending = offer.cards.filter(cardNeedsReview)
   const selectedIndex = offer.cards.findIndex(card => card.id === selected?.id)
   const next = [...offer.cards.slice(selectedIndex + 1), ...offer.cards.slice(0, selectedIndex)].find(cardNeedsReview)
@@ -33,10 +34,13 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   useEffect(() => { setSelectedId(null) }, [offer.id])
   useEffect(() => {
     if (!reviewRequest || !offer.cards.some(card => card.id === reviewRequest.cardId)) return
+    const requestKey = `${offer.id}:${reviewRequest.cardId}:${reviewRequest.sequence}`
+    if (handledReview.current === requestKey) return
+    handledReview.current = requestKey
     if (selected?.id === reviewRequest.cardId) {
       cardHeading.current?.focus()
     } else selectCard(reviewRequest.cardId)
-  }, [reviewRequest, offer.id])
+  }, [reviewRequest, offer.id, offer.cards, selected?.id])
   useEffect(() => {
     if (focusSelection.current) {
       cardHeading.current?.focus()

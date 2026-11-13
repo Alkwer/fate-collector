@@ -7,8 +7,9 @@ import { createBackupParts, importFiles, importJson, recoverBackup } from '../sr
 import {
   deleteOffer, getOffer, handledCaptureIds, hasCaptureReceipt, importOffers, isolateUnreadableOffer,
   listDraftRecovery, listOffers, readEvidence, readOfferArchive, readOfferHistory, readOfferRecovery,
-  receiveCapture, removeDraftRecovery, repairEvidence, saveOffer, writeDraftRecovery,
+  receiveCapture, removeDraftRecovery, repairEvidence, saveOffer, writeDraftRecovery, readDraftRecovery, deleteOffers, replaceImportedOffer,
 } from '../src/lib/storage'
+import { CaptureReader, compareCaptures, type CaptureDirectory } from '../src/lib/capture-sync'
 
 let database: IDBDatabase
 const validImage = 'data:image/png;base64,AQ=='
@@ -55,6 +56,56 @@ beforeEach(async () => {
   await done
 })
 afterEach(() => { database?.close(); vi.unstubAllGlobals() })
+
+test('damaged recovery drafts remain discoverable, exportable and individually removable', async () => {
+  const good = crypto.randomUUID(), bad = crypto.randomUUID()
+  await writeDraftRecovery(good, newOffer(), null)
+  const original = { id: `draft:${bad}`, value: { id: bad, broken: 'Keep these raw bytes' } }
+  await rawPut('settings', original)
+  const result = await readDraftRecovery()
+  expect(result.drafts.map(draft => draft.id)).toEqual([good])
+  expect(result.unreadable.map(draft => draft.id)).toEqual([bad])
+  expect((await readOfferRecovery()).drafts).toContainEqual(original)
+  await removeDraftRecovery(bad)
+  expect((await readDraftRecovery()).unreadable).toEqual([])
+  expect((await readDraftRecovery()).drafts).toHaveLength(1)
+})
+
+test('unordered folder delivery saves every capture but never presents an older backlog item', async () => {
+  const captures = ['2026-11-13T10:00:00Z', '2026-11-13T09:00:00Z', '2026-11-13T11:00:00Z'].map(capturedAt => ({
+    kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt, source: 'windows-helper', helperVersion: '0.1.0',
+    image: { width: 2, height: 2, mimeType: 'image/png', dataBase64: 'AQ==' }, ocr: { status: 'unavailable', text: '', lines: [], language: null },
+  }))
+  const folder = { queryPermission: async () => 'granted', async *values() {
+    for (const capture of captures) yield { kind: 'file', name: `fate-${capture.captureId}.json`, getFile: async () => new File([JSON.stringify(capture)], 'capture.json') }
+  } } as unknown as CaptureDirectory
+  const shown: string[] = []
+  await new CaptureReader().scan(folder, async entry => { if (entry.present) shown.push(entry.offer.id) }, () => false)
+  expect(shown).toEqual([captures[0].captureId, captures[2].captureId])
+  expect(await listOffers()).toHaveLength(3)
+  const session = { id: crypto.randomUUID(), startedAt: '2026-11-13T08:00:00Z' }
+  expect(compareCaptures({ ...newOffer(), capturedAt: captures[1].capturedAt, captureContext: { captureMode: 'game', session: { ...session, sequence: 3 } } }, { ...newOffer(), capturedAt: captures[0].capturedAt, captureContext: { captureMode: 'game', session: { ...session, sequence: 2 } } })).toBeGreaterThan(0)
+})
+
+test('bulk deletion aborts all writes when any selected revision has changed', async () => {
+  const first = (await saveOffer(newOffer(), null)).offer, second = (await saveOffer(newOffer(), null)).offer
+  const updated = (await saveOffer({ ...second, notes: 'Another tab corrected this' }, null)).offer
+  await expect(deleteOffers([first, second])).rejects.toThrow('Nothing was removed')
+  expect(await listOffers()).toHaveLength(2)
+  expect(await rawGet('deletedOffers', first.id)).toBeUndefined()
+  await deleteOffers([first, updated])
+  expect(await listOffers()).toEqual([])
+})
+
+test('explicit imported corrections preserve the previous original and reject stale comparisons', async () => {
+  const local = (await saveOffer({ ...newOffer(), notes: 'Keep this original' }, null)).offer
+  const incoming = { ...local, revision: 8, notes: 'Imported correction' }
+  await replaceImportedOffer(incoming, local)
+  expect((await getOffer(local.id))?.offer).toMatchObject({ revision: 9, notes: incoming.notes })
+  expect((await readOfferRecovery()).isolated).toContainEqual(expect.objectContaining({ value: expect.objectContaining({ offer: local }) }))
+  await expect(replaceImportedOffer(incoming, local)).rejects.toThrow('changed since comparison')
+  expect((await getOffer(local.id))?.offer.revision).toBe(9)
+})
 
 test('a decoder-rejected image leaves readable offer metadata and the original evidence untouched', async () => {
   const id = crypto.randomUUID(), evidence = evidenceFor(id, damagedImage)

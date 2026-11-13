@@ -1,84 +1,45 @@
-import { z } from 'zod'
-import { SYMBOL_REPORT_LIMIT, symbolReceiptSchema, symbolSubmissionSchema, type SymbolReport, type SymbolSubmission, type SymbolReceipt } from '../../shared/symbol-reports'
+import { z } from '../../shared/validation'
+import { symbolReceiptSchema, type SymbolReport } from '../../shared/symbol-reports'
+import { checkSymbolUpload, readSymbolReviewCredential, readSymbolSubmission, updateSymbolSummary } from './symbol-report-storage'
 
-export interface LocalSymbolReport { id: string; origin: string; submission: SymbolSubmission; receipt: SymbolReceipt | null; withdrawRequestedAt: string | null; withdrawnAt: string | null; expired?: boolean }
-const localSchema = z.object({ id: z.string().uuid(), origin: z.string().url(), submission: symbolSubmissionSchema,
-  receipt: symbolReceiptSchema.nullable(),
-  withdrawRequestedAt: z.string().nullable(), withdrawnAt: z.string().nullable(),
-  expired: z.boolean().optional(),
-})
-async function database() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open('fate-collector-symbol-reports', 1)
-    request.onupgradeneeded = () => request.result.createObjectStore('reports', { keyPath: 'id' })
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(new Error('Symbol report storage is unavailable. Keep the images and retry.'))
-    request.onblocked = () => reject(new Error('Close other collector tabs and retry.'))
-  })
-}
-async function transact<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore, finish: (value: T) => void) => void): Promise<T> {
-  const db = await database()
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction('reports', mode)
-    let result: T
-    transaction.oncomplete = () => { db.close(); resolve(result) }
-    transaction.onerror = transaction.onabort = () => { db.close(); reject(new Error('Could not save the symbol report. Keep the images and retry.')) }
-    action(transaction.objectStore('reports'), value => { result = value })
-  })
-}
-export async function symbolReportHistory(): Promise<LocalSymbolReport[]> {
-  const rows = await transact<unknown[]>('readonly', (store, finish) => { const request = store.getAll(); request.onsuccess = () => finish(request.result) })
-  return rows.map(value => {
-    const parsed = localSchema.safeParse(value)
-    if (!parsed.success) throw new Error('A saved symbol report is unreadable. Its original data is preserved; do not clear browser storage.')
-    return parsed.data as LocalSymbolReport
-  }).filter(row => row.origin === location.origin).sort((a, b) => b.submission.report.createdAt.localeCompare(a.submission.report.createdAt))
-}
-async function update(id: string, change: (row: LocalSymbolReport) => LocalSymbolReport) {
-  return transact<LocalSymbolReport>('readwrite', (store, finish) => {
-    const request = store.get(id)
-    request.onsuccess = () => {
-      const parsed = localSchema.safeParse(request.result)
-      if (!parsed.success || parsed.data.origin !== location.origin) { store.transaction.abort(); return }
-      const row = change(parsed.data as LocalSymbolReport)
-      store.put(row); finish(row)
-    }
-  })
-}
-export async function saveSymbolSubmission(submission: SymbolSubmission): Promise<LocalSymbolReport> {
-  symbolSubmissionSchema.parse(submission)
-  if (new TextEncoder().encode(JSON.stringify(submission)).length > SYMBOL_REPORT_LIMIT) throw new Error('Images are too large. Crop them more tightly and retry.')
-  const row: LocalSymbolReport = { id: submission.report.id, origin: location.origin, submission, receipt: null, withdrawRequestedAt: null, withdrawnAt: null }
-  await transact('readwrite', (store, finish) => { store.add(row); finish(undefined) })
-  return row
-}
+export { saveSymbolSubmission, symbolReportHistory, type LocalSymbolReport } from './symbol-report-storage'
+
 export type SymbolVerification = (action: 'symbol-report' | 'symbol-withdraw', id: string) => Promise<string>
-
-function checkUpload(row: LocalSymbolReport) {
-  if (row.withdrawRequestedAt) throw new Error('This report has a withdrawal request; it will not be sent.')
-  if (row.expired) throw new Error('This report expired or was removed from the collection.')
+const reviewStatusSchema = z.object({ id: z.string().uuid(), status: z.enum(['pending', 'in-review', 'accepted', 'rejected', 'conflict']) }).strict()
+export async function readSymbolReviewStatus(id: string) {
+  const token = await readSymbolReviewCredential(id)
+  const response = await fetch(`/api/symbol-reports/${id}/review-status`, {
+    method: 'POST', redirect: 'error', headers: { 'X-Symbol-Token': token }, signal: AbortSignal.timeout(15000),
+  }).catch(() => { throw new Error('Could not check review status. Check your connection and try again.') })
+  if (response.status === 410) {
+    await updateSymbolSummary(id, latest => ({ ...latest, expired: true }))
+    throw new Error('This report expired or was removed from the collection.')
+  }
+  if (response.status === 429) throw new Error('Too many status checks. Try again later.')
+  const result = reviewStatusSchema.safeParse(await response.json().catch(() => null))
+  if (!response.ok || !result.success || result.data.id !== id) throw new Error('Review status is unavailable.')
+  return result.data.status
 }
 
 export async function sendSymbolReport(id: string, verify: SymbolVerification) {
-  checkUpload(await update(id, row => row))
+  await checkSymbolUpload(id)
   const token = await verify('symbol-report', id)
   // Another tab may have requested withdrawal while verification was open.
-  const row = await update(id, row => row)
-  checkUpload(row)
-  const response = await fetch('/api/symbol-reports', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Turnstile-Token': token }, body: JSON.stringify(row.submission), signal: AbortSignal.timeout(30000) })
+  const submission = await readSymbolSubmission(id)
+  const response = await fetch('/api/symbol-reports', { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/json', 'X-Turnstile-Token': token }, body: JSON.stringify(submission), signal: AbortSignal.timeout(30000) })
     .catch(() => { throw new Error('Upload not confirmed. Check your connection and retry the saved report.') })
   const body = await response.json().catch(() => ({}))
-  if (response.status === 410) await update(id, latest => ({ ...latest, expired: true }))
+  if (response.status === 410) await updateSymbolSummary(id, latest => ({ ...latest, expired: true }))
   if (!response.ok) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Report not confirmed. Retry the saved report below.')
   const receipt = symbolReceiptSchema.safeParse(body)
-  const { consent } = row.submission
+  const { consent } = submission
   if (!receipt.success || receipt.data.id !== id || receipt.data.consent.version !== consent.version || receipt.data.consent.text !== consent.text || receipt.data.consent.acceptedAt !== consent.acceptedAt || receipt.data.consent.recordedAt !== receipt.data.receivedAt) throw new Error('Unexpected receipt. Retry the saved report below.')
-  await update(id, latest => ({ ...latest, receipt: receipt.data }))
+  await updateSymbolSummary(id, latest => ({ ...latest, receipt: receipt.data }))
 }
 export async function withdrawSymbolReport(id: string, verify?: SymbolVerification) {
-  const row = await update(id, latest => ({ ...latest, withdrawRequestedAt: latest.withdrawRequestedAt || new Date().toISOString() }))
+  const row = await updateSymbolSummary(id, latest => ({ ...latest, withdrawRequestedAt: latest.withdrawRequestedAt || new Date().toISOString() }))
   async function send(token?: string) {
-    const headers = new Headers({ 'Content-Type': 'application/json', 'X-Symbol-Token': row.submission.token })
+    const headers = new Headers({ 'Content-Type': 'application/json', 'X-Symbol-Token': row.token })
     if (token) headers.set('X-Turnstile-Token', token)
     const response = await fetch(`/api/symbol-reports/${id}/withdraw`, { method: 'POST', redirect: 'error', headers, body: JSON.stringify({ withdrawnAt: row.withdrawRequestedAt }), signal: AbortSignal.timeout(15000) })
       .catch(() => { throw new Error('Withdrawal not confirmed. Check your connection and retry withdrawal.') })
@@ -91,7 +52,7 @@ export async function withdrawSymbolReport(id: string, verify?: SymbolVerificati
   }
   const receipt = z.object({ id: z.string().uuid(), status: z.literal('withdrawn'), withdrawnAt: z.string().datetime({ offset: true }) }).safeParse(body)
   if (!response.ok || !receipt.success || receipt.data.id !== id) throw new Error(z.object({ error: z.string() }).safeParse(body).data?.error || 'Withdrawal not confirmed. Retry withdrawal below; sending is blocked locally.')
-  await update(id, latest => ({ ...latest, withdrawnAt: receipt.data.withdrawnAt }))
+  await updateSymbolSummary(id, latest => ({ ...latest, withdrawnAt: receipt.data.withdrawnAt }))
 }
 export function symbolImageUrl(image: SymbolReport['icon']) { return `data:image/png;base64,${image.dataBase64}` }
 /** Canvas encoders may add ancillary chunks (including browser debug metadata).

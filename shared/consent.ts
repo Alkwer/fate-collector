@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 import policy from './consent-policy.json' with { type: 'json' }
 
 export type ConsentScope = 'captures' | 'observations'

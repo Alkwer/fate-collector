@@ -127,7 +127,7 @@
   .map-layout .decision-switch { width: auto; flex: 1; min-width: 0; }
   .map-layout .decision-switch button { padding-inline: 8px; font-size: 13px; }
   .map-layout .decision-switch .app-icon { display: none; }
-  .edit-current { width: 36px; min-width: 36px; padding-inline: 4px; justify-content: center; }
+  .edit-current { width: 44px; min-width: 44px; padding-inline: 4px; justify-content: center; }
   .edit-current > span { display: none; }
   .visual-offer .fate-list { grid-template-columns: minmax(0, 1fr); }
   .map-layout .visual-offer .fate-list > li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 20px 0; border-inline-end: 0; align-items: start; }
@@ -143,6 +143,7 @@
   .visual-offer .candidate-gain { margin-bottom: 0; }
   .visual-offer .candidate-plan { grid-column: 1 / -1; margin: 0; }
   .visual-offer .collect-fate { min-width: 120px; }
+  .visual-offer .advisor-candidates > .collect-fate { grid-row: 1; grid-column: 1 / -1; margin-top: 0; }
   .visual-offer .exclusion-control, .visual-offer .exclusion-reason { grid-column: 1 / -1; }
   .reward-strip { padding-block: 12px; }
   .invocation-diagram .invocation-order { gap: 24px; }

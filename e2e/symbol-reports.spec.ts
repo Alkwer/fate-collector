@@ -7,7 +7,9 @@ import { closePanels, openPanel } from './ui'
 async function openReports(page: Page, history = false) {
   await openPanel(page, '.more-actions')
   await page.getByRole('button', { name: history ? 'Symbol report history' : 'Report symbol', exact: true }).click()
-  return page.locator('.symbol-reports > .detail-dialog')
+  const panel = page.locator('.symbol-reports > .detail-dialog')
+  await expect(panel).toBeVisible()
+  return panel
 }
 async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[1]) {
   await mockTurnstile(page, turnstile)
@@ -262,4 +264,112 @@ test('report snapshots the opened offer, keeps optional details and renders the 
     offer: { id: next.id, cardId: next.cards[1].id, rewardId: reward.id, gameVersion: 'new-offer-version' },
   })
   await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
+})
+
+test('empty collector restores a manual symbol draft without consent, then withdraws from another tab', async ({ page, context }) => {
+  await mockTurnstile(page)
+  await page.goto('/')
+  let panel = await openReports(page)
+  await expect(panel.getByText('Not identified', { exact: true })).toBeVisible()
+  await attachReportImages(panel)
+  await panel.getByRole('button', { name: 'Optional details', exact: true }).click()
+  const details = panel.getByRole('dialog', { name: 'Optional details', exact: true })
+  await details.getByLabel('Description / tooltip text', { exact: true }).fill('Independent symbol report')
+  await details.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(panel.getByText('Draft saved in this browser.', { exact: true })).toBeVisible()
+  await panel.getByRole('button', { name: 'Saved symbol drafts', exact: true }).click()
+  await expect(panel.getByRole('button', { name: 'Restore draft', exact: true })).toBeVisible()
+  await panel.getByRole('dialog', { name: 'Saved symbol drafts' }).getByRole('button', { name: 'Done', exact: true }).click()
+  await panel.getByRole('checkbox').check()
+
+  let uploads = 0
+  page.on('request', request => { if (request.method() === 'POST' && request.url().endsWith('/api/symbol-reports')) uploads++ })
+  await page.reload()
+  panel = await openReports(page)
+  await expect(panel.getByAltText('Symbol image to send')).toHaveCount(0)
+  await panel.getByRole('button', { name: 'Saved symbol drafts', exact: true }).click()
+  await panel.getByRole('button', { name: 'Restore draft', exact: true }).click()
+  await expect(panel.getByAltText('Symbol image to send')).toBeVisible()
+  await expect(panel.getByAltText('Tooltip image to send')).toBeVisible()
+  await expect(panel.getByRole('checkbox')).not.toBeChecked()
+  await expect(panel.getByRole('button', { name: 'Send symbol report', exact: true })).toBeDisabled()
+  expect(uploads).toBe(0)
+  await panel.getByRole('checkbox').check()
+  const sent = page.waitForRequest(request => request.method() === 'POST' && request.url().endsWith('/api/symbol-reports'))
+  await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
+  expect((await sent).postDataJSON().report).toMatchObject({ description: 'Independent symbol report', offer: { captureId: null, cardName: '', rewardId: null } })
+  await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
+  await expect(panel.getByAltText('Submitted symbol')).toHaveCount(0)
+  await panel.getByRole('button', { name: 'Submitted details', exact: true }).click()
+  const submitted = panel.getByRole('dialog', { name: 'Submitted details', exact: true })
+  await expect(submitted.getByAltText('Submitted symbol')).toBeVisible()
+  await submitted.getByRole('button', { name: 'Done', exact: true }).click()
+
+  const other = await context.newPage()
+  await other.goto('/')
+  const otherPanel = await openReports(other, true)
+  await otherPanel.getByRole('button', { name: 'Withdraw report', exact: true }).click()
+  await expect(otherPanel.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
+  await expect(panel.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
+  page.once('dialog', dialog => dialog.accept())
+  await panel.getByRole('button', { name: 'Remove local images', exact: true }).click()
+  await expect(otherPanel.getByRole('button', { name: 'Remove local images', exact: true })).toHaveCount(0)
+  expect(uploads).toBe(1)
+})
+
+test('a private symbol backup restores withdrawal in a fresh browser with a damaged legacy entry', async ({ page, browser }) => {
+  await mockTurnstile(page)
+  await page.goto('/')
+  const panel = await openReports(page)
+  await attachReportImages(panel)
+  await panel.getByRole('checkbox').check()
+  const sent = page.waitForRequest(request => request.method() === 'POST' && request.url().endsWith('/api/symbol-reports'))
+  await panel.getByRole('button', { name: 'Send symbol report', exact: true }).click()
+  const token = (await sent).postDataJSON().token
+  await expect(panel.getByText('Received — review status unavailable', { exact: true })).toBeVisible()
+  const statusRequest = page.waitForRequest(request => request.url().endsWith('/review-status'))
+  await panel.getByRole('button', { name: 'Check review status', exact: true }).click()
+  const status = await statusRequest
+  expect(status.headers()['x-symbol-token']).toBe(token)
+  expect(status.headers().authorization).toBeUndefined()
+  await expect(panel.getByText('Received — Awaiting review', { exact: true })).toBeVisible()
+  await panel.getByRole('button', { name: 'Private symbol backup', exact: true }).click()
+  const downloadReady = page.waitForEvent('download')
+  await panel.getByRole('button', { name: 'Download private symbol backup', exact: true }).click()
+  const download = await downloadReady
+  const bytes = await readFile((await download.path())!)
+  expect(JSON.parse(bytes.toString()).reports[0].summary.token).toBe(token)
+
+  const fresh = await browser.newContext()
+  try {
+    const other = await fresh.newPage()
+    await other.goto(page.url())
+    await other.evaluate(() => new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('fate-collector-symbol-reports', 1)
+      request.onupgradeneeded = () => {
+        const store = request.result.createObjectStore('reports', { keyPath: 'id' })
+        store.add({ id: 'legacy-damaged', icon: 'original unreadable data' })
+      }
+      request.onsuccess = () => { request.result.close(); resolve() }
+      request.onerror = () => reject(request.error)
+    }))
+    const restored = await openReports(other, true)
+    await restored.getByRole('button', { name: 'Private symbol backup', exact: true }).click()
+    await restored.getByLabel('Restore private symbol backup').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: bytes })
+    const privateBackup = restored.getByRole('dialog', { name: 'Private symbol backup', exact: true })
+    await expect(privateBackup.getByRole('status')).toContainText('Restored or matched 1 saved entries.')
+    await privateBackup.getByRole('button', { name: 'Done', exact: true }).click()
+
+    await restored.getByRole('button', { name: 'Unreadable reports (1)', exact: true }).click()
+    const unreadable = restored.getByRole('dialog', { name: 'Unreadable reports', exact: true })
+    const damagedReady = other.waitForEvent('download')
+    await unreadable.getByRole('button', { name: 'Download original entry', exact: true }).click()
+    const damaged = await damagedReady
+    expect(JSON.parse(await readFile((await damaged.path())!, 'utf8')).raw).toEqual({ id: 'legacy-damaged', icon: 'original unreadable data' })
+    await unreadable.getByRole('button', { name: 'Done', exact: true }).click()
+    const withdrawal = other.waitForRequest(request => request.url().endsWith('/withdraw'))
+    await restored.getByRole('button', { name: 'Withdraw report', exact: true }).click()
+    expect((await withdrawal).headers()['x-symbol-token']).toBe(token)
+    await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
+  } finally { await fresh.close() }
 })

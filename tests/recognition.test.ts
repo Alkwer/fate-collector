@@ -1,10 +1,20 @@
 import { expect, test } from 'vitest'
-import { extractCards } from '../shared/recognition'
+import { extractCards, offeredCardHeaders } from '../shared/recognition'
 import type { Capture } from '../shared/schema'
 import pressKitOcr from './fixtures/presskit-ocr.json'
 import presentationOcr from './fixtures/presentation-ocr.json'
 const line = (text: string, x: number, y: number) => ({ text, x, y, width: 100, height: 20 })
 const base: Capture = { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0', image: { width: 1000, height: 800, mimeType: 'image/png', dataBase64: 'eA==' }, ocr: { status: 'ok', text: '', language: 'en-US', lines: [] } }
+
+test.each([
+  line('Creates dangerous monsters', 300, 100),
+  { ...line('Creates Monsters', 300, 100), height: 10 },
+  line('New Fate', 80, 100),
+  line('1st Reward', 300, 100),
+])('rejects body text, small text and overlapping unknown headers (%#)', candidate => {
+  const anchor = line('Alchemist', 30, 100)
+  expect(offeredCardHeaders([anchor, candidate])).toEqual([anchor])
+})
 
 test.each(Object.entries(presentationOcr.cases))('uses fresh Windows OCR for presentation %s', (name, capture) => {
   expect(capture.ocr.status).toBe('ok')
@@ -38,7 +48,7 @@ test('pairs panel controls despite an unrelated world-space title and excludes c
     line('Torchbearer', 450, 650),
   ] } })
   expect(result.cards.map(card => ({ name: card.name, modifiers: card.modifiers }))).toEqual([
-    { name: 'Alchemist', modifiers: ['First description'] }, { name: 'Sanguine', modifiers: ['Third description'] },
+    { name: 'Alchemist', modifiers: ['First description'] }, { name: '', modifiers: ['Unknown description'] }, { name: 'Sanguine', modifiers: ['Third description'] },
   ])
 })
 

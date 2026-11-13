@@ -1,6 +1,6 @@
 {
   "version": "2026-11-08.1",
-  "appVersion": "0.3.0",
+  "appVersion": "0.4.0",
   "operator": "Fate Collector — Alkwer",
   "contactUrl": "https://github.com/Alkwer/fate-collector",
   "text": "Operator: Fate Collector — Alkwer. Contact: https://github.com/Alkwer/fate-collector. I agree to send the diagnostic report shown above to the selected collection to investigate problems. It contains software versions, technical states, counts, timestamps and predefined event codes. It does not include access keys, consent credentials, screenshots, OCR, offers, notes, clipboard contents, file paths, account names, raw browser logs or exception messages. This is a one-time diagnostic report, separate from gameplay sharing. Sending is optional. The report is stored privately on Cloudflare, expires after 30 days and is deleted automatically within the following 15 minutes. I can withdraw this consent and delete the report using its saved receipt. Offline deletion is retried when connected. The minimal consent and deletion record remains; recovery backups may retain deleted reports temporarily. Downloading a ZIP only saves a local copy; sending that copy elsewhere is a separate choice.",

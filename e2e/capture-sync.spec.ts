@@ -85,7 +85,7 @@ test('metadata restored during the same folder connection recovers its screensho
   await page.getByRole('button', { name: 'Delete', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Local offer deleted.')
   await closePanels(page)
-  await page.getByRole('button', { name: 'Current map', exact: true }).click()
+  await page.getByRole('button', { name: 'Current area', exact: true }).click()
   await closePanels(page)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'restored.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...offer, notes: 'Restored correction' })) })
   await toggleEditor(page)

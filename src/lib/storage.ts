@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '../../shared/validation'
 import { evidenceSchema, offerSchema, type Archive, type Evidence, type Offer } from '../../shared/schema'
 import { sharingConsent } from './consent'
 import { inspectEvidence, verifyImage } from './evidence'
@@ -105,11 +105,12 @@ export async function listOffers(): Promise<SavedOffer[]> {
 
 // Read each offer and its immutable evidence together, then decode outside IDB.
 // Image decoding must never leave an IndexedDB transaction waiting on external work.
-export async function readOfferArchive(includeEvidence: boolean, onEntry: (entry: Archive['offers'][number]) => void) {
+export async function readOfferArchive(includeEvidence: boolean, onEntry: (entry: Archive['offers'][number]) => void, offerIds?: string[]) {
   const database = await db()
   const keys = await value(database.transaction('offers').objectStore('offers').getAllKeys())
   let offers = 0, omittedOffers = 0, missingEvidence = 0, damagedEvidence = 0
   for (const key of keys) {
+    if (offerIds && !offerIds.some(id => id.toLowerCase() === String(key).toLowerCase())) continue
     if (keys.filter(item => String(item).toLowerCase() === String(key).toLowerCase()).length > 1) { omittedOffers++; continue }
     const transaction = database.transaction(['offers', 'evidence'])
     const parsed = recordSchema.safeParse(await value(transaction.objectStore('offers').get(key)))
@@ -139,7 +140,8 @@ export async function readOfferRecovery() {
     value(offers.getAll()) as Promise<unknown[]>, value(offers.getAllKeys()),
     value(transaction.objectStore('settings').getAll()) as Promise<{ id: string; key: IDBValidKey; value: unknown }[]>,
   ])
-  const isolated = settings.filter(record => record.id.startsWith('recovery-'))
+  const isolated = settings.filter(record => typeof record.id === 'string' && record.id.startsWith('recovery-'))
+  const drafts = settings.filter(record => typeof record.id === 'string' && record.id.startsWith('draft:'))
   const { unreadable } = decodeOffers(raw, keys)
   const damagedIndexes = raw.map((_, index) => unreadable.some(record => record.key === keys[index]) ? index : -1).filter(index => index >= 0)
   const recoveryOffers = [...damagedIndexes.map(index => raw[index]), ...isolated.filter(record => record.id.startsWith('recovery-offer:')).map(record => record.value)]
@@ -156,7 +158,7 @@ export async function readOfferRecovery() {
   }
   return { kind: 'fate-collector.recovery', schemaVersion: 1, exportedAt: new Date().toISOString(),
     records: damagedIndexes.map((index, position) => ({ key: keys[index], value: raw[index], problems: unreadable[position].problems })),
-    evidence: damagedEvidence, isolated,
+    evidence: damagedEvidence, isolated, drafts,
   }
 }
 export async function getOffer(id: string): Promise<SavedOffer | undefined> {
@@ -314,23 +316,56 @@ export async function markUploaded(id: string, revision: number, consentId?: str
   changed()
 }
 export async function deleteOffer(id: string): Promise<void> {
+  return deleteOffers([{ id }])
+}
+export async function deleteOffers(selection: { id: string; revision?: number }[]): Promise<void> {
+  if (!selection.length || selection.length > 250 || new Set(selection.map(item => item.id.toLowerCase())).size !== selection.length) throw new Error('Select between 1 and 250 distinct offers.')
   const database = await db()
   const transaction = database.transaction(['offers', 'evidence', 'captureReceipts', 'deletedOffers'], 'readwrite')
   const done = complete(transaction)
   const store = transaction.objectStore('offers')
-  const key = await storedKey(store, id)
-  const record = await value(store.get(key)) as SavedOffer | undefined
-  store.delete(key)
-  transaction.objectStore('deletedOffers').put({ id: id.toLowerCase() })
-  if (record?.offer.captureId) {
+  const selected: { id: string; key: IDBValidKey; record?: SavedOffer }[] = []
+  for (const { id, revision } of selection) {
+    const key = await storedKey(store, id)
+    const record = await value(store.get(key)) as SavedOffer | undefined
+    if (revision !== undefined && record?.offer.revision !== revision) {
+      transaction.abort(); await done.catch(() => {})
+      throw new OfferRevisionConflictError('One selected offer changed or was deleted. Nothing was removed. Refresh the selection and export a new backup.')
+    }
+    selected.push({ id, key, record })
+  }
+  for (const { id, key } of selected) {
+    store.delete(key)
+    transaction.objectStore('deletedOffers').put({ id: id.toLowerCase() })
+  }
+  const remaining = await value(store.getAll()) as SavedOffer[]
+  for (const { record } of selected) if (record?.offer.captureId) {
     // Retain a receipt so folder sync does not resurrect deliberately deleted captures.
     transaction.objectStore('captureReceipts').put({ id: record.offer.captureId.toLowerCase() })
-    const remaining = await value(store.getAll()) as SavedOffer[]
     const images = transaction.objectStore('evidence')
     if (!remaining.some(r => r.offer?.captureId?.toLowerCase() === record.offer.captureId?.toLowerCase())) images.delete(await storedKey(images, record.offer.captureId))
   }
   await done
   changed()
+}
+
+// Explicit import conflict resolution, guarded against changes since comparison.
+// Preserve the complete previous record before replacing its editable fields.
+export async function replaceImportedOffer(incoming: Offer, expected: Offer): Promise<void> {
+  incoming = offerSchema.parse(incoming)
+  if (incoming.id !== expected.id || incoming.captureId !== expected.captureId || incoming.capturedAt !== expected.capturedAt) throw new Error('These records describe different original captures. Keep both backup files for recovery.')
+  const offer = offerSchema.parse({ ...incoming, revision: Math.max(incoming.revision, expected.revision) + 1, updatedAt: new Date().toISOString() })
+  const transaction = (await db()).transaction(['offers', 'settings'], 'readwrite'), done = complete(transaction)
+  const store = transaction.objectStore('offers'), key = await storedKey(store, incoming.id)
+  const saved = await value(store.get(key)) as SavedOffer | undefined
+  if (!saved || JSON.stringify(saved.offer) !== JSON.stringify(expected)) {
+    transaction.abort(); await done.catch(() => {})
+    throw new OfferRevisionConflictError('This offer changed since comparison. Import the backup again to compare the current revision.')
+  }
+  transaction.objectStore('settings').put({ id: `recovery-offer:${crypto.randomUUID()}`, key, value: saved })
+  if (key !== offer.id) store.delete(key)
+  store.put({ ...saved, offer })
+  await done; changed()
 }
 
 export async function hasCaptureReceipt(id: string): Promise<boolean> {
@@ -388,11 +423,17 @@ export async function removeDraftRecovery(id: string): Promise<void> {
   await done
 }
 export async function listDraftRecovery(): Promise<RecoveryDraft[]> {
+  return (await readDraftRecovery()).drafts
+}
+export async function readDraftRecovery() {
   const records = await value((await db()).transaction('settings').objectStore('settings').getAll()) as { id: string; value: unknown }[]
-  return records.filter(record => record.id.startsWith('draft:')).flatMap(record => {
+  const drafts: RecoveryDraft[] = [], unreadable: { id: string; problems: string[] }[] = []
+  for (const record of records.filter(record => typeof record.id === 'string' && record.id.startsWith('draft:'))) {
     const parsed = recoveryDraftSchema.safeParse(record.value)
-    return parsed.success ? [parsed.data] : []
-  }).sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+    if (parsed.success && record.id === `draft:${parsed.data.id}` && (!parsed.data.evidence || parsed.data.offer.captureId === parsed.data.evidence.id)) drafts.push(parsed.data)
+    else unreadable.push({ id: record.id.slice(6), problems: parsed.success ? ['Draft and evidence identifiers do not match.'] : parsed.error.issues.slice(0, 3).map(issue => `${issue.path.join('.')}: ${issue.message}`) })
+  }
+  return { drafts: drafts.sort((a, b) => b.savedAt.localeCompare(a.savedAt)), unreadable }
 }
 
 export async function storageHealth() {

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 
 export const SYMBOL_REPORT_VERSION = 'symbol-reports-v1'
 export const SYMBOL_REPORT_LIMIT = 640 * 1024

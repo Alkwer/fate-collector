@@ -17,6 +17,12 @@ export function exampleOffer(): Offer {
   return { ...newOffer(), source: 'example', cards: ['Alchemist', 'Sanguine'].map(name => ({ ...newCard(), name, tier: 1, rewards: [newReward()] })),
     notes: 'Illustrative partial offer based on pre-release card names. Reward icons have not been identified. This is not an observed complete roll.' }
 }
+export function guidedExampleOffer(): Offer {
+  return { ...newOffer(), source: 'example', cards: ['Alchemist', 'Sanguine'].map((name, index) => ({
+    ...newCard(), name, tier: 1, modifiers: ['Illustrative training card; not a live observation.'],
+    rewards: [{ ...newReward(), kind: 'regular', label: 'Additional Currency Items', identified: true, count: index ? 1 : 2 }],
+  })), notes: 'Guided practice only: invented reward quantities demonstrate collecting and invocation. These values do not describe the actual Fates.' }
+}
 export function captureToDraft(capture: Capture): { offer: Offer; evidence: Evidence } {
   return {
     offer: { ...newOffer(), id: capture.captureId, captureId: capture.captureId, capturedAt: capture.capturedAt, source: 'windows-helper',

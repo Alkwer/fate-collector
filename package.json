@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:e2e": "npm run build && playwright test",
     "test:compat": "npm run build && playwright test --config playwright.compat.config.ts",
-    "check": "npm run typecheck && npm test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "db:local": "wrangler d1 migrations apply fate-collector --local",
     "preview": "wrangler dev --local --ip 127.0.0.1 --port 8787",
     "deploy": "node scripts/deploy.mjs",
@@ -34,7 +34,10 @@
     "test:capture-backend": "node scripts/test-helper.mjs backend",
     "test:ocr": "node scripts/test-helper.mjs ocr",
     "test:recognition:holdout": "node scripts/recognition-validation.mjs",
-    "research:stats": "node scripts/research-corpus-stats.mjs"
+    "research:stats": "node scripts/research-corpus-stats.mjs",
+    "lint": "eslint src shared worker --max-warnings 0",
+    "test:visual": "npm run build && playwright test --config playwright.visual.config.ts",
+    "review:symbols": "node scripts/review-symbol-reports.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -42,12 +45,18 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@babel/core": "8.1.2",
+    "@babel/eslint-parser": "8.1.2",
     "@cloudflare/workers-types": "5.20261107.1",
     "@playwright/test": "1.65.0",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.2.1",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
     "fake-indexeddb": "6.2.7",
     "fflate": "0.8.3",
     "typescript": "7.0.2",

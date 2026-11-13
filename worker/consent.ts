@@ -1,6 +1,7 @@
-import { z } from 'zod'
+import { z } from '../shared/validation'
 import { CONSENT_VERSION, consentGrantSchema, consentText, type ConsentScope } from '../shared/consent'
 import { authorized, boundedText, digest, json } from './http'
+import type { ReportFailure } from './observability'
 
 interface ConsentEnv { DB?: D1Database; COLLECTOR_CAPTURE_KEY?: string; COLLECTOR_INGEST_KEY?: string; CONSENT_WITHDRAWAL_RATE_LIMITER?: RateLimit; APP_ENV?: string }
 export interface ConsentRecord {
@@ -11,13 +12,13 @@ const withdrawalSchema = z.object({ withdrawnAt: z.string().datetime({ offset: t
 const tokenPattern = /^[a-f0-9]{64}$/
 const idPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
 const DAILY_UNKNOWN_WITHDRAWAL_LIMIT = 100
-const unavailable = () => json({ error: 'Consent service is unavailable. No new data can be shared.' }, 503)
+const unavailable = 'Consent service is unavailable. No new data can be shared.'
 const revoked = () => json({ error: 'Consent is missing, withdrawn or outdated. Review the sharing consent before sending data.', code: 'consent-required' }, 403)
 
 export async function activeConsent(database: D1Database, id: string): Promise<boolean> {
   return Boolean(await database.prepare('SELECT id FROM data_consents WHERE lower(id) = lower(?) AND policy_version = ? AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE lower(id) = lower(data_consents.id))').bind(id, CONSENT_VERSION).first())
 }
-export async function uploadConsent(request: Request, database: D1Database, scope: ConsentScope): Promise<ConsentRecord | Response> {
+export async function uploadConsent(request: Request, database: D1Database, scope: ConsentScope, fail: ReportFailure): Promise<ConsentRecord | Response> {
   const id = (request.headers.get('X-Consent-Id') || '').toLowerCase()
   const token = request.headers.get('X-Consent-Token') || ''
   if (!id || !token) return json({ error: 'Explicit sharing consent is required before sending data.', code: 'consent-required' }, 428)
@@ -26,17 +27,17 @@ export async function uploadConsent(request: Request, database: D1Database, scop
     const record = await database.prepare('SELECT * FROM data_consents WHERE lower(id) = lower(?) AND token_hash = ? AND scope = ? AND origin = ? AND policy_version = ? AND NOT EXISTS (SELECT 1 FROM consent_withdrawals WHERE lower(id) = lower(data_consents.id))')
       .bind(id, await digest(token), scope, new URL(request.url).origin, CONSENT_VERSION).first<ConsentRecord>()
     return record || revoked()
-  } catch { return unavailable() }
+  } catch { return fail('consent_d1', unavailable) }
 }
 
-export async function handleConsent(request: Request, env: ConsentEnv): Promise<Response> {
+export async function handleConsent(request: Request, env: ConsentEnv, fail: ReportFailure): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Use POST for consent changes.' }, 405)
-  if (!env.DB) return unavailable()
+  if (!env.DB) return fail('consent_configuration', unavailable)
   if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return json({ error: 'Send application/json.' }, 415)
   const url = new URL(request.url)
   const withdrawal = /^\/api\/consents\/([^/]+)\/withdraw$/.exec(url.pathname)
   if (withdrawal) {
-    if (!env.CONSENT_WITHDRAWAL_RATE_LIMITER) return unavailable()
+    if (!env.CONSENT_WITHDRAWAL_RATE_LIMITER) return fail('consent_configuration', unavailable)
     try {
       const source = request.headers.get('CF-Connecting-IP') || 'local'
       const key = await digest(`${new Date().toISOString().slice(0, 10)}:${source}:${env.COLLECTOR_CAPTURE_KEY || env.COLLECTOR_INGEST_KEY || ''}`)
@@ -45,7 +46,7 @@ export async function handleConsent(request: Request, env: ConsentEnv): Promise<
         response.headers.set('Retry-After', '60')
         return response
       }
-    } catch { return unavailable() }
+    } catch { return fail('consent_rate_limiter', unavailable) }
   }
   let body: unknown
   try { body = JSON.parse(await boundedText(request)) } catch { return json({ error: 'Invalid consent request.' }, 400) }
@@ -84,7 +85,7 @@ export async function handleConsent(request: Request, env: ConsentEnv): Promise<
     if (!parsed.success) return json({ error: 'Invalid consent record.' }, 400)
     const grant = parsed.data
     const key = grant.scope === 'captures' ? env.COLLECTOR_CAPTURE_KEY : env.COLLECTOR_INGEST_KEY
-    if (!key) return unavailable()
+    if (!key) return fail('consent_configuration', unavailable)
     if (!await authorized(request, key)) return json({ error: 'A valid collection access key is required.' }, 401)
     if (grant.policyVersion !== CONSENT_VERSION || grant.text !== consentText(grant.scope, url.origin)) return json({ error: 'The consent information has changed. Read and accept the current version.', code: 'consent-outdated' }, 409)
     if (Date.parse(grant.acceptedAt) > Date.now() + 300_000) return json({ error: 'The consent date is in the future. Check the device clock.' }, 400)
@@ -97,5 +98,5 @@ export async function handleConsent(request: Request, env: ConsentEnv): Promise<
     const saved = await env.DB.prepare('SELECT * FROM data_consents WHERE lower(id) = lower(?)').bind(grant.id).first<ConsentRecord>()
     if (!saved || saved.token_hash !== tokenHash || saved.scope !== grant.scope || saved.accepted_at !== grant.acceptedAt || saved.consent_text !== grant.text || saved.origin !== url.origin) return json({ error: 'This consent ID already belongs to another record.' }, 409)
     return json({ id: saved.id.toLowerCase(), scope: saved.scope, policyVersion: saved.policy_version, text: saved.consent_text, acceptedAt: saved.accepted_at, recordedAt: saved.recorded_at, withdrawnAt: null }, inserted.meta.changes ? 201 : 200)
-  } catch { return unavailable() }
+  } catch { return fail('consent_d1', unavailable) }
 }

@@ -13,7 +13,7 @@ for (const theme of ['mineral', 'trail']) test(`${theme}: visual rewards preserv
     { ...newCard(), name: 'Tempest', tier: 1, rewards: [{ ...newReward(), label: 'Exceptional Gem', kind: 'combo', threshold: 3, identified: true }] },
   ] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'visual-example.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-  await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
   await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   const cards = page.locator('.visual-offer .fate-list > li')
@@ -53,7 +53,7 @@ test('observed game motifs stay unknown and a missing portrait has a usable fall
   const offer = { ...newOffer(), cards: [{ ...newCard(), name: 'Tempest', tier: 2,
     rewards: [{ ...newReward(), label: 'Blue diamond', visualId: 'blue-diamond', count: 2 }] }] }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'unknown-motif.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-  await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
   const card = page.locator('.visual-offer .fate-list > li')
   await expect(card.locator(':scope > .fate-art')).toContainText('Artwork unavailable')
   await expect(card.locator(':scope > .reward-strip .reward-symbol img')).toHaveAttribute('src', '/game-art/reward-blue-diamond.png')
@@ -73,7 +73,7 @@ for (const theme of ['mineral', 'trail']) test(`${theme}: all four newly sourced
   const offer = { ...newOffer(), cards: names.map(name => ({ ...newCard(), name, tier: 1,
     rewards: [{ ...newReward(), label: 'Currency', count: 1, kind: 'regular', identified: true }] })) }
   await page.getByLabel('Import capture file').setInputFiles({ name: 'new-artwork.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
-  await page.getByRole('button', { name: 'Start map with this offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
   await selectRewardGoal(page, 'regular:currency')
   await closePanels(page)
   for (const width of [1440, 390]) {

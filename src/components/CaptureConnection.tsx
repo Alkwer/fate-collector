@@ -1,4 +1,5 @@
 import type { useCaptureSync } from '../lib/useCaptureSync'
+import { CaptureVersion } from './CaptureVersion'
 
 export function CaptureConnection({ sync }: { sync: ReturnType<typeof useCaptureSync> }) {
   const active = sync.status === 'active'
@@ -11,5 +12,6 @@ export function CaptureConnection({ sync }: { sync: ReturnType<typeof useCapture
     <div className="connection-actions">{!active && sync.supported && <button disabled={sync.status === 'connecting'} onClick={() => void (sync.folderName ? sync.resume() : sync.connect())}>{sync.status === 'connecting' ? 'Connecting…' : sync.folderName ? 'Resume local review' : 'Connect folder'}</button>}
       {sync.folderName && <button className="text-button" disabled={sync.status === 'connecting'} onClick={() => void sync.disconnect()}>Disconnect</button>}</div>
     {sync.problem && <p className="connection-problem" role="alert">{sync.problem}</p>}
+    <CaptureVersion />
   </section>
 }

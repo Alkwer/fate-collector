@@ -24,8 +24,13 @@
 .symbol-crop-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-block: 16px; }
 .symbol-crop-fields input { width: 100%; }
 .symbol-report-history { margin-top: 32px; border-top: 1px solid var(--border); }
-.symbol-report-history article { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; padding-block: 20px; border-bottom: 1px solid var(--border); }
-.symbol-report-history article > img { object-fit: contain; }
+.symbol-report-history article,
+.symbol-draft-row { padding-block: 16px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.symbol-report-history > .detail-panel,
+.symbol-report-history > nav,
+.symbol-report-history .row-actions,
+.symbol-draft-row .row-actions { margin-top: 12px; }
+.symbol-report-history input[type="file"] { max-width: 100%; }
 .symbol-report-history p { margin-block: 4px 8px; }
 .symbol-report-history small { overflow-wrap: anywhere; }
 @media (max-width: 760px) {

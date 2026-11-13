@@ -1,6 +1,6 @@
 import type { Capture, FateCard, Reward } from './schema'
 import { newReward } from './offers'
-import { findOfferedRegion, knownFateName } from './recognition'
+import { findOfferedRegion, offeredCardHeaders } from './recognition'
 import type { VisualAnalysis } from './visual-recognition'
 import { REWARD_CATALOG_VERSION, visualRewardFields } from './reward-catalog'
 
@@ -14,9 +14,10 @@ export const VISUAL_LABELS: Record<NonNullable<Reward['visualId']>, string> = {
 // or corrected offer; imports/storage already preserve the existing revision.
 export function applyVisualSuggestions(cards: FateCard[], capture: Capture, result: VisualAnalysis): FateCard[] {
   if (result.status !== 'candidates') return cards
-  const headers = findOfferedRegion(capture)?.headers.filter(header => knownFateName(header.text)) ?? []
+  const headers = offeredCardHeaders(findOfferedRegion(capture)?.headers ?? [])
   if (headers.length !== cards.length) return cards
   return cards.map((card, index) => {
+    if (!card.name) return card
     const header = headers[index]
     const matches = result.cards.filter(candidate => candidate.name === card.name && candidate.header.x === header.x && candidate.header.y === header.y)
     if (matches.length !== 1) return card

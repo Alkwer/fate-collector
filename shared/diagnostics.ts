@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 import policy from './diagnostics-policy.json' with { type: 'json' }
 
 export const DIAGNOSTIC_VERSION = policy.version

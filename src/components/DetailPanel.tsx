@@ -1,4 +1,4 @@
-import { useEffect, useId, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'
+import { useEffect, useEffectEvent, useId, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'
 
 export interface DetailPanelHandle {
   show: () => void
@@ -25,7 +25,8 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
   }
   function close() { dialog.current?.close() }
   useImperativeHandle(ref, () => ({ show, close, isOpen: () => !!dialog.current?.open, element: dialog.current }))
-  useEffect(() => { if (autoOpen) show() }, [autoOpen])
+  const openAutomatically = useEffectEvent(show)
+  useEffect(() => { if (autoOpen) openAutomatically() }, [autoOpen])
   return <div className={`detail-panel ${className}`}>
     {trigger && <button type="button" className="panel-trigger" aria-haspopup="dialog" aria-controls={id} onClick={show}>{triggerLabel ?? title}</button>}
     <dialog id={id} ref={dialog} className="detail-dialog" aria-labelledby={`${id}-title`} onClose={event => {
