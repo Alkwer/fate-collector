@@ -1,10 +1,11 @@
 import { DetailPanel, type DetailPanelHandle } from './components/DetailPanel'
 import { useSharingConsent } from './lib/useSharingConsent'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { offerSchema, formatValidationError, type Offer } from '../shared/schema'
+import { offerSchema, formatValidationError, type FateCard, type Offer } from '../shared/schema'
 import { newOffer, exampleOffer, guidedExampleOffer, submissionProblem } from '../shared/offers'
 import { SourcePanel, CaptureDetails } from './components/SourcePanel'
 import { OfferEditor } from './components/OfferEditor'
+import { ManualFateEntry } from './components/ManualFateEntry'
 import { OfferPreview } from './components/OfferPreview'
 import { SavedOffers } from './components/SavedOffers'
 import { importFiles, recoverBackup, importJson, downloadArchive, type Imported } from './lib/imports'
@@ -49,6 +50,7 @@ export default function App() {
   const [isolatedCount, setIsolatedCount] = useState(0)
   const [missingEvidenceIds, setMissingEvidenceIds] = useState<string[]>([])
   const detailsPanel = useRef<DetailPanelHandle>(null)
+  const manualPanel = useRef<DetailPanelHandle>(null)
   const [editing, setEditing] = useState(false)
   const [reviewRequest, setReviewRequest] = useState<{ cardId: string; sequence: number } | null>(null)
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null)
@@ -87,7 +89,7 @@ export default function App() {
   const sync = useCaptureSync(async entry => {
     // Apply delivery to this editor session before an asynchronous history read
     // allows the user to switch drafts underneath this callback.
-    mapEditor.receive(entry, tab === 'collector' && !!detailsPanel.current?.isOpen())
+    mapEditor.receive(entry, tab === 'collector' && (!!detailsPanel.current?.isOpen() || !!manualPanel.current?.isOpen()))
     if (entry.restored) archiveEditor.receive(entry, true)
     await refresh()
   })
@@ -153,7 +155,7 @@ export default function App() {
   }
   useEffect(() => {
     const paste = (event: ClipboardEvent) => {
-      if (busy || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
+      if (busy || manualPanel.current?.isOpen() || event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return
       const file = event.clipboardData?.files[0]
       const text = event.clipboardData?.getData('text/plain') || ''
       if (file) { event.preventDefault(); void loadFile(file); return }
@@ -215,6 +217,24 @@ export default function App() {
     if (advisor.needsMapConfirmation) return
     if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft.id)
     else advisor.startMap(mapEditor.draft.id)
+  }
+  const manualStartsNextOffer = advisor.workspace.usedOfferIds.includes(mapEditor.draft.id)
+    || advisor.workspace.collection.cards.some(card => advisor.workspace.sources[card.id] === mapEditor.draft.id || mapEditor.draft.cards.some(offered => offered.id === card.id))
+  function addManualFate(card: FateCard): boolean {
+    if (busy || mapEditor.autoSaving || (!manualStartsNextOffer && mapEditor.draft.cards.length >= 30)) return false
+    if (manualStartsNextOffer && !mapEditor.canReplace()) return false
+    const fresh = manualStartsNextOffer || (!mapEditor.dirty && !mapEditor.savedLocally && mapEditor.draft.source === 'manual' && !mapEditor.draft.captureId && !mapEditor.draft.cards.length)
+    const target = manualStartsNextOffer ? newOffer() : mapEditor.draft
+    const patch = { cards: [...target.cards, card], ...(fresh && { origin: 'live' as const, gameVersion: 'unknown' }) }
+    if (manualStartsNextOffer) mapEditor.loadDraft({ ...target, ...patch }, null, true)
+    else mapEditor.change(patch)
+    advisor.changeWorkspace({ ...advisor.workspace, mode: 'offer' })
+    if (fresh && !advisor.needsMapConfirmation) {
+      if (advisor.workspace.map) advisor.bindOffer(target.id)
+      else advisor.startMap(target.id)
+    }
+    setNotice(null)
+    return true
   }
   function useArchivedOffer() {
     if (archiveEditor.dirty || advisor.needsMapConfirmation || !mapEditor.canReplace()) return
@@ -291,7 +311,7 @@ export default function App() {
         </section>}
         {!advisor.workspace.map && !!draft.cards.length && advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
         {advisor.storageError && <p className="notice error" role="alert">{advisor.storageError}</p>}
-        <FateAdvisor solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} source={<SourcePanel compact={!!draft.cards.length || !!advisor.workspace.collection.cards.length} evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
+        <FateAdvisor solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} onAddManual={() => manualPanel.current?.show()} source={<SourcePanel compact={!!draft.cards.length || !!advisor.workspace.collection.cards.length} evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
         {sync.status !== 'off' && <button className="connection-status text-button" onClick={() => connectionPanel.current?.show()}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Local review settings'}</button>}
         {sync.problem && <p className="connection-warning field-error" role="alert">{sync.problem}</p>}
         </> : <>
@@ -309,6 +329,10 @@ export default function App() {
       </Suspense>
       {importConflicts.length > 0 && <ImportConflicts conflicts={importConflicts} onUpdated={refresh} onClose={() => setImportConflicts([])} />}
       <LazySymbolReports ref={symbolReportsPanel} offer={draft} evidence={evidence} />
+      {tab === 'collector' && <ManualFateEntry panelRef={manualPanel} offerId={mapEditor.draft.id} cardCount={mapEditor.draft.cards.length} nextOffer={manualStartsNextOffer} busy={busy || mapEditor.autoSaving} definitions={solver.settings.definitions} onAdd={addManualFate} onDone={() => {
+        manualPanel.current?.close()
+        document.getElementById('advisor-heading')?.focus()
+      }} />}
       {backup && <BackupDownload {...backup} onRecovery={() => void exportRecovery()} onClose={closeBackup} />}
       <input ref={fileInput} className="file-input" type="file" multiple accept=".json,image/png,image/jpeg" aria-label="Import capture file" onChange={event => { const files = Array.from(event.target.files ?? []); if (files.length) void loadFile(files); event.target.value = '' }} />
       <input ref={recoveryInput} className="file-input" type="file" accept=".json" aria-label="Recover damaged backup" onChange={event => { const file = event.target.files?.[0]; if (file) void loadFile(file, true); event.target.value = '' }} />

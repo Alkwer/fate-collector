@@ -99,6 +99,21 @@ their current collection.
 The map editor has no archive choice control. Keep capture saving, reward checking
 and local map choices distinct in the copy, without requiring duplicate input.
 
+**Add Fate manually** is visible on both the empty and populated current-area
+screen. A focused panel offers searchable, sourced portraits and a custom-name
+fallback, then a short form for tier and optional rewards. Selecting a portrait
+supplies only its name. Unknown tiers, reward kinds and thresholds stay unknown;
+tooltip catalog entries and personal templates retain their existing meaning.
+Reward shortcuts add a catalog entry with one click; repeat clicks and minus/plus
+controls adjust its count. Names, kinds and thresholds live in a separate reward
+details panel, opened explicitly or for a custom reward. Unknown rewards need no
+typing, and unknown catalog kinds remain explicit until the player checks them.
+**Add & enter another** keeps the player in the same offer. A fresh manual offer
+starts or joins the current area, while restored areas still need confirmation.
+After a choice is recorded, manual entry starts the next offer and preserves the
+existing unsaved-draft replacement warning. Manual offers use the explicit save
+action and existing draft recovery; corrections and original evidence are retained.
+
 In the capture area, show **Your capture**, **Paste your capture with Ctrl+V**
 and **Import capture** when manual import is available. Use **Connect folder**
 and **Local review connected** for the local connection, and **Saved locally**

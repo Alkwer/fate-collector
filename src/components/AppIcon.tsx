@@ -7,6 +7,7 @@ const paths = {
   download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
   check: 'm5 12 4 4L19 6',
   plus: 'M12 5v14M5 12h14',
+  minus: 'M5 12h14',
   close: 'm6 6 12 12M6 18 18 6',
   coins: 'M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 4 3 3-3 3-3-3 3-3Zm8 1a7 7 0 1 1-10 11',
   gem: 'm4 8 4-4h8l4 4-8 13L4 8Zm0 0h16M8 4l-1 4 5 13 5-13-1-4',
