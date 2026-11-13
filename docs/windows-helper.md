@@ -1,6 +1,13 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.4.0 adds **Ctrl+Shift+F9** for symbol reports. Saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.5.0 adds automatic campaign/map context from the local game log. **Ctrl+Shift+F9** symbol reports, saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+
+**F9 area context:** the helper reads `logs/Client.txt` from the running game's
+installation and records Campaign, Map, Other or Unknown, plus the internal area
+ID and level when available. No additional hotkey or typing is needed. Correct
+the category under **More actions → Edit details → Area category**. A missing
+log or uncertain transition stays Unknown. Raw log lines are never saved or
+uploaded. See [area context](area-context.md) for classification and limits.
 
 ## Direct cloud upload: no browser required
 

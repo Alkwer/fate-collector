@@ -34,6 +34,7 @@ if ($Phase -eq 'Offline') {
         }
         if ($mode -in 'ok', 'error', 'repeat') {
             $bundle.context.session = @{ id = $sessionId; startedAt = $startedAt; sequence = $ids.Count }
+            $bundle.context.area = @{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 83; rawLog = 'LOCAL_LOG_SENTINEL' }
         }
         if ($mode -eq 'repeat') {
             $bundle.context.possibleDuplicate = @{ ofCaptureId = $ids[0]; reason = 'same-ocr-within-15s' }

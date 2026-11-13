@@ -2,6 +2,7 @@ import { DetailPanel } from './DetailPanel'
 import { useRef } from 'react'
 import type { Evidence, Offer } from '../../shared/schema'
 import { hasNewerHelper, HELPER_VERSION } from '../lib/helper-version'
+import { AREA_CATEGORY_LABELS } from '../../shared/area-context'
 import { AppIcon } from './AppIcon'
 
 interface Props { evidence: Evidence | null; automatic?: boolean; compact?: boolean; onPick: () => void; onFile: (file: File) => void }
@@ -14,7 +15,7 @@ export function SourcePanel({ evidence, automatic = false, compact = false, onPi
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
       <DetailPanel title={<>What's new and how to update</>}>
-        <p>Helper 0.4.0 captures a symbol and its tooltip with Ctrl+Shift+F9. Paste both crops on the website, check the previews and approve sending.</p>
+        <p>Helper 0.5.0 reads the current area from the local game log when you press F9. Campaign, map and other areas are recorded automatically when recognized.</p>
         <p>Exit the running helper, replace its program files and start it again. Keep your captures, symbol-reports and fate-collector.ini.</p>
       </DetailPanel>
     </aside>}
@@ -52,11 +53,15 @@ export function CaptureDetails({ evidence, offer, onChange }: DetailsProps) {
     </DetailPanel>
       <div className="context-fields">
         <label>Game version<input value={offer.gameVersion} maxLength={64} onChange={e => onChange({ gameVersion: e.target.value })} /></label>
+        <label>Area category<select value={offer.areaCategory ?? 'unknown'} onChange={e => onChange({ areaCategory: e.target.value as Offer['areaCategory'] })}>{Object.entries(AREA_CATEGORY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>Area<input value={offer.area} maxLength={160} placeholder="Unknown" onChange={e => onChange({ area: e.target.value })} /></label>
         <label>Area level<input type="number" min={1} max={100} value={offer.areaLevel ?? ''} placeholder="Unknown" onChange={e => onChange({ areaLevel: e.target.value ? Number(e.target.value) : null })} /></label>
         <label>Origin<select value={offer.origin} disabled={offer.source === 'example'} onChange={e => onChange({ origin: e.target.value as Offer['origin'] })}><option value="test">Test / showcase</option><option value="live">Live game</option></select></label>
         <label>Encounter number<input type="number" min={1} max={10000} value={offer.encounterNumber} onChange={e => onChange({ encounterNumber: Number(e.target.value) })} /></label>
       </div>
+      <p className="hint area-context">{offer.captureContext?.area
+        ? `Detected from game log: ${AREA_CATEGORY_LABELS[offer.captureContext.area.category]}${offer.captureContext.area.areaId ? ` · ${offer.captureContext.area.areaId}` : ''}. You can correct the category above.`
+        : 'No automatic area context in this capture. Choose a category if known.'}</p>
       <label className="notes-field">Notes<textarea rows={2} maxLength={4000} value={offer.notes} placeholder="Anything unusual about this capture" onChange={e => onChange({ notes: e.target.value })} /></label>
       <p className="hint">Offer ID: <span className="mono">{offer.id}</span></p>
   </section>

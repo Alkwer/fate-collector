@@ -164,6 +164,21 @@ test('archive import restores missing images for existing IDs and preserves loca
   await deleteOffer(offer.id)
 })
 
+test('area corrections survive repeated capture intake and backup restoration', async () => {
+  const { offer, evidence } = captureEntry()
+  const detected = { ...offer, areaCategory: 'campaign' as const, captureContext: { captureMode: 'game' as const,
+    area: { source: 'client-log' as const, category: 'campaign' as const, areaId: '1_1_1', areaLevel: 1 } } }
+  await receiveCapture(detected, evidence)
+  const saved = await saveOffer({ ...detected, areaCategory: 'other' }, evidence)
+  await receiveCapture(detected, evidence)
+  expect((await getOffer(offer.id))?.offer).toEqual(saved.offer)
+  const backup = { kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer: saved.offer, evidence: null }] }
+  await deleteOffer(offer.id)
+  await importOffers((await importJson(JSON.stringify(backup))).entries)
+  expect((await getOffer(offer.id))?.offer).toMatchObject({ areaCategory: 'other', captureContext: detected.captureContext })
+  await deleteOffer(offer.id)
+})
+
 test('archive import retains session and possible repeat metadata on a reviewed correction', async () => {
   const { offer } = captureEntry()
   const corrected = { ...offer, revision: 2, reviewed: true, completeness: 'partial', notes: 'Reviewed correction', captureContext: {

@@ -3,6 +3,18 @@ $script:FateContextGuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 
 function ConvertTo-FateCaptureContext($Context, [string]$CaptureId) {
     $result = [ordered]@{ captureMode = $Context.captureMode }
+    if ($Context.PSObject.Properties['area']) {
+        $area = $Context.area
+        if (!$area -or $Context.captureMode -cne 'game' -or $area.source -isnot [string] -or $area.source -cne 'client-log' -or
+            $area.category -isnot [string] -or $area.category -cnotin 'campaign', 'map', 'other', 'unknown') {
+            throw 'Invalid capture area.'
+        }
+        $emptyArea = $area.category -ceq 'unknown' -and $null -eq $area.areaId -and $null -eq $area.areaLevel
+        $knownArea = $area.areaId -is [string] -and $area.areaId -cmatch '\A[A-Za-z0-9_]{1,160}\z' -and
+            $area.areaLevel -is [int] -and $area.areaLevel -ge 1 -and $area.areaLevel -le 100
+        if (!$emptyArea -and !$knownArea) { throw 'Invalid capture area.' }
+        $result.area = [ordered]@{ source = $area.source; category = $area.category; areaId = $area.areaId; areaLevel = $area.areaLevel }
+    }
     if ($Context.PSObject.Properties['session']) {
         $session = $Context.session
         if (!$session -or $session.id -isnot [string] -or $session.id -cnotmatch "\A$script:FateContextGuid\z" -or
@@ -25,8 +37,9 @@ function ConvertTo-FateCaptureContext($Context, [string]$CaptureId) {
 
 function New-FateCaptureContext {
     param([string]$Mode, [string]$CaptureId, [DateTimeOffset]$CapturedAt, [string]$SessionId,
-        [string]$SessionStartedAt, [int]$Sequence, $Ocr, [int]$Width, [int]$Height, $Previous)
+        [string]$SessionStartedAt, [int]$Sequence, $Ocr, [int]$Width, [int]$Height, $Previous, $Area)
     $context = [ordered]@{ captureMode = $Mode }
+    if ($Mode -ceq 'game' -and $null -ne $Area) { $context.area = $Area }
     if (!$SessionId -and !$SessionStartedAt -and !$Sequence) { return $context }
     if ($SessionId -cnotmatch "\A$script:FateContextGuid\z" -or $Sequence -lt 1 -or $Sequence -gt 1000000000) {
         throw 'Invalid capture session arguments.'

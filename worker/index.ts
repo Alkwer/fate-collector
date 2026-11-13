@@ -7,6 +7,7 @@ import { expireSymbolReports, handleSymbolReports } from './symbol-reports'
 import { symbolReportingEnabled, type SymbolVerificationEnv } from './symbol-verification'
 import { captureUploadSchema, offerSchema } from '../shared/schema'
 import { newOffer, submissionProblem } from '../shared/offers'
+import { capturedAreaFields } from '../shared/area-context'
 import { extractCards, PARSER_VERSION } from '../shared/recognition'
 
 export interface Env extends Partial<WorkerBindings>, SymbolVerificationEnv { ASSETS: Fetcher; COLLECTOR_INGEST_KEY?: string; COLLECTOR_CAPTURE_KEY?: string }
@@ -26,6 +27,7 @@ async function receiveCapture(body: unknown, database: D1Database, consent: Cons
   const payload = JSON.stringify(capture)
   const hash = await digest(payload)
   const candidate = offerSchema.parse({ ...newOffer(), id: capture.captureId, captureId: capture.captureId, captureContext: capture.context,
+    ...capturedAreaFields(capture.context),
     source: 'windows-helper', origin: 'live', gameVersion: 'unknown',
     capturedAt: capture.capturedAt, updatedAt: capture.capturedAt,
     cards: extractCards(capture).cards.slice(0, 30), reviewed: false, completeness: 'unverified' })

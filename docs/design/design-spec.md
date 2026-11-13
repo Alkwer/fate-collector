@@ -44,6 +44,11 @@ unreviewed saves under **More actions**. The journal keeps search and its main
 offer filter visible, with additional filters, import, export, recovery and
 sharing in named panels opened by buttons. Retain deletion confirmation, source
 zoom, import guidance and actionable error feedback.
+Area category is a separate Campaign / Map / Other / Unknown select under
+**Edit details**, initialized from helper log context when available. Show the
+original detection alongside corrections, and show the saved category in the
+offer preview and archive. Archive **More filters** includes area category;
+legacy records with no category behave as Unknown.
 **Connect folder** links the local captures folder once. While connected, captures
 and corrections save automatically; there is no per-capture confirmation or save
 button. Display a compact connection status and local save state. New automatic

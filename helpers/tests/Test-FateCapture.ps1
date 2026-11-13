@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $helper = Split-Path $PSScriptRoot -Parent
+& (Join-Path $PSScriptRoot 'Test-AreaContext.ps1')
 $export = Join-Path $helper 'Export-FateCapture.ps1'
 $powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $folder = Join-Path (Join-Path $helper 'captures') ("fixture & space " + [guid]::NewGuid())
@@ -32,6 +33,7 @@ function Read-FixtureBundle($Result, [guid]$Id) {
     $release = Get-Content -Raw (Join-Path $PSScriptRoot '..\..\shared\helper-release.json') | ConvertFrom-Json
     Assert-True ($bundle.source -eq 'windows-helper' -and $bundle.helperVersion -eq $release.version) 'Incorrect producer metadata.'
     Assert-True ($bundle.context.captureMode -eq 'fixture') 'The offline PNG was not marked as a fixture.'
+    Assert-True (!$bundle.context.PSObject.Properties['area']) 'The offline PNG included game area metadata.'
     Assert-True ($bundle.captureId -eq $Id.ToString()) 'Incorrect capture ID.'
     Assert-True ([string]$bundle.capturedAt -match 'Z$' -or $bundle.capturedAt -is [DateTime]) 'Timestamp is not UTC ISO 8601.'
     [void][DateTimeOffset]::Parse($bundle.capturedAt)

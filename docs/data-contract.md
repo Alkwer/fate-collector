@@ -27,6 +27,20 @@ until helper restart or a different game process is captured. Sequence counts
 published captures only; it is independent of `encounterNumber` and game progression.
 Legacy files without these fields remain valid.
 
+Helper 0.5.0 adds optional `context.area`: `source: "client-log"`,
+`category: "campaign" | "map" | "other" | "unknown"`, `areaId` (a bounded
+ASCII identifier or null) and `areaLevel` (1–100 or null). Missing/unusable log
+context is explicitly unknown with null ID and level; an unrecognized ID can
+retain its level with category unknown. No log lines, path, PID, instance seed,
+chat or network address are retained in the bundle or upload.
+
+On initial import and server intake, this initializes `offer.areaCategory`,
+`offer.area` (the internal identifier) and `offer.areaLevel`. The optional
+`areaCategory` is an independent editable field; absent legacy values mean
+unknown. Corrections never rewrite `captureContext.area`, and importing the same
+capture again preserves saved corrections. Backups and reviewed sharing retain
+both the corrected category and the source context. See [area context](area-context.md).
+
 Optional `context.possibleDuplicate` contains `ofCaptureId` and the fixed reason
 `same-ocr-within-15s`. It references the preceding published capture in that session
 when successful, nonempty OCR matches after whitespace/case normalization, dimensions
@@ -138,8 +152,9 @@ original file preserved for inspection. They are never acknowledged as accepted.
 
 `capture_uploads` preserves raw OCR, the parsed candidate and parser version. OCR
 errors and unavailable OCR are retained as empty unverified candidates, not dropped
-from the sample. No automatic upload claims complete coverage. Game version and
-area are not inferred. `research_observations` combines raw candidates and the
+from the sample. No automatic upload claims complete coverage. Game version is
+not inferred; area fields use the optional helper log context described above.
+`research_observations` combines raw candidates and the
 latest reviewed offers, preferring a reviewed offer with the same ID or capture
 reference. The raw evidence stays available even after a reviewed correction.
 There is no public cloud read endpoint or automatic correction sync in this version.
@@ -147,7 +162,7 @@ There is no public cloud read endpoint or automatic correction sync in this vers
 ## Offer
 
 `fate-collector.offer` contains an ID, revision, capture reference, timestamps,
-source/origin, game version, optional area/level, encounter number, offered cards,
+source/origin, game version, optional area/level/category, encounter number, offered cards,
 optional selected card, review/coverage flags and notes. Each card has its own ID,
 name, nullable tier, modifiers and reward annotations. Rewards have a label, kind
 (`regular`, `combo`, `unknown`), count, optional threshold and identification flag.

@@ -23,6 +23,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'CaptureContext.Common.ps1')
+. (Join-Path $PSScriptRoot 'AreaContext.Common.ps1')
 
 # Screen capture, Windows OCR and positioned text export.
 # Component attribution: THIRD_PARTY_NOTICES.md and LICENSE.third-party.txt.
@@ -68,9 +69,12 @@ try {
 
     $capturedAt = [DateTime]::UtcNow.ToString('o', [System.Globalization.CultureInfo]::InvariantCulture)
     $directory = [System.IO.Directory]::CreateDirectory($OutputDirectory)
+    $area = $null
     if ($PSCmdlet.ParameterSetName -eq 'Window') {
+        $areaBefore = Get-FateAreaSnapshot $WindowPid
         $png = Get-FateWindowPng -WindowHandle $WindowHandle -WindowPid $WindowPid -ClientWidth $ClientWidth -ClientHeight $ClientHeight `
             -X $X -Y $Y -Width $Width -Height $Height -CaptureBackend $CaptureBackend -CompilerDirectory $directory.FullName -FailureCode ([ref]$failureCode)
+        $area = Resolve-FateCapturedArea $areaBefore (Get-FateAreaSnapshot $WindowPid)
     }
 
     if ($png.Length -ge 9MB) {
@@ -93,14 +97,14 @@ try {
         } catch { $previous = $null } # Optional evidence must not prevent a new capture.
     }
     $context = New-FateCaptureContext -Mode $captureMode -CaptureId $CaptureId.ToString() -CapturedAt ([DateTimeOffset]::Parse($capturedAt)) `
-        -SessionId $SessionId -SessionStartedAt $SessionStartedAt -Sequence $CaptureSequence -Ocr $ocr -Width $Width -Height $Height -Previous $previous
+        -SessionId $SessionId -SessionStartedAt $SessionStartedAt -Sequence $CaptureSequence -Ocr $ocr -Width $Width -Height $Height -Previous $previous -Area $area
     $bundle = [ordered]@{
         kind = 'fate-collector.capture'
         schemaVersion = 1
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.4.0'
+        helperVersion = '0.5.0'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context

@@ -4,12 +4,14 @@ import { VISUAL_LABELS } from '../../shared/visual-suggestions'
 import { FateArtwork, RewardStrip, TierMark } from './DecisionVisuals'
 import { DetailPanel } from './DetailPanel'
 import { AppIcon } from './AppIcon'
+import { AREA_CATEGORY_LABELS } from '../../shared/area-context'
 
 export function OfferPreview({ offer, saved = false, automatic = false, embedded = false, highlightedCardIds, provisional = false, renderAdvice }: { offer: Offer; saved?: boolean; automatic?: boolean; embedded?: boolean; highlightedCardIds?: string[]; provisional?: boolean; renderAdvice?: (card: FateCard) => ReactNode }) {
   const sequence = offer.captureContext?.session?.sequence
   const possibleRepeat = Boolean(offer.captureContext?.possibleDuplicate)
   return <section className={`${embedded ? 'visual-offer ' : 'panel '}offer-preview`} aria-labelledby="preview-heading">
     <div className={embedded ? 'sr-only' : 'section-heading'}><h2 id="preview-heading">Offered Fates</h2>{offer.cards.length > 0 && <span className="muted">{offer.cards.length} {offer.cards.length === 1 ? 'card' : 'cards'}</span>}</div>
+    <p className="hint area-context">Area category: {AREA_CATEGORY_LABELS[offer.areaCategory ?? 'unknown']}{offer.area && ` · ${offer.area}`}{offer.areaLevel !== null && ` · Level ${offer.areaLevel}`}</p>
     {(sequence !== undefined || possibleRepeat) && <p className="hint">
       {sequence !== undefined ? `Session capture #${sequence}` : ''}{sequence !== undefined && possibleRepeat ? ' · ' : ''}{possibleRepeat ? 'Possible repeat (matching OCR)' : ''}
     </p>}

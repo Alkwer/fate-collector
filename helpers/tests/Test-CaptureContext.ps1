@@ -14,8 +14,10 @@ $prior = [pscustomobject]@{
     ocr = [pscustomobject]@{ status = 'ok'; text = 'Torchbearer  100% increased rewards' }
 }
 $argsForContext = @{ Mode='game'; CaptureId=$id; CapturedAt=$now; SessionId=$session
-    SessionStartedAt=$now.AddMinutes(-1).ToString('yyyyMMddHHmmss'); Sequence=2; Ocr=$ocr; Width=800; Height=400; Previous=$prior }
+    SessionStartedAt=$now.AddMinutes(-1).ToString('yyyyMMddHHmmss'); Sequence=2; Ocr=$ocr; Width=800; Height=400; Previous=$prior
+    Area = [ordered]@{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 83 } }
 $result = New-FateCaptureContext @argsForContext
+Assert-Context ($result.area.areaId -ceq 'MapWorldsDunes') 'Capture lost area metadata.'
 Assert-Context ($result.session.sequence -eq 2 -and $result.session.id -ceq $session) 'Session identity/sequence lost.'
 Assert-Context ($result.possibleDuplicate.ofCaptureId -ceq $priorId -and $result.possibleDuplicate.reason -eq 'same-ocr-within-15s') 'Near repeat was not flagged.'
 $prior.capturedAt = $now.AddSeconds(-15.001).ToString('o')
@@ -44,6 +46,32 @@ Assert-Context (!(New-FateCaptureContext @argsForContext).Contains('possibleDupl
 $contextObject = $result | ConvertTo-Json -Depth 5 | ConvertFrom-Json
 $projected = ConvertTo-FateCaptureContext $contextObject $id
 Assert-Context ($projected.session.id -ceq $session -and $projected.possibleDuplicate.ofCaptureId -ceq $priorId) 'Projection lost session/repeat.'
+Assert-Context ($projected.area.areaId -ceq 'MapWorldsDunes' -and $projected.area.areaLevel -eq 83) 'Projection lost area metadata.'
+$noSession = New-FateCaptureContext -Mode game -CaptureId $id -CapturedAt $now -Area $result.area
+Assert-Context ($noSession.area.areaId -ceq 'MapWorldsDunes') 'Area metadata required a helper session.'
+$fixture = New-FateCaptureContext -Mode fixture -CaptureId $id -CapturedAt $now -Area $result.area
+Assert-Context (!$fixture.Contains('area')) 'Image fixture included game area metadata.'
+$badAreas = @(
+    @{ source = 'client-log'; category = 'campaign'; areaId = $null; areaLevel = $null }
+    @{ source = 'client-log'; category = 'unknown'; areaId = $null; areaLevel = 55 }
+    @{ source = 'client-log'; category = 'unknown'; areaId = 'FutureArea'; areaLevel = $null }
+    @{ source = 'client-log'; category = 'map'; areaId = 'MapWorlds/Dunes'; areaLevel = 83 }
+    @{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 101 }
+    @{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = '83' }
+    @{ source = 'client-log'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 83.5 }
+    @{ source = 'unknown'; category = 'map'; areaId = 'MapWorldsDunes'; areaLevel = 83 }
+    @{ source = 'client-log'; category = 'MAP'; areaId = 'MapWorldsDunes'; areaLevel = 83 }
+)
+$contextObject.area = [pscustomobject]@{ source = 'client-log'; category = 'unknown'; areaId = $null; areaLevel = $null; rawLog = 'private' }
+$unknownArea = (ConvertTo-FateCaptureContext $contextObject $id).area
+Assert-Context ($unknownArea.Count -eq 4 -and $null -eq $unknownArea.areaId -and $unknownArea.category -ceq 'unknown') 'Unknown area was lost or projected raw log.'
+foreach ($badArea in $badAreas) {
+    $contextObject.area = [pscustomobject]$badArea
+    $rejected = $false
+    try { [void](ConvertTo-FateCaptureContext $contextObject $id) } catch { $rejected = $true }
+    Assert-Context $rejected 'Malformed area metadata was accepted.'
+}
+$contextObject.area = [pscustomobject]$result.area
 $contextObject.possibleDuplicate.ofCaptureId = $id
 $rejected = $false
 try { [void](ConvertTo-FateCaptureContext $contextObject $id) } catch { $rejected = $true }

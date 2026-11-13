@@ -9,9 +9,18 @@ const uuid = z.string().uuid().toLowerCase()
 const timestamp = z.string().datetime({ offset: true })
 const shortText = z.string().max(160)
 const coordinate = z.number().finite().min(0).max(16384)
+export const areaCategorySchema = z.enum(['campaign', 'map', 'other', 'unknown'])
+const capturedAreaSchema = z.object({
+  source: z.literal('client-log'),
+  category: areaCategorySchema,
+  areaId: z.string().min(1).max(160).regex(/^[A-Za-z0-9_]+$/).nullable(),
+  areaLevel: z.number().int().min(1).max(100).nullable(),
+}).strict().refine(area => (area.areaId !== null && area.areaLevel !== null)
+  || (area.areaId === null && area.areaLevel === null && area.category === 'unknown'), 'Incomplete area context.')
 
 const captureContextSchema = z.object({
   captureMode: z.enum(['game', 'fixture']),
+  area: capturedAreaSchema.optional(),
   session: z.object({
     id: uuid,
     startedAt: timestamp,
@@ -25,6 +34,9 @@ const captureContextSchema = z.object({
 
 function validateCaptureContext(context: z.infer<typeof captureContextSchema> | undefined, captureId: string | null, ctx: z.RefinementCtx, field: string) {
   if (!context) return
+  if (context.captureMode === 'fixture' && context.area) {
+    ctx.addIssue({ code: 'custom', message: 'Fixture captures cannot claim game log context.', path: [field, 'area'] })
+  }
   if (!captureId) {
     ctx.addIssue({ code: 'custom', message: 'Capture context requires a capture ID.', path: [field] })
   } else if (context.possibleDuplicate?.ofCaptureId.toLowerCase() === captureId.toLowerCase()) {
@@ -65,6 +77,7 @@ export const offerSchema = z.object({
   gameVersion: z.string().max(64),
   area: shortText,
   areaLevel: z.number().int().min(1).max(100).nullable(),
+  areaCategory: areaCategorySchema.optional(),
   encounterNumber: z.number().int().min(1).max(10000),
   completeness: z.enum(['unverified', 'partial', 'complete']),
   reviewed: z.boolean(),

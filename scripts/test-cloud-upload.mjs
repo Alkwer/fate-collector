@@ -60,6 +60,7 @@ try {
       const body = Buffer.concat(chunks)
       const json = JSON.parse(body.toString('utf8'))
       assert(!body.includes('LOCAL_IMAGE_SENTINEL'))
+      assert(!body.includes('LOCAL_LOG_SENTINEL'))
       if (req.url === '/api/captures') {
         captureRequests++
         assert.equal(consentRequests, 1, 'Capture sent before registering consent.')
@@ -104,6 +105,11 @@ try {
   assert(rows.some(row => JSON.parse(row.payload_json).ocr.status === 'error'), 'Failed OCR must reach D1.')
   assert(rows.every(row => JSON.parse(row.parsed_offer_json).reviewed === false))
   assert(rows.every(row => JSON.parse(row.payload_json).context.session.id))
+  for (const row of rows) {
+    assert.deepEqual(JSON.parse(row.payload_json).context.area, { source: 'client-log', category: 'map', areaId: 'MapWorldsDunes', areaLevel: 83 })
+    assert.equal(JSON.parse(row.parsed_offer_json).areaCategory, 'map')
+    assert.equal(JSON.parse(row.parsed_offer_json).areaLevel, 83)
+  }
   const repeated = rows.find(row => row.id === ids[2])
   assert.equal(JSON.parse(repeated.payload_json).context.possibleDuplicate.ofCaptureId, ids[0])
   assert.equal(JSON.parse(repeated.parsed_offer_json).captureContext.session.sequence, 3)
