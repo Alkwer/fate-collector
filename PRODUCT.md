@@ -25,6 +25,8 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
+- **Add Fate manually** provides direct website entry by name or sourced portrait,
+  with optional tiers and rewards. A portrait never supplies reward mechanics.
 - Connected captures and corrections save automatically. Manual imports retain
   the appropriate explicit save action. New automatic observations remain
   unreviewed until the player checks them.

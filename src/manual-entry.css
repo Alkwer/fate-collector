@@ -1,0 +1,52 @@
+.manual-entry-action { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-block: 16px; }
+.manual-entry-action button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.manual-entry-action p { color: var(--muted); font-size: 13px; }
+.capture-start .manual-entry-action { justify-content: center; padding: 0 0 24px; }
+.manual-entry-context { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.manual-entry-status { color: var(--success); margin-bottom: 16px; }
+.manual-fate-picker { display: grid; gap: 16px; }
+.manual-fate-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.manual-fate-options > button { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border-color: transparent; font-size: 14px; overflow-wrap: anywhere; }
+.manual-fate-options .fate-art { width: 72px; }
+.manual-custom-name { justify-self: start; overflow-wrap: anywhere; max-width: 100%; text-align: left; }
+.manual-fate-form { display: grid; gap: 24px; }
+.manual-fate-identity { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 20px; }
+.manual-fate-identity .fate-art { width: 96px; }
+.manual-fate-identity .text-button { padding-inline: 0; margin-top: 4px; }
+.manual-tier { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.manual-tier > label { width: 120px; }
+.manual-tier > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.manual-tier button[aria-pressed='true'] { background: var(--selection); border-color: var(--accent); }
+.manual-rewards > .section-heading { margin-bottom: 0; }
+.manual-rewards > .section-heading .hint { margin: 0; }
+.manual-reward-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+.manual-reward-presets > button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px; }
+.manual-reward-presets > button > span:not(.reward-symbol) { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.manual-reward-presets small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+.manual-reward-presets .reward-symbol, .manual-reward-summary > .reward-symbol { width: 32px; height: 32px; flex-shrink: 0; }
+.manual-reward-list { list-style: none; padding: 0; margin: 20px 0 0; }
+.manual-reward-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.manual-reward-summary { display: flex; align-items: center; min-width: 0; gap: 12px; }
+.manual-reward-summary > div { min-width: 0; }
+.manual-reward-summary strong { font-size: 14px; overflow-wrap: anywhere; }
+.manual-reward-details > .panel-trigger { border: 0; padding: 0; text-decoration: underline; text-underline-offset: 4px; }
+.manual-reward-count { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.manual-reward-count button, .manual-remove-reward { display: grid; place-items: center; padding: 8px; }
+.manual-reward-count span { min-width: 30px; text-align: center; }
+.manual-reward-other { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+.manual-reward-fields { display: grid; gap: 16px; margin-top: 20px; }
+.manual-personal-reward { margin-top: 16px; }
+@media (max-width: 760px) {
+  .manual-fate-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .manual-fate-options .fate-art { width: 56px; }
+  .manual-fate-options > button { padding-inline: 0; }
+  .manual-fate-identity { grid-template-columns: 72px minmax(0, 1fr); gap: 16px; }
+  .manual-fate-identity .fate-art { width: 72px; }
+  .manual-reward-presets { grid-template-columns: minmax(0, 1fr); }
+  .manual-reward-list > li { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .manual-reward-summary { grid-column: 1 / -1; }
+  .manual-reward-count { justify-self: start; }
+  .manual-fate-entry .detail-footer { gap: 8px; }
+  .manual-fate-entry .detail-footer > button { flex: 1; }
+  .capture-start .manual-entry-action { align-items: center; flex-direction: column; text-align: center; }
+}

@@ -28,6 +28,7 @@ interface Props {
   workspace: AdvisorWorkspace
   onChange: (workspace: AdvisorWorkspace) => void
   onEditOffer: (cardId?: string) => void
+  onAddManual: () => void
   busy: boolean
   needsMapConfirmation: boolean
   onUseOffer: () => void
@@ -36,7 +37,7 @@ interface Props {
   automatic: boolean
   savedOffers: Offer[]
 }
-export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers, solverControl }: Props) {
+export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManual, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers, solverControl }: Props) {
   const { collection, goal, mode, sources } = workspace
   const portfolioMode = solverControl.settings.mode === 'portfolio'
   const collectionEditor = useRef<DetailPanelHandle>(null)
@@ -87,8 +88,10 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
       ? workspace.excludedCardIds.filter(id => id !== cardId) : [...workspace.excludedCardIds, cardId] })
   }
   const empty = !offer.cards.length && (!collection.cards.length || manualEntry) && !offer.captureId
+  const manualAction = <div className="manual-entry-action"><button className={empty ? 'primary-button' : 'outline-button'} onClick={onAddManual}><AppIcon name="plus" />Add Fate manually</button><p>{empty ? 'Choose by name or picture. No helper needed.' : alreadyCollected ? 'Enter your next offer.' : 'Add the choices shown in game.'}</p></div>
   if (empty) return <div className={`capture-start ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
-    <div className="capture-intro"><h2 id="advisor-heading" tabIndex={-1}>Bring your next offer into focus.</h2><p>Capture a Fate offer. Check its rewards. Make your next choice.</p></div>
+    <div className="capture-intro"><h2 id="advisor-heading" tabIndex={-1}>Bring your next offer into focus.</h2><p>Add your Fates or import a capture. Compare rewards and choose.</p></div>
+    {manualAction}
     {source}
     <p className="capture-start-note">Use the Windows helper for local text recognition, or keep a screenshot as evidence.</p>
     <DetailPanel className="reward-settings" autoOpen={!!solverControl.error} title="Reward priorities"><SolverControls control={solverControl} availableGoals={goals} /></DetailPanel>
@@ -101,6 +104,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, busy, nee
           {mapReady ? <div className="decision-switch" role="group" aria-label="Decision"><button aria-pressed={mode === 'offer'} onClick={() => onChange({ ...workspace, mode: 'offer' })}><AppIcon name="cards" />Choose a Fate</button><button aria-pressed={mode === 'invoke'} onClick={() => onChange({ ...workspace, mode: 'invoke' })}><AppIcon name="arrow" />Plan invocation</button></div> : <h2>Review this offer</h2>}
           <button className="text-button edit-current" aria-label="Edit current offer" title="Edit current offer" onClick={() => onEditOffer()}><AppIcon name="tools" /><span>Edit offer</span></button>
         </div>
+        {manualAction}
         <DetailPanel trigger={mapReady} ref={priorities} className="reward-settings" autoOpen={!!solverControl.error} title={<>Reward priorities<span className="summary-detail">{portfolioMode ? `${solverControl.settings.profile.goals.length} priorities` : goal?.label || 'Choose a reward'}</span></>}>
 
           {!portfolioMode && <label className="reward-goal">Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => onChange({ ...workspace, goal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>
