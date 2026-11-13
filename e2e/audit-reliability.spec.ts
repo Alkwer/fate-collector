@@ -77,7 +77,7 @@ test('250 offers can be selected, backed up and explicitly removed without losin
   const offers = Array.from({ length: 250 }, (_, index) => ({ offer: { ...newOffer(), cards: [{ ...newCard(), name: 'Alchemist' }], notes: `Bulk archive fixture ${index}` }, evidence: null }))
   await page.goto('/')
   await page.getByLabel('Import capture file').setInputFiles({ name: 'bulk.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ kind: 'fate-collector.export', schemaVersion: 1, offers })) })
-  await expect(page.getByRole('status')).toContainText('Imported 250 new offers')
+  await expect(page.locator('.notice[role="status"]')).toContainText('Imported 250 new offers')
   await page.getByRole('button', { name: 'Select filtered offers', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Delete selected offers', exact: true })).toBeDisabled()
   const download = page.waitForEvent('download')
