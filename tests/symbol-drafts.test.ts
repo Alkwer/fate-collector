@@ -5,6 +5,7 @@ import { SYMBOL_REPORT_LIMIT } from '../shared/symbol-reports'
 import { symbolDraftContext } from '../src/lib/symbol-drafts'
 import { newCard, newOffer } from '../shared/offers'
 import { stripCanvasPngMetadata } from '../src/lib/symbol-reports'
+import release from '../shared/helper-release.json' with { type: 'json' }
 
 function draft(): SymbolDraft {
   const image = (name: string) => {
@@ -16,7 +17,7 @@ function draft(): SymbolDraft {
 }
 test.runIf(!!process.env.HELPER_SYMBOL_FIXTURE)('the real Windows cropper output passes the browser PNG and draft validator', async () => {
   const result = await parseSymbolDraft(readFileSync(process.env.HELPER_SYMBOL_FIXTURE!, 'utf8'))
-  expect(result).toMatchObject({ kind: 'fate-collector.symbol-draft', origin: 'test', captureId: null, helperVersion: '0.4.0' })
+  expect(result).toMatchObject({ kind: 'fate-collector.symbol-draft', origin: 'test', captureId: null, helperVersion: release.version })
   expect(result.icon.width).toBeGreaterThanOrEqual(8)
   expect(result.tooltip.height).toBeGreaterThanOrEqual(8)
 })
