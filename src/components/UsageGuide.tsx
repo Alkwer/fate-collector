@@ -80,35 +80,35 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
         <ol>
           <li>Open <strong>Local review</strong> below, click <strong>Connect folder</strong> and select the helper’s <code>captures</code> folder. Allow read access. Existing captures in that folder will also be imported.</li>
           <li>Return to the game. Move the pointer away from cards so tooltips do not cover their text, then press <kbd>F9</kbd> once for the new offer.</li>
-          <li>Wait for the helper’s <strong>Capture saved</strong> message, then open <strong>Current map</strong> on the website to inspect it.</li>
+          <li>Wait for the helper’s <strong>Capture saved</strong> message, then open <strong>Current area</strong> on the website to inspect it.</li>
         </ol>
-        <div className="guide-actions"><button className="primary-button" onClick={onConnect}>Open local review</button><button onClick={onMap}>Open current map</button></div>
+        <div className="guide-actions"><button className="primary-button" onClick={onConnect}>Open local review</button><button onClick={onMap}>Open current area</button></div>
         <figure className="guide-flow">
           <ol><li><AppIcon name="capture" /><strong>F9 in game</strong><span>Screenshot + OCR</span></li><li><AppIcon name="archive" /><strong>captures folder</strong><span>Original files on disk</span></li><li><AppIcon name="map" /><strong>Website</strong><span>Local review & advice</span></li></ol>
           <figcaption>Keep the helper and website open for automatic local import. A second F9 press creates another capture.</figcaption>
         </figure>
         <p>Connected captures and corrections save automatically. <strong>Saved locally</strong> confirms storage on this device; the capture still needs checking. After reopening the website, you may need <strong>Resume local review</strong> and renewed folder access.</p>
         <h3>Without a folder connection</h3>
-        <p>After F9, switch to <strong>Current map</strong> and paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or use <strong>Import capture</strong> to open a helper JSON file. Choose <strong>Save offer</strong> or <strong>Confirm and save</strong> when shown. A plain screenshot is kept as evidence but does not run text recognition in the browser.</p>
+        <p>After F9, switch to <strong>Current area</strong> and paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or use <strong>Import capture</strong> to open a helper JSON file. Choose <strong>Save offer</strong> or <strong>Confirm and save</strong> when shown. A plain screenshot is kept as evidence but does not run text recognition in the browser.</p>
       </section>
 
       <section className="guide-section" aria-labelledby="guide-play">
         <h2 id="guide-play" tabIndex={-1}>4. Review, choose and invoke</h2>
         <ol>
           <li><strong>Check the capture.</strong> Compare the names, tiers and rewards with the source image. Open <strong>Edit details</strong> for corrections and review status. Leave unidentified rewards unknown.</li>
-          <li><strong>Assign the offer to your map.</strong> Click <strong>Start map with this offer</strong>, or <strong>Use this offer in current map</strong> for an existing map. Do this only for the instance you are playing now.</li>
+          <li><strong>Assign the offer to your map.</strong> Click <strong>Start area with this offer</strong>, or <strong>Use this offer in current area</strong> for an existing map. Do this only for the instance you are playing now.</li>
           <li><strong>Choose a Fate.</strong> Set <strong>Reward priorities</strong> and check the advice and modifiers. Make your choice in game, then click <strong>Collect Fate</strong> on that same card here.</li>
           <li><strong>Plan invocation.</strong> Open <strong>Plan invocation</strong>. Follow the pictured order and confirm in game. Only then click <strong>Done in game</strong> to update the local collection. <strong>Undo</strong> can restore the last collection change.</li>
         </ol>
         <p className="guide-note">The helper does not play for you. Advice marked <strong>provisional</strong> depends on incomplete or unverified information; review the highlighted cards before relying on it.</p>
-        <p>For the next map, use <strong>More actions → New map</strong>. This clears map planning; your saved offers stay in the journal. After reopening a map session, use <strong>Continue this map</strong> only if it is still the same instance.</p>
-        <button onClick={onMap}>Go to current map</button>
+        <p>For the next map, use <strong>More actions → New area</strong>. This clears area planning; your saved offers stay in the journal. After reopening a map session, use <strong>Continue this area</strong> only if it is still the same instance.</p>
+        <button onClick={onMap}>Go to current area</button>
       </section>
 
       <section className="guide-section" aria-labelledby="guide-data">
         <h2 id="guide-data" tabIndex={-1}>Keep a backup. Share only if you want to.</h2>
         <h3>Back up your local journal</h3>
-        <p>In <strong>Saved offers → Import, export & recovery</strong>, select <strong>Data, screenshots & OCR</strong>, then <strong>Export all data</strong>. Download every part. Browser storage can be cleared; a full backup keeps the available evidence and corrections.</p>
+        <p>In <strong>Saved offers → Import, export & recovery</strong>, select <strong>Data, screenshots & OCR</strong>, then <strong>Export all offers</strong>. Download every part. Browser storage can be cleared; a full backup keeps the available evidence and corrections.</p>
         <button onClick={onSaved}>Open saved offers</button>
         <h3>Optional: upload new captures from the helper</h3>
         <ol>

@@ -1,12 +1,14 @@
 import { DatabaseSync } from 'node:sqlite'
 import { readFileSync, readdirSync } from 'node:fs'
 import { afterEach, expect, test, vi } from 'vitest'
-import { IDBFactory } from 'fake-indexeddb'
+import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { crc32, deflateSync } from 'node:zlib'
 import worker, { type Env } from '../worker'
 import { expireSymbolReports } from '../worker/symbol-reports'
 import { SYMBOL_REPORT_VERSION, SYMBOL_RETENTION_MS, symbolConsentText, symbolReportSchema, type SymbolSubmission } from '../shared/symbol-reports'
 import { saveSymbolSubmission, sendSymbolReport, stripCanvasPngMetadata, symbolReportHistory, withdrawSymbolReport } from '../src/lib/symbol-reports'
+import { cleanSymbolImages, discardSymbolDraft, exportDamagedSymbol, exportSymbolRecovery, importSymbolRecovery, readSymbolDrafts, readSymbolHistoryPage, readSymbolReportDetails, removeDamagedSymbol, writeSymbolDraft, type LocalSymbolDraft } from '../src/lib/symbol-report-storage'
+import { newCard, newOffer } from '../shared/offers'
 // @ts-expect-error Maintainer CLI is plain JavaScript.
 import { reviewReports } from '../scripts/export-symbol-reports.mjs'
 
@@ -267,4 +269,103 @@ test('pending verification cannot upload after another tab requests withdrawal',
   await expect(sendSymbolReport(body.report.id, challenge)).rejects.toThrow('withdrawal request')
   expect(db.prepare('SELECT count(*) AS n FROM symbol_reports').get()?.n).toBe(0)
   expect((await symbolReportHistory())[0].withdrawnAt).not.toBeNull()
+})
+
+function localBrowser() {
+  const indexedDB = new IDBFactory()
+  vi.stubGlobal('indexedDB', indexedDB); vi.stubGlobal('IDBKeyRange', IDBKeyRange)
+  vi.stubGlobal('location', { origin: 'https://collector.test' })
+  return indexedDB
+}
+
+test('migration isolates a damaged legacy row and paginates summaries without loading images', async () => {
+  const indexedDB = localBrowser()
+  const report = submission()
+  const damaged = { id: 'damaged', submission: { token: 'original data', tooltip: 'truncated' } }
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open('fate-collector-symbol-reports', 1)
+    request.onupgradeneeded = () => {
+      const store = request.result.createObjectStore('reports', { keyPath: 'id' })
+      store.add(damaged)
+      for (let index = 0; index < 241; index++) {
+        const id = crypto.randomUUID()
+        store.add({ id, origin: 'https://collector.test', submission: { ...report, report: { ...report.report, id } },
+          receipt: null, withdrawRequestedAt: null, withdrawnAt: null })
+      }
+    }
+    request.onsuccess = () => { request.result.close(); resolve() }
+    request.onerror = () => reject(request.error)
+  })
+  const first = await readSymbolHistoryPage()
+  expect(first.rows).toHaveLength(20)
+  expect(first.rows[0]).not.toHaveProperty('submission')
+  expect(first.rows[0]).not.toHaveProperty('token')
+  expect(first.rows[0]).not.toHaveProperty('images')
+  const damagedEntry = { key: 'damaged', store: 'reports' } as const
+  expect(first.damaged).toEqual([damagedEntry])
+  expect(await exportDamagedSymbol(damagedEntry)).toMatchObject({ raw: damaged })
+  expect((await readSymbolReportDetails(first.rows[0].id)).images).toEqual({ icon: report.report.icon, tooltip: report.report.tooltip })
+  const ids = new Set(first.rows.map(row => row.id))
+  let next = first.next
+  while (next) {
+    const page = await readSymbolHistoryPage(next)
+    for (const row of page.rows) {
+      expect(ids.has(row.id)).toBe(false)
+      ids.add(row.id)
+    }
+    next = page.next
+  }
+  expect(ids.size).toBe(241)
+  const id = first.rows[0].id
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ id, status: 'withdrawn', withdrawnAt: new Date().toISOString() })))
+  await withdrawSymbolReport(id)
+  expect((await readSymbolHistoryPage()).rows[0].withdrawnAt).toBeTruthy()
+  await removeDamagedSymbol(damagedEntry)
+  expect((await readSymbolHistoryPage()).damaged).toEqual([])
+})
+
+test('private backup restores credentials on the same origin, preserves withdrawal and keeps cleanup permanent', async () => {
+  localBrowser()
+  const body = submission(), { id } = body.report
+  await saveSymbolSubmission(body)
+  await expect(cleanSymbolImages(id)).rejects.toThrow('Only withdrawn or expired')
+  const original = await exportSymbolRecovery()
+  const withdrawnAt = new Date().toISOString()
+  const fetch = vi.fn().mockResolvedValue(Response.json({ id, status: 'withdrawn', withdrawnAt }))
+  localBrowser(); vi.stubGlobal('fetch', fetch)
+  expect(await importSymbolRecovery(original)).toEqual({ restored: 1, conflicts: 0 })
+  await withdrawSymbolReport(id)
+  expect(fetch.mock.calls[0][1].headers.get('X-Symbol-Token')).toBe(body.token)
+  await cleanSymbolImages(id)
+  expect(await readSymbolReportDetails(id)).toMatchObject({ images: null, consent: body.consent })
+  expect(await importSymbolRecovery(original)).toEqual({ restored: 1, conflicts: 0 })
+  await expect(sendSymbolReport(id, verify)).rejects.toThrow('withdrawal request')
+  const cleaned = await exportSymbolRecovery()
+  expect(cleaned.reports[0]).toMatchObject({ images: null, summary: { token: body.token, withdrawnAt, hasImages: false } })
+  const conflict = structuredClone(original)
+  conflict.reports[0].summary.token = 'f'.repeat(64)
+  expect(await importSymbolRecovery(conflict)).toEqual({ restored: 0, conflicts: 1 })
+  vi.stubGlobal('location', { origin: 'https://elsewhere.test' })
+  await expect(importSymbolRecovery(original)).rejects.toThrow('different collector address')
+})
+
+test('draft writes use the current revision and submission consumes a draft atomically', async () => {
+  localBrowser()
+  const body = submission(), card = newCard()
+  const first: LocalSymbolDraft = { id: body.report.id, origin: location.origin, revision: crypto.randomUUID(), updatedAt: body.report.createdAt,
+    context: { ...newOffer(), cards: [card] }, cardId: card.id, rewardId: '', label: '', rewardKind: 'unknown', threshold: '',
+    description: 'original', gameVersion: '', icon: body.report.icon, tooltip: null, fromHelper: false, linkedOffer: false }
+  const current = { ...first, revision: crypto.randomUUID(), description: 'current', tooltip: body.report.tooltip }
+  expect(await writeSymbolDraft(first, null)).toBe(true)
+  expect(await writeSymbolDraft(current, first.revision)).toBe(true)
+  expect(await writeSymbolDraft(first, first.revision)).toBe(false)
+  expect(await discardSymbolDraft(first)).toBe(false)
+  expect(await readSymbolDrafts()).toEqual([current])
+  const backup = await exportSymbolRecovery()
+  expect(backup.drafts[0]).not.toHaveProperty('consent')
+  await expect(saveSymbolSubmission(body, first.revision)).rejects.toThrow('changed in another tab')
+  await saveSymbolSubmission(body, current.revision)
+  expect(await readSymbolDrafts()).toEqual([])
+  expect(await writeSymbolDraft(current, null)).toBe(false)
+  expect(await importSymbolRecovery(backup)).toEqual({ restored: 0, conflicts: 1 })
 })

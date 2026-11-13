@@ -10,7 +10,7 @@ on reload and takes effect without replacing the active map or draft. If local
 preference storage is unavailable, the change applies for the visit and the menu
 reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens.
 
-- A sticky navigation rail leads to **Current map**, **Saved offers**, **Guide**
+- A sticky navigation rail leads to **Current area**, **Saved offers**, **Guide**
   and **Diagnostics**. It becomes a two-row top navigation at narrow widths.
 - **Download Windows helper** stays visible beside **More actions** in the page
   header on every screen, with a direct ZIP download. The actions move below the

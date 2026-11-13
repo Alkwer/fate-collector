@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatValidationError, offerSchema, type Evidence, type Offer } from '../../shared/schema'
 import { newOffer } from '../../shared/offers'
 import { logDiagnostic } from './diagnostic-log'
-import type { CapturedEntry } from './capture-sync'
+import { compareCaptures, type CapturedEntry } from './capture-sync'
 import * as storage from './storage'
 
 export const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Your draft is still open.'
@@ -54,7 +54,8 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
     if (entry.restored && draft.id === entry.offer.id) {
       // Missing evidence can arrive while corrections are still being typed.
       setEvidence(current => current ?? entry.evidence)
-    } else if (!dirtyRef.current && !busyRef.current && !inspecting) loadDraft(entry.offer, entry.evidence)
+    } else if (entry.present !== false && !dirtyRef.current && !busyRef.current && !inspecting
+      && (draft.source !== 'windows-helper' || compareCaptures(entry.offer, draft) >= 0)) loadDraft(entry.offer, entry.evidence)
   }
   function canReplace() { return !dirtyRef.current || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
   function recover(record: storage.RecoveryDraft) {

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '../../shared/validation'
 import { normalizeRewardLabel } from '../../shared/advisor'
 import { solverProfileSchema } from '../../shared/solver'
 

@@ -77,6 +77,12 @@ real reports to staging or attach them to public PRs.
 
 ## Maintainer review
 
+Use the [shared review queue](worker-operations.md#review-a-symbol-report) to claim
+an item, record a decision, and link a separately reviewed catalog commit. The
+export below is for private evidence inspection; a local `review.json` does not
+replace the shared D1 decision. The application exposes only coarse review status
+to the author using their report token.
+
 Reports are evidence candidates, not training labels or established mechanics.
 With authorized D1 operator access, export only active rows to a private local file:
 

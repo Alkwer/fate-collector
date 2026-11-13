@@ -2,7 +2,7 @@ import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers'
 import fateNames from './fate-names.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'prerelease-names-3'
+export const PARSER_VERSION = 'prerelease-names-4'
 
 // Card names observed in pre-release materials. This is a recognition dictionary,
 // not a reward mapping or an exhaustive catalog. Unknowns remain in the OCR evidence.
@@ -54,13 +54,14 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
   }
   const region = findOfferedRegion(capture)
   if (!region) return { cards: [], message: 'The offered-card area could not be established. Include the Fates heading and Confirm button in the capture, or add cards manually.' }
-  const { lines: offerLines, headers: row } = region
+  const offerLines = region.lines, row = region.headers
+  const candidates = new Set(offeredCardHeaders(row))
   const first = offerLines[0]
   if (!first) return { cards: [], message: 'No card text was read in the offered area. The screenshot is preserved for review.' }
   const headerBottom = Math.max(...row.map(m => m.y + m.height))
   const cards = row.flatMap((header, index) => {
+    if (!candidates.has(header)) return []
     const name = byName.get(normalize(header.text))
-    if (!name) return []
     const center = header.x + header.width / 2
     const previous = row[index - 1]
     const next = row[index + 1]
@@ -72,8 +73,21 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
-    return [{ ...newCard(), name, modifiers: description ? [description.slice(0, 1000)] : [] }]
+    return [{ ...newCard(), name: name ?? '', modifiers: description ? [description.slice(0, 1000)] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }
-  return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found. Check against the screenshot. Tiers and reward icons are not identified automatically.` }
+  return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }
+}
+
+// Preserve unknown name slots only alongside a known anchor, with matching text
+// size and a separate column. All-unknown/overlapping/body-text rows still abstain.
+export function offeredCardHeaders(row: OcrLine[]): OcrLine[] {
+  const known = row.filter(header => knownFateName(header.text))
+  if (!known.length) return []
+  return row.filter(header => {
+    if (knownFateName(header.text)) return true
+    if (row.length > 6 || !/^[A-Z][a-zA-Z’'-]+(?: [A-Z][a-zA-Z’'-]+){0,2}$/.test(header.text.trim())) return false
+    if (!known.some(anchor => header.height >= anchor.height * .75 && header.height <= anchor.height * 1.35)) return false
+    return row.every(other => other === header || header.x + header.width <= other.x || other.x + other.width <= header.x)
+  })
 }

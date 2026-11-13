@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 
 export const MAX_IMPORT_BYTES = 12 * 1024 * 1024
 // Full backups may contain both a maximum-sized capture and corrected metadata.

@@ -14,7 +14,7 @@ async function load(page: Page, cards: FateCard[], first = true) {
   await closePanels(page)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'solver.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newOffer(), cards })) })
   await closePanels(page)
-  await page.getByRole('button', { name: first ? 'Start map with this offer' : 'Use this offer in current map', exact: true }).click()
+  await page.getByRole('button', { name: first ? 'Start area with this offer' : 'Use this offer in current area', exact: true }).click()
 }
 async function priority(page: Page, key: string, weight?: number) {
   await openPanel(page, '.reward-settings')
@@ -87,7 +87,7 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   await expect(page.getByRole('heading', { name: 'Recommended: Balanced Fate', exact: true })).toBeVisible()
   await page.reload()
   await closePanels(page)
-  await page.getByRole('button', { name: 'Continue this map', exact: true }).click()
+  await page.getByRole('button', { name: 'Continue this area', exact: true }).click()
   // The current offer draft is not persisted; re-open the capture in this map.
   await load(page, cards, false)
   await closePanels(page)
@@ -117,7 +117,7 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   await expect(page.getByRole('complementary')).toContainText('1/12')
   page.once('dialog', dialog => dialog.accept())
   await openPanel(page, '.more-actions')
-  await page.getByRole('button', { name: 'New map', exact: true }).click()
+  await page.getByRole('button', { name: 'New area', exact: true }).click()
   await expectEmptyMap(page)
   await expect(page.getByLabel('Compare multiple rewards', { exact: true })).toBeChecked()
   expect(errors).toEqual([])

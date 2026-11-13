@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '../../shared/validation'
 import { zipSync, strToU8 } from 'fflate'
 import { APP_VERSION, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticReportSchema, diagnosticSubmissionSchema, diagnosticReceiptSchema, diagnosticWithdrawalSchema, diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
 import { diagnosticEvents, logDiagnostic } from './diagnostic-log'
@@ -16,12 +16,34 @@ export function diagnosticHistoryState() {
   return history
 }
 export function diagnosticHistory(): DiagnosticRecord[] { return diagnosticHistoryState().records }
+export function parsePrivateDiagnostics(input: unknown) {
+  const records = z.array(localSchema).max(200).parse(input)
+  if (new Set(records.map(record => record.report.id)).size !== records.length) throw new Error('Duplicate diagnostic identifiers in private backup.')
+  if (records.some(record => record.withdrawalConfirmedAt && !record.withdrawnAt)) throw new Error('Invalid diagnostic withdrawal state in private backup.')
+  return records
+}
+export function restorePrivateDiagnostics(input: unknown) {
+  const records = parsePrivateDiagnostics(input)
+  let restored = 0, conflicts = 0
+  for (const record of records) {
+    if (localStorage.getItem(removedPrefix + record.report.id)) { conflicts++; continue }
+    const text = localStorage.getItem(prefix + record.report.id)
+    let old: ReturnType<typeof localSchema.safeParse> | null = null
+    try { old = text ? localSchema.safeParse(JSON.parse(text)) : null } catch { conflicts++; continue }
+    if (old && (!old.success || old.data.token !== record.token || JSON.stringify(old.data.report) !== JSON.stringify(record.report) || JSON.stringify(old.data.consent) !== JSON.stringify(record.consent))) { conflicts++; continue }
+    const existing = old?.success ? old.data : null
+    save(existing ? { ...existing, withdrawnAt: existing.withdrawnAt || record.withdrawnAt,
+      withdrawalConfirmedAt: existing.withdrawalConfirmedAt || record.withdrawalConfirmedAt, receipt: existing.receipt || record.receipt } : record)
+    restored++
+  }
+  return { restored, conflicts }
+}
 function save(record: DiagnosticRecord) {
   if (localStorage.getItem(removedPrefix + record.report.id)) return
   const previous = localStorage.getItem(prefix + record.report.id)
   if (previous) {
     const old = localSchema.parse(JSON.parse(previous))
-    if (old.withdrawnAt) record = { ...record, withdrawnAt: old.withdrawnAt, withdrawalConfirmedAt: old.withdrawalConfirmedAt }
+    if (old.withdrawnAt) record = { ...record, withdrawnAt: old.withdrawnAt, withdrawalConfirmedAt: old.withdrawalConfirmedAt || record.withdrawalConfirmedAt }
   }
   localStorage.setItem(prefix + record.report.id, JSON.stringify(localSchema.parse(record)))
   window.dispatchEvent(new Event(changed))

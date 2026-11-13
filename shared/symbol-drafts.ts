@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 import { SYMBOL_REPORT_LIMIT, symbolId, symbolReportSchema, validateSymbolPixels } from './symbol-reports'
 
 /** Local helper handoff only. It carries no upload consent, credentials or destination. */

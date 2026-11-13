@@ -12,7 +12,7 @@ async function load(page: Page, cards: FateCard[]) {
   await closePanels(page)
   await page.getByLabel('Import capture file').setInputFiles({ name: 'flow.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newOffer(), cards })) })
   await closePanels(page)
-  await page.getByRole('button', { name: /^(Start map with this offer|Use this offer in current map)$/ }).click()
+  await page.getByRole('button', { name: /^(Start area with this offer|Use this offer in current area)$/ }).click()
 }
 
 test('guides a review to the requested card and returns focus to a recomputed recommendation', async ({ page }) => {

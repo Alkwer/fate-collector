@@ -24,7 +24,7 @@ for (const width of [1440, 390]) {
     }
     await expect(page.getByRole('button', { name: /^Saved offers\s*240$/ })).toBeVisible()
     await openPanel(page, '.archive-tools')
-    await page.getByRole('button', { name: 'Export all data' }).click()
+    await page.getByRole('button', { name: 'Export all offers' }).click()
     const dialog = page.getByRole('dialog', { name: 'Download your backup' })
     await expect(dialog).toBeVisible()
     const links = dialog.getByRole('link')

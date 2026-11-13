@@ -1,6 +1,7 @@
-import { z } from 'zod'
+import { z } from '../shared/validation'
 import { DIAGNOSTIC_LIMIT, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticId, diagnosticSubmissionSchema, diagnosticText, diagnosticToken } from '../shared/diagnostics'
 import { authorized, boundedText, digest, json } from './http'
+import type { ReportFailure } from './observability'
 
 interface Env { DB?: D1Database; COLLECTOR_CAPTURE_KEY?: string; COLLECTOR_INGEST_KEY?: string; APP_ENV?: string; DIAGNOSTIC_RATE_LIMITER?: RateLimit }
 interface StoredReport { id: string; token_hash: string; content_hash: string; report_json: string | null; consent_version: string; consent_text: string; accepted_at: string; recorded_at: string; expires_at: string; withdrawn_at: string | null }
@@ -19,20 +20,20 @@ function dayWindow(now: string) {
 export async function expireDiagnostics(database: D1Database, now = new Date().toISOString()) {
   await database.prepare('UPDATE diagnostic_reports SET report_json = NULL WHERE expires_at <= ? AND report_json IS NOT NULL').bind(now).run()
 }
-export async function handleDiagnostics(request: Request, env: Env): Promise<Response> {
+export async function handleDiagnostics(request: Request, env: Env, fail: ReportFailure): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Use POST. Diagnostic reports are private.' }, 405)
-  if (!env.DB) return json({ error: 'Diagnostics are unavailable. Keep the report locally.' }, 503)
+  if (!env.DB) return fail('diagnostics_configuration', 'Diagnostics are unavailable. Keep the report locally.')
   if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return json({ error: 'Send application/json.' }, 415)
   const url = new URL(request.url)
   const withdrawal = /^\/api\/diagnostics\/([^/]+)\/withdraw$/.exec(url.pathname)
   // Cloudflare supplies this header. Neither the address nor its short-lived
   // keyed digest enters a report, D1 row, response or application log.
-  if (!env.DIAGNOSTIC_RATE_LIMITER) return json({ error: 'Diagnostic protection is unavailable. Keep the report locally.' }, 503)
+  if (!env.DIAGNOSTIC_RATE_LIMITER) return fail('diagnostics_configuration', 'Diagnostic protection is unavailable. Keep the report locally.')
   try {
     const source = request.headers.get('CF-Connecting-IP') || 'local'
     const key = await digest(`${new Date().toISOString().slice(0, 10)}:${source}:${env.COLLECTOR_CAPTURE_KEY || env.COLLECTOR_INGEST_KEY || ''}`)
     if (!(await env.DIAGNOSTIC_RATE_LIMITER.limit({ key: `fate-diagnostics:${env.APP_ENV || 'local'}:${withdrawal ? 'delete' : 'send'}:${key}` })).success) return limited(60)
-  } catch { return json({ error: 'Diagnostic protection is unavailable. Keep the report locally.' }, 503) }
+  } catch { return fail('diagnostics_rate_limiter', 'Diagnostic protection is unavailable. Keep the report locally.') }
   if (!withdrawal) {
     const keys = [env.COLLECTOR_CAPTURE_KEY, env.COLLECTOR_INGEST_KEY].filter((key): key is string => !!key)
     if (!(await Promise.all(keys.map(key => authorized(request, key)))).some(Boolean)) return json({ error: 'A collection access key is required.' }, 401)
@@ -85,5 +86,5 @@ export async function handleDiagnostics(request: Request, env: Env): Promise<Res
     }
     if (saved.withdrawn_at || !saved.report_json) return json({ error: 'This report was withdrawn or expired. It cannot be sent again.' }, 410)
     return json({ id: saved.id, status: 'received', receivedAt: saved.recorded_at, expiresAt: saved.expires_at, consent: { version: saved.consent_version, text: saved.consent_text, acceptedAt: saved.accepted_at, recordedAt: saved.recorded_at } }, insert.meta.changes ? 201 : 200)
-  } catch { return json({ error: 'Diagnostics are unavailable. Keep the report locally and retry.' }, 503) }
+  } catch { return fail('diagnostics_d1', 'Diagnostics are unavailable. Keep the report locally and retry.') }
 }

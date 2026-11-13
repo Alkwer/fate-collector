@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '../../shared/validation'
 import { CONSENT_VERSION, consentGrantSchema, consentText, type ConsentReceipt } from '../../shared/consent'
 import { logDiagnostic } from './diagnostic-log'
 import { readLocalHistory } from './local-history'
@@ -34,7 +34,7 @@ function save(record: LocalConsent) {
   const previous = localStorage.getItem(prefix + record.id)
   const saved = previous ? recordSchema.parse(JSON.parse(previous)) : null
   // A delayed registration response cannot undo a withdrawal from another tab.
-  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt, withdrawalRetryAt: record.withdrawalRetryAt || saved.withdrawalRetryAt }
+  if (saved?.withdrawnAt) record = { ...record, withdrawnAt: saved.withdrawnAt, withdrawalConfirmedAt: saved.withdrawalConfirmedAt || record.withdrawalConfirmedAt, withdrawalRetryAt: record.withdrawalRetryAt || saved.withdrawalRetryAt }
   localStorage.setItem(prefix + record.id, JSON.stringify(recordSchema.parse(record)))
   window.dispatchEvent(new Event(changedEvent))
 }
@@ -110,4 +110,28 @@ export function exportConsentRecords() {
   const url = URL.createObjectURL(new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' }))
   const link = document.createElement('a'); link.href = url; link.download = 'fate-collector-consent-history.json'; link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export function parsePrivateConsents(input: unknown) {
+  const records = z.array(recordSchema).max(1000).parse(input)
+  if (new Set(records.map(record => record.id)).size !== records.length) throw new Error('Duplicate consent identifiers in private backup.')
+  if (records.some(record => record.withdrawalConfirmedAt && !record.withdrawnAt)) throw new Error('Invalid withdrawal state in private backup.')
+  return records
+}
+export function restorePrivateConsents(input: unknown) {
+  const records = parsePrivateConsents(input)
+  let restored = 0, conflicts = 0
+  for (const record of records) {
+    const text = localStorage.getItem(prefix + record.id)
+    let old: ReturnType<typeof recordSchema.safeParse> | null = null
+    try { old = text ? recordSchema.safeParse(JSON.parse(text)) : null } catch { conflicts++; continue }
+    if (old && (!old.success || old.data.token !== record.token || old.data.text !== record.text || old.data.acceptedAt !== record.acceptedAt)) { conflicts++; continue }
+    // Import never activates sharing. Existing withdrawal and blocking state win.
+    const existing = old?.success ? old.data : null
+    save(existing ? { ...existing, withdrawnAt: existing.withdrawnAt || record.withdrawnAt,
+      withdrawalConfirmedAt: existing.withdrawalConfirmedAt || record.withdrawalConfirmedAt,
+      blocked: existing.blocked || !!record.withdrawnAt } : { ...record, blocked: true })
+    restored++
+  }
+  return { restored, conflicts }
 }

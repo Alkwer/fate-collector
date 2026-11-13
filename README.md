@@ -89,7 +89,7 @@ are automated.
 
 ## What is implemented
 
-- A local [Fate advisor](docs/fate-advisor.md) on the Current map screen: next-card
+- A local [Fate advisor](docs/fate-advisor.md) on the Current area screen: next-card
   recommendations, map-scoped collection and invocation order, with duplicate handling
   and uncertainty. New maps clear planning state; archive entries require explicit transfer.
 - Combined reward priorities with user-defined weights, modifier/card exclusions,
@@ -114,8 +114,8 @@ are automated.
 The app stores at most 250 offers per browser origin. At capacity, auto-import pauses
 and new files remain on disk; export/remove old records and click **Resume local review**.
 Export backups regularly: browser storage can be cleared or evicted.
-In **Saved offers**, choose **Data, screenshots & OCR** for a full backup or
-**Offer data only** for a smaller archive, then use **Export all data** and download
+In **Saved offers**, choose **Data, screenshots & OCR** for an offer backup with evidence or
+**Offer data only** for a smaller archive, then use **Export all offers** and download
 every part. The dialog reports missing or damaged evidence. Full backups include
 available screenshots, original OCR and saved correction revisions. Most parts
 stay below 12 MiB; a larger individual record uses its own part up to 32 MiB.
@@ -124,6 +124,14 @@ Use **Export recovery data** to preserve raw damaged records for repair; this is
 not a directly importable backup.
 After restoring a metadata-only backup, import the original helper files to recover
 missing screenshots and OCR while preserving your corrections and review status.
+
+Offer backups exclude symbol reports, withdrawal credentials, unsaved drafts,
+current-area planning and solver settings. Use **Private symbol backup** in symbol
+history, **Private withdrawal backup** in archive tools, and **Export profile** in
+Reward priorities for those respective scopes. Keep private credential backups
+off public issues and research exports. Restoring them does not enable sharing.
+Use selection in Saved offers to export and remove multiple records; deletion
+requires a separate backup acknowledgement and confirmation.
 
 ## Deployment and data
 

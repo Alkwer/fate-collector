@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from './validation.ts'
 import {
   advisorInputProblem, MAX_COLLECTED_FATES, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
   normalizeRewardLabel, UNKNOWN_FATE_NAME, visitInvocationOrders,

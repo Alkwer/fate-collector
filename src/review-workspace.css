@@ -1,0 +1,58 @@
+/* Review notices and saving: shared base followed by explicit layout variants. */
+
+.action-band { border-radius: var(--control-radius); }
+.auto-save-state { color: var(--accent); font-size: 14px; white-space: nowrap; }
+.auto-save-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.action-band { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.action-band p { font-size: 14px; }
+.save-state { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.primary-actions { display: flex; gap: 12px; flex-shrink: 0; }
+.primary-actions button { padding: 11px 25px; font-weight: 600; }
+@media (max-width: 760px) {.action-band { flex-direction: column; align-items: stretch; gap: 14px; }.primary-actions { grid-template-columns: 1fr 1fr; }.primary-actions button { padding: 11px 12px; } }
+@media (max-width: 760px) {
+  .primary-actions { display: flex; }
+  .primary-actions > button { width: 100%; }
+}
+.advisor-review p, .advisor-review li span { display: block; font-size: 13px; margin-top: 4px; }
+.advisor-review ul { list-style: none; margin: 12px 0 0; padding: 0; }
+.advisor-review li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 10px; border-top: 1px solid var(--border); }
+.advisor-review li > div { min-width: 0; overflow-wrap: anywhere; }
+.advisor-review button { flex-shrink: 0; max-width: 50%; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .advisor-review { padding: 12px; }
+  .advisor-review li { align-items: stretch; flex-direction: column; }
+  .advisor-review button { max-width: none; min-height: 44px; }
+}
+@media (max-width: 760px) {
+  .action-band { position: static; }
+}
+.advisor-review { background: var(--info-surface); border-left: 1px solid var(--info); margin-block: 16px; }
+.review-next { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.review-next > div { min-width: 0; overflow-wrap: anywhere; }
+.advisor-review strong { color: var(--info); }
+.advisor-review p, .advisor-review li span { color: var(--muted); }
+.advisor-review button { border-color: var(--info); color: var(--info); }
+@media (max-width: 600px) {
+  .review-next { flex-direction: column; align-items: stretch; gap: 12px; }
+}
+body:has(.advanced-panel > .detail-dialog[open]) .workspace > .action-band { display: none; }
+.detail-footer .action-band { flex: 1; margin: 0; padding: 0; border: 0; }
+.detail-footer .action-band > p { max-width: 65ch; }
+@media (max-width: 760px) {
+  .detail-footer .action-band { flex-basis: 100%; }
+}
+.advisor-review { padding: 18px; margin-top: 22px; border: 0; border-radius: var(--control-radius); }
+.advisor-review strong { font-size: 15px; }
+.advisor-review button { font-size: 13px; }
+.action-band { padding: 20px 0; margin-top: 16px; border: 0; border-top: 1px solid var(--border); background: transparent; border-radius: 0; }
+@media (max-width: 1000px) {
+  .review-next { flex-direction: column; align-items: flex-start; }
+  .advisor-review button { max-width: 100%; }
+}
+@media (max-width: 760px) {
+  .workspace > .action-band[data-sticky] { position: fixed; bottom: 0; inset-inline: 0; z-index: 15; margin: 0; padding: 10px 16px max(10px, env(safe-area-inset-bottom)); background: var(--surface); display: flex; flex-direction: row; align-items: center; gap: 12px; border-top: 1px solid var(--border); }
+  .workspace > .action-band[data-sticky] p { font-size: 13px; line-height: 1.4; }
+  .workspace > .action-band[data-sticky] .save-state { display: none; }
+  .workspace > .action-band[data-sticky] .primary-actions { display: block; flex-shrink: 0; }
+  body:has(.workspace > .action-band[data-sticky]) .workspace { padding-bottom: 132px; }
+}
