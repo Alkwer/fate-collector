@@ -102,9 +102,10 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
         <div className="decision-toolbar">
           <h2 id="advisor-heading" className="sr-only" tabIndex={-1}>Choose & invoke</h2>
           {mapReady ? <div className="decision-switch" role="group" aria-label="Decision"><button aria-pressed={mode === 'offer'} onClick={() => onChange({ ...workspace, mode: 'offer' })}><AppIcon name="cards" />Choose a Fate</button><button aria-pressed={mode === 'invoke'} onClick={() => onChange({ ...workspace, mode: 'invoke' })}><AppIcon name="arrow" />Plan invocation</button></div> : <h2>Review this offer</h2>}
+          {!mapReady && <button className="manual-add-compact" aria-label="Add Fate manually" onClick={onAddManual}><AppIcon name="plus" /><span>Add Fate</span></button>}
           <button className="text-button edit-current" aria-label="Edit current offer" title="Edit current offer" onClick={() => onEditOffer()}><AppIcon name="tools" /><span>Edit offer</span></button>
         </div>
-        {manualAction}
+        {mapReady && manualAction}
         <DetailPanel trigger={mapReady} ref={priorities} className="reward-settings" autoOpen={!!solverControl.error} title={<>Reward priorities<span className="summary-detail">{portfolioMode ? `${solverControl.settings.profile.goals.length} priorities` : goal?.label || 'Choose a reward'}</span></>}>
 
           {!portfolioMode && <label className="reward-goal">Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => onChange({ ...workspace, goal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>

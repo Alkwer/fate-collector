@@ -1,6 +1,7 @@
 .manual-entry-action { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-block: 16px; }
 .manual-entry-action button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .manual-entry-action p { color: var(--muted); font-size: 13px; }
+.manual-add-compact { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; margin-left: auto; }
 .capture-start .manual-entry-action { justify-content: center; padding: 0 0 24px; }
 .manual-entry-context { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
 .manual-entry-status { color: var(--success); margin-bottom: 16px; }
