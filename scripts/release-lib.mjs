@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { assertPromotionPolicy } from './promotion-policy.mjs'
+import { assertCatalogUpdateRelease, assertPromotionPolicy, promotionRevision } from './promotion-policy.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
 export async function releaseFiles(directory, prefix = '') {
@@ -47,13 +47,17 @@ export function selectTarget(settings, environment) {
   return settings[environment]
 }
 export function assertDeploymentContext(environment, env, manifest) {
-  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REPOSITORY !== 'Alkwer/fate-collector' || manifest.revision !== env.GITHUB_SHA) throw new Error('Remote deployment requires the validated GitHub Actions release workflow for this commit.')
+  const revision = environment === 'production' ? promotionRevision(env) : env.GITHUB_SHA
+  if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REPOSITORY !== 'Alkwer/fate-collector' || manifest.revision !== revision) throw new Error('Remote deployment requires the validated GitHub Actions release workflow for this commit.')
   const workflow = environment === 'staging' ? 'deploy.yml' : 'promote.yml'
   const expected = `${env.GITHUB_REPOSITORY}/.github/workflows/${workflow}@${env.GITHUB_REF}`
   if (env.GITHUB_WORKFLOW_REF !== expected) throw new Error('Use the designated deployment workflow.')
   if (environment === 'production' && (env.GITHUB_REF !== 'refs/heads/main' || env.STAGING_VERIFIED_RELEASE !== manifest.releaseId)) throw new Error('Production requires a verified staging release on main.')
   // Recheck the deadline after any environment approval or queued job delay.
-  if (environment === 'production') assertPromotionPolicy(env)
+  if (environment === 'production') {
+    assertPromotionPolicy(env)
+    assertCatalogUpdateRelease(env, manifest)
+  }
 }
 export async function verifyLiveRelease(target, environment, manifest) {
   const response = await fetch(`${target.url}/api/status`, { redirect: 'error', signal: AbortSignal.timeout(10000), cache: 'no-store' })

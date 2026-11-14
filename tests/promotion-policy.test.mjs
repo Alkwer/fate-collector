@@ -1,12 +1,36 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
-import { assertPromotionPolicy, PRELAUNCH_DEADLINE } from '../scripts/promotion-policy.mjs'
+import { assertCatalogUpdateRelease, assertPromotionPolicy, CATALOG_UPDATE_RELEASE, PRELAUNCH_DEADLINE, promotionRevision } from '../scripts/promotion-policy.mjs'
 import { assertDeploymentContext } from '../scripts/release-lib.mjs'
 
 afterEach(() => vi.useRealTimers())
 const before = new Date('2026-11-13T18:59:59.999Z')
 const prelaunch = { RELEASE_VALIDATION_MODE: 'prelaunch', PRELAUNCH_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
+const catalog = { RELEASE_VALIDATION_MODE: 'catalog-20261114', CATALOG_UPDATE_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
+
+test('catalog deferral requires explicit acceptance and never attests unperformed native checks', () => {
+  expect(assertPromotionPolicy(catalog)).toBe('catalog-20261114')
+  expect(promotionRevision({ ...catalog, GITHUB_SHA: 'a'.repeat(40) })).toBe(CATALOG_UPDATE_RELEASE.revision)
+  expect(promotionRevision({ GITHUB_SHA: 'a'.repeat(40) })).toBe('a'.repeat(40))
+  for (const patch of [{ CATALOG_UPDATE_ACKNOWLEDGED: 'false' }, { MANUAL_TESTS_PASSED: 'true' }, { RECOGNITION_RUN_ID: '123' }]) {
+    expect(() => assertPromotionPolicy({ ...catalog, ...patch })).toThrow()
+  }
+})
+
+test('catalog exception pins both package and source while keeping production workflow guards', () => {
+  const manifest = { ...CATALOG_UPDATE_RELEASE }
+  const env = { ...catalog, GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'Alkwer/fate-collector', GITHUB_SHA: 'a'.repeat(40), GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/promote.yml@refs/heads/main', STAGING_VERIFIED_RELEASE: manifest.releaseId }
+  expect(() => assertDeploymentContext('production', env, manifest)).not.toThrow()
+  for (const patch of [{ revision: 'a'.repeat(40) }, { releaseId: 'b'.repeat(64) }]) {
+    expect(() => assertCatalogUpdateRelease(env, { ...manifest, ...patch })).toThrow('approved screenshot catalog package')
+    expect(() => assertDeploymentContext('production', { ...env, STAGING_VERIFIED_RELEASE: patch.releaseId || manifest.releaseId }, { ...manifest, ...patch })).toThrow()
+  }
+  for (const patch of [{ GITHUB_ACTIONS: 'false' }, { GITHUB_REPOSITORY: 'other/repository' }, { GITHUB_REF: 'refs/heads/feature' }, { STAGING_VERIFIED_RELEASE: 'wrong' }, { GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/deploy.yml@refs/heads/main' }]) {
+    expect(() => assertDeploymentContext('production', { ...env, ...patch }, manifest)).toThrow()
+  }
+  expect(() => assertDeploymentContext('staging', { ...env, GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/deploy.yml@refs/heads/main' }, manifest)).toThrow('validated GitHub Actions')
+})
 
 test('default native mode requires both manual confirmation and a report run even before launch', () => {
   expect(() => assertPromotionPolicy({}, before)).toThrow('manual staging tests')
@@ -77,6 +101,18 @@ test('the actual workflow checks staging in prelaunch and keeps exact native rep
     recognition.head_sha = context.sha;
     recognition.path = '.github/workflows/deploy.yml';
     await assert.rejects(execute(context, github, { summary }, { env: nativeEnv }), /designated successful recognition workflow/);
+    const catalogRelease = ${JSON.stringify(CATALOG_UPDATE_RELEASE)};
+    const catalogEnv = { ...env, ...${JSON.stringify(catalog)}, STAGING_RUN_ID: catalogRelease.stagingRunId };
+    const catalogGithub = { rest: { actions: { getWorkflowRun: async args => { assert.equal(args.run_id, Number(catalogRelease.stagingRunId)); return { data: staging }; } } } };
+    staging.head_sha = catalogRelease.revision;
+    await execute(context, catalogGithub, { summary }, { env: catalogEnv });
+    assert.match(summaries.at(-1), /in-game validation is deferred, not passed/);
+    await assert.rejects(execute(context, catalogGithub, { summary }, { env: { ...catalogEnv, STAGING_RUN_ID: '12' } }), /pinned screenshot catalog staging run/);
+    for (const [key, value] of [['head_sha', context.sha], ['conclusion', 'failure'], ['head_branch', 'feature'], ['path', '.github/workflows/ci.yml']]) {
+      const previous = staging[key]; staging[key] = value;
+      await assert.rejects(execute(context, catalogGithub, { summary }, { env: catalogEnv }), /exact main commit/);
+      staging[key] = previous;
+    }
   `
   execFileSync(process.execPath, ['--input-type=module', '-e', harness], { stdio: 'pipe', windowsHide: true })
 })
