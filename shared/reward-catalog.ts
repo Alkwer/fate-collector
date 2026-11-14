@@ -1,5 +1,5 @@
 import type { Reward } from './schema'
-import screenshots from './screenshot-catalog.json'
+import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
 export const REWARD_CATALOG_VERSION = 'rewards-v2-screenshots-20261114'
 

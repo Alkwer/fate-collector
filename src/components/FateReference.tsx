@@ -1,4 +1,4 @@
-import screenshots from '../../shared/screenshot-catalog.json'
+import screenshots from '../../shared/screenshot-catalog.json' with { type: 'json' }
 import { SCREENSHOT_CATALOG_SOURCE } from '../../shared/reward-catalog'
 import { DetailPanel } from './DetailPanel'
 
