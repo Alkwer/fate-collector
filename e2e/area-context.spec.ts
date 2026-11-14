@@ -30,6 +30,7 @@ for (const width of [390, 900, 1440]) {
     await page.screenshot({ path: `output/area-context/editor-${width}.png`, fullPage: true })
     await closePanels(page)
     await page.getByRole('button', { name: 'Save offer', exact: true }).click()
+    await expect(page.getByRole('status')).toContainText('Offer saved on this device.')
     await closePanels(page)
     await page.reload()
     await closePanels(page)

@@ -4,7 +4,7 @@ import { applyVisualSuggestions } from '../shared/visual-suggestions'
 import { planInvocation, recommendFates } from '../shared/advisor'
 import { captureSchema, type Capture } from '../shared/schema'
 import type { VisualAnalysis } from '../shared/visual-recognition'
-import { REWARD_CATALOG, visualRewardFields } from '../shared/reward-catalog'
+import { REWARD_CATALOG, REWARD_CATALOG_VERSION, visualRewardFields } from '../shared/reward-catalog'
 
 const line = (text: string, x: number, y: number) => ({ text, x, y, width: 90, height: 15 })
 const capture: Capture = { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.3.2',
@@ -45,7 +45,7 @@ test('tooltip-backed flask suggestions reach both advisor stages without approvi
   }] }
   const [first] = applyVisualSuggestions(cards, capture, result)
   expect(first).toMatchObject({ rewards: [{ label: "Dreadmaidens' Sacrament", kind: 'combo', threshold: 2, identified: true, count: 1 }],
-    visualReview: { version: 'browser-v1/rewards-v1', rewardsReviewed: false, tierReviewed: false } })
+    visualReview: { version: `browser-v1/${REWARD_CATALOG_VERSION}`, rewardsReviewed: false, tierReviewed: false } })
   const second = { ...first, id: crypto.randomUUID(), name: 'Wildfire' }
   const goal = { kind: 'combo' as const, label: "Dreadmaidens' Sacrament" }
   expect(recommendFates([second], [first], goal)).toMatchObject({ status: 'provisional', recommendedCardIds: [second.id] })

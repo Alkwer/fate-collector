@@ -14,8 +14,9 @@ It uses bounded OCR-guided regions, sampled grayscale proposals and bilinear RGB
 comparison, not the prototype's full-frame FFT/Lanczos scan or header rereads.
 The frozen Python code, bank and historical reports remain unchanged.
 
-The production dictionary now also includes Dryad and Avalanche, read directly
-from the preserved GGG showcase headers. [Versioned catalog provenance](../shared/catalog-metadata.json)
+The dictionary contains 24 observed names, including Black Frost, Blood Moon,
+Golemancer, Murderous, Rot, Pestilent and Sadist from campaign and map screenshots
+through 14 November 2026. [Versioned catalog provenance](../shared/catalog-metadata.json)
 records the source/date and explicitly unresolved semantics. This expands name
 recognition only; it does not associate rewards with those names or establish
 native accuracy. Standard [production promotion](recognition-validation.md#required-promotion-artifact)
@@ -55,9 +56,15 @@ A motif match does not by itself establish a reward's kind or threshold. The
 provisional Dreadmaidens' Sacrament combo (2) for orange feathers. Gold ring and
 gold grid receive the names Item Rarity and Additional Currency Items, but keep
 unknown kind, no threshold and `identified: false`. Other motifs remain unknown.
-The editor offers three verified combo presets with reference icons and GGG
+The editor retains three prerelease combo presets with reference icons and GGG
 sources. Exceptional Gem is manual only; the three-gems motif is not that combo.
-Fresh card review versions include `rewards-v1`; saved records are not backfilled.
+The [screenshot extract](../research/SCREENSHOT_CATALOG_2026-11-14.md) adds 52
+complete reward tooltip variants for explicit selection: 44 regular and eight
+requiring two reward copies. It also supplies a read-only reference for 30
+tier-specific Fate effects, two of them short descriptions only. The expanded
+catalog does not introduce visual matches or assign rewards by Fate name.
+Fresh card review versions include `rewards-v2-screenshots-20261114`; saved
+records are not backfilled. Helper 0.5.1 carries the expanded name dictionary.
 
 Tiers appear as **suggested** until checked. The reward list is partial until the
 user checks the whole row, including unrecognized icons, kinds, counts and

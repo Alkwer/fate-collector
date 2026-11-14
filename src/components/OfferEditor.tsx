@@ -7,6 +7,7 @@ import { catalogFields, REWARD_CATALOG, selectedCatalogReward } from '../../shar
 import rewardIcons from '../../shared/reward-icons.json'
 import { cardNeedsReview } from '../lib/card-review'
 import { CardEvidence } from './CardEvidence'
+import { FateReference } from './FateReference'
 import { upsertDefinition } from '../lib/solver-settings'
 import { normalizeRewardLabel } from '../../shared/advisor'
 import type { SolverSettingsControl } from './SolverControls'
@@ -89,6 +90,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
           <label className="checkbox-row"><input type="checkbox" checked={selected.visualReview.tierReviewed} onChange={event => updateCard({ visualReview: { ...selected.visualReview!, tierReviewed: event.target.checked } })} />I checked this tier against the image</label>
         </div>}
         <section className="card-details"><h3>Modifiers & rewards <span className="muted">Used by the advisor</span></h3>
+          <FateReference name={selected.name} tier={selected.tier} />
           <label>Modifiers<textarea rows={3} value={selected.modifiers.join('\n')} placeholder="One visible modifier per line" aria-invalid={!!modifierProblem} aria-describedby={`${instanceId}-modifier-help`} onChange={e => updateCard({ modifiers: e.target.value.split('\n') })} /></label>
           <p id={`${instanceId}-modifier-help`} className={modifierProblem ? 'field-error' : 'hint'} role={modifierProblem ? 'alert' : undefined}>{modifierProblem || 'Up to 40 lines, 1,000 characters per line. Corrections save after validation.'}</p>
           <div className="section-heading reward-heading"><h3>Rewards</h3><button className="text-button" disabled={selected.rewards.length >= 30} onClick={() => updateCard({ rewards: [...selected.rewards, newReward()] })}>Add reward</button></div>
@@ -104,10 +106,10 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
               const personal = solverControl?.settings.definitions.find(item => `personal:${item.id}` === event.target.value)
               if (entry) updateReward(reward.id, catalogFields(entry))
               else if (personal) updateReward(reward.id, { label: personal.label, kind: personal.kind, threshold: personal.threshold, identified: true })
-            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
+            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : entry.kind === 'regular' ? 'Regular' : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
             {entry && <p className="reward-label catalog-reference hint">
               {icon && <img src={`data:image/png;base64,${icon.pngBase64}`} alt={`${entry.label} reference icon`} width={34} height={36} />}
-              <span>{entry.description} <a href={entry.source} target="_blank" rel="noreferrer">GGG {entry.kind === 'unknown' ? 'press reference' : 'tooltip'}</a>. Prerelease reference; check your game version.</span>
+              <span>{entry.description} <a href={entry.source} target="_blank" rel="noreferrer">{entry.sourceLabel}</a>. Check the complete tooltip in your game.</span>
             </p>}
             {!entry && personalEntry && <p className="reward-label hint">Personal template. {personalEntry.note} Check this definition against the current tooltip; applying it does not confirm the image review.</p>}
             <label className="reward-label">Label<input value={reward.label} maxLength={160} placeholder="Unidentified icon" onChange={e => updateReward(reward.id, { label: e.target.value, identified: e.target.value.trim() ? reward.identified : false })} /></label>

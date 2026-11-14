@@ -2,9 +2,10 @@ import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers'
 import fateNames from './fate-names.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'prerelease-names-4'
+export const PARSER_VERSION = 'live-names-5'
 
-// Card names observed in pre-release materials. This is a recognition dictionary,
+// Card names observed in prerelease materials and live campaign/map screenshots.
+// This is a recognition dictionary,
 // not a reward mapping or an exhaustive catalog. Unknowns remain in the OCR evidence.
 export const KNOWN_FATE_NAMES = fateNames
 const normalize = (text: string) => text.toLowerCase().replace(/[^a-z]/g, '')

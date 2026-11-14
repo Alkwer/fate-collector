@@ -1,32 +1,135 @@
 {
   "schemaVersion": 1,
-  "version": "catalog-evidence-2026-11-11",
-  "checkedAt": "2026-11-11",
-  "gameVersion": "3.30 prerelease",
+  "version": "catalog-evidence-2026-11-14",
+  "checkedAt": "2026-11-14",
+  "gameVersion": "3.30 Covens League",
   "completeness": "partial",
   "names": {
-    "version": "fate-names-v2",
-    "added": ["Dryad", "Avalanche"],
-    "source": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=26635s",
-    "evidence": "prototypes/vision/fixtures/v2/images/showcase.png",
-    "method": "Manual visual reinspection of preserved GGG showcase frame; both offered headers readable. Not a native F9 sample.",
+    "version": "fate-names-v3",
+    "added": [
+      "Black Frost",
+      "Blood Moon",
+      "Golemancer",
+      "Murderous",
+      "Rot",
+      "Pestilent",
+      "Sadist"
+    ],
+    "evidence": "shared/screenshot-catalog.json",
+    "source": "research/SCREENSHOT_CATALOG_2026-11-14.md",
+    "method": "Manually transcribed campaign and map screenshot headers. Source IDs and SHA-256 recorded; not an independent native recognition holdout.",
     "rewardsInferredFromName": false
   },
   "rewards": {
-    "version": "rewards-v1",
-    "source": "https://www.youtube.com/watch?v=8FKW2rKJyxA&t=11637s",
-    "evidenceReport": "research/REWARD_CATALOG_2026-11-10.md",
-    "newSemanticsConfirmed": [],
-    "status": "Existing tooltip meanings retained; no new motif meanings or thresholds inferred."
+    "version": "rewards-v2-screenshots-20261114",
+    "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-14.md",
+    "newSemanticsConfirmed": [
+      "additional-currency-items",
+      "additional-currency-items-combo",
+      "additional-gems-some-with-maximum-quality",
+      "additional-stacked-decks",
+      "additional-threads",
+      "doedres-tongue",
+      "gem-with-quality",
+      "gold",
+      "highly-increased-item-rarity",
+      "increased-item-rarity",
+      "many-additional-stacked-decks",
+      "many-additional-threads",
+      "massively-increased-item-rarity",
+      "ordered-fate",
+      "rare-amulets-with-an-attribute-modifier",
+      "rare-armour-with-dexterity-requirements",
+      "rare-armour-with-intelligence-requirements",
+      "rare-armour-with-strength-requirements",
+      "rare-axes-with-a-physical-modifier",
+      "rare-belts-with-an-elemental-modifier",
+      "rare-body-armours-without-life-modifiers",
+      "rare-boots-with-a-resistance-modifier",
+      "rare-boots-with-a-speed-modifier",
+      "rare-claws-with-a-critical-modifier",
+      "rare-claws-with-a-speed-modifier",
+      "rare-daggers-with-a-critical-modifier",
+      "rare-gloves-with-a-defence-modifier",
+      "rare-gloves-with-an-attack-modifier",
+      "rare-helmets-with-a-defence-modifier",
+      "rare-helmets-with-a-drop-modifier",
+      "rare-jewellery-items",
+      "rare-maces-with-a-physical-modifier",
+      "rare-map",
+      "rare-melee-weapons",
+      "rare-ranged-weapons-or-quivers",
+      "rare-rings-with-a-mana-modifier",
+      "rare-rune-daggers-without-attack-modifiers",
+      "rare-shields-with-a-life-modifier",
+      "rare-shields-with-a-resistance-modifier",
+      "rare-shields-without-life-modifiers",
+      "rare-swords-with-a-speed-modifier",
+      "rare-swords-without-physical-modifiers",
+      "rare-wands-with-a-mana-modifier",
+      "rare-wands-without-attack-modifiers",
+      "rare-warstaves-with-a-critical-modifier",
+      "rare-warstaves-with-a-speed-modifier",
+      "rare-weapons-with-a-physical-modifier",
+      "unique-armour",
+      "unique-flask",
+      "unique-jewellery-item",
+      "unique-weapon",
+      "viscera-item"
+    ],
+    "status": "52 complete tooltip variants: 44 regular and 8 conditional on two reward copies. Explicit manual selection only; existing motif mappings remain unchanged. Historical prerelease entries remain labelled separately."
   },
   "freshSources": [
-    { "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1", "owner": "GGG", "published": "2026-11-10", "result": "FAQ: choice sequencing, rarity clarification and qualitative Viscera benefits from more invoked Fates and duplicates. Grim-Fate empowered Pinnacles guarantee Viscera. No probabilities, new icon meanings, mixed-tier, third-duplicate or general combo algorithm." },
-    { "url": "https://www.pathofexile.com/forum/view-thread/4013680", "owner": "GGG", "result": "Official 3.30 notes rechecked on 11 November: item-generation context, no additional Fate icon meanings or combo thresholds. No numeric value model inferred." },
-    { "url": "https://www.pathofexile.com/covens", "owner": "GGG", "result": "Web reader exposed navigation only; no names extracted." },
-    { "url": "https://poedb.tw/us/Covens_league", "owner": "PoEDB community data", "result": "Overview; no complete Fate-name or reward table." },
-    { "url": "https://poedb.tw/us/Dreadmaidens_Sacrament", "owner": "PoEDB community data", "result": "Corroborates existing unique name and Basalt Flask base, not combo threshold." },
-    { "url": "https://poedb.tw/us/Version_3.30.0", "owner": "PoEDB community data", "result": "Partial TCG notes; includes outdated rarity text contradicted by GGG FAQ. No mechanic rules imported." }
+    {
+      "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1",
+      "owner": "GGG",
+      "published": "2026-11-10",
+      "result": "FAQ: choice sequencing, rarity clarification and qualitative Viscera benefits from more invoked Fates and duplicates. Grim-Fate empowered Pinnacles guarantee Viscera. No probabilities, new icon meanings, mixed-tier, third-duplicate or general combo algorithm.",
+      "checkedAt": "2026-11-11"
+    },
+    {
+      "url": "https://www.pathofexile.com/forum/view-thread/4013680",
+      "owner": "GGG",
+      "result": "Official 3.30 notes rechecked on 11 November: item-generation context, no additional Fate icon meanings or combo thresholds. No numeric value model inferred.",
+      "checkedAt": "2026-11-11"
+    },
+    {
+      "url": "https://www.pathofexile.com/covens",
+      "owner": "GGG",
+      "result": "Web reader exposed navigation only; no names extracted.",
+      "checkedAt": "2026-11-11"
+    },
+    {
+      "url": "https://poedb.tw/us/Covens_league",
+      "owner": "PoEDB community data",
+      "result": "Overview; no complete Fate-name or reward table.",
+      "checkedAt": "2026-11-11"
+    },
+    {
+      "url": "https://poedb.tw/us/Dreadmaidens_Sacrament",
+      "owner": "PoEDB community data",
+      "result": "Corroborates existing unique name and Basalt Flask base, not combo threshold.",
+      "checkedAt": "2026-11-11"
+    },
+    {
+      "url": "https://poedb.tw/us/Version_3.30.0",
+      "owner": "PoEDB community data",
+      "result": "Partial TCG notes; includes outdated rarity text contradicted by GGG FAQ. No mechanic rules imported.",
+      "checkedAt": "2026-11-11"
+    }
   ],
-  "unresolvedMechanics": ["mixed-tier duplicate merge", "third duplicate", "slot recovery after merge", "general duplicate/combo algorithm", "repeat combo payouts"],
-  "advisorPolicy": "conservative"
+  "unresolvedMechanics": [
+    "mixed-tier duplicate merge",
+    "third duplicate",
+    "slot recovery after merge",
+    "general duplicate/combo algorithm",
+    "repeat combo payouts"
+  ],
+  "advisorPolicy": "conservative",
+  "effects": {
+    "evidence": "shared/screenshot-catalog.json",
+    "fates": 24,
+    "tierVariants": 30,
+    "status": "Read-only tier-specific reference. Sadist T2 and Incandescent T2 have short descriptions only. No automatic modifier or reward assignment."
+  }
 }

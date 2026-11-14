@@ -1,6 +1,41 @@
 import { test, expect } from '@playwright/test'
 import { closePanels, openPanel } from './ui'
 
+test('adds map tooltip variants and keeps unrecorded effects unknown', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Add Fate manually', exact: true }).click()
+  const entry = page.getByRole('dialog', { name: 'Add Fate manually', exact: true })
+  await entry.getByRole('searchbox', { name: 'Find a Fate' }).fill('Sadist')
+  await entry.getByRole('button', { name: 'Choose Sadist', exact: true }).click()
+  await entry.getByRole('button', { name: 'Tier 2', exact: true }).click()
+  await entry.getByRole('button', { name: 'Known Fate effects', exact: true }).click()
+  const reference = page.getByRole('dialog', { name: 'Sadist effects', exact: true })
+  await expect(reference).toContainText('short description only')
+  await expect(reference).toContainText('The full effect tooltip is missing')
+  await page.keyboard.press('Escape')
+  await entry.getByRole('combobox', { name: 'All reward tooltips', exact: true }).selectOption('observed-additional-threads')
+  await expect(entry.locator('.manual-catalog')).toContainText('Empowered Monster will drop additional Threads')
+  await entry.getByRole('button', { name: 'Add selected reward', exact: true }).click()
+  await entry.getByRole('combobox', { name: 'All reward tooltips', exact: true }).selectOption('observed-many-additional-threads')
+  await expect(entry.locator('.manual-catalog')).toContainText('To claim this reward, invoke two copies of it')
+  await entry.getByRole('button', { name: 'Add selected reward', exact: true }).click()
+  for (const width of [1440, 768, 390]) {
+    await page.setViewportSize({ width, height: 900 })
+    await expect(entry.getByRole('button', { name: 'Add to offer', exact: true })).toBeInViewport()
+    expect(await entry.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth)).toBe(true)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await entry.locator('.manual-catalog').scrollIntoViewIfNeeded()
+    await page.screenshot({ path: `output/catalog-release-20261114/manual-${width}.png` })
+  }
+  await entry.getByRole('button', { name: 'Add to offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Sadist to collected', exact: true }).click()
+  const workspace = await page.evaluate(() => JSON.parse(sessionStorage.getItem('fate-collector.advisor-area.v2')!))
+  expect(workspace.collection.cards[0]).toMatchObject({ name: 'Sadist', tier: 2, modifiers: [], rewards: [
+    { label: 'Additional Threads', kind: 'regular', threshold: null, count: 1 },
+    { label: 'Many Additional Threads', kind: 'combo', threshold: 2, count: 1 },
+  ] })
+})
+
 test('enters a manual offer, saves it and starts the next without changing the collection', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Add Fate manually', exact: true }).click()

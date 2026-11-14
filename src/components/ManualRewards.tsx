@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { newReward } from '../../shared/offers'
-import { catalogFields, REWARD_CATALOG } from '../../shared/reward-catalog'
+import { catalogFields, REWARD_CATALOG, REWARD_SHORTCUTS, selectedCatalogReward } from '../../shared/reward-catalog'
 import type { Reward } from '../../shared/schema'
 import type { RewardDefinition } from '../lib/solver-settings'
 import { AppIcon } from './AppIcon'
@@ -16,8 +16,11 @@ export function ManualRewards({ rewards, definitions, onChange }: {
   rewards: Reward[]; definitions: RewardDefinition[]; onChange: (rewards: Reward[]) => void
 }) {
   const [customId, setCustomId] = useState<string | null>(null)
-  const presets = REWARD_CATALOG.map(entry => ({ id: entry.id, ...catalogFields(entry) }))
+  const [catalogId, setCatalogId] = useState('')
+  const catalogEntry = REWARD_CATALOG.find(entry => entry.id === catalogId)
+  const presets = REWARD_SHORTCUTS.map(entry => ({ id: entry.id, ...catalogFields(entry) }))
   const matching = (preset: Preset) => rewards.find(reward => reward.label === preset.label && reward.kind === preset.kind && reward.threshold === preset.threshold && reward.identified === preset.identified)
+  const selectedReward = catalogEntry && matching(catalogFields(catalogEntry))
   function update(id: string, patch: Partial<Reward>) {
     onChange(rewards.map(reward => {
       if (reward.id !== id) return reward
@@ -48,6 +51,16 @@ export function ManualRewards({ rewards, definitions, onChange }: {
         </button>
       })}
     </div>
+    <div className="manual-catalog">
+      <label>All reward tooltips<select value={catalogId} onChange={event => setCatalogId(event.target.value)}>
+        <option value="">Choose a matching tooltip</option>
+        {(['regular', 'combo', 'unknown'] as const).map(kind => <optgroup key={kind} label={kind === 'regular' ? 'Regular rewards' : kind === 'combo' ? 'Combo rewards' : 'Kind unknown'}>
+          {REWARD_CATALOG.filter(entry => entry.kind === kind).map(entry => <option key={entry.id} value={entry.id}>{entry.label}{entry.kind === 'combo' ? ` · needs ${entry.threshold}` : ''}</option>)}
+        </optgroup>)}
+      </select></label>
+      {catalogEntry && <p className="hint">{catalogEntry.description} <a href={catalogEntry.source} target="_blank" rel="noreferrer">{catalogEntry.sourceLabel}</a></p>}
+      <button type="button" disabled={!catalogEntry || (selectedReward ? selectedReward.count >= 100 : rewards.length >= 30)} onClick={() => { if (catalogEntry) add(catalogFields(catalogEntry)) }}>Add selected reward</button>
+    </div>
     {!!definitions.length && <label className="manual-personal-reward">Personal template<select value="" onChange={event => {
       const entry = definitions.find(item => item.id === event.target.value)
       if (entry) add({ label: entry.label, kind: entry.kind, threshold: entry.threshold, identified: true })
@@ -57,6 +70,7 @@ export function ManualRewards({ rewards, definitions, onChange }: {
         <div className="manual-reward-summary"><RewardSymbol label={reward.label} identified={reward.identified} />
           <div><strong>{reward.label || 'Unknown reward'}</strong>
             <DetailPanel className="manual-reward-details" title={`Reward ${index + 1} details`} triggerLabel={reward.kind === 'unknown' ? 'Set reward kind' : `${kindLabel(reward)} · Edit`} autoOpen={customId === reward.id}>
+              {selectedCatalogReward(reward) && <p className="hint">{selectedCatalogReward(reward)!.description}</p>}
               <p className="hint">Copy the tooltip only if you know it. Unknown details can stay blank.</p>
               <div className="manual-reward-fields">
                 <label>Reward name<input maxLength={160} value={reward.label} placeholder="Unknown reward" onChange={event => update(reward.id, { label: event.target.value })} /></label>
