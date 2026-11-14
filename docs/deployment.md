@@ -155,6 +155,29 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
+- `catalog-20261114` is the owner's explicit exception for the screenshot data
+  update in PR #35. Use staging run `43650905392`, set
+  `catalog_update_acknowledged=true`, leave `recognition_run_id` empty and
+  `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
+  Windows helper/browser checks and the live synthetic staging smoke remain
+  required. Inspect the new catalog in the staging UI before promotion.
+
+### Pinned screenshot catalog exception
+
+The owner confirmed on 15 November (Poland time) that adding these report findings
+does not require in-game testing. This exception accepts only source revision
+`3f92053a2c88361a17ccf74b9fed7a5aa05b4b38` and package
+`40bc7de10609f8a797635fb03ed8ceb1267b594b3cc3e10feb8d94e8ed3fbb11` from the
+successful staging run above. The promotion workflow itself runs from reviewed
+`main`, which includes this policy change; it deploys the already tested package,
+without rebuilding it. The source revision differs from the policy commit only
+in this mode. Both package verification and production deployment enforce the
+pinned revision and package ID, and recheck the live staging identity.
+
+This is not a general data-only bypass. A different package cannot use this
+exception. It does not establish native recognition accuracy, HDR coverage or
+GGG compliance. The default native gate and the expired prelaunch deadline
+remain unchanged.
 
 ### Temporary prelaunch policy
 
