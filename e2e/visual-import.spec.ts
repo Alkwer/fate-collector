@@ -206,7 +206,7 @@ for (const width of [1440, 390]) {
     await page.getByLabel('Count', { exact: true }).fill('1')
     await reviewed.check()
     await expect(page.getByAltText("Dreadmaidens' Sacrament reference icon")).toBeVisible()
-    await expect(page.getByRole('link', { name: 'GGG tooltip', exact: true })).toHaveAttribute('href', /t=11697s/)
+    await expect(page.getByRole('link', { name: 'GGG prerelease reference', exact: true })).toHaveAttribute('href', /t=11697s/)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.locator('.reward-editor').screenshot({ path: join(tmpdir(), `fate-catalog-detail-${width}.png`) })
     await page.screenshot({ path: join(tmpdir(), `fate-catalog-editor-${width}.png`), fullPage: true })
