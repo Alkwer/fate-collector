@@ -1,0 +1,1470 @@
+{
+  "version": "screenshots-2026-11-14",
+  "date": "2026-11-14",
+  "statistics": {
+    "offers": 50,
+    "cards": 129,
+    "campaignOffers": 43,
+    "campaignCards": 108,
+    "mapOffers": 7,
+    "mapCards": 21,
+    "fateNames": 24,
+    "completeOffers": 34,
+    "cardsWithAllRewardTooltips": 86,
+    "cardsWithPartialRewardTooltips": 15,
+    "cardsWithoutRewardTooltips": 28,
+    "sourceCutoff": "2026-11-14T22:10:31.000Z"
+  },
+  "sources": [
+    {
+      "id": "archive/03",
+      "sha256": "61e89b3c539a95d282d271d2cf1a212a1217eca276b49d65539380072f1a8216"
+    },
+    {
+      "id": "archive/04",
+      "sha256": "dd1e5d7fc51e7195d3749d584a3a94a0076e8f750b13813f90923fa542f5c14f"
+    },
+    {
+      "id": "archive/05",
+      "sha256": "b03e487587d55f3884dbe2ecfa4beffe21d92a68a2e1121734771b371d0097da"
+    },
+    {
+      "id": "archive/10",
+      "sha256": "27694324a18a28da179135a9e35294811ff9ae137b5e3eb7ffa2cb4ff1ee8db3"
+    },
+    {
+      "id": "archive/11",
+      "sha256": "34b6b9d10b6725dd23c344277ef0a3afb9ce550625516e695a46ac0da01ae8e7"
+    },
+    {
+      "id": "archive/12",
+      "sha256": "80bdaabdb2b1f6816a685fae14686a1858af9a973b98d6a79661df78f23877bd"
+    },
+    {
+      "id": "archive/15",
+      "sha256": "a61af391653a815b9b4daed74c6e497fb7d2e57934e0b05acf029dcb12e4d9e9"
+    },
+    {
+      "id": "archive/16",
+      "sha256": "c0bbc522e5ff1bdcdf5dd71b33ff7c75c372509ad1d7fd71d309c4f2bd32c24d"
+    },
+    {
+      "id": "archive/20",
+      "sha256": "6f68b1295fab8975bd583014ebee2d8950f7ccdd8c4dd3ccd66a8790374ff73b"
+    },
+    {
+      "id": "archive/21",
+      "sha256": "78b32c4b328be19ed563b507e0158e1d59327c7b63217a79d9e8c1b546e97273"
+    },
+    {
+      "id": "archive/23",
+      "sha256": "63162ae0d0edd3a3bba673aec23767ec93b7e5e0276c3305f7e252a9d44d2a97"
+    },
+    {
+      "id": "archive/24",
+      "sha256": "9f8a22a9e0ef32c7b0fa5b423d0f21907e3ca55f4ac9d686a8c59a765f1ceb98"
+    },
+    {
+      "id": "archive/26",
+      "sha256": "228e1346927faa2323aa557871fdbfd30bede192751bb5a6fb827e83949be3a5"
+    },
+    {
+      "id": "archive/27",
+      "sha256": "93305aae8d4f139ab94fb6062cb8e6fbc77ad67c42b3b3b5835abeb3b9b398cd"
+    },
+    {
+      "id": "archive/28",
+      "sha256": "4e07c2d5a4a80b2f788148a237f4d0c5cbea145c42feaddfd7b2fbb35109a755"
+    },
+    {
+      "id": "archive/29",
+      "sha256": "0023080e5cc1713f799f9f8ecd357d19360376c4981446106b5db19646d8ff2d"
+    },
+    {
+      "id": "archive/31",
+      "sha256": "8bff2e12690a7999543b4ed7b786c328b563df69c832a0270eeec8d404fe8da4"
+    },
+    {
+      "id": "archive/32",
+      "sha256": "b8873dabeb0758919c6fa91787142ef905f8dc229cd29a01afed42c75abd6ee6"
+    },
+    {
+      "id": "archive/33",
+      "sha256": "85ffc9c255cba04dd89268689724b7b95a933550bbc4dbca39b2a13e05090082"
+    },
+    {
+      "id": "archive/34",
+      "sha256": "e4473f0b7f19c6c5d1abce981ffaca3e33d928bb9533a483b86971aad5ac78e4"
+    },
+    {
+      "id": "archive/36",
+      "sha256": "250880f444081673cd604400067912b8a482160211e1a983a886f0f039c6b891"
+    },
+    {
+      "id": "archive/37",
+      "sha256": "f5b6c98c70d68cdbf49015e40585c475046edcefd138c2842530719fa4ca9a70"
+    },
+    {
+      "id": "archive/39",
+      "sha256": "7d0d168f0d1a59bb6a1aa4c7a177835b7fd1a6d49acacd022d591f9f3f5cf036"
+    },
+    {
+      "id": "archive/40",
+      "sha256": "e4e5c275066e1a9a9f1f2b9815b5245ed2b9e367ceff8462fe46bb5e0500e5c9"
+    },
+    {
+      "id": "archive/44",
+      "sha256": "0f3680dd8caa3194804ff459cc3e368f917e6decbdbfb17f39de48e8f8f30bb7"
+    },
+    {
+      "id": "PathOfExileSteam_0K8cv8zP3R",
+      "sha256": "1fb70c1e477c2f32d8d48265e6317739817ff640db87bbaa7fa7f090077dcebd"
+    },
+    {
+      "id": "PathOfExileSteam_0o9OBsJrtk",
+      "sha256": "677c70741140c7968df800e54f4b444878d25ed83609509b88197d0ec69aa5db"
+    },
+    {
+      "id": "PathOfExileSteam_1iag2AE5Hy",
+      "sha256": "8df1463b19d8aceb80efa01ecc4c6a5912ed4b293452edd9190bea31fd4143d7"
+    },
+    {
+      "id": "PathOfExileSteam_1xdmCkhCuW",
+      "sha256": "e42c5afc986eed479a605cab3a0a2a03980124b86799f05936a131e0b2c26f6d"
+    },
+    {
+      "id": "PathOfExileSteam_6S93uK39h1",
+      "sha256": "8b3fb07970ea66aa4ff637531069184f0d7c08c1a847a6bd42ce010838a97d20"
+    },
+    {
+      "id": "PathOfExileSteam_7PcZkNvDX8",
+      "sha256": "e9d68e788d49ddb13e264169552919623c1fd82595c785f278b3bbd1a1dea558"
+    },
+    {
+      "id": "PathOfExileSteam_7xT68ktqWr",
+      "sha256": "2ec432f3c1bf7fe291c7914aa35dcd05e6b98377a9f1a6e01f20c6df81583e71"
+    },
+    {
+      "id": "PathOfExileSteam_8yKCLjHlT7",
+      "sha256": "2498127483824c0fb8053e129573816d2b8d84da7c92188e08a2f0265a4534ad"
+    },
+    {
+      "id": "PathOfExileSteam_9Xt9usM7cQ",
+      "sha256": "654c6fe67c075f5d0d75dee3d3e620099661e40d7125e8f366c1ec8299dfc889"
+    },
+    {
+      "id": "PathOfExileSteam_A8Q1MC1KxR",
+      "sha256": "8a2ce3ed512e60fdc14899d2132d6fa459e932fc5662a316a52f97663ce88bdf"
+    },
+    {
+      "id": "PathOfExileSteam_aJDBwm7YYU",
+      "sha256": "f652e9c2499cb0377c8242e6a1a99659adf1892e987a45a1d7df506e81027274"
+    },
+    {
+      "id": "PathOfExileSteam_ANaQI7V5Zg",
+      "sha256": "6064926fbcf220cb35c9d2a0f94755cb253c28fb4984660120453ceb69ac8a0d"
+    },
+    {
+      "id": "PathOfExileSteam_aZU4TLS9wi",
+      "sha256": "7bd3463253cc43df7d997597f6078bdc21283bd52beec7502f2aa1d4ff3c3b51"
+    },
+    {
+      "id": "PathOfExileSteam_bw9Vtp5kwl",
+      "sha256": "0fff3667bdcc45e97f1bfb5fec145f274be280150189e9b9bcc0bc14b13f91bb"
+    },
+    {
+      "id": "PathOfExileSteam_Dw8WV92FNB",
+      "sha256": "cb5bc30b03fd9c6fe355bd5c50ebb9d00fe1722ebd75c7a82951c00abb2ceea6"
+    },
+    {
+      "id": "PathOfExileSteam_HawPQWxO1R",
+      "sha256": "f03e785c0e65f449049caf59623fc9d6d93c669a9bbf2b4e898fca58366a127c"
+    },
+    {
+      "id": "PathOfExileSteam_HuVf87KQnd",
+      "sha256": "dddde8ca09791b9f4366011835a2252e2140adce3235efc96418ad6a8e979f6d"
+    },
+    {
+      "id": "PathOfExileSteam_hXXpttfv0n",
+      "sha256": "ebfc33265500c6244e986f5b59bc87d3279beb1b44ccacebdd61c06bee95e46e"
+    },
+    {
+      "id": "PathOfExileSteam_k37Fhos5BG",
+      "sha256": "03a610f9cd01d22d9e68ae10f4081d8416658e2e0fff1cdb417db16eae5e5e99"
+    },
+    {
+      "id": "PathOfExileSteam_Lve6zb3CPs",
+      "sha256": "03460b047d43a9e29884c891fff95913a42c2accd2657c9d153bbcf3f7da5977"
+    },
+    {
+      "id": "PathOfExileSteam_Mcx2O3Loxs",
+      "sha256": "da8b3aa0e3b532fc29dab662bdf2f3b5018b2b20e3af19a4bd2d1befe8a7f9df"
+    },
+    {
+      "id": "PathOfExileSteam_NNGpaauduY",
+      "sha256": "9c179fb5ce94707b54704d83c40d0106ae03d9277e93d005b572dfcc3bb589e6"
+    },
+    {
+      "id": "PathOfExileSteam_PD35YxxQi6",
+      "sha256": "5e2b8188a28769973ed94de64dfe9e275aea6dc6908e8a0b639f9c6f8eab1a52"
+    },
+    {
+      "id": "PathOfExileSteam_PwPhp5ol90",
+      "sha256": "2ad69f266f5bdaeb236c0969d738b5168c6dd99f29242a3bb500c4beb8add536"
+    },
+    {
+      "id": "PathOfExileSteam_Rdaxaavdgl",
+      "sha256": "6023e4be9ed7d642def54fa7fc0362397d75ad0259dc9e1b4cf7ce1a738aaa2b"
+    },
+    {
+      "id": "PathOfExileSteam_SU77C4vXUe",
+      "sha256": "acd4ac3d0976482580f53cfb53b20d2faa19ef12be6e9a8a634beb7683749006"
+    },
+    {
+      "id": "PathOfExileSteam_SUM9xSrJC2",
+      "sha256": "79b6b7e1a122201a3ca7673e40f7b3f1722fa4be7df95d83249eeb3b3e9d9882"
+    },
+    {
+      "id": "PathOfExileSteam_t3WJmNUGcN",
+      "sha256": "27b9cf81a5efe56b58c397a7cff92c8083b8f6533c8309784407b985730a2c76"
+    },
+    {
+      "id": "PathOfExileSteam_T7jEtcm9a9",
+      "sha256": "d0a1f47033716716bfd0de16443d00e66d76938bd7ced22ba0f9a810206ae708"
+    },
+    {
+      "id": "PathOfExileSteam_TeSNckQrrz",
+      "sha256": "37aefba9cc1e7afe7bc218cbe9a6ec8b6ada5d43deeeee20a8442af4069c5cfb"
+    },
+    {
+      "id": "PathOfExileSteam_UulCS3PuRV",
+      "sha256": "93e8b364406cadc0da98dcba927f68bded11c1bc3651a1c14d4f5950dd62b392"
+    },
+    {
+      "id": "PathOfExileSteam_v3SDrBwots",
+      "sha256": "c29caa0c85860d62ad0647d83155b80fc4d39a16b33fcca6c0f164f0d25d16b1"
+    },
+    {
+      "id": "PathOfExileSteam_W7IWbarwko",
+      "sha256": "031d7cc81d1b475045e52bf0427964e77768560c03654a676df8b60a8f93862e"
+    },
+    {
+      "id": "PathOfExileSteam_wi8XB7NFMD",
+      "sha256": "1075ef80e2193e0a545db1067f024a67cdf7151f6d979a7f059f4c1cb2875034"
+    },
+    {
+      "id": "PathOfExileSteam_WrCWzgC4bd",
+      "sha256": "d04148c6e7c7aa8d97448d891308dbe7974f2f07b3408a99d0ac242e675fab4e"
+    },
+    {
+      "id": "PathOfExileSteam_YCnDPx4Fh2",
+      "sha256": "822e2f5a90b6174410f0056c622e2dce147df90176a265f56127f41a500043f6"
+    },
+    {
+      "id": "PathOfExileSteam_zhBjodC9dx",
+      "sha256": "3d417ad982d53f1e612db5c87ee75dc275bab2adf9bff52556f3b32ee574abca"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "additional-currency-items",
+      "label": "Additional Currency Items",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Currency Items.",
+      "tooltip": [
+        "Empowered Monster will drop additional Currency Items"
+      ],
+      "sourceIds": [
+        "archive/24"
+      ]
+    },
+    {
+      "id": "additional-currency-items-combo",
+      "label": "Additional Currency Items",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop additional Currency Items.",
+      "tooltip": [
+        "Empowered Monster will drop additional Currency Items",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_aZU4TLS9wi"
+      ]
+    },
+    {
+      "id": "additional-gems-some-with-maximum-quality",
+      "label": "Additional Gems, Some with Maximum Quality",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop additional Gems, some of which will be maximum Quality.",
+      "tooltip": [
+        "Empowered Monster will drop additional Gems, some of which will be maximum Quality",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_1iag2AE5Hy"
+      ]
+    },
+    {
+      "id": "additional-stacked-decks",
+      "label": "Additional Stacked Decks",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Stacked Decks.",
+      "tooltip": [
+        "Empowered Monster will drop additional Stacked Decks"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_PD35YxxQi6"
+      ]
+    },
+    {
+      "id": "additional-threads",
+      "label": "Additional Threads",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Threads.",
+      "tooltip": [
+        "Empowered Monster will drop additional Threads"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_HuVf87KQnd"
+      ]
+    },
+    {
+      "id": "doedres-tongue",
+      "label": "Doedre's Tongue",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop Doedre's Tongue.",
+      "tooltip": [
+        "Empowered Monster will drop Doedre's Tongue",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_8yKCLjHlT7"
+      ]
+    },
+    {
+      "id": "gem-with-quality",
+      "label": "Gem with Quality",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Gem with Quality.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Gem with Quality"
+      ],
+      "sourceIds": [
+        "archive/10"
+      ]
+    },
+    {
+      "id": "gold",
+      "label": "Gold",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Gold.",
+      "tooltip": [
+        "Empowered Monster will drop additional Gold"
+      ],
+      "sourceIds": [
+        "archive/12"
+      ]
+    },
+    {
+      "id": "highly-increased-item-rarity",
+      "label": "Highly Increased Item Rarity",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster has highly increased Item Rarity.",
+      "tooltip": [
+        "Empowered Monster has highly increased Item Rarity"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_hXXpttfv0n"
+      ]
+    },
+    {
+      "id": "increased-item-rarity",
+      "label": "Increased Item Rarity",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster has increased Item Rarity.",
+      "tooltip": [
+        "Empowered Monster has increased Item Rarity"
+      ],
+      "sourceIds": [
+        "archive/33"
+      ]
+    },
+    {
+      "id": "many-additional-stacked-decks",
+      "label": "Many Additional Stacked Decks",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop many additional Stacked Decks.",
+      "tooltip": [
+        "Empowered Monster will drop many additional Stacked Decks",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_WrCWzgC4bd"
+      ]
+    },
+    {
+      "id": "many-additional-threads",
+      "label": "Many Additional Threads",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop many additional Threads.",
+      "tooltip": [
+        "Empowered Monster will drop many additional Threads",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_A8Q1MC1KxR"
+      ]
+    },
+    {
+      "id": "massively-increased-item-rarity",
+      "label": "Massively Increased Item Rarity",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster has massively increased Item Rarity.",
+      "tooltip": [
+        "Empowered Monster has massively increased Item Rarity",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_bw9Vtp5kwl"
+      ]
+    },
+    {
+      "id": "ordered-fate",
+      "label": "Ordered Fate",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop Ordered Fate.",
+      "tooltip": [
+        "Empowered Monster will drop Ordered Fate",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_T7jEtcm9a9"
+      ]
+    },
+    {
+      "id": "rare-amulets-with-an-attribute-modifier",
+      "label": "Rare Amulets with an Attribute Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Amulets. Amulets dropped by Empowered Monster will have an Attribute modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Amulets",
+        "Amulets dropped by Empowered Monster will have an Attribute modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_YCnDPx4Fh2"
+      ]
+    },
+    {
+      "id": "rare-armour-with-dexterity-requirements",
+      "label": "Rare Armour with Dexterity Requirements",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Armour items with Dexterity requirements.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Armour items with Dexterity requirements"
+      ],
+      "sourceIds": [
+        "archive/29"
+      ]
+    },
+    {
+      "id": "rare-armour-with-intelligence-requirements",
+      "label": "Rare Armour with Intelligence Requirements",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Armour items with Intelligence requirements.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Armour items with Intelligence requirements"
+      ],
+      "sourceIds": [
+        "archive/11"
+      ]
+    },
+    {
+      "id": "rare-armour-with-strength-requirements",
+      "label": "Rare Armour with Strength Requirements",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Armour items with Strength requirements.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Armour items with Strength requirements"
+      ],
+      "sourceIds": [
+        "archive/15"
+      ]
+    },
+    {
+      "id": "rare-axes-with-a-physical-modifier",
+      "label": "Rare Axes with a Physical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Axes. Axes dropped by Empowered Monster will have a Physical modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Axes",
+        "Axes dropped by Empowered Monster will have a Physical modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_Lve6zb3CPs"
+      ]
+    },
+    {
+      "id": "rare-belts-with-an-elemental-modifier",
+      "label": "Rare Belts with an Elemental Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Belts. Belts dropped by Empowered Monster will have an Elemental modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Belts",
+        "Belts dropped by Empowered Monster will have an Elemental modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_W7IWbarwko"
+      ]
+    },
+    {
+      "id": "rare-body-armours-without-life-modifiers",
+      "label": "Rare Body Armours without Life Modifiers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Body Armours. Body Armours dropped by Empowered Monster will have no Life modifiers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Body Armours",
+        "Body Armours dropped by Empowered Monster will have no Life modifiers"
+      ],
+      "sourceIds": [
+        "archive/05"
+      ]
+    },
+    {
+      "id": "rare-boots-with-a-resistance-modifier",
+      "label": "Rare Boots with a Resistance Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Boots. Boots dropped by Empowered Monster will have a Resistance modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Boots",
+        "Boots dropped by Empowered Monster will have a Resistance modifier"
+      ],
+      "sourceIds": [
+        "archive/39"
+      ]
+    },
+    {
+      "id": "rare-boots-with-a-speed-modifier",
+      "label": "Rare Boots with a Speed Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Boots. Boots dropped by Empowered Monster will have a Speed modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Boots",
+        "Boots dropped by Empowered Monster will have a Speed modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_6S93uK39h1"
+      ]
+    },
+    {
+      "id": "rare-claws-with-a-critical-modifier",
+      "label": "Rare Claws with a Critical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Claws. Claws dropped by Empowered Monster will have a Critical modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Claws",
+        "Claws dropped by Empowered Monster will have a Critical modifier"
+      ],
+      "sourceIds": [
+        "archive/28"
+      ]
+    },
+    {
+      "id": "rare-claws-with-a-speed-modifier",
+      "label": "Rare Claws with a Speed Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Claws. Claws dropped by Empowered Monster will have a Speed modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Claws",
+        "Claws dropped by Empowered Monster will have a Speed modifier"
+      ],
+      "sourceIds": [
+        "archive/27"
+      ]
+    },
+    {
+      "id": "rare-daggers-with-a-critical-modifier",
+      "label": "Rare Daggers with a Critical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Daggers. Daggers dropped by Empowered Monster will have a Critical modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Daggers",
+        "Daggers dropped by Empowered Monster will have a Critical modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_7xT68ktqWr"
+      ]
+    },
+    {
+      "id": "rare-gloves-with-a-defence-modifier",
+      "label": "Rare Gloves with a Defence Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Gloves. Gloves dropped by Empowered Monster will have a Defence modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Gloves",
+        "Gloves dropped by Empowered Monster will have a Defence modifier"
+      ],
+      "sourceIds": [
+        "archive/32"
+      ]
+    },
+    {
+      "id": "rare-gloves-with-an-attack-modifier",
+      "label": "Rare Gloves with an Attack Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Gloves. Gloves dropped by Empowered Monster will have an Attack modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Gloves",
+        "Gloves dropped by Empowered Monster will have an Attack modifier"
+      ],
+      "sourceIds": [
+        "archive/36"
+      ]
+    },
+    {
+      "id": "rare-helmets-with-a-defence-modifier",
+      "label": "Rare Helmets with a Defence Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Helmets. Helmets dropped by Empowered Monster will have a Defence modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Helmets",
+        "Helmets dropped by Empowered Monster will have a Defence modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_wi8XB7NFMD"
+      ]
+    },
+    {
+      "id": "rare-helmets-with-a-drop-modifier",
+      "label": "Rare Helmets with a Drop Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Helmets. Helmets dropped by Empowered Monster will have a Drop modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Helmets",
+        "Helmets dropped by Empowered Monster will have a Drop modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_zhBjodC9dx"
+      ]
+    },
+    {
+      "id": "rare-jewellery-items",
+      "label": "Rare Jewellery Items",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Jewellery items.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Jewellery items"
+      ],
+      "sourceIds": [
+        "archive/03"
+      ]
+    },
+    {
+      "id": "rare-maces-with-a-physical-modifier",
+      "label": "Rare Maces with a Physical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Maces dropped by Empowered Monster will have a Physical modifier. Empowered Monster will drop additional Rare Maces.",
+      "tooltip": [
+        "Maces dropped by Empowered Monster will have a Physical modifier",
+        "Empowered Monster will drop additional Rare Maces"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_Rdaxaavdgl"
+      ]
+    },
+    {
+      "id": "rare-map",
+      "label": "Rare Map",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Rare Map.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Rare Map"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_UulCS3PuRV"
+      ]
+    },
+    {
+      "id": "rare-melee-weapons",
+      "label": "Rare Melee Weapons",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Melee Weapons.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Melee Weapons"
+      ],
+      "sourceIds": [
+        "archive/26"
+      ]
+    },
+    {
+      "id": "rare-ranged-weapons-or-quivers",
+      "label": "Rare Ranged Weapons or Quivers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Ranged Weapons or Quivers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Ranged Weapons or Quivers"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_ANaQI7V5Zg"
+      ]
+    },
+    {
+      "id": "rare-rings-with-a-mana-modifier",
+      "label": "Rare Rings with a Mana Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Rings. Rings dropped by Empowered Monster will have a Mana modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Rings",
+        "Rings dropped by Empowered Monster will have a Mana modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_0o9OBsJrtk"
+      ]
+    },
+    {
+      "id": "rare-rune-daggers-without-attack-modifiers",
+      "label": "Rare Rune Daggers without Attack Modifiers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Rune Daggers. Rune Daggers dropped by Empowered Monster will have no Attack modifiers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Rune Daggers",
+        "Rune Daggers dropped by Empowered Monster will have no Attack modifiers"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_PwPhp5ol90"
+      ]
+    },
+    {
+      "id": "rare-shields-with-a-life-modifier",
+      "label": "Rare Shields with a Life Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Shields. Shields dropped by Empowered Monster will have a Life modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Shields",
+        "Shields dropped by Empowered Monster will have a Life modifier"
+      ],
+      "sourceIds": [
+        "archive/31"
+      ]
+    },
+    {
+      "id": "rare-shields-with-a-resistance-modifier",
+      "label": "Rare Shields with a Resistance Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Shields. Shields dropped by Empowered Monster will have a Resistance modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Shields",
+        "Shields dropped by Empowered Monster will have a Resistance modifier"
+      ],
+      "sourceIds": [
+        "archive/44"
+      ]
+    },
+    {
+      "id": "rare-shields-without-life-modifiers",
+      "label": "Rare Shields without Life Modifiers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Shields. Shields dropped by Empowered Monster will have no Life modifiers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Shields",
+        "Shields dropped by Empowered Monster will have no Life modifiers"
+      ],
+      "sourceIds": [
+        "archive/34"
+      ]
+    },
+    {
+      "id": "rare-swords-with-a-speed-modifier",
+      "label": "Rare Swords with a Speed Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Swords. Swords dropped by Empowered Monster will have a Speed modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Swords",
+        "Swords dropped by Empowered Monster will have a Speed modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_0K8cv8zP3R"
+      ]
+    },
+    {
+      "id": "rare-swords-without-physical-modifiers",
+      "label": "Rare Swords without Physical Modifiers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Swords. Swords dropped by Empowered Monster will have no Physical modifiers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Swords",
+        "Swords dropped by Empowered Monster will have no Physical modifiers"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_aJDBwm7YYU"
+      ]
+    },
+    {
+      "id": "rare-wands-with-a-mana-modifier",
+      "label": "Rare Wands with a Mana Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Wands. Wands dropped by Empowered Monster will have a Mana modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Wands",
+        "Wands dropped by Empowered Monster will have a Mana modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_7PcZkNvDX8"
+      ]
+    },
+    {
+      "id": "rare-wands-without-attack-modifiers",
+      "label": "Rare Wands without Attack Modifiers",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Wands. Wands dropped by Empowered Monster will have no Attack modifiers.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Wands",
+        "Wands dropped by Empowered Monster will have no Attack modifiers"
+      ],
+      "sourceIds": [
+        "archive/21"
+      ]
+    },
+    {
+      "id": "rare-warstaves-with-a-critical-modifier",
+      "label": "Rare Warstaves with a Critical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Warstaves. Warstaves dropped by Empowered Monster will have a Critical modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Warstaves",
+        "Warstaves dropped by Empowered Monster will have a Critical modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_9Xt9usM7cQ"
+      ]
+    },
+    {
+      "id": "rare-warstaves-with-a-speed-modifier",
+      "label": "Rare Warstaves with a Speed Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Warstaves. Warstaves dropped by Empowered Monster will have a Speed modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Warstaves",
+        "Warstaves dropped by Empowered Monster will have a Speed modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_Dw8WV92FNB"
+      ]
+    },
+    {
+      "id": "rare-weapons-with-a-physical-modifier",
+      "label": "Rare Weapons with a Physical Modifier",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop additional Rare Weapons. Weapons dropped by Empowered Monster will have a Physical modifier.",
+      "tooltip": [
+        "Empowered Monster will drop additional Rare Weapons",
+        "Weapons dropped by Empowered Monster will have a Physical modifier"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_HawPQWxO1R"
+      ]
+    },
+    {
+      "id": "unique-armour",
+      "label": "Unique Armour",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Unique Armour.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Unique Armour"
+      ],
+      "sourceIds": [
+        "archive/40"
+      ]
+    },
+    {
+      "id": "unique-flask",
+      "label": "Unique Flask",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Unique Flask.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Unique Flask"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_v3SDrBwots"
+      ]
+    },
+    {
+      "id": "unique-jewellery-item",
+      "label": "Unique Jewellery Item",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Unique Jewellery Item.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Unique Jewellery Item"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_SU77C4vXUe"
+      ]
+    },
+    {
+      "id": "unique-weapon",
+      "label": "Unique Weapon",
+      "kind": "regular",
+      "threshold": null,
+      "description": "Empowered Monster will drop an additional Unique Weapon.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Unique Weapon"
+      ],
+      "sourceIds": [
+        "archive/04"
+      ]
+    },
+    {
+      "id": "viscera-item",
+      "label": "Viscera Item",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop a Viscera Item.",
+      "tooltip": [
+        "Empowered Monster will drop a Viscera Item",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_t3WJmNUGcN"
+      ]
+    }
+  ],
+  "fates": [
+    {
+      "name": "Alchemist",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates boiling cauldrons of blood",
+          "lines": [
+            "Empowered Monster spawns cauldrons of boiling blood, which tip over to deal repeated Physical Damage to those beneath them",
+            "Empowered Monster has 50% chance to Poison on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/11"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Avalanche",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Fires rapid icy darts",
+          "lines": [
+            "Empowered Monster infrequently fires a large icy dart. Then, secondary smaller rapid darts will fire at whatever target or location was struck by the initial larger dart",
+            "All of these darts deal Cold Damage on Hit",
+            "Empowered Monster has 15% increased Attack, Cast and Movement Speed"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/33"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Black Frost",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Fires mortars of ice, which then cause erupting ice spikes",
+          "lines": [
+            "Empowered Monster fires a icy chunk mortar. Then, a cascade of ice spikes proceed to where the mortar landed, dealing Cold Damage, with the final spike dealing extra Damage",
+            "Empowered Monster gains 15% of Physical Damage as extra Cold"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/31"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Blood Moon",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates coagulated orbs of blood",
+          "lines": [
+            "Coagulated orbs of Blood rise from the earth near Empowered Monster",
+            "These orbs then slam down, creating pools of boiling blood which deal Physical Damage over time",
+            "Empowered Monster has 50% chance to inflict Bleeding on Hit with Attacks"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/39"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bloodthirsty",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Fires volleys of bone harpoons",
+          "lines": [
+            "Empowered Monster will fire periodic volleys of bone harpoons, which deal Physical Damage",
+            "Empowered Monster's Attacks and Spells have a 50% chance to Impale on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/23"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Butcher",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Flings projectiles which open sores in the earth on hit",
+          "lines": [
+            "Empowered Monster flings returning Projectiles of bone which Pierce all targets",
+            "Any target struck will cause a sore to open in the earth beneath them, which pours forth blood dealing repeated Physical Damage to Enemies in the area",
+            "Empowered Monster will deal 10% increased Damage"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/16"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Flings projectiles which open sores in the earth on hit",
+          "lines": [
+            "Empowered Monster flings returning Projectiles of bone which Pierce all targets",
+            "Any target struck will cause a sore to open in the earth beneath them, which pours forth blood dealing repeated Physical Damage to Enemies in the area",
+            "Empowered Monster will deal 15% increased Damage"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_NNGpaauduY"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Conjurer",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates portals, which release violent energies",
+          "lines": [
+            "Empowered Monster creates two portals nearby. The first of these releases a beam of violent energy towards the second, dealing repeated Physical Damage and Chaos Damage",
+            "After a short time, both portals vanish",
+            "Empowered Monster has 20% chance to inflict Withered for 2 seconds on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_wi8XB7NFMD"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Creates portals, which release violent energies",
+          "lines": [
+            "Empowered Monster creates two portals nearby. The first of these releases a beam of violent energy towards the second, dealing repeated Physical Damage and Chaos Damage",
+            "After a short time, both portals vanish",
+            "Empowered Monster has 50% chance to inflict Withered for 2 seconds on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_v3SDrBwots"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Crowkeeper",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Releases novas of crow projectiles",
+          "lines": [
+            "Empowered Monster will regularly release novas of Crow Projectiles",
+            "Players Struck by a Crow will create a slow growing storm around them, which detonates after a delay dealing Physical Damage",
+            "Further storms cannot be attached until any attached storms on that target have already detonated",
+            "Empowered Monster deals 20% increased Damage against Enemies on Low Life"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/03"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Deathbringer",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Causes beams of viscera and gore",
+          "lines": [
+            "Empowered Monster will cause highly Physically damaging beams of viscera and gore, targeting nearby Players locations",
+            "Empowered Monster will have 20% increased Maximum Life"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/24"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Causes beams of viscera and gore",
+          "lines": [
+            "Empowered Monster will cause highly Physically damaging beams of viscera and gore, targeting nearby Players locations",
+            "Empowered Monster will have 40% increased Maximum Life"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_A8Q1MC1KxR"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doomsayer",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates massive explosive blasts of blackfire",
+          "lines": [
+            "Empowered Monster infrequently creates massive rings of blackfire, which detonate after a long delay, dealing Fire Damage and Igniting Enemies",
+            "Empowered Monster gains 50% additional Fire Resistance"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/04"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dryad",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Spawns vengeful vines",
+          "lines": [
+            "Empowered Monster will cause Vengeful Vines to periodically sprout up by nearby Players",
+            "These Vines will then slam to deal Physical Damage on impact",
+            "Empowered Monster will leech a percentage of damage dealt as Life"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/34"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Golemancer",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Spawns fleshy simulacrums of blood and gore",
+          "lines": [
+            "Empowered Monster rips fleshy simulacra of blood and gore into being regularly",
+            "These then target the Player, slamming and inflicting Bleed before vanishing",
+            "Empowered Monster has 20% increased Area of Effect"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/10"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Gravewalker",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates fissures of bloated corpses",
+          "lines": [
+            "Empowered Monster creates fissures which sprout bloated corpses, detonating to deal Fire Damage and inflict Corpserot on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/37"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Houndmaster",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates spectral wolves which explode into ice",
+          "lines": [
+            "Empowered Monster summons Spectral Wolves which leap in, howl, and then explode to deal Cold Damage",
+            "Howls from these Wolves will inflict Brittle on nearby Enemies",
+            "Empowered Monster has 200% increased Critical Strike Chance"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_1xdmCkhCuW"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Incandescent",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Causes continual blackfire detonations",
+          "lines": [
+            "Empowered Monster will cause continual detonations of blackfire which track nearby Players, dealing Fire Damage",
+            "Empowered Monster will Hinder on Spell Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_k37Fhos5BG"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Causes continual blackfire detonations",
+          "lines": [],
+          "completeness": "short-only",
+          "sourceIds": [
+            "PathOfExileSteam_Mcx2O3Loxs"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Murderous",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Summons malignant crows",
+          "lines": [
+            "Empowered Monster will continually spawn malignant crows, which linger until an enemy walks too close, at which point they will detonate to deal Physical Damage in an area",
+            "Empowered Monster will Blind on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_SUM9xSrJC2"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Summons malignant crows",
+          "lines": [
+            "Empowered Monster will continually spawn malignant crows, which linger until an enemy walks too close, at which point they will detonate to deal Physical Damage in an area",
+            "Empowered Monster will Blind on Hit",
+            "Empowered Monster will deal 20% increased Damage against Blinded Enemies"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_HuVf87KQnd"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pestilent",
+      "variants": [
+        {
+          "tier": 2,
+          "shortDescription": "Spawns an additional Boss from Campaign Areas without an Atlas equivalent",
+          "lines": [
+            "Empowered Monster will spawn a companion Boss which will be pulled from a pool of Campaign Bosses that do not have Atlas Boss equivalents",
+            "Spawned companion Boss will also be affected by any other Fates played, and can drop Viscera associated with it"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_1iag2AE5Hy"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rot",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Cursed broomsticks sweep across the area",
+          "lines": [
+            "Empowered Monster summons forth cursed broomsticks, which fly in a straight line targeting nearby Players, leaving explosive plaguebursts in their wake which deal Physical Damage and inflict Poison",
+            "Empowered Monster will gain 15% of Physical Damage as extra Chaos Damage"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/12"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sadist",
+      "variants": [
+        {
+          "tier": 2,
+          "shortDescription": "Spawns an additional Boss from Campaign Areas without an Atlas equivalent",
+          "lines": [],
+          "completeness": "short-only",
+          "sourceIds": [
+            "PathOfExileSteam_TeSNckQrrz"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sanguine",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates a deadly ring of boiling blood",
+          "lines": [
+            "Empowered Monster will have a ring of boiling blood surrounding it, which deals Physical Damage over time",
+            "Empowered Monster will regenerate 1% of Life per second"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/26"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stormcaller",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates leylines of lightning",
+          "lines": [
+            "Empowered Monster generates random leylines of electrical energy, which call down bolts of lightning after a short duration, dealing Lightning Damage",
+            "Empowered Monster has 50% chance to Shock on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/21"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tempest",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates volatile orbs of lightning",
+          "lines": [
+            "Volatile orbs of Lightning come into being nearby Empowered Monster",
+            "These orbs fire increasingly more frequent bolts of Lightning to locations near them, dealing repeated Lightning Damage, then explode",
+            "Empowered Monster inflicts Conductivity on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/28"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Creates volatile orbs of lightning",
+          "lines": [
+            "Volatile orbs of Lightning come into being nearby Empowered Monster",
+            "These orbs fire increasingly more frequent bolts of Lightning to locations near them, dealing repeated Lightning Damage, then explode",
+            "Empowered Monster inflicts Conductivity on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_WrCWzgC4bd"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Torchbearer",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates dangerous bonfires of corpses",
+          "lines": [
+            "Empowered Monster will create corpse bonfires nearby",
+            "These bonfires will periodically fire flaming mortars at enemies near them, which deal Fire Damage on impact",
+            "Empowered Monster will gain 15% of Physical Damage as extra Fire"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "archive/20"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Wildfire",
+      "variants": [
+        {
+          "tier": 1,
+          "shortDescription": "Creates walls of blackfire",
+          "lines": [
+            "Empowered Monster will create walls of Blackfire, which deal Fire Damage over time to Enemies within them",
+            "Empowered Monster will inflict Flammability on Hit"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_0K8cv8zP3R"
+          ]
+        }
+      ]
+    }
+  ]
+}

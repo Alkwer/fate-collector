@@ -6,6 +6,7 @@ import type { RewardDefinition } from '../lib/solver-settings'
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
 import { FateArtwork } from './DecisionVisuals'
 import { ManualRewards } from './ManualRewards'
+import { FateReference } from './FateReference'
 import '../manual-entry.css'
 
 interface Props {
@@ -82,6 +83,7 @@ export function ManualFateEntry({ panelRef, offerId, cardCount, nextOffer, busy,
         <label>Tier<input type="number" min={1} max={100} step={1} placeholder="Unknown" value={card.tier ?? ''} onChange={event => setCard({ ...card, tier: event.target.value ? Number(event.target.value) : null })} /></label>
         <div role="group" aria-label="Quick tier selection">{[1, 2, 3].map(tier => <button type="button" key={tier} aria-pressed={card.tier === tier} onClick={() => setCard({ ...card, tier })}>Tier {tier}</button>)}</div>
       </div>
+      <FateReference name={card.name} tier={card.tier} />
       <ManualRewards rewards={card.rewards} definitions={definitions} onChange={rewards => setCard({ ...card, rewards })} />
       <p className="hint">You can add modifiers and correct details later in Edit offer.</p>
       {!valid && card.name.trim() && <p className="field-error" role="alert">Use whole numbers from 1 to 100. Tier and combo threshold can be left blank if unknown.</p>}

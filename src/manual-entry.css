@@ -37,6 +37,9 @@
 .manual-reward-other { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
 .manual-reward-fields { display: grid; gap: 16px; margin-top: 20px; }
 .manual-personal-reward { margin-top: 16px; }
+.manual-catalog { display: grid; gap: 12px; margin-top: 20px; min-width: 0; }
+.manual-catalog select { width: 100%; min-width: 0; }
+.manual-catalog > button { justify-self: start; }
 @media (max-width: 760px) {
   .manual-fate-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .manual-fate-options .fate-art { width: 56px; }
