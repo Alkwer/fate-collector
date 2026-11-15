@@ -4,6 +4,21 @@ import { newCard, newOffer, newReward } from '../shared/offers'
 import { mockTurnstile, testVerificationToken, turnstileScript } from './turnstile'
 import { closePanels, openPanel } from './ui'
 
+// Temporary CI instrumentation: preserve the failed assertion and observe what finishes afterwards.
+test.beforeEach(async ({ page, browserName }) => {
+  if (browserName !== 'firefox' || !process.env.CI) return
+  await page.addInitScript({ path: 'e2e/firefox-async-probe.js' })
+  page.on('console', message => { if (message.text().startsWith('__async_probe__')) console.log(message.text()) })
+})
+test.afterEach(async ({ page, browserName }, testInfo) => {
+  if (browserName !== 'firefox' || !process.env.CI || testInfo.status === testInfo.expectedStatus) return
+  await page.waitForTimeout(10000)
+  await testInfo.attach('async-probe', {
+    body: JSON.stringify(await page.evaluate(() => ({ events: (window as unknown as { __asyncProbe: unknown[] }).__asyncProbe, text: document.body.innerText }))),
+    contentType: 'application/json',
+  })
+})
+
 async function openReports(page: Page, history = false) {
   await openPanel(page, '.more-actions')
   await page.getByRole('button', { name: history ? 'Symbol report history' : 'Report symbol', exact: true }).click()
