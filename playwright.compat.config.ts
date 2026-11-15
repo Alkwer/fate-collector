@@ -6,6 +6,6 @@ export default defineConfig({
   outputDir: 'test-results-compat',
   projects: [
     { name: 'Edge', use: { browserName: 'chromium', channel: 'msedge' } },
-    { name: 'Firefox', repeatEach: process.env.CI ? 5 : 1, use: { browserName: 'firefox' } },
+    { name: 'Firefox', use: { browserName: 'firefox' } },
   ],
 })

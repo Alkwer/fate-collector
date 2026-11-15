@@ -4,21 +4,6 @@ import { newCard, newOffer, newReward } from '../shared/offers'
 import { mockTurnstile, testVerificationToken, turnstileScript } from './turnstile'
 import { closePanels, openPanel } from './ui'
 
-// Temporary CI instrumentation: preserve the failed assertion and observe what finishes afterwards.
-test.beforeEach(async ({ page, browserName }) => {
-  if (browserName !== 'firefox' || !process.env.CI) return
-  await page.addInitScript({ path: 'e2e/firefox-async-probe.js' })
-  page.on('console', message => { if (message.text().startsWith('__async_probe__')) console.log(message.text()) })
-})
-test.afterEach(async ({ page, browserName }, testInfo) => {
-  if (browserName !== 'firefox' || !process.env.CI || testInfo.status === testInfo.expectedStatus) return
-  await page.waitForTimeout(10000)
-  await testInfo.attach('async-probe', {
-    body: JSON.stringify(await page.evaluate(() => ({ events: (window as unknown as { __asyncProbe: unknown[] }).__asyncProbe, text: document.body.innerText }))),
-    contentType: 'application/json',
-  })
-})
-
 async function openReports(page: Page, history = false) {
   await openPanel(page, '.more-actions')
   await page.getByRole('button', { name: history ? 'Symbol report history' : 'Report symbol', exact: true }).click()
@@ -29,8 +14,6 @@ async function openReports(page: Page, history = false) {
 async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[1]) {
   await mockTurnstile(page, turnstile)
   await page.goto('/')
-  await openReports(page, true)
-  await closePanels(page)
   const png = await readFile('public/game-art/reward-gold-grid.png')
   const captureId = crypto.randomUUID()
   const offer = { ...newOffer(), captureId, gameVersion: '', cards: [{ ...newCard(), name: 'Alchemist' }] }
@@ -134,6 +117,26 @@ test('lost receipt is retried with same report, mobile crop works and withdrawal
   await expect(panel.getByRole('button', { name: 'Retry upload', exact: true })).toHaveCount(0)
   await context.setOffline(false); await page.reload()
   const restored = await openReports(page, true)
+  // Opening a database can be slow on Windows Firefox. A receipt update and
+  // history refresh must reuse the connection already opened by this panel.
+  await page.evaluate(() => {
+    const open = IDBFactory.prototype.open
+    const success = Object.getOwnPropertyDescriptor(IDBRequest.prototype, 'onsuccess')!
+    IDBFactory.prototype.open = function (...args) {
+      const request = open.apply(this, args)
+      if (args[0] !== 'fate-collector-symbol-reports') return request
+      Object.defineProperty(request, 'onsuccess', {
+        configurable: true,
+        set(listener: ((event: Event) => void) | null) {
+          success.set!.call(request, listener && function (event: Event) {
+            setTimeout(() => listener.call(request, event), 1800)
+          })
+        },
+        get() { return success.get!.call(request) },
+      })
+      return request
+    }
+  })
   await restored.getByRole('button', { name: 'Retry withdrawal', exact: true }).click()
   await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
 })
