@@ -4,11 +4,35 @@ import { newCard, newOffer, newReward } from '../shared/offers'
 import { mockTurnstile, testVerificationToken, turnstileScript } from './turnstile'
 import { closePanels, openPanel } from './ui'
 
+function slowSymbolStorage(delay: number) {
+  const open = IDBFactory.prototype.open
+  const success = Object.getOwnPropertyDescriptor(IDBRequest.prototype, 'onsuccess')!
+  IDBFactory.prototype.open = function (...args) {
+    const request = open.apply(this, args)
+    if (args[0] !== 'fate-collector-symbol-reports') return request
+    Object.defineProperty(request, 'onsuccess', {
+      configurable: true,
+      set(listener: ((event: Event) => void) | null) {
+        success.set!.call(request, listener && function (event: Event) {
+          setTimeout(() => listener.call(request, event), delay)
+        })
+      },
+      get() { return success.get!.call(request) },
+    })
+    return request
+  }
+}
+
 async function openReports(page: Page, history = false) {
   await openPanel(page, '.more-actions')
   await page.getByRole('button', { name: history ? 'Symbol report history' : 'Report symbol', exact: true }).click()
   const panel = page.locator('.symbol-reports > .detail-dialog')
   await expect(panel).toBeVisible()
+  const reportHistory = panel.getByRole('region', { name: 'Symbol report history' })
+  await expect(reportHistory).toBeVisible()
+  // Visible controls do not mean Firefox has finished opening its local storage.
+  // Bound startup separately; assertions for the following user actions stay at 5s.
+  await expect(reportHistory.getByText('Loading saved reports…', { exact: true })).toBeHidden({ timeout: 15000 })
   return panel
 }
 async function prepare(page: Page, turnstile?: Parameters<typeof mockTurnstile>[1]) {
@@ -119,6 +143,9 @@ test('lost receipt is retried with same report, mobile crop works and withdrawal
   await expect(panel.getByRole('button', { name: 'Retry upload', exact: true })).toHaveCount(0)
   await context.setOffline(false); await page.reload()
   const restored = await openReports(page, true)
+  // Opening a database can be slow on Windows Firefox. A receipt update and
+  // history refresh must reuse the connection already opened by this panel.
+  await page.evaluate(slowSymbolStorage, 1800)
   await restored.getByRole('button', { name: 'Retry withdrawal', exact: true }).click()
   await expect(restored.getByText('Withdrawn — removed from collection', { exact: true })).toBeVisible()
 })
@@ -269,6 +296,8 @@ test('report snapshots the opened offer, keeps optional details and renders the 
 test('empty collector restores a manual symbol draft without consent, then withdraws from another tab', async ({ page, context }) => {
   await mockTurnstile(page)
   await page.goto('/')
+  // Exercise a cold storage startup, separately from the five-second action assertions.
+  await page.evaluate(slowSymbolStorage, 8000)
   let panel = await openReports(page)
   await expect(panel.getByText('Not identified', { exact: true })).toBeVisible()
   await attachReportImages(panel)

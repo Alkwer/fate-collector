@@ -49,9 +49,16 @@ function split(submission: SymbolSubmission, state: Pick<Summary, 'origin' | 're
   return { summary, images: { icon, tooltip } }
 }
 
+// Reuse the connection across history, drafts and receipt updates. Reopening it
+// for every transaction serializes slow Firefox storage initialization on Windows.
+const connections = new WeakMap<IDBFactory, Promise<IDBDatabase>>()
 function database() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open('fate-collector-symbol-reports', 2)
+  const factory = indexedDB
+  const cached = connections.get(factory)
+  if (cached) return cached
+  const connection = new Promise<IDBDatabase>((resolve, reject) => {
+    const forget = () => { if (connections.get(factory) === connection) connections.delete(factory) }
+    const request = factory.open('fate-collector-symbol-reports', 2)
     request.onupgradeneeded = () => {
       const db = request.result
       const legacy = db.objectStoreNames.contains('reports') ? request.transaction!.objectStore('reports') : db.createObjectStore('reports', { keyPath: 'id' })
@@ -79,13 +86,17 @@ function database() {
     let blocked = false
     request.onsuccess = () => {
       const db = request.result
-      db.onversionchange = () => db.close()
+      db.onversionchange = () => { forget(); db.close() }
+      db.onclose = forget
       if (blocked) db.close()
       else resolve(db)
     }
-    request.onerror = () => reject(new Error('Symbol report storage is unavailable. Keep the images and retry.'))
-    request.onblocked = () => { blocked = true; reject(new Error('Close other collector tabs and retry.')) }
+    request.onerror = () => { forget(); reject(new Error('Symbol report storage is unavailable. Keep the images and retry.')) }
+    request.onblocked = () => { blocked = true; forget(); reject(new Error('Close other collector tabs and retry.')) }
   })
+  connections.set(factory, connection)
+  void connection.catch(() => { if (connections.get(factory) === connection) connections.delete(factory) })
+  return connection
 }
 
 function read<T>(request: IDBRequest<T>): Promise<T> {
@@ -110,7 +121,7 @@ async function transact<T>(stores: string[], mode: IDBTransactionMode, run: (tra
     try { transaction.abort() } catch { /* Transaction already finished. */ }
     await complete.catch(() => {})
     throw error
-  } finally { db.close() }
+  }
 }
 
 const changeEvent = 'fate-collector-symbol-history-changed'
