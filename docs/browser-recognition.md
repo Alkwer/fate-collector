@@ -58,12 +58,12 @@ gold grid receive the names Item Rarity and Additional Currency Items, but keep
 unknown kind, no threshold and `identified: false`. Other motifs remain unknown.
 The editor retains three prerelease combo presets with reference icons and GGG
 sources. Exceptional Gem is manual only; the three-gems motif is not that combo.
-The [screenshot extract](../research/SCREENSHOT_CATALOG_2026-11-14.md) adds 52
-complete reward tooltip variants for explicit selection: 44 regular and eight
-requiring two reward copies. It also supplies a read-only reference for 30
+The [screenshot extract](../research/SCREENSHOT_CATALOG_2026-11-15.md) adds 54
+complete reward tooltip variants for explicit selection: 44 regular and 10
+requiring two reward copies. It also supplies a read-only reference for 34
 tier-specific Fate effects, two of them short descriptions only. The expanded
 catalog does not introduce visual matches or assign rewards by Fate name.
-Fresh card review versions include `rewards-v2-screenshots-20261114`; saved
+Fresh card review versions include `rewards-v3-screenshots-20261115`; saved
 records are not backfilled. Helper 0.5.1 carries the expanded name dictionary.
 
 Tiers appear as **suggested** until checked. The reward list is partial until the

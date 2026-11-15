@@ -7,7 +7,7 @@ export function FateReference({ name, tier }: { name: string; tier: number | nul
   if (!fate) return null
   const variants = tier === null ? fate.variants : fate.variants.filter(variant => variant.tier === tier)
   return <DetailPanel className="fate-reference" title={`${fate.name} effects`} triggerLabel="Known Fate effects">
-    <p className="hint">Observed tooltips, 13–14 Nov 2026. Rewards vary between offers. This reference does not fill or confirm your card.</p>
+    <p className="hint">Observed tooltips, 13–15 Nov 2026. Rewards vary between offers. This reference does not fill or confirm your card.</p>
     {!variants.length && <p>No effect tooltip recorded for Tier {tier}. Check the tooltip in game.</p>}
     {variants.map(variant => <section key={variant.tier}>
       <h3>Tier {variant.tier}{variant.completeness === 'short-only' ? ' · short description only' : ''}</h3>
