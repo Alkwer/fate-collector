@@ -1,19 +1,19 @@
 {
-  "version": "screenshots-2026-11-14",
-  "date": "2026-11-14",
+  "version": "screenshots-2026-11-15",
+  "date": "2026-11-15",
   "statistics": {
-    "offers": 50,
-    "cards": 129,
+    "offers": 52,
+    "cards": 135,
     "campaignOffers": 43,
     "campaignCards": 108,
-    "mapOffers": 7,
-    "mapCards": 21,
+    "mapOffers": 9,
+    "mapCards": 27,
     "fateNames": 24,
     "completeOffers": 34,
     "cardsWithAllRewardTooltips": 86,
-    "cardsWithPartialRewardTooltips": 15,
-    "cardsWithoutRewardTooltips": 28,
-    "sourceCutoff": "2026-11-14T22:10:31.000Z"
+    "cardsWithPartialRewardTooltips": 19,
+    "cardsWithoutRewardTooltips": 30,
+    "sourceCutoff": "2026-11-15T21:39:53.448Z"
   },
   "sources": [
     {
@@ -177,6 +177,10 @@
       "sha256": "cb5bc30b03fd9c6fe355bd5c50ebb9d00fe1722ebd75c7a82951c00abb2ceea6"
     },
     {
+      "id": "PathOfExileSteam_gXBrWlOK5E",
+      "sha256": "fe8100a3eee7dd2a7237e9cf491e85dd554c2332eb150a078cec4f4d6c6fe6bc"
+    },
+    {
       "id": "PathOfExileSteam_HawPQWxO1R",
       "sha256": "f03e785c0e65f449049caf59623fc9d6d93c669a9bbf2b4e898fca58366a127c"
     },
@@ -187,6 +191,10 @@
     {
       "id": "PathOfExileSteam_hXXpttfv0n",
       "sha256": "ebfc33265500c6244e986f5b59bc87d3279beb1b44ccacebdd61c06bee95e46e"
+    },
+    {
+      "id": "PathOfExileSteam_J1jwmKdSgM",
+      "sha256": "82bbd9ce66c27a6ef5d33694291eed2c0c43aab0bb029517e90526319a1d8118"
     },
     {
       "id": "PathOfExileSteam_k37Fhos5BG",
@@ -207,6 +215,10 @@
     {
       "id": "PathOfExileSteam_PD35YxxQi6",
       "sha256": "5e2b8188a28769973ed94de64dfe9e275aea6dc6908e8a0b639f9c6f8eab1a52"
+    },
+    {
+      "id": "PathOfExileSteam_PMwve9uSYg",
+      "sha256": "5a03c48f79bdd3c5c4d2bf2f9d7401c2375bfc512d886d49891cdc9ff2a779fe"
     },
     {
       "id": "PathOfExileSteam_PwPhp5ol90",
@@ -243,6 +255,10 @@
     {
       "id": "PathOfExileSteam_v3SDrBwots",
       "sha256": "c29caa0c85860d62ad0647d83155b80fc4d39a16b33fcca6c0f164f0d25d16b1"
+    },
+    {
+      "id": "PathOfExileSteam_V7HP3LlmXM",
+      "sha256": "09147b4c1ab89ed7866312d6cc2b5584d6866cb24cc21cf4fe16611bb23a1716"
     },
     {
       "id": "PathOfExileSteam_W7IWbarwko",
@@ -387,6 +403,20 @@
       ]
     },
     {
+      "id": "hoards-of-gold",
+      "label": "Hoards of Gold",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop hoards of Gold.",
+      "tooltip": [
+        "Empowered Monster will drop hoards of Gold",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_PMwve9uSYg"
+      ]
+    },
+    {
       "id": "increased-item-rarity",
       "label": "Increased Item Rarity",
       "kind": "regular",
@@ -410,7 +440,8 @@
         "To claim this reward, invoke two copies of it"
       ],
       "sourceIds": [
-        "PathOfExileSteam_WrCWzgC4bd"
+        "PathOfExileSteam_WrCWzgC4bd",
+        "PathOfExileSteam_J1jwmKdSgM"
       ]
     },
     {
@@ -713,7 +744,8 @@
         "Empowered Monster will drop an additional Rare Map"
       ],
       "sourceIds": [
-        "PathOfExileSteam_UulCS3PuRV"
+        "PathOfExileSteam_UulCS3PuRV",
+        "PathOfExileSteam_gXBrWlOK5E"
       ]
     },
     {
@@ -963,6 +995,20 @@
       ]
     },
     {
+      "id": "valuable-unique-jewellery-item",
+      "label": "Valuable Unique Jewellery Item",
+      "kind": "combo",
+      "threshold": 2,
+      "description": "Empowered Monster will drop an additional Valuable Unique Jewellery Item.",
+      "tooltip": [
+        "Empowered Monster will drop an additional Valuable Unique Jewellery Item",
+        "To claim this reward, invoke two copies of it"
+      ],
+      "sourceIds": [
+        "PathOfExileSteam_V7HP3LlmXM"
+      ]
+    },
+    {
       "id": "viscera-item",
       "label": "Viscera Item",
       "kind": "combo",
@@ -1010,6 +1056,19 @@
           "sourceIds": [
             "archive/33"
           ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Fires rapid icy darts",
+          "lines": [
+            "Empowered Monster infrequently fires a large icy dart. Then, secondary smaller rapid darts will fire at whatever target or location was struck by the initial larger dart",
+            "All of these darts deal Cold Damage on Hit",
+            "Empowered Monster has 20% increased Attack, Cast and Movement Speed"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_J1jwmKdSgM"
+          ]
         }
       ]
     },
@@ -1026,6 +1085,18 @@
           "completeness": "full",
           "sourceIds": [
             "archive/31"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Fires mortars of ice, which then cause erupting ice spikes",
+          "lines": [
+            "Empowered Monster fires a icy chunk mortar. Then, a cascade of ice spikes proceed to where the mortar landed, dealing Cold Damage, with the final spike dealing extra Damage",
+            "Empowered Monster gains 45% of Physical Damage as extra Cold"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_PMwve9uSYg"
           ]
         }
       ]
@@ -1206,6 +1277,19 @@
           "completeness": "full",
           "sourceIds": [
             "archive/34"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Spawns vengeful vines",
+          "lines": [
+            "Empowered Monster will cause Vengeful Vines to periodically sprout up by nearby Players",
+            "These Vines will then slam to deal Physical Damage on impact",
+            "Empowered Monster will leech a percentage of damage dealt as Life"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_V7HP3LlmXM"
           ]
         }
       ]
@@ -1445,6 +1529,19 @@
           "completeness": "full",
           "sourceIds": [
             "archive/20"
+          ]
+        },
+        {
+          "tier": 2,
+          "shortDescription": "Creates dangerous bonfires of corpses",
+          "lines": [
+            "Empowered Monster will create corpse bonfires nearby",
+            "These bonfires will periodically fire flaming mortars at enemies near them, which deal Fire Damage on impact",
+            "Empowered Monster will gain 45% of Physical Damage as extra Fire"
+          ],
+          "completeness": "full",
+          "sourceIds": [
+            "PathOfExileSteam_gXBrWlOK5E"
           ]
         }
       ]

@@ -1,9 +1,9 @@
 import type { Reward } from './schema'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const REWARD_CATALOG_VERSION = 'rewards-v2-screenshots-20261114'
+export const REWARD_CATALOG_VERSION = 'rewards-v3-screenshots-20261115'
 
-export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-14.md'
+export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
 type CatalogDetails = { id: string; label: string; description: string; source: string; sourceLabel: string }
 export type CatalogReward = CatalogDetails & (
   { kind: 'combo'; threshold: number } | { kind: 'regular' | 'unknown'; threshold: null }
@@ -28,7 +28,7 @@ const prereleaseRewards = [
 
 const observedRewards: CatalogReward[] = screenshots.rewards.map(entry => {
   const details = { id: `observed-${entry.id}`, label: entry.label, description: entry.tooltip.map(line => `${line}.`).join(' '),
-    source: `${SCREENSHOT_CATALOG_SOURCE}#${entry.id}`, sourceLabel: 'Screenshot tooltip · 14 Nov 2026' }
+    source: `${SCREENSHOT_CATALOG_SOURCE}#${entry.id}`, sourceLabel: 'Screenshot tooltip · 13–15 Nov 2026' }
   if (entry.kind === 'combo' && Number.isInteger(entry.threshold) && entry.threshold !== null && entry.threshold > 0) {
     return { ...details, kind: 'combo', threshold: entry.threshold }
   }

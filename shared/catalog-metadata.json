@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "catalog-evidence-2026-11-14",
-  "checkedAt": "2026-11-14",
+  "version": "catalog-evidence-2026-11-15",
+  "checkedAt": "2026-11-15",
   "gameVersion": "3.30 Covens League",
   "completeness": "partial",
   "names": {
@@ -21,8 +21,8 @@
     "rewardsInferredFromName": false
   },
   "rewards": {
-    "version": "rewards-v2-screenshots-20261114",
-    "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-14.md",
+    "version": "rewards-v3-screenshots-20261115",
+    "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-15.md",
     "newSemanticsConfirmed": [
       "additional-currency-items",
       "additional-currency-items-combo",
@@ -33,6 +33,7 @@
       "gem-with-quality",
       "gold",
       "highly-increased-item-rarity",
+      "hoards-of-gold",
       "increased-item-rarity",
       "many-additional-stacked-decks",
       "many-additional-threads",
@@ -75,9 +76,10 @@
       "unique-flask",
       "unique-jewellery-item",
       "unique-weapon",
+      "valuable-unique-jewellery-item",
       "viscera-item"
     ],
-    "status": "52 complete tooltip variants: 44 regular and 8 conditional on two reward copies. Explicit manual selection only; existing motif mappings remain unchanged. Historical prerelease entries remain labelled separately."
+    "status": "54 complete tooltip variants: 44 regular and 10 conditional on two reward copies. Explicit manual selection only; existing motif mappings remain unchanged. Historical prerelease entries remain labelled separately."
   },
   "freshSources": [
     {
@@ -129,7 +131,7 @@
   "effects": {
     "evidence": "shared/screenshot-catalog.json",
     "fates": 24,
-    "tierVariants": 30,
+    "tierVariants": 34,
     "status": "Read-only tier-specific reference. Sadist T2 and Incandescent T2 have short descriptions only. No automatic modifier or reward assignment."
   }
 }
