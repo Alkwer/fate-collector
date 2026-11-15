@@ -3,14 +3,14 @@ export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
 // Owner-approved data update; this exception cannot promote any other package.
 export const CATALOG_UPDATE_RELEASE = Object.freeze({
-  revision: '3f92053a2c88361a17ccf74b9fed7a5aa05b4b38',
-  releaseId: '40bc7de10609f8a797635fb03ed8ceb1267b594b3cc3e10feb8d94e8ed3fbb11',
-  stagingRunId: '43650905392',
+  revision: '33ab6cf796958c7b08c26933e69a2471f802c278',
+  releaseId: 'd400c5a9481d5a07a9cb6ac71e15b9a331822e3fbed2a540233c7bad4f95f92e',
+  stagingRunId: '43767408132',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
   const mode = env.RELEASE_VALIDATION_MODE || 'native-holdout'
-  if (mode === 'catalog-20261114') {
+  if (mode === 'catalog-20261115') {
     if (env.CATALOG_UPDATE_ACKNOWLEDGED !== 'true') throw new Error('Catalog promotion requires explicit acceptance of deferred in-game validation.')
     if (env.RECOGNITION_RUN_ID || env.MANUAL_TESTS_PASSED === 'true') throw new Error('Catalog promotion does not attest native or full manual tests.')
     return mode
@@ -32,13 +32,13 @@ export function assertPromotionPolicy(env, now = new Date()) {
 }
 
 export function promotionRevision(env) {
-  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261114') return env.GITHUB_SHA
+  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261115') return env.GITHUB_SHA
   assertPromotionPolicy(env)
   return CATALOG_UPDATE_RELEASE.revision
 }
 
 export function assertCatalogUpdateRelease(env, manifest) {
-  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261114') return
+  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261115') return
   assertPromotionPolicy(env)
   if (manifest.revision !== CATALOG_UPDATE_RELEASE.revision || manifest.releaseId !== CATALOG_UPDATE_RELEASE.releaseId) {
     throw new Error('Catalog exception is limited to the approved screenshot catalog package.')

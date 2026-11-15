@@ -155,8 +155,8 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `catalog-20261114` is the owner's explicit exception for the screenshot data
-  update in PR #35. Use staging run `43650905392`, set
+- `catalog-20261115` is the owner's explicit exception for the screenshot data
+  update in PR #37. Use staging run `43767408132`, set
   `catalog_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and the live synthetic staging smoke remain
@@ -164,10 +164,12 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
 
 ### Pinned screenshot catalog exception
 
-The owner confirmed on 15 November (Poland time) that adding these report findings
-does not require in-game testing. This exception accepts only source revision
-`3f92053a2c88361a17ccf74b9fed7a5aa05b4b38` and package
-`40bc7de10609f8a797635fb03ed8ceb1267b594b3cc3e10feb8d94e8ed3fbb11` from the
+The owner explicitly requested production publication of the 15 November
+screenshot findings with in-game tests skipped. This replaces the prior
+`catalog-20261114` exception with a new package-specific authorization. This
+exception accepts only source revision
+`33ab6cf796958c7b08c26933e69a2471f802c278` and package
+`d400c5a9481d5a07a9cb6ac71e15b9a331822e3fbed2a540233c7bad4f95f92e` from the
 successful staging run above. The promotion workflow itself runs from reviewed
 `main`, which includes this policy change; it deploys the already tested package,
 without rebuilding it. The source revision differs from the policy commit only

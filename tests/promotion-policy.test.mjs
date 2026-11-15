@@ -7,15 +7,20 @@ import { assertDeploymentContext } from '../scripts/release-lib.mjs'
 afterEach(() => vi.useRealTimers())
 const before = new Date('2026-11-13T18:59:59.999Z')
 const prelaunch = { RELEASE_VALIDATION_MODE: 'prelaunch', PRELAUNCH_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
-const catalog = { RELEASE_VALIDATION_MODE: 'catalog-20261114', CATALOG_UPDATE_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
+const catalog = { RELEASE_VALIDATION_MODE: 'catalog-20261115', CATALOG_UPDATE_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
 
 test('catalog deferral requires explicit acceptance and never attests unperformed native checks', () => {
-  expect(assertPromotionPolicy(catalog)).toBe('catalog-20261114')
+  expect(assertPromotionPolicy(catalog)).toBe('catalog-20261115')
   expect(promotionRevision({ ...catalog, GITHUB_SHA: 'a'.repeat(40) })).toBe(CATALOG_UPDATE_RELEASE.revision)
   expect(promotionRevision({ GITHUB_SHA: 'a'.repeat(40) })).toBe('a'.repeat(40))
   for (const patch of [{ CATALOG_UPDATE_ACKNOWLEDGED: 'false' }, { MANUAL_TESTS_PASSED: 'true' }, { RECOGNITION_RUN_ID: '123' }]) {
     expect(() => assertPromotionPolicy({ ...catalog, ...patch })).toThrow()
   }
+})
+
+test('the superseded catalog exception cannot promote the prior package', () => {
+  expect(() => assertPromotionPolicy({ ...catalog, RELEASE_VALIDATION_MODE: 'catalog-20261114' })).toThrow('Unknown')
+  expect(() => assertCatalogUpdateRelease(catalog, { revision: '3f92053a2c88361a17ccf74b9fed7a5aa05b4b38', releaseId: '40bc7de10609f8a797635fb03ed8ceb1267b594b3cc3e10feb8d94e8ed3fbb11' })).toThrow('approved screenshot catalog package')
 })
 
 test('catalog exception pins both package and source while keeping production workflow guards', () => {
