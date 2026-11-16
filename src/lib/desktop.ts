@@ -55,7 +55,14 @@ function nativeFile(path: string, name: string): FileSystemFileHandle {
   return {
     kind: 'file', name,
     async getFile() {
-      const result = await desktopRequest<{ text: string; lastModified: number }>('read', `${path}/${name}`)
+      let result: { text: string; lastModified: number }
+      try { result = await desktopRequest('read', `${path}/${name}`) }
+      catch (error) {
+        if (path === 'captures' && error instanceof DOMException && error.name === 'OperationError') {
+          throw new DOMException('This capture is unreadable or exceeds the size limit. Other captures can still be imported.', 'NotReadableError')
+        }
+        throw error
+      }
       if (typeof result?.text !== 'string' || !Number.isFinite(result.lastModified)) throw new Error('Invalid local capture response.')
       return new File([result.text], name, { type: 'application/json', lastModified: result.lastModified })
     },

@@ -19,6 +19,7 @@ namespace FateCollector {
   public Action RequestExit;
   protected override void WndProc(ref Message message) {
    if(message.Msg==0x8461) { if(RequestExit!=null) RequestExit(); return; }
+   if(message.Msg==0x0010) { Hide(); return; }
    base.WndProc(ref message);
   }
  }
@@ -35,6 +36,7 @@ namespace FateCollector {
    var desktopForm=new DesktopForm { Text="Fate Collector \u2014 Local", Width=1200, Height=800, StartPosition=FormStartPosition.CenterScreen, ShowInTaskbar=true };
    desktopForm.RequestExit=Exit; form=desktopForm;
    form.FormClosing += delegate(object sender,FormClosingEventArgs e) { if(!exiting && e.CloseReason==CloseReason.UserClosing) { e.Cancel=true; form.Hide(); } };
+   form.FormClosed += delegate { if(!exiting) { failed=true; Console.Error.WriteLine("Fate Collector local desktop window closed unexpectedly."); Exit(); } };
    view=new WebView2 { Dock=DockStyle.Fill }; form.Controls.Add(view);
    timer=new System.Windows.Forms.Timer { Interval=500 }; timer.Tick+=Tick; timer.Start();
    form.CreateControl(); var ignored=form.Handle;
@@ -80,6 +82,7 @@ namespace FateCollector {
   async void Tick(object sender,EventArgs e) {
    try { if(parent.HasExited) { Exit(); return; } } catch { Exit(); return; }
    if(!ready || tickInFlight) return;
+   if(view.IsDisposed || view.CoreWebView2==null) { failed=true; Console.Error.WriteLine("Fate Collector local desktop stopped unexpectedly."); Exit(); return; }
    tickInFlight=true;
    try { await view.CoreWebView2.ExecuteScriptAsync("window.dispatchEvent(new Event('fate-desktop-tick'))"); } catch { }
    finally { tickInFlight=false; }

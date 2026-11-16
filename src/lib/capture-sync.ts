@@ -40,7 +40,16 @@ export class CaptureReader {
       if (await hasCaptureReceipt(id)) { this.handled.add(id); continue }
       let file: File
       try { file = await (handle as FileSystemFileHandle).getFile() }
-      catch (error) { if (error instanceof DOMException && error.name === 'NotFoundError') continue; throw error }
+      catch (error) {
+        if (error instanceof DOMException && error.name === 'NotFoundError') continue
+        if (error instanceof DOMException && error.name === 'NotReadableError') {
+          // A native bounded read may reject damaged evidence before a File is
+          // available. Report it per file and retry later, including after repair.
+          this.invalid.set(id, { stamp: 'unreadable', error: `${handle.name}: ${error.message}` })
+          continue
+        }
+        throw error
+      }
       const stamp = `${file.lastModified}:${file.size}`
       if (this.invalid.get(id)?.stamp === stamp) continue
       let entry: CapturedEntry

@@ -21,7 +21,8 @@ async function installHost(context: BrowserContext) {
               value = entries
             } else if (request.operation === 'read') {
               const file = await (await folder.getFileHandle(request.path!.split('/').at(-1)!)).getFile()
-              value = { text: await file.text(), lastModified: file.lastModified }
+              if (file.size > 12 * 1024 * 1024) throw new DOMException('Capture is too large.', 'OperationError')
+              value = { text: new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer()), lastModified: file.lastModified }
             } else if (request.operation === 'write' && request.path === 'captures/.overlay/state.json') {
               const writer = await (await bridge.getFileHandle('state.json', { create: true })).createWritable()
               await writer.write(request.content!); await writer.close()
@@ -53,6 +54,12 @@ test('local advisor connects without a picker, records choices and restores its 
   await page.goto('/')
   await expect(page.getByText('Local advisor connected', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Download Windows helper' })).toHaveCount(0)
+  await page.evaluate(async () => {
+    const folder = await (await navigator.storage.getDirectory()).getDirectoryHandle('captures')
+    const file = await folder.getFileHandle(`auto-fate-${crypto.randomUUID()}.json`, { create: true })
+    const writer = await file.createWritable(); await writer.write(new Uint8Array([255, 254, 255])); await writer.close()
+  })
+  // A native UTF-8 read failure must not stop later valid offers or heartbeat.
   await capture(page, true)
   await action(page, 'use-offer')
   await expect.poll(async () => (await state(page))?.actions.some(item => item.id.startsWith('collect:'))).toBe(true)
