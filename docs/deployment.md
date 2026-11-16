@@ -155,31 +155,34 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `catalog-20261115` is the owner's explicit exception for the screenshot data
-  update in PR #37. Use staging run `43767408132`, set
-  `catalog_update_acknowledged=true`, leave `recognition_run_id` empty and
+- `hotfix-20261116` is the owner's explicit exception for the 16 November Fate
+  rules update. Use the pinned staging run recorded below, set
+  `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
-  Windows helper/browser checks and the live synthetic staging smoke remain
-  required. Inspect the new catalog in the staging UI before promotion.
+  Windows helper/browser checks and live synthetic staging smoke remain required.
+  Inspect triple invocation guidance on staging before promotion.
 
-### Pinned screenshot catalog exception
+### Pinned Fate hotfix exception
 
-The owner explicitly requested production publication of the 15 November
-screenshot findings with in-game tests skipped. This replaces the prior
-`catalog-20261114` exception with a new package-specific authorization. This
-exception accepts only source revision
-`33ab6cf796958c7b08c26933e69a2471f802c278` and package
-`d400c5a9481d5a07a9cb6ac71e15b9a331822e3fbed2a540233c7bad4f95f92e` from the
-successful staging run above. The promotion workflow itself runs from reviewed
-`main`, which includes this policy change; it deploys the already tested package,
-without rebuilding it. The source revision differs from the policy commit only
-in this mode. Both package verification and production deployment enforce the
-pinned revision and package ID, and recheck the live staging identity.
+The owner explicitly requested the 3.30.0b Hotfix 3 fixes and production
+publication without in-game testing on 16 November. This supersedes the earlier
+`catalog-20261115` exception and is limited to this tested package:
 
-This is not a general data-only bypass. A different package cannot use this
-exception. It does not establish native recognition accuracy, HDR coverage or
-GGG compliance. The default native gate and the expired prelaunch deadline
-remain unchanged.
+- Source revision: `28d992caeb526a531db9fd487ad917109dd94a08`
+- Package ID: `4819e0064e2f5c07f392bd6c488065f2a59328e58c3771250fcbc86b77dedaef`
+- Successful staging run: `43916777689`
+
+The promotion workflow runs from reviewed `main`, which contains this policy
+change, and deploys the existing artifact without rebuilding it. The package
+revision differs from the policy commit only in this mode. Package verification
+and deployment both enforce the pinned revision and package ID; the workflow
+also enforces the staging run identity and rechecks live staging.
+
+This is a package-specific waiver, not a general bypass. It does not attest native
+recognition accuracy, HDR coverage or actual gameplay outcomes. The standard
+native gate and expired prelaunch deadline are unchanged. The application supports
+equal reviewed tiers and regular rewards; unknown combo/mixed-tier behavior stays
+explicit. Historical captures and user reward weights remain unchanged.
 
 ### Temporary prelaunch policy
 

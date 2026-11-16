@@ -2,7 +2,7 @@ import { readFile, mkdir, writeFile, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { assertDeploymentContext, selectTarget, verifyLiveRelease, verifyRelease } from './release-lib.mjs'
-import { assertCatalogUpdateRelease, promotionRevision } from './promotion-policy.mjs'
+import { assertHotfixUpdateRelease, promotionRevision } from './promotion-policy.mjs'
 
 const environment = process.argv[2]
 const dryRun = process.argv[3] === '--dry-run'
@@ -10,7 +10,7 @@ if (process.argv.length > (dryRun ? 4 : 3)) throw new Error('Usage: npm run depl
 const settings = JSON.parse(await readFile('deployment/environments.json', 'utf8'))
 const target = selectTarget(settings, environment)
 const manifest = await verifyRelease(resolve('.release'), environment === 'production' ? promotionRevision(process.env) : process.env.GITHUB_SHA)
-if (environment === 'production') assertCatalogUpdateRelease(process.env, manifest)
+if (environment === 'production') assertHotfixUpdateRelease(process.env, manifest)
 if (!dryRun) {
   assertDeploymentContext(environment, process.env, manifest)
   if (process.env.CLOUDFLARE_ACCOUNT_ID !== settings.accountId) throw new Error('Cloudflare account does not match the release target.')
