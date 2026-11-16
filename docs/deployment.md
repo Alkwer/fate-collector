@@ -155,29 +155,30 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` is the owner's explicit exception for the 16 November Fate
-  source catalog and priorities update. Use the pinned staging run recorded below, set
+- `hotfix-20261116` is the owner's explicit exception for the 16 November Guide
+  navigation fix. Use the pinned staging run recorded below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
-  Inspect source references, shared-icon confirmation and starter profiles on staging before promotion.
+  Verify stable navigation before opening Guide, within Guide and after returning on staging before promotion.
 
 ### Pinned Fate hotfix exception
 
-After staging validation of PR #44, the owner explicitly approved production
-publication with deferred in-game testing on 16 November.
-This replaces the earlier pin for the 3.30.0b Hotfix 3 package; the existing
+After staging validation of PR #46, the owner explicitly approved production
+publication with deferred in-game testing on 16 November, confirming the exact
+staging run and package for the Guide navigation fix. This replaces the earlier
+pin for the source catalog and priorities package; the existing
 `hotfix-20261116` workflow input is retained. Only this tested package is eligible:
 
-- Source revision: `4074fd151722cd065cdb636e985e58705f3c48af`
-- Package ID: `4bd7396e1a074dbae19aa3969fdd2f6bf7b630905482827b84ac2dd3bd42c6a5`
-- Successful staging run: `43929690476`
+- Source revision: `e4dc1756f745807d70dff4f836a05707d03822db`
+- Package ID: `b7b83dbc557839a07067adba8fb6bcf42f26e0979a2a61f3765b1c87972a3a80`
+- Successful staging run: `43936251309`
 
 That run passed application, Windows helper/browser and vision checks, plus live
-staging ingestion smoke. Additional source-reference and profile flows passed
-against the deployed staging site at 390 and 1440 px; read-only release smoke
-also passed. Native gameplay, physical HDR and full manual staging checks are
-deferred, not attested as passed.
+staging ingestion smoke. Additional browser checks confirmed identical navigation
+bounds before Guide, within Guide and after return in both themes at 320, 390,
+760, 761, 1024 and 1440 px, without horizontal overflow. Native gameplay, physical
+HDR and full manual staging checks are deferred, not attested as passed.
 
 The promotion workflow runs from reviewed `main`, which contains this policy
 change, and deploys the existing artifact without rebuilding it. The package
@@ -187,9 +188,10 @@ also enforces the staging run identity and rechecks live staging.
 
 This is a package-specific waiver, not a general bypass. It does not attest native
 recognition accuracy, HDR coverage or actual gameplay outcomes. The standard
-native gate and expired prelaunch deadline are unchanged. The package adds PoEDB
-references, exact-tooltip checks for shared unique icons and explicit starter
-priorities. Historical captures and saved reward profiles are preserved.
+native gate and expired prelaunch deadline are unchanged. The package moves the
+existing mobile navigation rules from the lazy Guide stylesheet to the main CSS
+and refreshes the affected visual baselines. Helper, OCR, API, migrations and
+data contracts are unchanged from the previously approved production package.
 
 ### Temporary prelaunch policy
 

@@ -1,11 +1,11 @@
 // Temporary exception approved before live Fate encounters are available.
 export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
-// Owner-approved source catalog and priorities update; no other package is eligible.
+// Owner-approved Guide navigation fix; no other package is eligible.
 export const HOTFIX_UPDATE_RELEASE = Object.freeze({
-  revision: '4074fd151722cd065cdb636e985e58705f3c48af',
-  releaseId: '4bd7396e1a074dbae19aa3969fdd2f6bf7b630905482827b84ac2dd3bd42c6a5',
-  stagingRunId: '43929690476',
+  revision: 'e4dc1756f745807d70dff4f836a05707d03822db',
+  releaseId: 'b7b83dbc557839a07067adba8fb6bcf42f26e0979a2a61f3765b1c87972a3a80',
+  stagingRunId: '43936251309',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
