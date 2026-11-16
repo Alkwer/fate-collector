@@ -1,7 +1,8 @@
 import { z } from './validation.ts'
 import {
   advisorInputProblem, MAX_COLLECTED_FATES, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
-  normalizeRewardLabel, UNKNOWN_FATE_NAME, visitInvocationOrders,
+  normalizeRewardLabel, TRIPLED_REGULAR_MULTIPLIER, UNKNOWN_FATE_NAME, UNRESOLVED_COMBO_MERGE,
+  UNRESOLVED_COMBO_TRIPLE, visitInvocationOrders,
   type AdvisorGoal, type InvocationPlan, type PlanResult, type Recommendation,
 } from './advisor'
 import { KNOWN_COMBOS } from './reward-catalog'
@@ -46,6 +47,7 @@ export type SolverPlan = {
   progress: number
   rewards: SolverReward[]
   merges: InvocationPlan['merges']
+  triples?: InvocationPlan['triples']
   retained: { cardId: string; multiplier: number }[]
   discardedCardIds: string[]
   warnings: string[]
@@ -88,7 +90,6 @@ type PreparedCard = {
 
 const MAX_DISPLAYED_PLANS = 3
 const CHECK_MODIFIERS = 'A Fate has no recorded modifiers. Its modifier safety is unverified.'
-const UNRESOLVED_COMBO_MERGE = 'Combo behavior after merging duplicate Fates is unresolved.'
 
 function solverInputProblem(cards: FateCard[], limit: number, group: string): string | null {
   const problem = advisorInputProblem(cards, limit, group)
@@ -197,23 +198,31 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     for (const warning of cardWarnings(card)) recordWarning(warnings, warning)
   }
 
-  function addPlan(active: PreparedCard[], pair?: [PreparedCard, PreparedCard]) {
+  function addPlan(active: PreparedCard[], pair?: [PreparedCard, PreparedCard], triple?: [PreparedCard, PreparedCard, PreparedCard]) {
     const retained = active.map(card => ({ card, multiplier: 1 }))
     if (pair) retained.unshift({ card: pair[0], multiplier: MERGED_REGULAR_MULTIPLIER })
-    const selected = [...(pair ?? []), ...active]
+    if (triple) retained.push(
+      { card: triple[0], multiplier: TRIPLED_REGULAR_MULTIPLIER },
+      { card: triple[2], multiplier: TRIPLED_REGULAR_MULTIPLIER },
+    )
+    const selected = [...(triple ?? pair ?? []), ...active]
+    const discarded = triple?.[1] ?? pair?.[1]
     const planWarnings = new Map<string, boolean>()
     const totals = new Map<string, ObservedReward>()
-    if (pair?.[1].modifiersUnrecorded) recordWarning(planWarnings, { message: CHECK_MODIFIERS, affectsRanking: true })
+    if (discarded?.modifiersUnrecorded) recordWarning(planWarnings, { message: CHECK_MODIFIERS, affectsRanking: true })
 
     for (const { card, multiplier } of retained) {
       for (const warning of cardWarnings(card)) recordWarning(planWarnings, warning)
       for (const reward of card.rewards) {
         const existing = totals.get(reward.key)
-        const unknownMergeCount = multiplier > 1 && reward.kind !== 'regular'
-        if (unknownMergeCount && reward.kind === 'combo') {
-          recordWarning(planWarnings, { message: UNRESOLVED_COMBO_MERGE, affectsRanking: (weights.get(reward.key) ?? 0) > 0 })
+        const unresolvedCount = multiplier > 1 && reward.kind !== 'regular'
+        if (unresolvedCount && reward.kind === 'combo') {
+          recordWarning(planWarnings, {
+            message: triple ? UNRESOLVED_COMBO_TRIPLE : UNRESOLVED_COMBO_MERGE,
+            affectsRanking: (weights.get(reward.key) ?? 0) > 0,
+          })
         }
-        const count = unknownMergeCount || reward.count === null || existing?.count === null
+        const count = unresolvedCount || reward.count === null || existing?.count === null
           ? null : (existing?.count ?? 0) + reward.count * multiplier
         totals.set(reward.key, { ...reward, label: existing?.label ?? reward.label, count })
       }
@@ -238,8 +247,9 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     plans.push({
       cardIds: selected.map(card => card.id), score: roundPoints(score), progress: roundPoints(progress), rewards,
       merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
+      ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       retained: retained.map(({ card, multiplier }) => ({ cardId: card.id, multiplier })),
-      discardedCardIds: pair ? [pair[1].id] : [],
+      discardedCardIds: discarded ? [discarded.id] : [],
       warnings: [...planWarnings.keys()],
     })
   }

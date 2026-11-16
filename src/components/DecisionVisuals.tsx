@@ -44,7 +44,7 @@ export function RewardStrip({ rewards, suggested = false, compact = false }: { r
 }
 
 export function InvocationSequence({ plan, cards, collected }: {
-  plan: Pick<InvocationPlan, 'cardIds' | 'merges'>; cards: FateCard[]; collected: FateCard[]
+  plan: Pick<InvocationPlan, 'cardIds' | 'merges' | 'triples'>; cards: FateCard[]; collected: FateCard[]
 }) {
   const source = (id: string) => {
     const collectedIndex = collected.findIndex(card => card.id === id)
@@ -56,6 +56,7 @@ export function InvocationSequence({ plan, cards, collected }: {
     <ol className="invocation-order" data-input-count={plan.cardIds.length}>{plan.cardIds.map((id, index) => {
       const card = cards.find(item => item.id === id)
       const merged = plan.merges.some(merge => merge.firstId === id || merge.consumedId === id)
+      const triple = plan.triples?.find(group => group.firstId === id || group.consumedId === id || group.thirdId === id)
       return <li key={id} data-merge={merged || undefined} aria-label={`${index + 1}. ${named(card)} (${source(id)})`}>
         <div className="invoke-step-label"><span className="invoke-step" aria-hidden="true">{index + 1}</span><span>Select {index + 1 === 1 ? 'first' : index + 1 === 2 ? 'second' : 'third'}</span></div>
         <div className="invoke-card"><FateArtwork name={named(card)} />
@@ -63,6 +64,7 @@ export function InvocationSequence({ plan, cards, collected }: {
           <TierMark tier={card?.tier ?? null} suggested={!!card?.visualReview && !card.visualReview.tierReviewed} /></div>
           {card && <RewardStrip rewards={card.rewards} compact suggested={!!card.visualReview && !card.visualReview.rewardsReviewed} />}
         </div>
+        {triple && <p className="hint">{triple.consumedId === id ? 'Rewards discarded' : 'Regular rewards ×3'}</p>}
         {index < plan.cardIds.length - 1 && <span className="sequence-arrow"><AppIcon name="arrow" /></span>}
       </li>
     })}</ol>
@@ -80,6 +82,7 @@ export function InvocationSequence({ plan, cards, collected }: {
         <p className="sr-only">{named(first)} ({source(merge.firstId)}): T2 + T2 → T3. {named(second)} ({source(merge.consumedId)}) is consumed. Both input slots are used.</p>
       </div>
     })}
+    {!!plan.triples?.length && <div className="merge-diagram"><div className="merge-explanation"><strong>First and third regular rewards ×3</strong><span>Second rewards discarded · all three inputs used</span></div></div>}
     <div className="invoke-final-step"><AppIcon name="check" /><strong>Then Confirm in game</strong></div>
   </div>
 }

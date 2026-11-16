@@ -105,6 +105,20 @@ describe('offered Fate recommendations', () => {
     })
   })
 
+  it('recommends a third copy even when its rewards are skipped', () => {
+    const collected = [
+      fate('first', [reward('Currency', 5)], { name: 'Rot' }),
+      fate('third', [reward('Currency', 3)], { name: 'Rot' }),
+    ]
+    const offered = fate('middle', [reward('Armour')], { name: 'ROT' })
+    expect(recommendFates([offered], collected, currency)).toMatchObject({
+      status: 'ready', comparison: 'improvement', recommendedCardIds: ['middle'],
+      baseline: { targetCount: 15 },
+      candidates: [{ gain: 9, plan: { cardIds: ['first', 'middle', 'third'], targetCount: 24,
+        triples: [{ firstId: 'first', consumedId: 'middle', thirdId: 'third' }] } }],
+    })
+  })
+
   it('keeps a measured lead provisional when rewards or card names are missing', () => {
     const offered = [
       fate('known', [reward()]), fate('unrecorded', []), fate('unknown-kind', [reward('Armour', 9, { kind: 'unknown' })]),
@@ -139,6 +153,7 @@ describe('invocation planning', () => {
       { cardIds: ['second', 'first'], targetCount: 3, merges: [{ firstId: 'second', consumedId: 'first', outputTier: 3 }] },
       { cardIds: ['first'], targetCount: 2, merges: [] },
     ] })
+    expect(result.plans[0]).not.toHaveProperty('triples')
   })
 
   it('evaluates distinct subsets once and prefers fewer inputs at the same score', () => {
@@ -168,12 +183,32 @@ describe('invocation planning', () => {
     expect(result.warnings).toContainEqual(expect.stringMatching(/confirmed merge/))
   })
 
-  it('scores verified pairs but does not extrapolate to three copies', () => {
-    const cards = ['a', 'b', 'c'].map(id => fate(id, [reward()], { name: 'Rot' }))
+  it('triples the first and third copies and chooses the middle Fate based on its rewards', () => {
+    const cards = [
+      fate('a', [reward('Currency', 2)], { name: ' Rot ' }),
+      fate('b', [reward()], { name: 'ROT' }),
+      fate('c', [reward('Currency', 4)], { name: 'rot' }),
+    ]
+    const result = planInvocation(cards, currency)
+
+    expect(result).toMatchObject({ status: 'ready', plans: [
+      { cardIds: ['a', 'b', 'c'], targetCount: 18, merges: [],
+        triples: [{ firstId: 'a', consumedId: 'b', thirdId: 'c' }] },
+      { cardIds: ['b', 'a', 'c'], targetCount: 15,
+        triples: [{ firstId: 'b', consumedId: 'a', thirdId: 'c' }] },
+      { cardIds: ['c', 'a'], targetCount: 12 },
+    ] })
+  })
+
+  it.each([
+    { tier: 3 }, { tier: null },
+    { visualReview: { version: 'matcher', tierReviewed: false, rewardsReviewed: true } },
+  ])('leaves three copies with unsupported tier data unresolved (%j)', fields => {
+    const cards = ['a', 'b', 'c'].map((id, index) => fate(id, [reward()], { name: 'Rot', ...(index === 2 ? fields : {}) }))
     const result = planInvocation(cards, currency)
 
     expect(result.status).toBe('provisional')
-    expect(result.plans.every(plan => plan.cardIds.length === 2 && plan.targetCount === 3)).toBe(true)
+    expect(result.plans.every(plan => !plan.triples)).toBe(true)
     expect(result.warnings).toContainEqual(expect.stringMatching(/three copies/))
   })
 
@@ -228,12 +263,17 @@ describe('combo goals', () => {
   })
 
   it('does not add or multiply combo icons from duplicate Fates', () => {
-    const result = planInvocation([fate('a', [combo()], { name: 'Rot' }), fate('b', [combo(2)], { name: 'Rot' })], gem)
+    const result = planInvocation([
+      fate('a', [combo()], { name: 'Rot' }),
+      fate('b', [combo(2)], { name: 'Rot' }),
+      fate('c', [combo()], { name: 'Rot' }),
+    ], gem)
 
     expect(result.status).toBe('provisional')
     expect(result.plans.every(plan => plan.cardIds.length === 1 && !plan.activated)).toBe(true)
     expect(result.plans[0].targetCount).toBe(2)
     expect(result.warnings).toContainEqual(expect.stringMatching(/Combo behavior after merging/))
+    expect(result.warnings).toContainEqual(expect.stringMatching(/Combo behavior after invoking three copies/))
   })
 })
 

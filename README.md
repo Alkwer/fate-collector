@@ -2,7 +2,7 @@
 
 An English-language observation collector for Path of Exile 1. Capture the whole
 Fate offer, preserve the evidence, and compare specific Fates with a local advisor.
-Advice uses identified rewards and conservative prerelease rules; unknown icons
+Advice uses identified rewards and conservative rules updated through 3.30.0b Hotfix 3; unknown icons
 still need manual identification.
 
 **[Open Fate Collector](https://app.fate-collector.workers.dev)** — choose **Guide**

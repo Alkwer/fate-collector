@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "catalog-evidence-2026-11-15",
-  "checkedAt": "2026-11-15",
+  "version": "catalog-evidence-2026-11-16",
+  "checkedAt": "2026-11-16",
   "gameVersion": "3.30 Covens League",
   "completeness": "partial",
   "names": {
@@ -83,6 +83,18 @@
   },
   "freshSources": [
     {
+      "url": "https://www.pathofexile.com/forum/view-thread/4015683",
+      "owner": "GGG",
+      "checkedAt": "2026-11-16",
+      "result": "3.30.0b Hotfix 3 permits three copies of one Fate: first and third rewards tripled, second ignored. Regular-reward planning added for equal reviewed tiers. Combo scaling, mixed tiers and output tier are not inferred. No native gameplay validation."
+    },
+    {
+      "url": "https://www.pathofexile.com/forum/view-thread/4015564",
+      "owner": "GGG",
+      "checkedAt": "2026-11-16",
+      "result": "Hotfix 2 removes T3 Crowkeeper Culling Strike, reduces Crowkeeper explosions and Wildfire wall damage, and fixes Viscera drops from some Fate-spawned bosses. Historical screenshot transcriptions are preserved; no numeric risk or drop rates inferred."
+    },
+    {
       "url": "https://www.pathofexile.com/forum/view-thread/4013527/page/1",
       "owner": "GGG",
       "published": "2026-11-10",
@@ -122,7 +134,7 @@
   ],
   "unresolvedMechanics": [
     "mixed-tier duplicate merge",
-    "third duplicate",
+    "output tier of a three-copy invocation",
     "slot recovery after merge",
     "general duplicate/combo algorithm",
     "repeat combo payouts"

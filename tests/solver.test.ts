@@ -96,6 +96,7 @@ describe('weighted invocation search', () => {
       cardIds: ['second', 'first', 'third'], score: 10, discardedCardIds: ['first'],
       rewards: [{ label: 'Armour', count: 9 }, { label: 'Currency', count: 1 }, { label: 'Divination Cards', count: 2 }],
     })
+    expect(result.plans[0]).not.toHaveProperty('triples')
   })
 
   it('keeps duplicate combo counts unresolved, including matching contributions from a third card', () => {
@@ -123,11 +124,71 @@ describe('weighted invocation search', () => {
     expect(result.plans.every(plan => plan.cardIds.length === 1 && plan.merges.length === 0)).toBe(true)
   })
 
-  it('does not extrapolate a merge for three identical cards', () => {
+  it('triples both retained reward rows and chooses the middle Fate using weighted priorities', () => {
+    const cards = [
+      fate('first', [reward('Currency', 4), reward('Maps', 2)], { name: '  Torchbearer ' }),
+      fate('second', [reward('Armour', 3), reward('Divination Cards')], { name: 'TORCHBEARER' }),
+      fate('third', [reward('Currency'), reward('Armour', 4)], { name: 'torchbearer' }),
+    ]
+    const result = solveInvocation(cards, { goals: [currency, { ...armour, weight: 2 }], avoidModifiers: [] })
+    expect(result).toMatchObject({ status: 'ready', tiedBestPlanCount: 1 })
+    expect(result.plans[0]).toMatchObject({
+      cardIds: ['second', 'first', 'third'], score: 45, progress: 0, merges: [],
+      triples: [{ firstId: 'second', consumedId: 'first', thirdId: 'third' }],
+      retained: [{ cardId: 'second', multiplier: 3 }, { cardId: 'third', multiplier: 3 }], discardedCardIds: ['first'],
+      rewards: [
+        { label: 'Armour', count: 21, weight: 2, points: 42 },
+        { label: 'Divination Cards', count: 3, weight: 0, points: 0 },
+        { label: 'Currency', count: 3, weight: 1, points: 3 },
+      ],
+    })
+  })
+
+  it('reports tied triples by which middle Fate they discard', () => {
     const cards = ['a', 'b', 'c'].map(id => fate(id, [reward('Currency')], { name: 'Rot' }))
     const result = solveInvocation(cards, currencyProfile)
-    expect(result).toMatchObject({ status: 'provisional', tiedBestPlanCount: 6 })
-    expect(result.plans.every(plan => plan.cardIds.length === 2 && plan.score === 3)).toBe(true)
+    expect(result).toMatchObject({ status: 'ready', tiedBestPlanCount: 3, warnings: [] })
+    expect(result.plans.map(plan => [plan.cardIds, plan.score])).toEqual([
+      [['a', 'b', 'c'], 6], [['b', 'a', 'c'], 6], [['a', 'c', 'b'], 6],
+    ])
+  })
+
+  it('leaves retained triple combos unresolved and omits rewards from the middle Fate', () => {
+    const cards = [
+      fate('first', [reward('Currency', 8), combo(gem.label, 1)], { name: 'Rot' }),
+      fate('middle', [reward('Armour'), combo('Item Rarity', 3)], { name: 'Rot' }),
+      fate('third', [reward('Currency', 3), combo(gem.label, 2)], { name: 'Rot' }),
+    ]
+    const result = solveInvocation(cards, { goals: [currency, gem], avoidModifiers: [] })
+    expect(result.status).toBe('provisional')
+    expect(result.plans[0]).toMatchObject({
+      cardIds: ['first', 'middle', 'third'], score: 33, progress: 0,
+      rewards: [
+        { label: 'Currency', count: 33 },
+        { label: gem.label, count: null, threshold: 3, activated: false, uncertain: true, points: 0 },
+      ],
+      warnings: expect.arrayContaining([expect.stringMatching(/Combo behavior after invoking three copies/)]),
+    })
+    expect(solveInvocation(cards, currencyProfile).status).toBe('ready')
+  })
+
+  it.each([1, 3])('scores a reviewed same-tier triple at Tier %i while keeping pairs unresolved', tier => {
+    const cards = ['a', 'b', 'c'].map(id => fate(id, [reward('Currency')], { name: 'Rot', tier }))
+    const result = solveInvocation(cards, currencyProfile)
+    expect(result).toMatchObject({ status: 'provisional', plans: [
+      { score: 6, merges: [], triples: [{ firstId: 'a', consumedId: 'b', thirdId: 'c' }], warnings: [] }, {}, {},
+    ], warnings: ['Only pairs of the same Fate at Tier 2 have a confirmed merge.'] })
+  })
+
+  it.each([
+    { tier: 3 }, { tier: null },
+    { visualReview: { version: 'matcher', tierReviewed: false, rewardsReviewed: true } },
+  ])('continues to score verified pairs with unsupported triple tiers (%j)', fields => {
+    const cards = ['a', 'b', 'c'].map((id, index) => fate(id, [reward('Currency')], { name: 'Rot', ...(index === 2 ? fields : {}) }))
+    const result = solveInvocation(cards, currencyProfile)
+    expect(result.status).toBe('provisional')
+    expect(result.plans[0]).toMatchObject({ cardIds: ['a', 'b'], score: 3 })
+    expect(result.plans.every(plan => !plan.triples)).toBe(true)
     expect(result.warnings).toContainEqual(expect.stringMatching(/three copies/))
   })
 })
@@ -165,6 +226,26 @@ describe('portfolio recommendation', () => {
     expect(recommendPortfolio(offered, collected, currencyProfile)).toMatchObject({
       comparison: 'improvement', recommendedCardIds: ['merge'],
       candidates: [{ gain: 4, plan: { cardIds: ['owned', 'merge'], discardedCardIds: ['merge'] } }],
+    })
+  })
+
+  it('detects the gain from an offered third copy even when it supplies no rewards to the outcome', () => {
+    const collected = [
+      fate('first', [reward('Currency', 5)], { name: 'Rot' }),
+      fate('third', [reward('Currency', 3)], { name: 'Rot' }),
+    ]
+    const offered = [
+      fate('other', [reward('Currency', 2)]),
+      fate('middle', [reward('Armour')], { name: 'ROT' }),
+    ]
+    expect(recommendPortfolio(offered, collected, currencyProfile)).toMatchObject({
+      status: 'ready', comparison: 'improvement', recommendedCardIds: ['middle'],
+      baseline: { score: 15 },
+      candidates: [
+        { cardId: 'middle', gain: 9, plan: { cardIds: ['first', 'middle', 'third'], score: 24,
+          discardedCardIds: ['middle'], triples: [{ firstId: 'first', consumedId: 'middle', thirdId: 'third' }] } },
+        { cardId: 'other', gain: 2, plan: { cardIds: ['first', 'third', 'other'] } },
+      ],
     })
   })
 
