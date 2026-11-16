@@ -75,7 +75,7 @@ function Get-FateOfferProbe($Ocr, [int]$Width, [int]$Height) {
     $pair = $pairs[0]
     $region = @($lines | Where-Object {
         $_.y -ge $pair.Heading.bottom -and $_.bottom -lt $pair.Confirm.y -and $_.key -notin 'fates', 'selectafate', 'confirm'
-    } | Sort-Object y)
+    } | Sort-Object y, x)
     if (!$region.Count) { return $uncertain }
     $first = $region[0]
     $row = @($region | Where-Object { $_.y - $first.y -le [Math]::Max($first.height * 4, $Height * 0.06) })
@@ -99,7 +99,14 @@ function Get-FateOfferProbe($Ocr, [int]$Width, [int]$Height) {
     # A missing outer header shifts the row away from the panel axis.
     if ($axisDistance -gt [Math]::Max($pair.Confirm.width / 2, $spacing * 0.32)) { return $uncertain }
     $columnRadius = [Math]::Max($spacing * 0.48, $pair.Confirm.width)
+    $headerBottom = ($headers | Measure-Object bottom -Maximum).Maximum
+    $headerHeight = ($headers | Measure-Object height -Minimum).Minimum
     foreach ($line in $row | Where-Object { !$_.known }) {
+        # The raised-card allowance may reach the first description line. Text
+        # clearly below every header in an identified column is body copy, not
+        # an unknown card. A separate column still abstains below.
+        if ($line.y -gt $headerBottom + $headerHeight -and
+            @($headers | Where-Object { [Math]::Abs($line.center - $_.center) -le $columnRadius }).Count) { continue }
         # Menu/selection glyphs above a named column can be OCR noise. A
         # same-row unknown or a separate text column may be a missing name.
         $aboveKnown = @($headers | Where-Object {
@@ -107,7 +114,6 @@ function Get-FateOfferProbe($Ocr, [int]$Width, [int]$Height) {
         })
         if (!$aboveKnown.Count -or $line.text -notmatch "[^A-Za-z0-9\s'-]") { return $uncertain }
     }
-    $headerBottom = ($headers | Measure-Object bottom -Maximum).Maximum
     foreach ($line in $region | Where-Object { $_.y -gt $headerBottom + $first.height -and $_.text.Trim().Length -gt 2 }) {
         if (!@($headers | Where-Object { [Math]::Abs($line.center - $_.center) -le $columnRadius }).Count) { return $uncertain }
     }

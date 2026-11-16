@@ -39,6 +39,21 @@ $copy = @(
 )
 $sample = $boundaries + $headers + $copy
 $signature = Test-Probe $sample 'offer'
+# WinRT can report different glyph heights for titles on the same baseline.
+# Windows PowerShell 5.1 does not preserve equal-key Sort-Object input order.
+# The raised-card band must not mistake nearby description copy for a title.
+$closeHeaders = @(
+    (New-Line 'Sanguine' 145 185 100 22), (New-Line 'Alchemist' 475 185 120 17)
+    (New-Line 'Stormcaller' 805 185 130 22)
+)
+$closeCopy = @(
+    (New-Line 'More enemies' 145 255 130), (New-Line 'More rewards' 475 255 130)
+    (New-Line 'More monsters' 805 255 130)
+)
+$closeSignature = Test-Probe ($boundaries + $closeHeaders + $closeCopy) 'offer'
+$reordered = Test-Probe ($boundaries + $closeHeaders[2..0] + $closeCopy) 'offer'
+Assert-True ($reordered -ceq $closeSignature) 'Equal-baseline OCR ordering changed detection.'
+[void](Test-Probe ($boundaries + $closeHeaders[0..1] + (New-Line 'Stormcal1er' 805 185 130 22) + $closeCopy) 'uncertain')
 $raised = @(
     (New-Line 'alchemist' 148 115), (New-Line 'Sanguine' 367 113)
     (New-Line 'Butcher' 583 114), (New-Line 'Gravewalker' 805 91)
