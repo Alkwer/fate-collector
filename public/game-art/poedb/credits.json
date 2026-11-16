@@ -1,0 +1,72 @@
+{
+  "copyright": "Path of Exile artwork © Grinding Gear Games.",
+  "purpose": "Original WebP files mirrored by PoEDB, used as Fate name references.",
+  "checkedAt": "2026-11-16",
+  "source": "https://poedb.tw/us/Fates",
+  "assets": [
+    {
+      "name": "Rotted",
+      "path": "/game-art/poedb/rotted.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtFlyingBroomsticks.webp",
+      "sha256": "1bd1c3e6e50a8ecb932dfeaed68b4a99f02fe5de9f11e32e8e35d335c19ffdaa",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Murderous",
+      "path": "/game-art/poedb/murderous.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtCrowBombs.webp",
+      "sha256": "a9cab00076b468f3099bd2e680a8372db90e3b3edc28c42995dcb62c52ac436c",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Black Frost",
+      "path": "/game-art/poedb/black-frost.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtIcicleFissures.webp",
+      "sha256": "8a0891933cb102d1368034e55bbbb452f3242f1859cac0891add51f66dae0218",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Golemancer",
+      "path": "/game-art/poedb/golemancer.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtTrudgingBloodGolem.webp",
+      "sha256": "6492c7b2113d4952b02e63e943e40a6b20274aa2eb3dceea3ea1f7a145e7a063",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Blood Moon",
+      "path": "/game-art/poedb/blood-moon.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtBloodSplashes.webp",
+      "sha256": "467d4627c8c8ef4318cb4cb2897ff183e3edf2e056584ba5b48a4b0b452f3bec",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Savage",
+      "path": "/game-art/poedb/savage.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnSavage.webp",
+      "sha256": "e4d6f48b25a20440e5886ac1c2d8e3f7ebf287882480d24ef835be5b1eb014fb",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Pestilent",
+      "path": "/game-art/poedb/pestilent.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnFilth.webp",
+      "sha256": "fef456f8688c8b7c3c1124e169fddeb72e23ee5a79ff1287214368549c23d6fe",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Sadist",
+      "path": "/game-art/poedb/sadist.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnClassic.webp",
+      "sha256": "bd6ad420f2e9c80fca755a0a44340cdd6c81737f216bfa15959a482448be3d71",
+      "width": 210,
+      "height": 196
+    }
+  ]
+}

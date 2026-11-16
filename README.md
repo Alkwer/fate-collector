@@ -15,11 +15,16 @@ can be closed. Offline captures wait on disk and retry automatically. Only new g
 captures after enabling are sent. Screenshots remain local; OCR and capture metadata
 reach the shared database as unverified observations.
 
-New profiles start with provisional trade priorities: Exceptional Gem combo 10,
-Item Rarity combo 4, Dreadmaidens' Sacrament combo 2 and confirmed regular
-Additional Currency Items 3 per icon. Existing saved profiles are preserved;
-**Use trade starter** applies these four weights explicitly. These are priority
-points, not prices or expected profit. See [trade starter](docs/trade-starter.md).
+New profiles start with 12 provisional trade priorities covering gems, currency,
+rarity, stacked decks and threads. Campaign / SSF and Viscera starters are also
+available. Existing saved profiles change only through explicit controls; identified
+rewards without a positive weight are listed beside advice. These are priority
+points, not prices or expected profit. See [starter profiles](docs/trade-starter.md).
+
+The reference panels include 25 Tier 3 Fate definitions and 146 reward definitions
+from a versioned [PoEDB snapshot](research/POEDB_CATALOG_2026-11-16.md), with official
+patch corrections. References never confirm observations. Orange feathers are a
+shared league-unique icon: the exact tooltip is required, including for old imports.
 
 To submit a new symbol with visual evidence, open an offer and use **More actions
 → Report symbol**. Preview an icon crop and tooltip, then accept the separate

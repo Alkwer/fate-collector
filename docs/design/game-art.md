@@ -10,7 +10,8 @@ uses them to identify Fates and recorded reward motifs in both themes.
 - [GGG Covens of Umbra press kit](https://web.poecdn.com/public/news/2026-11-07/Kits_for_press_exc26/PoE1_CovensofUmbra_PressKit.zip):
   Alchemist, Sanguine, Butcher, Gravewalker, Torchbearer, Tempest, Stormcaller,
   Houndmaster; eight reward motifs, Item Rarity and the orange-feather motif
-  already verified for Dreadmaidens' Sacrament. Use the original **3840 × 2160**
+  originally observed with Dreadmaidens' Sacrament (the motif is shared by other
+  league uniques and cannot identify it alone). Use the original **3840 × 2160**
   `Fates_UI.png`, `Fates_UI_2.png` and `InvokeFates_1.png` members, not the
   downsampled recognition fixtures. Portrait crops are now 220 × 220 and the
   reward motifs 48 × 48 (Item Rarity 68 × 72).

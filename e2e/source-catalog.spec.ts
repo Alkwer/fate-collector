@@ -1,0 +1,67 @@
+import { expect, test } from '@playwright/test'
+import { newCard, newOffer, newReward } from '../shared/offers'
+import { closePanels, openPanel } from './ui'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+
+for (const width of [1440, 390]) test(`source references, unweighted rewards and explicit presets at ${width}px`, async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', entry => { if (entry.type() === 'error') errors.push(entry.text()) })
+  await page.setViewportSize({ width, height: 960 })
+  await page.goto('/')
+  await expect(page).toHaveTitle(/Fate Collector/)
+  const offer = { ...newOffer(), cards: [{ ...newCard(), name: 'Crowkeeper', tier: 3, rewards: [
+    { ...newReward(), label: 'Unique Flask', kind: 'regular' as const, identified: true },
+    { ...newReward(), label: 'Additional Currency Items', kind: 'regular' as const, identified: true },
+  ] }] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'reference-check.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Unweighted rewards (1)', exact: true }).click()
+  await expect(page.getByRole('dialog').filter({ hasText: '1 reward type has weight 0' })).toContainText('Unique Flask · regular')
+  await page.getByRole('button', { name: 'Set reward priorities', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Starter priorities', exact: true })).toBeVisible()
+  await page.getByRole('combobox', { name: 'Starter priorities', exact: true }).selectOption('viscera')
+  await page.getByRole('button', { name: 'Replace priorities', exact: true }).click()
+  await expect(page.getByLabel('Viscera Item combo weight')).toHaveValue('10')
+  await expect(page.getByLabel('Exceptional Gem combo weight')).toHaveCount(0)
+  await page.reload()
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Continue this area', exact: true }).click()
+  await openPanel(page, '.reward-settings')
+  await expect(page.getByLabel('Viscera Item combo weight')).toHaveValue('10')
+  await page.getByRole('combobox', { name: 'Starter priorities', exact: true }).selectOption('campaign')
+  await page.getByRole('button', { name: 'Replace priorities', exact: true }).click()
+  await expect(page.getByLabel('Rare Boots with a Speed Modifier regular weight')).toHaveValue('3')
+  await expect(page.getByLabel('Viscera Item combo weight')).toHaveCount(0)
+  await page.screenshot({ path: join(tmpdir(), `fate-starter-priorities-${width}.png`) })
+  await closePanels(page)
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'reference-check.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Use this offer in current area', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
+  await page.getByRole('button', { name: 'Known Fate effects', exact: true }).click()
+  const reference = page.locator('.fate-reference dialog')
+  await expect(reference).toContainText('official patch correction applied')
+  await expect(reference).toContainText('no longer grants Culling Strike')
+  await expect(reference).not.toContainText('kills Enemies below 10%')
+  await expect(reference.getByRole('link', { name: 'Official patch notes' })).toHaveAttribute('href', 'https://www.pathofexile.com/forum/view-thread/4015564')
+  await reference.getByRole('button', { name: 'Close panel' }).click()
+  await page.getByRole('button', { name: 'Search reward references', exact: true }).click()
+  await page.getByLabel('Search reward effects', { exact: true }).fill('additional valuable currency')
+  await expect(page.locator('.reference-results')).toContainText('additional Valuable Currency Items')
+  await expect(page.getByRole('status').filter({ hasText: 'matching definition' })).toBeVisible()
+  await page.screenshot({ path: join(tmpdir(), `fate-source-references-${width}.png`) })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByLabel('Search reward effects', { exact: true }).fill('no-such-reward-xyz')
+  await expect(page.getByText(/No matching definition/)).toBeVisible()
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Edit current offer', exact: true }).click()
+  await page.getByLabel('Fate name', { exact: true }).fill('Savage')
+  await page.getByRole('button', { name: 'Back to advice', exact: true }).click()
+  const artwork = page.getByRole('img', { name: 'Savage Fate artwork', exact: true })
+  await expect(artwork).toBeVisible()
+  expect(await artwork.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true)
+  expect(errors).toEqual([])
+})

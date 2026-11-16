@@ -3,6 +3,7 @@ import type { InvocationPlan } from '../../shared/advisor'
 import { useState } from 'react'
 import { fateArt, rewardArt } from '../lib/game-art'
 import { AppIcon } from './AppIcon'
+import { isRewardIdentified, needsUniqueTooltipCheck } from '../../shared/reward-evidence'
 
 const named = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 
@@ -33,10 +34,10 @@ export function TierMark({ tier, suggested = false }: { tier: number | null; sug
 
 export function RewardStrip({ rewards, suggested = false, compact = false }: { rewards: Reward[]; suggested?: boolean; compact?: boolean }) {
   return <div className={`reward-strip${compact ? ' is-compact' : ''}`}>
-    {rewards.length ? rewards.map(reward => <div className="reward-unit" key={reward.id} data-unknown={!reward.identified || reward.kind === 'unknown' || undefined}>
-      <RewardSymbol label={reward.label} identified={reward.identified && reward.kind !== 'unknown'} visualId={reward.visualId} />
+    {rewards.length ? rewards.map(reward => <div className="reward-unit" key={reward.id} data-unknown={!isRewardIdentified(reward) || reward.kind === 'unknown' || undefined}>
+      <RewardSymbol label={reward.label} identified={isRewardIdentified(reward) && reward.kind !== 'unknown'} visualId={reward.visualId} />
       <div><strong>{reward.count}×</strong><span>{reward.label || 'Unknown reward'}</span>
-        {!reward.identified || reward.kind === 'unknown' ? <small>{reward.kind === 'unknown' ? 'Kind unknown' : 'Unidentified'} · review</small>
+        {needsUniqueTooltipCheck(reward) ? <small>Shared icon · check tooltip</small> : !reward.identified || reward.kind === 'unknown' ? <small>{reward.kind === 'unknown' ? 'Kind unknown' : 'Unidentified'} · review</small>
           : reward.kind === 'combo' ? <small>Combo · needs {reward.threshold ?? '?'}</small> : null}</div>
     </div>) : <div className="reward-unit" data-unknown><RewardSymbol label="" identified={false} /><span>No rewards read</span></div>}
     {suggested && <small className="reward-review-note"><AppIcon name="warning" />Suggested · check reward row</small>}

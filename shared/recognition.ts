@@ -2,9 +2,9 @@ import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers'
 import fateNames from './fate-names.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'live-names-5'
+export const PARSER_VERSION = 'live-names-6'
 
-// Card names observed in prerelease materials and live campaign/map screenshots.
+// Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
 // not a reward mapping or an exhaustive catalog. Unknowns remain in the OCR evidence.
 export const KNOWN_FATE_NAMES = fateNames

@@ -6,6 +6,7 @@ import {
   type AdvisorGoal, type InvocationPlan, type PlanResult, type Recommendation,
 } from './advisor'
 import { KNOWN_COMBOS } from './reward-catalog'
+import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 import { cardSchema, rewardSchema, type FateCard } from './schema'
 
 function rewardKey(kind: SolverReward['kind'], label: string): string {
@@ -29,6 +30,17 @@ export const solverProfileSchema = z.object({
 })
 
 export type SolverProfile = z.infer<typeof solverProfileSchema>
+
+export function unweightedRewards(cards: FateCard[], profile: SolverProfile): AdvisorGoal[] {
+  const weighted = new Set(profile.goals.filter(goal => goal.weight > 0).map(goal => rewardKey(goal.kind, goal.label)))
+  const missing = new Map<string, AdvisorGoal>()
+  for (const card of cards) for (const reward of card.rewards) {
+    if (!isRewardIdentified(reward) || reward.kind === 'unknown' || !reward.label.trim()) continue
+    const key = rewardKey(reward.kind, reward.label)
+    if (!weighted.has(key)) missing.set(key, { kind: reward.kind, label: reward.label.trim() })
+  }
+  return [...missing.values()]
+}
 
 export type SolverReward = {
   kind: AdvisorGoal['kind'] | 'unknown'
@@ -128,12 +140,12 @@ function prepareCards(cards: FateCard[], profile: SolverProfile, excludedIds: Se
     const name = normalizeRewardLabel(card.name)
     if (!name) warnings.push({ message: UNKNOWN_FATE_NAME, affectsRanking: true })
     const rewards: ObservedReward[] = card.rewards.map(reward => {
-      const kind = reward.identified && normalizeRewardLabel(reward.label) ? reward.kind : 'unknown'
+      const kind = isRewardIdentified(reward) && normalizeRewardLabel(reward.label) ? reward.kind : 'unknown'
       const label = reward.label.trim() || 'Unidentified reward'
       if (kind === 'unknown') {
         warnings.push({
           message: 'An unidentified reward or reward kind leaves the reward outcome incomplete.',
-          affectsRanking: reward.kind === 'unknown' || priorityKinds.has(reward.kind),
+          affectsRanking: needsUniqueTooltipCheck(reward) || reward.kind === 'unknown' || priorityKinds.has(reward.kind),
         })
       }
       return { key: rewardKey(kind, label), kind, label, count: reward.count, threshold: kind === 'combo' ? reward.threshold : null }

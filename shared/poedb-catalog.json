@@ -1,0 +1,1433 @@
+{
+  "schemaVersion": 1,
+  "version": "poedb-fates-2026-11-16",
+  "checkedAt": "2026-11-16",
+  "gameVersion": "3.30 Covens League",
+  "sources": [
+    {
+      "id": "poedb-fates",
+      "url": "https://poedb.tw/us/Fates",
+      "label": "PoEDB Fates and Rewards",
+      "checkedAt": "2026-11-16"
+    },
+    {
+      "id": "ggg-hotfix-2",
+      "url": "https://www.pathofexile.com/forum/view-thread/4015564",
+      "label": "GGG 3.30.0b Hotfix 2",
+      "checkedAt": "2026-11-16"
+    }
+  ],
+  "fates": [
+    {
+      "id": "poedb-crowkeeper-t3",
+      "name": "Crowkeeper",
+      "tier": 3,
+      "description": "Empowered Monster will regularly release novas of Crow Projectiles\nPlayers Struck by a Crow will create a slow growing storm around them, which detonates after a delay dealing Physical Damage\nFurther storms cannot be attached until any attached storms on that target have already detonated\nEmpowered Monster deals 40% increased Damage against Enemies on Low Life",
+      "effects": [
+        "Releases novas of crow projectiles",
+        "40% increased Damage with Hits against Enemies that are on Low Life"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "corrected",
+      "corrections": [
+        {
+          "description": "Tier 3 no longer grants Culling Strike. Crowkeeper explosions deal less damage.",
+          "sourceId": "ggg-hotfix-2",
+          "superseded": [
+            "Empowered Monster kills Enemies below 10% of Maximum Life on Hit",
+            "Culling Strike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "poedb-sanguine-t3",
+      "name": "Sanguine",
+      "tier": 3,
+      "description": "Empowered Monster will have a ring of boiling blood surrounding it, which deals heavy Physical Damage over time\nEmpowered Monster will regenerate 2% of Life per second",
+      "effects": [
+        "Creates a deadly ring of boiling blood",
+        "Regenerate 2% of Life per second"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-incandescent-t3",
+      "name": "Incandescent",
+      "tier": 3,
+      "description": "Empowered Monster will cause continual extremely frequent detonations of blackfire which track nearby Players, dealing Fire Damage\nEmpowered Monster will Hinder and Unnerve on Spell Hit",
+      "effects": [
+        "Causes continual blackfire detonations",
+        "Unnerve Enemies for 4 seconds on Hit",
+        "Hinder Enemies on Hit with Spells"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-rotted-t3",
+      "name": "Rotted",
+      "tier": 3,
+      "description": "Empowered Monster summons forth cursed broomsticks, which fly in a straight line targeting nearby Players, leaving explosive plaguebursts in their wake which deam Physical Damage and inflict Poison\nEmpowered Monster will gain 60% of Physical Damage as extra Chaos Damage",
+      "effects": [
+        "Cursed broomsticks sweep across the area",
+        "Gain 60% of Physical Damage as Extra Chaos Damage"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-dryad-t3",
+      "name": "Dryad",
+      "tier": 3,
+      "description": "Empowered Monster will cause Vengeful Vines to periodically sprout up by nearby Players\nThese Vines will then slam to deal Physical Damage on impact\nEmpowered Monster will leech a percentage of damage dealt as Life",
+      "effects": [
+        "Spawns vengeful vines",
+        "100% of Damage Leeched as Life",
+        "20% increased Character Size"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-deathbringer-t3",
+      "name": "Deathbringer",
+      "tier": 3,
+      "description": "Empowered Monster will cause highly Physically damaging beams of viscera and gore, targeting nearby Players locations\nEmpowered Monster will have 60% increased Maximum Life",
+      "effects": [
+        "Causes beams of viscera and gore",
+        "60% increased maximum Life"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-torchbearer-t3",
+      "name": "Torchbearer",
+      "tier": 3,
+      "description": "Empowered Monster will create corpse bonfires nearby\nThese bonfires will periodically fire flaming mortars at enemies near them, which deal Fire Damage on impact\nEmpowered Monster will gain 90% of Physical Damage as extra Fire",
+      "effects": [
+        "Creates dangerous bonfires of corpses",
+        "Gain 90% of Physical Damage as Extra Fire Damage"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-bloodthirsty-t3",
+      "name": "Bloodthirsty",
+      "tier": 3,
+      "description": "Empowered Monster will fire periodic volleys of bone harpoons, which deal Physical Damage\nEmpowered Monster's Attacks and Spells Impale on Hit\nEmpowered Monster gains 40% increased effect of Impale",
+      "effects": [
+        "Fires volleys of bone harpoons",
+        "Impale Enemies on Hit with Attacks",
+        "40% increased Impale Effect",
+        "100% chance to Impale on Spell Hit"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-wildfire-t3",
+      "name": "Wildfire",
+      "tier": 3,
+      "description": "Empowered Monster will create walls of Blackfire, which deal Fire Damage over time to Enemies within them\nEmpowered Monster will inflict Flammability on Hit",
+      "effects": [
+        "Creates walls of blackfire",
+        "Curse Enemies with Flammability on Hit"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "corrected",
+      "corrections": [
+        {
+          "description": "Blackfire Walls deal less damage.",
+          "sourceId": "ggg-hotfix-2"
+        }
+      ]
+    },
+    {
+      "id": "poedb-murderous-t3",
+      "name": "Murderous",
+      "tier": 3,
+      "description": "Empowered Monster will continually spawn malignant crows, which linger until an enemy walks too close, at which point they will detonate to deal Physical Damage in an area\nEmpowered Monster will Blind on Hit\nEmpowered Monster will deal 40% increased Damage against Blinded Enemies",
+      "effects": [
+        "Summons malignant crows",
+        "40% increased Damage with Hits and Ailments against Blinded Enemies",
+        "100% Global chance to Blind Enemies on hit"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-gravewalker-t3",
+      "name": "Gravewalker",
+      "tier": 3,
+      "description": "Empowered Monster creates fissures which sprout bloated corpses, detonating to deal Fire Damage and inflict Corpserot on Hit",
+      "effects": [
+        "Creates fissures of bloated corpses"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-houndmaster-t3",
+      "name": "Houndmaster",
+      "tier": 3,
+      "description": "Empowered Monster summons Spectral Wolves which leap in, howl, and then explode to deal Cold Damage\nHowls from these Wolves will inflict Brittle on nearby Enemies\nEmpowered Monster has 400% increased Critical Strike Chance and +40% to Critical Strike Multiplier",
+      "effects": [
+        "Creates spectral wolves which explode into ice",
+        "400% increased Global Critical Strike Chance",
+        "+40% to Global Critical Strike Multiplier"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-black-frost-t3",
+      "name": "Black Frost",
+      "tier": 3,
+      "description": "Empowered Monster fires a icy chunk mortar. Then, a cascade of ice spikes proceed to where the mortar landed, dealing Cold Damage, with the final spike dealing extra Damage\nEmpowered Monster gains 90% of Physical Damage as extra Cold",
+      "effects": [
+        "Fires mortars of ice, which then cause erupting ice spikes",
+        "Gain 90% of Physical Damage as Extra Cold Damage"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-conjurer-t3",
+      "name": "Conjurer",
+      "tier": 3,
+      "description": "Empowered Monster creates two portals nearby. The first of these releases a beam of violent energy towards the second, dealing repeated Physical Damage and Chaos Damage\nAfter a short time, both portals vanish\nEmpowered Monster inflicts Withered for 2 seconds on Hit",
+      "effects": [
+        "Creates portals, which release violent energies",
+        "Inflict Withered for 2 seconds on Hit"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-golemancer-t3",
+      "name": "Golemancer",
+      "tier": 3,
+      "description": "Empowered Monster rips fleshy simulacra of blood and gore into being regularly\nThese then target the Player, slamming and inflicting Bleed before vanishing\nEmpowered Monster has 50% increased Area of Effect",
+      "effects": [
+        "Spawns fleshy simulacrums of blood and gore",
+        "50% increased Area of Effect"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-doomsayer-t3",
+      "name": "Doomsayer",
+      "tier": 3,
+      "description": "Empowered Monster infrequently creates massive rings of blackfire, which detonate after a long delay, dealing Fire Damage and Igniting Enemies\nEmpowered Monster gains 75% additional Fire Resistance\nEmpowered Monster Penetrates 8% Fire Resistance",
+      "effects": [
+        "Creates massive explosive blasts of blackfire",
+        "+75% to Fire Resistance",
+        "Damage Penetrates 8% Fire Resistance"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-avalanche-t3",
+      "name": "Avalanche",
+      "tier": 3,
+      "description": "Empowered Monster infrequently fires a large icy dart. Then, secondary smaller rapid darts will fire at whatever target or location was struck by the initial larger dart\nAll of these darts deal Cold Damage on Hit\nEmpowered Monster has 30% increased Attack, Cast and Movement Speed",
+      "effects": [
+        "Fires rapid icy darts"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-butcher-t3",
+      "name": "Butcher",
+      "tier": 3,
+      "description": "Empowered Monster flings returning Projectiles of bone which Pierce all targets\nAny target struck will cause a sore to open in the earth beneath them, which pours forth blood dealing repeated Physical Damage to Enemies in the area\nEmpowered Monster will deal 30% increased Damage",
+      "effects": [
+        "Flings projectiles which open sores in the earth on hit",
+        "30% increased Damage"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-alchemist-t3",
+      "name": "Alchemist",
+      "tier": 3,
+      "description": "Empowered Monster spawns cauldrons of boiling blood, which tip over to deal repeated Physical Damage to those beneath them\nEmpowered Monster Poisons on Hit\nAll Damage from Hits from Empowered Monster can Poison",
+      "effects": [
+        "Creates boiling cauldrons of blood",
+        "Always Poison on Hit",
+        "All Damage from Hits can Poison"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-stormcaller-t3",
+      "name": "Stormcaller",
+      "tier": 3,
+      "description": "Empowered Monster generates random leylines of electrical energy, which call down bolts of lightning after a short duration, dealing Lightning Damage\nEmpowered Monster Shocks on Hit\nAll Damage from Hits from Empowered Monster can Shock",
+      "effects": [
+        "Creates leylines of lightning",
+        "Always Shock",
+        "All Damage can Shock"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-tempest-t3",
+      "name": "Tempest",
+      "tier": 3,
+      "description": "Volatile orbs of Lightning come into being nearby Empowered Monster\nThese orbs fire increasingly more frequent bolts of Lightning to locations near them, dealing repeated Lightning Damage, then explode\nEmpowered Monster inflicts Conductivity on Hit",
+      "effects": [
+        "Creates volatile orbs of lightning",
+        "Curse Enemies with Conductivity on Hit"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-blood-moon-t3",
+      "name": "Blood Moon",
+      "tier": 3,
+      "description": "Coagulated orbs of Blood rise from the earth near Empowered Monster\nThese orbs then slam down, creating pools of boiling blood which deal Physical Damage over time\nEmpowered Monster inflicts Bleeding on Hit with Attacks\nBleeding inflicted by Empowered Monster has 40% increased duration",
+      "effects": [
+        "Creates coagulated orbs of blood",
+        "Attacks cause Bleeding",
+        "40% increased Bleeding Duration"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-savage-t3",
+      "name": "Savage",
+      "tier": 3,
+      "description": "Empowered Monster will spawn a companion Boss which will be pulled from a pool of Campaign Bosses that do not have Atlas Boss equivalents\nSpawned companion Boss will also be affected by any other Fates played, and can drop Viscera associated with it",
+      "effects": [
+        "Spawns an additional Boss from Campaign Areas without an Atlas equivalent"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-pestilent-t3",
+      "name": "Pestilent",
+      "tier": 3,
+      "description": "Empowered Monster will spawn a companion Boss which will be pulled from a pool of Campaign Bosses that do not have Atlas Boss equivalents\nSpawned companion Boss will also be affected by any other Fates played, and can drop Viscera associated with it",
+      "effects": [
+        "Spawns an additional Boss from Campaign Areas without an Atlas equivalent"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    },
+    {
+      "id": "poedb-sadist-t3",
+      "name": "Sadist",
+      "tier": 3,
+      "description": "Empowered Monster will spawn a companion Boss which will be pulled from a pool of Campaign Bosses that do not have Atlas Boss equivalents\nSpawned companion Boss will also be affected by any other Fates played, and can drop Viscera associated with it",
+      "effects": [
+        "Spawns an additional Boss from Campaign Areas without an Atlas equivalent"
+      ],
+      "sourceId": "poedb-fates",
+      "status": "reference"
+    }
+  ],
+  "rewards": [
+    {
+      "id": "poedb-reward-86440cf27bf64f0d-1",
+      "description": "Empowered Monster will drop an additional Unique Weapon",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueWeapon.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-069729e0b629a315-1",
+      "description": "Empowered Monster will drop an additional Valuable Unique Weapon",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueWeapon.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-db8af8b900d870e6-1",
+      "description": "Empowered Monster will drop an additional Unique Armour",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1ba5841d23f9a068-1",
+      "description": "Empowered Monster will drop an additional Valuable Unique Armour",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c454a8a306600b36-1",
+      "description": "Empowered Monster will drop an additional Unique Jewellery Item",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueJewellery.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a4b989aa2ec6bc87-1",
+      "description": "Empowered Monster will drop an additional Valuable Unique Jewellery Item",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueJewellery.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-0505f60f1331657f-1",
+      "description": "Empowered Monster will drop an additional Unique Jewel",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueJewel.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3b32441d21dc4314-1",
+      "description": "Empowered Monster will drop an additional Unique Flask",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueFlask.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-9182b7612bdda778-1",
+      "description": "Empowered Monster will drop Dreadmaidens' Sacrament",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueAuguryItem.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-b19cde89f71f69c0-1",
+      "description": "Empowered Monster will drop Hide of the Vendigo",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueAuguryItem.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-60f73511f6e0584c-1",
+      "description": "Empowered Monster will drop Corpse Rose",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueAuguryItem.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-660b6227e312c08d-1",
+      "description": "Empowered Monster will drop Ordered Fate",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueAuguryItem.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-813cea308ea00f33-1",
+      "description": "Empowered Monster will drop Doedre's Tongue",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconUniqueAuguryItem.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c262363d585a0a3a-1",
+      "description": "Empowered Monster will drop additional Gems with Quality",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGems.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a5c3a130d8605090-1",
+      "description": "Empowered Monster will drop additional Gems, some of which will be maximum Quality",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGems.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3be841804c010119-1",
+      "description": "Empowered Monster will drop additional Gems with maximum Quality",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGems.webp",
+      "minLevel": 81,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-fe56a7b117f4c364-1",
+      "description": "Empowered Monster will drop an additional Exceptional Gem",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconExceptionalGems.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-d7b95c7fe995ba30-1",
+      "description": "Empowered Monster has greatly increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-d7b8a0d9cc466656-1",
+      "description": "Empowered Monster has massively increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-d1151d3f594c821c-1",
+      "description": "Empowered Monster has extremely increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": 80,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c12df693ba5ddba8-1",
+      "description": "Empowered Monster will drop additional Currency Items",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconCurrency.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-94d18eb42d625fbf-1",
+      "description": "Empowered Monster will drop additional Currency Items",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconCurrency.webp",
+      "minLevel": 81,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-4bf1a17069cd741d-1",
+      "description": "Empowered Monster will drop additional Valuable Currency Items",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconCurrency.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-968815d9104f0e26-1",
+      "description": "Empowered Monster will drop a Viscera Item",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconViscera.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-4f078244e7a5b248-1",
+      "description": "Empowered Monster will drop additional Threads",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconThreads.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a9764f08e1303940-1",
+      "description": "Empowered Monster will drop many additional Threads",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconThreads.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8ea0e9454d52910f-1",
+      "description": "Empowered Monster will drop additional Stacked Decks",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDivination.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-0a1aac7ce99d3b2b-1",
+      "description": "Empowered Monster will drop many additional Stacked Decks",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDivination.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c5b7c985014ec87a-1",
+      "description": "Empowered Monster will drop additional Gold",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGold.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-df26733be798f6bb-1",
+      "description": "Empowered Monster will drop hoards of Gold",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGold.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-b0f551b75d57a888-1",
+      "description": "Empowered Monster will drop an additional Rare Map",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMaps.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-7ab223412bfbd9a9-1",
+      "description": "Empowered Monster will drop many additional Rare Maps",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMaps.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c61b939143ff2bba-1",
+      "description": "Empowered Monster will drop additional Rare Boots Boots dropped by Empowered Monster will have a Resistance modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1d9165e07992fbd9-1",
+      "description": "Empowered Monster will drop additional Rare Boots Boots dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ccc4edd6132ec9d0-1",
+      "description": "Empowered Monster will drop additional Rare Boots Boots dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-fa6dcc38c51323d8-1",
+      "description": "Empowered Monster will drop additional Rare Helmets Helmets dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-e32ccbf0a22e64e0-1",
+      "description": "Empowered Monster will drop additional Rare Helmets Helmets dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-463b695cc510a828-1",
+      "description": "Empowered Monster will drop additional Rare Helmets Helmets dropped by Empowered Monster will have a Drop modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-7f0657605d4fea16-1",
+      "description": "Empowered Monster will drop additional Rare Body Armours Body Armours dropped by Empowered Monster will have a Life modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1d1703eea4ae86d2-1",
+      "description": "Empowered Monster will drop additional Rare Body Armours Body Armours dropped by Empowered Monster will have no Life modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-af9a545abffbca2c-1",
+      "description": "Empowered Monster will drop additional Rare Body Armours Body Armours dropped by Empowered Monster will have a Chaos modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-467dc1e35d21ac98-1",
+      "description": "Empowered Monster will drop additional Rare Gloves Gloves dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-11ca75c3fab0c984-1",
+      "description": "Empowered Monster will drop additional Rare Gloves Gloves dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-506a4a44d5b50903-1",
+      "description": "Empowered Monster will drop additional Rare Gloves Gloves dropped by Empowered Monster will have an Attack modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3f579129d6ec0c63-1",
+      "description": "Empowered Monster will drop additional Rare Shields Shields dropped by Empowered Monster will have a Life modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8e700a17883f9c55-1",
+      "description": "Empowered Monster will drop additional Rare Shields Shields dropped by Empowered Monster will have no Life modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-14f97a07b6ea77e5-1",
+      "description": "Empowered Monster will drop additional Rare Shields Shields dropped by Empowered Monster will have a Resistance modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-b0d01fc14d53af78-1",
+      "description": "Empowered Monster will drop additional Rare Quivers Quivers dropped by Empowered Monster will have an Elemental modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconQuiver.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ae4eaf67a5ef8c99-1",
+      "description": "Empowered Monster will drop additional Rare Quivers Quivers dropped by Empowered Monster will have no Elemental modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconQuiver.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c78f005049b989dd-1",
+      "description": "Empowered Monster will drop additional Rare Weapons Weapons dropped by Empowered Monster will have a Physical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareWeapon.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-cf860f0a700c30a9-1",
+      "description": "Empowered Monster will drop additional Rare Rings Rings dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRing.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-313f866e4b66d391-1",
+      "description": "Empowered Monster will drop additional Rare Rings Rings dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRing.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-9153354d2350ba7b-1",
+      "description": "Empowered Monster will drop additional Rare Amulets Amulets dropped by Empowered Monster will have an Attribute modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAmulet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-44d0b998cebcc69c-1",
+      "description": "Empowered Monster will drop additional Rare Amulets Amulets dropped by Empowered Monster will have a Damage modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAmulet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8fbc09baa075fc42-1",
+      "description": "Empowered Monster will drop additional Rare Belts Belts dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBelt.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c476fb64552cdcc7-1",
+      "description": "Empowered Monster will drop additional Rare Belts Belts dropped by Empowered Monster will have an Elemental modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBelt.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-f3e71fb37529637d-1",
+      "description": "Empowered Monster will drop additional Rare Axes Axes dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAxe.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ed1612a2a3fc2a1b-1",
+      "description": "Empowered Monster will drop additional Rare Axes Axes dropped by Empowered Monster will have a Physical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAxe.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ef753180473e2039-1",
+      "description": "Empowered Monster will drop additional Rare Bows Bows dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBow.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-cbfa55a5e39f2355-1",
+      "description": "Empowered Monster will drop additional Rare Bows Bows dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBow.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ee68fadc2b3d73ad-1",
+      "description": "Empowered Monster will drop additional Rare Claws Claws dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3fac03647de59b1f-1",
+      "description": "Empowered Monster will drop additional Rare Claws Claws dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-90f1d45e24298984-1",
+      "description": "Empowered Monster will drop additional Rare Claws Claws dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-15223606b6bdcb7e-1",
+      "description": "Empowered Monster will drop additional Rare Daggers Daggers dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-aaf896a2dc6423af-1",
+      "description": "Empowered Monster will drop additional Rare Daggers Daggers dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-207e500d8fa34ca8-1",
+      "description": "Empowered Monster will drop additional Rare Rune Daggers Rune Daggers dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-41acd0740b829857-1",
+      "description": "Empowered Monster will drop an additional Rare Fishing Rod Fishing Rods dropped by Empowered Monster will have an Angling modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconFishingRod.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1baba97e1da52340-1",
+      "description": "Empowered Monster will drop additional Rare Maces Maces dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMace.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-e95a5dd31089c99f-1",
+      "description": "Maces dropped by Empowered Monster will have a Physical modifier Empowered Monster will drop additional Rare Maces",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMace.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-2bdaa6bba41f51a4-1",
+      "description": "Sceptres dropped by Empowered Monster will have a Mana modifier Empowered Monster will drop additional Rare Sceptres",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c9d8e3b1748db343-1",
+      "description": "Empowered Monster will drop additional Rare Sceptres Sceptres dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-97e8aee8d1fcd0a0-1",
+      "description": "Empowered Monster will drop additional Rare Sceptres Sceptres dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-f46ac1ce2c7bda74-1",
+      "description": "Empowered Monster will drop additional Rare Staves Staves dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8bf167f5fc34c913-1",
+      "description": "Empowered Monster will drop additional Rare Staves Staves dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-0ee1608d952aa6c4-1",
+      "description": "Empowered Monster will drop additional Rare Staves Staves dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8de4c35a18c686a0-1",
+      "description": "Empowered Monster will drop additional Rare Wands Wands dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-4a0d13582e4e2ef8-1",
+      "description": "Empowered Monster will drop additional Rare Wands Wands dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-342105ee9ad3f495-1",
+      "description": "Empowered Monster will drop additional Rare Wands Wands dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c8293dcb4f7123fb-1",
+      "description": "Empowered Monster will drop additional Rare Swords Swords dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a89355a57594dd16-1",
+      "description": "Empowered Monster will drop additional Rare Swords Swords dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-47e377922f9712ea-1",
+      "description": "Empowered Monster will drop additional Rare Swords Swords dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-436e08270dd4670c-1",
+      "description": "Empowered Monster will drop additional Rare Warstaves Warstaves dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-4abb5738b194f159-1",
+      "description": "Empowered Monster will drop additional Rare Warstaves Warstaves dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-9170bb50f069ac0a-1",
+      "description": "Empowered Monster will drop an additional Skill Gem",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGems.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-6c0d58e4011cf303-1",
+      "description": "Empowered Monster will drop an additional Support Gem",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGems.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-07713f07b5db9df5-1",
+      "description": "Empowered Monster has increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-97a247b810a4e011-1",
+      "description": "Empowered Monster has highly increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-70d77a89d0837116-1",
+      "description": "Empowered Monster has greatly increased Item Rarity",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconIncreasedRarityAffectedMonster.webp",
+      "minLevel": 80,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a42e8142f15f6224-1",
+      "description": "Empowered Monster will drop an additional Map",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMaps.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-7fec22a024e1cb56-1",
+      "description": "Empowered Monster will drop many additional Maps",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMaps.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-2a5c00b9860d2254-1",
+      "description": "Empowered Monster will drop additional Melee Weapons",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareWeapon.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-37d98a012fb6251f-1",
+      "description": "Empowered Monster will drop additional Ranged Weapons or Quivers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareRanged.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-e2294b0da2e75517-1",
+      "description": "Empowered Monster will drop additional Armour items with Strength requirements",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-bf90876bbfc8a329-1",
+      "description": "Empowered Monster will drop additional Armour items with Dexterity requirements",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-203e455e8a078728-1",
+      "description": "Empowered Monster will drop additional Armour items with Intelligence requirements",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-7b49b40ed42571bc-1",
+      "description": "Empowered Monster will drop additional Jewellery items",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareJewellery.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-86dc15118cd60e28-1",
+      "description": "Empowered Monster has a chance to drop additional Boots Boots dropped by Empowered Monster will have a Resistance modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-d1bba794ff0c58dd-1",
+      "description": "Empowered Monster has a chance to drop additional Boots Boots dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-198bbf71114175f6-1",
+      "description": "Empowered Monster has a chance to drop additional Boots Boots dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBoots.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-25201c17aaafb22f-1",
+      "description": "Empowered Monster has a chance to drop additional Helmets Helmets dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-da8675a78dbe9f07-1",
+      "description": "Empowered Monster has a chance to drop additional Helmets Helmets dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-983a820cc5cd27ad-1",
+      "description": "Empowered Monster has a chance to drop additional Helmets Helmets dropped by Empowered Monster will have a Drop modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconHelmet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-79b90487c0d5e5a0-1",
+      "description": "Empowered Monster has a chance to drop additional Body Armours Body Armours dropped by Empowered Monster will have a Life modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-87b2afc2a1a67203-1",
+      "description": "Empowered Monster has a chance to drop additional Body Armours Body Armours dropped by Empowered Monster will have no Life modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1ca25f9de0ae6ff5-1",
+      "description": "Empowered Monster has a chance to drop additional Body Armours Body Armours dropped by Empowered Monster will have a Chaos modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBodyArmour.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-4ee2564809f80614-1",
+      "description": "Empowered Monster has a chance to drop additional Gloves Gloves dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-146fb9638543012f-1",
+      "description": "Empowered Monster has a chance to drop additional Gloves Gloves dropped by Empowered Monster will have no Defence modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-19513b3909b28527-1",
+      "description": "Empowered Monster has a chance to drop additional Gloves Gloves dropped by Empowered Monster will have an Attack modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconGloves.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-2cdce6e3b12b93f1-1",
+      "description": "Empowered Monster has a chance to drop additional Shields Shields dropped by Empowered Monster will have a Life modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-792e71bf17f0ba6a-1",
+      "description": "Empowered Monster has a chance to drop additional Shields Shields dropped by Empowered Monster will have no Life modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ac9668e3c5c3cb5e-1",
+      "description": "Empowered Monster has a chance to drop additional Shields Shields dropped by Empowered Monster will have a Resistance modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconShield.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8ae8306bf741ac0b-1",
+      "description": "Empowered Monster has a chance to drop additional Quivers Quivers dropped by Empowered Monster will have an Elemental modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconQuiver.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-ea1b84318222841f-1",
+      "description": "Empowered Monster has a chance to drop additional Quivers Quivers dropped by Empowered Monster will have no Elemental modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconQuiver.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-1c229d13bc8a7121-1",
+      "description": "Empowered Monster has a chance to drop additional Weapons Weapons dropped by Empowered Monster will have a Physical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRareWeapon.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c214806a09909fa2-1",
+      "description": "Empowered Monster has a chance to drop additional Rings Rings dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRing.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-833df49d396df4ac-1",
+      "description": "Empowered Monster has a chance to drop additional Rings Rings dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconRing.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-b779d0468a90eade-1",
+      "description": "Empowered Monster has a chance to drop additional Amulets Amulets dropped by Empowered Monster will have an Attribute modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAmulet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-cdd706f93f7e2ed0-1",
+      "description": "Empowered Monster has a chance to drop additional Amulets Amulets dropped by Empowered Monster will have a Damage modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAmulet.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-099d4dbba40c4203-1",
+      "description": "Empowered Monster has a chance to drop additional Belts Belts dropped by Empowered Monster will have a Defence modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBelt.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-2099454c2aab6dd3-1",
+      "description": "Empowered Monster has a chance to drop additional Belts Belts dropped by Empowered Monster will have an Elemental modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBelt.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-53b80182994154fd-1",
+      "description": "Empowered Monster has a chance to drop additional Axes Axes dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAxe.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-b9f65eddcc75914d-1",
+      "description": "Empowered Monster has a chance to drop additional Axes Axes dropped by Empowered Monster will have a Physical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconAxe.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-a2498f98ccb9086c-1",
+      "description": "Empowered Monster has a chance to drop additional Bows Bows dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBow.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-f868f11aedd55267-1",
+      "description": "Empowered Monster has a chance to drop additional Bows Bows dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconBow.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-5d1c344d9a9c174b-1",
+      "description": "Empowered Monster has a chance to drop additional Claws Claws dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c481b97c63e4ec76-1",
+      "description": "Empowered Monster has a chance to drop additional Claws Claws dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-cc1f2926aa99c5b7-1",
+      "description": "Empowered Monster has a chance to drop additional Claws Claws dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconClaw.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8fa15ddded8b3ff6-1",
+      "description": "Empowered Monster has a chance to drop additional Daggers Daggers dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3eda5d5e7b26ff35-1",
+      "description": "Empowered Monster has a chance to drop additional Daggers Daggers dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-3b4c8e91db4e746f-1",
+      "description": "Empowered Monster has a chance to drop additional Rune Daggers Rune Daggers dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconDagger.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-8ecb0c4fb6d972c2-1",
+      "description": "Empowered Monster has a chance to drop additional Maces Maces dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMace.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-68479b022eeb4879-1",
+      "description": "Empowered Monster has a chance to drop additional Maces Maces dropped by Empowered Monster will have a Physical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconMace.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-e8f43c0024723dc2-1",
+      "description": "Empowered Monster has a chance to drop additional Sceptres Sceptres dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-edeea02f367abd50-1",
+      "description": "Empowered Monster has a chance to drop additional Sceptres Sceptres dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-f1b28b5948b5e458-1",
+      "description": "Empowered Monster has a chance to drop additional Sceptres Sceptres dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSceptre.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-08b5695165898afd-1",
+      "description": "Empowered Monster has a chance to drop additional Staves Staves dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-0c7ea8d7183c1c7c-1",
+      "description": "Empowered Monster has a chance to drop additional Staves Staves dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-35c5782efa8987c0-1",
+      "description": "Empowered Monster has a chance to drop additional Staves Staves dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c34eeb16ab90174d-1",
+      "description": "Empowered Monster has a chance to drop additional Wands Wands dropped by Empowered Monster will have a Mana modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-81512c1f9aec7f5a-1",
+      "description": "Empowered Monster has a chance to drop additional Wands Wands dropped by Empowered Monster will have a Gem modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-6aed962a7ea7d222-1",
+      "description": "Empowered Monster has a chance to drop additional Wands Wands dropped by Empowered Monster will have no Attack modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconWand.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-07b8d2874b86c1b3-1",
+      "description": "Empowered Monster has a chance to drop additional Swords Swords dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-c1f3e011eb5a13e8-1",
+      "description": "Empowered Monster has a chance to drop additional Swords Swords dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-9377d7d086ef8f6a-1",
+      "description": "Empowered Monster has a chance to drop additional Swords Swords dropped by Empowered Monster will have no Physical modifiers",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconSword.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-39c87b9214f241ad-1",
+      "description": "Empowered Monster has a chance to drop additional Warstaves Warstaves dropped by Empowered Monster will have a Speed modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    },
+    {
+      "id": "poedb-reward-d4aa4f9e041e9fe6-1",
+      "description": "Empowered Monster has a chance to drop additional Warstaves Warstaves dropped by Empowered Monster will have a Critical modifier",
+      "iconUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/AuguryRewardIconStaff.webp",
+      "minLevel": null,
+      "sourceId": "poedb-fates"
+    }
+  ],
+  "portraits": [
+    {
+      "name": "Rotted",
+      "path": "/game-art/poedb/rotted.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtFlyingBroomsticks.webp",
+      "sha256": "1bd1c3e6e50a8ecb932dfeaed68b4a99f02fe5de9f11e32e8e35d335c19ffdaa",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Murderous",
+      "path": "/game-art/poedb/murderous.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtCrowBombs.webp",
+      "sha256": "a9cab00076b468f3099bd2e680a8372db90e3b3edc28c42995dcb62c52ac436c",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Black Frost",
+      "path": "/game-art/poedb/black-frost.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtIcicleFissures.webp",
+      "sha256": "8a0891933cb102d1368034e55bbbb452f3242f1859cac0891add51f66dae0218",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Golemancer",
+      "path": "/game-art/poedb/golemancer.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtTrudgingBloodGolem.webp",
+      "sha256": "6492c7b2113d4952b02e63e943e40a6b20274aa2eb3dceea3ea1f7a145e7a063",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Blood Moon",
+      "path": "/game-art/poedb/blood-moon.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/CardArtBloodSplashes.webp",
+      "sha256": "467d4627c8c8ef4318cb4cb2897ff183e3edf2e056584ba5b48a4b0b452f3bec",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Savage",
+      "path": "/game-art/poedb/savage.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnSavage.webp",
+      "sha256": "e4d6f48b25a20440e5886ac1c2d8e3f7ebf287882480d24ef835be5b1eb014fb",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Pestilent",
+      "path": "/game-art/poedb/pestilent.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnFilth.webp",
+      "sha256": "fef456f8688c8b7c3c1124e169fddeb72e23ee5a79ff1287214368549c23d6fe",
+      "width": 210,
+      "height": 196
+    },
+    {
+      "name": "Sadist",
+      "path": "/game-art/poedb/sadist.webp",
+      "sourceUrl": "https://cdn.poedb.tw/image/Art/2DArt/UIImages/InGame/Augury/CardArt/BossSpawnClassic.webp",
+      "sha256": "bd6ad420f2e9c80fca755a0a44340cdd6c81737f216bfa15959a482448be3d71",
+      "width": 210,
+      "height": 196
+    }
+  ]
+}

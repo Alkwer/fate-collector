@@ -26,8 +26,9 @@ and any supported comparison remains provisional where the missing data matters.
    In **Edit details → Modifiers &
    rewards**, identify each visible reward's exact label, kind, count and, when
    known, combo threshold. Supported icon shapes and T2/T3 are now suggested locally
-   from the image. The tooltip catalog suggests Dreadmaidens' Sacrament combo (2),
-   while ambiguous rarity/currency kinds remain unknown. Use **Tooltip catalog**
+   from the image. Orange feathers are shared by several league uniques and need
+   the exact tooltip, including in old captures. Rarity/currency kinds also remain
+   unknown until identified. Use **Tooltip catalog**
    to select a verified matching combo, see its reference icon and open the GGG
    source. Exceptional Gem requires manual identification, not the three-gems motif.
    Check the tier and the full reward row using the two visual-review checkboxes.
@@ -74,11 +75,13 @@ and any supported comparison remains provisional where the missing data matters.
 
 ## Combined priorities and reusable profiles
 
-New profiles use the provisional [trade starter](trade-starter.md): Exceptional Gem
-combo 10, Item Rarity combo 4, Dreadmaidens' Sacrament combo 2 and Additional Currency
-Items regular 3. Existing saved profiles retain their mode and weights. **Use trade
-starter** updates those four priorities explicitly, preserving other goals/filters.
-Currency only scores after its regular kind and meaning have been confirmed.
+New profiles use the provisional [12-priority trade starter](trade-starter.md).
+Campaign / SSF and Viscera starters are available through **Replace priorities**.
+Existing saved profiles retain their mode and weights. **Use trade starter** updates
+only the trade priorities, preserving other goals, filters and personal templates.
+The **Unweighted rewards** panel lists identified rewards without positive weights.
+Read-only PoEDB references provide possible effects and patch corrections; they never
+identify the recorded reward or infer its kind or threshold.
 
 
 Enable **Compare multiple rewards** to optimize several rewards together. Open

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { applyTradeStarter, newSolverSettings, parseSolverSettings, readSolverSettings, serializeSolverSettings, SOLVER_SETTINGS_KEY, upsertDefinition, writeSolverSettings } from '../src/lib/solver-settings'
+import { applyTradeStarter, newSolverSettings, parseSolverSettings, readSolverSettings, serializeSolverSettings, SOLVER_SETTINGS_KEY, upsertDefinition, writeSolverSettings, replaceStarterPriorities, STARTER_PROFILES } from '../src/lib/solver-settings'
 import { loadAdvisorWorkspace, newAdvisorWorkspace, startMapWorkspace } from '../src/lib/advisor-workspace'
 import { solveInvocation } from '../shared/solver'
 import type { FateCard } from '../shared/schema'
@@ -9,15 +9,18 @@ function memory() {
   return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
 }
 
-test('new profiles compare four trade priorities without changing an existing saved profile', () => {
+test('new profiles cover live reward variants without changing an existing saved profile', () => {
   const store = memory()
   const starter = readSolverSettings(store).settings
-  expect(starter).toMatchObject({ mode: 'portfolio', profile: { goals: [
+  expect(starter).toMatchObject({ mode: 'portfolio', profile: { goals: expect.arrayContaining([
     { kind: 'combo', label: 'Exceptional Gem', weight: 10 },
     { kind: 'combo', label: 'Item Rarity', weight: 4 },
     { kind: 'combo', label: "Dreadmaidens' Sacrament", weight: 2 },
     { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
-  ], avoidModifiers: [] }, definitions: [] })
+    { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
+    { kind: 'combo', label: 'Massively Increased Item Rarity', weight: 4 },
+  ]), avoidModifiers: [] }, definitions: [] })
+  expect(starter.profile.goals).toHaveLength(12)
   starter.profile.goals[0].weight = 99
   expect(newSolverSettings().profile.goals[0].weight).toBe(10)
   expect(store.getItem(SOLVER_SETTINGS_KEY)).toBeNull()
@@ -43,11 +46,12 @@ test('applying the starter updates matching weights and keeps unrelated prioriti
   const applied = applyTradeStarter(previous)
   expect(applied).toEqual({ ...previous, mode: 'portfolio', profile: { ...previous.profile, goals: [
     { ...previous.profile.goals[0], weight: 2 },
-    previous.profile.goals[1],
+    { ...previous.profile.goals[1], weight: 4 },
     previous.profile.goals[2],
     newSolverSettings().profile.goals[0],
     newSolverSettings().profile.goals[1],
     newSolverSettings().profile.goals[3],
+    ...newSolverSettings().profile.goals.slice(5),
   ] } })
   expect(previous.profile.goals[0].weight).toBe(15)
   expect(applyTradeStarter(applied!)).toEqual(applied)
@@ -55,7 +59,7 @@ test('applying the starter updates matching weights and keeps unrelated prioriti
 
 test('applying the starter is atomic at the 30-priority limit', () => {
   const starter = newSolverSettings()
-  const unrelated = Array.from({ length: 26 }, (_, index) => ({ kind: 'regular' as const, label: `Reward ${index + 1}`, weight: 1 }))
+  const unrelated = Array.from({ length: 18 }, (_, index) => ({ kind: 'regular' as const, label: `Reward ${index + 1}`, weight: 1 }))
   const available = { ...starter, mode: 'single' as const, profile: { ...starter.profile, goals: unrelated } }
   const atLimit = applyTradeStarter(available)
   expect(atLimit?.profile.goals).toHaveLength(30)
@@ -64,7 +68,7 @@ test('applying the starter is atomic at the 30-priority limit', () => {
     ...unrelated, { kind: 'regular' as const, label: 'Extra reward', weight: 1 },
   ] } }
   expect(applyTradeStarter(full)).toBeNull()
-  expect(full.profile.goals).toHaveLength(27)
+  expect(full.profile.goals).toHaveLength(19)
   expect(full.mode).toBe('single')
 })
 
@@ -77,14 +81,26 @@ test('the starter scores confirmed regular currency and completed combos', () =>
     { id: 'gem', label: 'Exceptional Gem', kind: 'combo', identified: true, count: 3, threshold: 3 },
   ] }
   expect(solveInvocation([card], newSolverSettings().profile).plans[0]).toMatchObject({
-    score: 16,
+    score: 20,
     rewards: expect.arrayContaining([
       expect.objectContaining({ kind: 'regular', label, points: 6 }),
-      expect.objectContaining({ kind: 'combo', label, points: 0 }),
+      expect.objectContaining({ kind: 'combo', label, points: 4 }),
       expect.objectContaining({ kind: 'unknown', label, points: 0 }),
       expect.objectContaining({ kind: 'combo', label: 'Exceptional Gem', points: 10 }),
     ]),
   })
+})
+
+test('explicit starter replacement preserves filters and personal definitions but removes other goals', () => {
+  const previous = upsertDefinition({ ...newSolverSettings(), profile: { goals: [{ kind: 'regular', label: 'Custom', weight: 100 }], avoidModifiers: ['reflect'] } },
+    { id: crypto.randomUUID(), label: 'My gem', kind: 'regular', threshold: null, note: '' })
+  const replaced = replaceStarterPriorities(previous, 'viscera')
+  expect(replaced.profile).toEqual({ goals: [{ kind: 'combo', label: 'Viscera Item', weight: 10 }], avoidModifiers: ['reflect'] })
+  expect(replaced.definitions).toEqual(previous.definitions)
+  expect(previous.profile.goals[0].label).toBe('Custom')
+  for (const id of Object.keys(STARTER_PROFILES) as (keyof typeof STARTER_PROFILES)[]) {
+    expect(() => serializeSolverSettings(replaceStarterPriorities(previous, id))).not.toThrow()
+  }
 })
 test('round-trips a reusable profile without any observations or map state', () => {
   const profile = { ...newSolverSettings(), mode: 'portfolio' as const, profile: { goals: [{ label: 'Currency', kind: 'regular' as const, weight: 2.5 }], avoidModifiers: ['reflect'] } }

@@ -1,6 +1,6 @@
-import { DetailPanel } from './DetailPanel'
-import { useMemo } from 'react'
-import { recommendPortfolio, solveInvocation, type SolverPlan, type SolverProfile } from '../../shared/solver'
+import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
+import { useMemo, useRef } from 'react'
+import { recommendPortfolio, solveInvocation, unweightedRewards, type SolverPlan, type SolverProfile } from '../../shared/solver'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
 import { OfferPreview } from './OfferPreview'
@@ -30,16 +30,19 @@ interface Props {
   mapReady: boolean; offerReady: boolean; alreadyCollected: boolean; chosen: FateCard | undefined
   saved: boolean; automatic: boolean; onCollect: (card: FateCard) => void
   onInvoke: (plan: SolverPlan) => void; onPlan: () => void
+  onPriorities: () => void
 }
 export function PortfolioAdvice(props: Props) {
   const { offer, collected, mode, profile, excludedCardIds, mapReady, offerReady, alreadyCollected, chosen } = props
   const portfolio = useMemo(() => mapReady && offerReady && mode === 'offer' ? recommendPortfolio(offer.cards, collected, profile, excludedCardIds) : null, [offer.cards, collected, profile, excludedCardIds, mapReady, offerReady, mode])
   const invocation = useMemo(() => mapReady && mode === 'invoke' ? solveInvocation(collected, profile, excludedCardIds) : null, [collected, profile, excludedCardIds, mapReady, mode])
   const result = mode === 'offer' ? portfolio : invocation
+  const unweightedPanel = useRef<DetailPanelHandle>(null)
   const cards = [...collected, ...offer.cards]
   const selectedIds = !alreadyCollected ? portfolio?.recommendedCardIds ?? [] : []
   const featured = selectedIds.length === 1 ? offer.cards.find(card => card.id === selectedIds[0]) : undefined
   const excluded = new Map(result?.excluded.map(row => [row.cardId, row.reasons]) ?? [])
+  const unweighted = result ? unweightedRewards((mode === 'offer' ? cards : collected).filter(card => !excluded.has(card.id)), profile) : []
   const status = result?.status ?? 'insufficient'
   const outcomeState = mode === 'offer' && alreadyCollected ? 'complete' : status === 'ready' ? 'ready' : status === 'provisional' ? 'provisional' : 'neutral'
   return <>
@@ -52,6 +55,11 @@ export function PortfolioAdvice(props: Props) {
           : mode === 'offer' ? <><h3>{status === 'provisional' ? 'Provisional preference: ' : selectedIds.length > 1 ? 'Equal matches: ' : 'Recommended: '}{selectedIds.map(id => named(offer.cards.find(card => card.id === id))).join(' / ')}</h3>{status === 'provisional' && <p><AppIcon name="warning" />Missing data or unresolved mechanics may change this ranking.</p>}{selectedIds.length > 1 && <p>No single winner.</p>}</>
           : <h3>{status === 'provisional' ? 'Provisional portfolio plan' : 'Suggested portfolio plan'}</h3>}
       </div>
+      {!!unweighted.length && <DetailPanel ref={unweightedPanel} className="unweighted-rewards" title={`${unweighted.length} reward ${unweighted.length === 1 ? 'type has' : 'types have'} weight 0`} triggerLabel={`Unweighted rewards (${unweighted.length})`}>
+        <p>These identified rewards add no priority points. Their value is not assumed to be zero; your profile does not currently prioritize them.</p>
+        <ul>{unweighted.map(reward => <li key={`${reward.kind}:${reward.label}`}>{reward.label} · {reward.kind}</li>)}</ul>
+        <button onClick={() => { unweightedPanel.current?.close(); props.onPriorities() }}>Set reward priorities</button>
+      </DetailPanel>}
       {portfolio && !alreadyCollected && collected.length > 0 && <p className="advisor-baseline"><AppIcon name="reward" /><span>Collection best</span><strong>{number(portfolio.baseline?.score ?? 0)}</strong><span>priority points · {number(portfolio.baseline?.progress ?? 0)} combo progress</span></p>}
       {!!result.excluded.length && <DetailPanel className="advisor-caveats" title={<>Excluded by your settings ({result.excluded.length})</>}><ul>{result.excluded.map(row => <li key={row.cardId}><strong>{named(cards.find(card => card.id === row.cardId))}</strong>: {row.reasons.join(' · ')}</li>)}</ul></DetailPanel>}
       {!!result.warnings.length && <DetailPanel className="advisor-caveats" title={<>What limits this recommendation</>}><ul className="advisor-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}

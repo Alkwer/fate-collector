@@ -6,6 +6,7 @@ import type { RewardDefinition } from '../lib/solver-settings'
 import { AppIcon } from './AppIcon'
 import { DetailPanel } from './DetailPanel'
 import { RewardSymbol } from './DecisionVisuals'
+import { RewardReferences } from './RewardReferences'
 
 type Preset = Pick<Reward, 'label' | 'kind' | 'threshold' | 'identified'>
 const kindLabel = (reward: Pick<Reward, 'kind' | 'threshold'>) => reward.kind === 'combo'
@@ -52,6 +53,7 @@ export function ManualRewards({ rewards, definitions, onChange }: {
       })}
     </div>
     <div className="manual-catalog">
+      <RewardReferences />
       <label>All reward tooltips<select value={catalogId} onChange={event => setCatalogId(event.target.value)}>
         <option value="">Choose a matching tooltip</option>
         {(['regular', 'combo', 'unknown'] as const).map(kind => <optgroup key={kind} label={kind === 'regular' ? 'Regular rewards' : kind === 'combo' ? 'Combo rewards' : 'Kind unknown'}>

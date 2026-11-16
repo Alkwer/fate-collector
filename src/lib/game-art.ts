@@ -1,7 +1,8 @@
 import type { Reward } from '../../shared/schema'
+import poedb from '../../public/game-art/poedb/credits.json'
 
 // Display references only. Portraits never supply a card's tier or reward data.
-// Every raster's source, crop and digest is recorded in /game-art/credits.json.
+// Sources and digests live in /game-art/credits.json and /game-art/poedb/credits.json.
 const portraits = new Set(['alchemist', 'sanguine', 'butcher', 'gravewalker',
   'torchbearer', 'tempest', 'stormcaller', 'houndmaster', 'bloodthirsty',
   'deathbringer', 'dryad', 'conjurer', 'avalanche', 'wildfire', 'doomsayer',
@@ -11,7 +12,7 @@ const normalize = (label: string) => label.normalize().trim().toLowerCase().repl
 
 export function fateArt(name: string): string | null {
   const key = normalize(name)
-  return portraits.has(key) ? `/game-art/${key}.webp` : null
+  return portraits.has(key) ? `/game-art/${key}.webp` : poedb.assets.find(entry => normalize(entry.name) === key)?.path ?? null
 }
 
 const namedRewards: Record<string, string> = {

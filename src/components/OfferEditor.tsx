@@ -8,8 +8,10 @@ import rewardIcons from '../../shared/reward-icons.json'
 import { cardNeedsReview } from '../lib/card-review'
 import { CardEvidence } from './CardEvidence'
 import { FateReference } from './FateReference'
+import { RewardReferences } from './RewardReferences'
 import { upsertDefinition } from '../lib/solver-settings'
 import { normalizeRewardLabel } from '../../shared/advisor'
+import { isRewardIdentified, needsUniqueTooltipCheck } from '../../shared/reward-evidence'
 import type { SolverSettingsControl } from './SolverControls'
 
 interface Props { offer: Offer; onChange: (patch: Partial<Offer>) => void; purpose?: 'offer' | 'collection'; evidence?: Evidence | null; showRecordedChoice?: boolean; reviewRequest?: { cardId: string; sequence: number } | null; solverControl?: SolverSettingsControl }
@@ -57,7 +59,9 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
     }
   }
   function updateReward(id: string, patch: Partial<Reward>) {
-    if (selected) updateCard({ rewards: selected.rewards.map(r => r.id === id ? { ...r, ...patch } : r) })
+    const changesMeaning = patch.label !== undefined || patch.kind !== undefined || patch.threshold !== undefined
+    if (selected) updateCard({ rewards: selected.rewards.map(r => r.id === id
+      ? { ...r, ...(changesMeaning && r.visualId === 'orange-feathers' && { tooltipConfirmed: false }), ...patch } : r) })
   }
   function addCard() { const card = newCard(); onChange({ cards: [...offer.cards, card] }); setSelectedId(card.id) }
   return <section className="panel editor-panel" aria-labelledby={`${instanceId}-heading`}>
@@ -66,7 +70,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
       <div className="table-scroll"><table className="cards-table"><thead><tr><th>Name</th><th>Tier</th><th>Rewards</th>{showChoice && <th>Recorded choice</th>}</tr></thead><tbody>{offer.cards.map((card, index) => <tr key={card.id} className={card.id === selected?.id ? 'selected' : ''}>
         <td><button className="card-name" onClick={() => selectCard(card.id)} aria-pressed={card.id === selected?.id}>{card.name || `Unnamed card ${index + 1}`}</button></td>
         <td>{card.tier ?? <span className="muted">—</span>}</td>
-        <td className="reward-summary">{card.rewards.length ? card.rewards.map(r => r.identified ? `${r.count > 1 ? `${r.count}× ` : ''}${r.label}` : 'Unidentified').join(', ') : <span className="muted">Not read</span>}</td>
+        <td className="reward-summary">{card.rewards.length ? card.rewards.map(r => isRewardIdentified(r) ? `${r.count > 1 ? `${r.count}× ` : ''}${r.label}` : 'Unidentified').join(', ') : <span className="muted">Not read</span>}</td>
         {showChoice && <td><input type="radio" name="chosen-card" aria-label={`Chosen ${card.name || `card ${index + 1}`}`} checked={offer.selectedCardId === card.id} onChange={() => onChange({ selectedCardId: card.id })} /></td>}
       </tr>)}</tbody></table></div>
       <div className="table-footnote"><span>{collecting ? 'Click a collected card to correct it.' : showChoice ? 'Recorded choice is an archive note. It does not change your current map.' : 'Check the data here. Add your chosen Fate to the collection on the map screen.'}</span>{showChoice && offer.selectedCardId && <button className="text-button" onClick={() => onChange({ selectedCardId: null })}>Clear choice</button>}</div>
@@ -77,7 +81,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
         <h3 ref={cardHeading} tabIndex={-1} className="selected-card-heading">Reviewing {selected.name || `card ${selectedIndex + 1}`}</h3>
         {!!selected.rewards.length && <div className="reward-shortcuts" aria-label="Reward shortcuts">{selected.rewards.map((reward, index) => {
           const motif = reward.visualId && rewardIcons.motifs.find(icon => icon.visualId === reward.visualId)
-          const needsReview = !reward.identified || reward.kind === 'unknown'
+          const needsReview = !isRewardIdentified(reward) || reward.kind === 'unknown'
           return <button key={reward.id} className={needsReview ? 'needs-review' : ''} onClick={() => selectReward(reward.id)} aria-label={`Review reward ${index + 1}: ${reward.label || 'unidentified'}`}>
             {motif && <img src={`data:image/png;base64,${motif.pngBase64}`} width={34} height={36} alt="" />}<span>{index + 1}. {reward.label || 'Unidentified icon'}<small>{needsReview ? 'Needs identification' : 'Check details'}</small></span>
           </button>
@@ -95,17 +99,19 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
           <p id={`${instanceId}-modifier-help`} className={modifierProblem ? 'field-error' : 'hint'} role={modifierProblem ? 'alert' : undefined}>{modifierProblem || 'Up to 40 lines, 1,000 characters per line. Corrections save after validation.'}</p>
           <div className="section-heading reward-heading"><h3>Rewards</h3><button className="text-button" disabled={selected.rewards.length >= 30} onClick={() => updateCard({ rewards: [...selected.rewards, newReward()] })}>Add reward</button></div>
           <p className="hint">Keep unknown icons unidentified. An empty list means rewards were not read, not that the card has no rewards.</p>
+          <RewardReferences />
           {selected.rewards.map((reward, index) => {
             const entry = selectedCatalogReward(reward)
             const personalEntry = solverControl?.settings.definitions.find(row => row.label === reward.label && row.kind === reward.kind && row.threshold === reward.threshold && reward.identified)
             const icon = entry && rewardIcons.icons.find(icon => icon.id === entry.id)
             return <fieldset className="reward-editor" key={reward.id} tabIndex={-1} ref={element => { if (element) rewardFields.current.set(reward.id, element); else rewardFields.current.delete(reward.id) }}><legend>Reward {index + 1}</legend>
             {reward.visualId && <p className="reward-label hint">Image suggestion: {VISUAL_LABELS[reward.visualId]}. Check the in-game tooltip for its reward, kind and threshold.</p>}
+            {needsUniqueTooltipCheck(reward) && <p className="reward-label hint">This icon is shared by several league uniques. An older suggestion may name the wrong item. Select the exact matching tooltip below, or enter its details and confirm the tooltip.</p>}
             <label className="reward-label">Tooltip catalog<select value={entry?.id ?? (personalEntry ? `personal:${personalEntry.id}` : '')} onChange={event => {
               const entry = REWARD_CATALOG.find(item => item.id === event.target.value)
               const personal = solverControl?.settings.definitions.find(item => `personal:${item.id}` === event.target.value)
-              if (entry) updateReward(reward.id, catalogFields(entry))
-              else if (personal) updateReward(reward.id, { label: personal.label, kind: personal.kind, threshold: personal.threshold, identified: true })
+              if (entry) updateReward(reward.id, { ...catalogFields(entry), tooltipConfirmed: entry.kind !== 'unknown' })
+              else if (personal) updateReward(reward.id, { label: personal.label, kind: personal.kind, threshold: personal.threshold, identified: true, tooltipConfirmed: false })
             }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : entry.kind === 'regular' ? 'Regular' : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
             {entry && <p className="reward-label catalog-reference hint">
               {icon && <img src={`data:image/png;base64,${icon.pngBase64}`} alt={`${entry.label} reference icon`} width={34} height={36} />}
@@ -117,6 +123,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
             <label>Count<input type="number" min={1} max={100} value={reward.count} onChange={e => updateReward(reward.id, { count: Number(e.target.value) })} /></label>
             <label>Combo threshold<input type="number" min={1} max={100} value={reward.threshold ?? ''} placeholder="Unknown" onChange={e => updateReward(reward.id, { threshold: e.target.value ? Number(e.target.value) : null })} /></label>
             <label className="checkbox-row"><input type="checkbox" checked={reward.identified} disabled={!reward.label.trim()} onChange={e => updateReward(reward.id, { identified: e.target.checked })} />Identified</label>
+            {reward.visualId === 'orange-feathers' && <label className="checkbox-row reward-label"><input type="checkbox" checked={!!reward.tooltipConfirmed} disabled={!reward.identified || reward.kind === 'unknown' || (reward.kind === 'combo' && reward.threshold === null)} onChange={event => updateReward(reward.id, { tooltipConfirmed: event.target.checked })} />I checked this unique reward’s exact tooltip</label>}
             {solverControl && <div className="reward-label personal-template"><button disabled={!reward.identified || reward.kind === 'unknown' || (reward.kind === 'combo' && reward.threshold === null)} onClick={() => {
               if (!reward.identified || reward.kind === 'unknown') return
               try {

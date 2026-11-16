@@ -34,8 +34,13 @@ must not require filling every field or interpreting every unknown icon.
   Reward priorities, exclusions and reusable profiles support the solver.
   The saved-offer archive and current-map collection are distinct; moving
   observations between them is an explicit action.
-- New solver profiles include provisional trade weights (10/4/2/3); existing
-  profiles change only through explicit controls. Points are not profit estimates.
+- New solver profiles include 12 provisional trade priorities. Campaign / SSF
+  and Viscera starters replace priorities only through an explicit action;
+  saved profiles are preserved. Points are not profit estimates. Identified
+  rewards with no positive weight are visible beside advice.
+- Source references include versioned PoEDB effects and official patch corrections.
+  They never confirm captured rewards, tiers or modifier lists. Shared unique
+  icons require the exact tooltip before scoring, including in older records.
 - **Report symbol** is an independent, opt-in image-research flow with preview,
   source references, durable local retries and withdrawal. Normal capture/offer
   sharing stays text-only. Symbol reports are public, with no account or collection
