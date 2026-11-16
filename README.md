@@ -95,6 +95,23 @@ See the [Windows guide](docs/windows-helper.md) for prerequisites and limitation
 The helper captures the selected game region and runs OCR locally. No game actions
 are automated.
 
+### In-game overlay
+
+Helper 0.6.0 can display next-Fate advice over windowed/borderless PoE while this
+website runs in the background. Open **More actions → In-game overlay**, connect
+the running helper's `captures` folder, and allow read/write access. This also
+enables local review. Press **F9**, then **Ctrl+Alt+Enter** to confirm the area.
+After choosing in game, use **Ctrl+Alt+1–9** to record the numbered Fate. Names,
+ties, provisional results and missing reward data stay visible. **Ctrl+Alt+N**
+starts a new area with a second confirmation; **Ctrl+Alt+Z** undoes a collection
+change; **Ctrl+Alt+O** toggles the panel. These shortcuts do not control the game.
+
+The overlay uses local files under `captures/.overlay`, with no additional server
+or cloud upload. Keep the website open; advice expires after 12 seconds without
+an update. Browser suspension may require returning to the tab. Connect the
+overlay again after reopening the website. Reward corrections, profile setup
+and invocation planning remain on the website. See [overlay setup and limits](docs/overlay.md).
+
 ## What is implemented
 
 - A local [Fate advisor](docs/fate-advisor.md) on the Current area screen: next-card

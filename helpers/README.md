@@ -4,6 +4,8 @@ Start with the [Windows capture guide](../docs/windows-helper.md). Keep all bund
 
 ## Capture and OCR
 
+- Helper 0.6.0 adds a local in-game advice overlay. On the website use **More actions → In-game overlay** and connect this helper's `captures` folder with read/write permission. Keep the website open. F9 updates advice; Ctrl+Alt+Enter confirms the area; Ctrl+Alt+1–9 records the chosen Fate; Ctrl+Alt+N requests/confirms a new area; Ctrl+Alt+Z undoes; Ctrl+Alt+O toggles the panel. Shortcuts never control the game. Advice expires when the browser stops updating. Corrections and invocation planning remain on the website.
+
 - Press **F9** for a calibrated offer capture. Hover a symbol and press **Ctrl+Shift+F9** to select the icon and tooltip from one frozen game client frame. **Continue to website** saves only the two crops in `symbol-reports` for manual review and submission in the browser.
 - F9 also reads the current area from the running game's `logs/Client.txt`. Campaign, Map, Other or Unknown is stored separately and can be corrected in the website's **Edit details**. Missing or uncertain log context never blocks capture. No raw log lines are saved or uploaded by the helper.
 - `Calibration.ahk` stores the panel rectangle as client-relative coordinates, requires a preview after a same-aspect resolution change, and rejects a changed aspect ratio.

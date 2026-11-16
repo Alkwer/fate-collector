@@ -21,3 +21,4 @@ public/downloads/
 helpers/fate-collector.ini
 .DS_Store
 /helpers/symbol-reports/
+/helpers/captures/.overlay/

@@ -2,6 +2,7 @@
 #SingleInstance Force
 #Include Calibration.ahk
 #Include CaptureProcess.ahk
+#Include Overlay.ahk
 
 ; Game-window checks and panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
@@ -18,6 +19,7 @@ uploaderPid := 0
 settingsPid := 0
 diagnosticsPid := 0
 symbolReportPid := 0
+symbolReportStarting := false
 lastSymbolOffer := 0
 captureSession := 0
 feedbackCaptureId := ""
@@ -30,6 +32,7 @@ DirCreate A_ScriptDir "\captures"
 A_TrayMenu.Add "Open capture folder", (*) => Run('explorer.exe "' A_ScriptDir '\captures"')
 A_TrayMenu.Add "Cloud upload settings", ConfigureCloudUpload
 A_TrayMenu.Add "Report a problem", ReportProblem
+OverlayInit()
 RecordDiagnosticEvent("app-start", "ok")
 SetTimer () => RunCloudUploader(), 30000
 SetTimer RunCloudUploader, -200
@@ -42,6 +45,26 @@ F8::PreviewCalibration()
 F9::CapturePanel()
 ^+F9::CaptureSymbolReport()
 F10::CancelCapture()
+#HotIf
+
+#HotIf OverlayHotkeysActive()
+^!1::OverlayShortcut(1, "1")
+^!2::OverlayShortcut(2, "2")
+^!3::OverlayShortcut(3, "3")
+^!4::OverlayShortcut(4, "4")
+^!5::OverlayShortcut(5, "5")
+^!6::OverlayShortcut(6, "6")
+^!7::OverlayShortcut(7, "7")
+^!8::OverlayShortcut(8, "8")
+^!9::OverlayShortcut(9, "9")
+^!Enter::OverlayShortcut(10, "Enter")
+^!n::OverlayShortcut(11, "n")
+^!z::OverlayShortcut(12, "z")
+#HotIf OverlayPoeActive()
+^!o:: {
+    OverlayToggle()
+    KeyWait "o"
+}
 #HotIf
 
 GetForegroundPoe() {
@@ -175,7 +198,11 @@ CapturePanel() {
         return
     capturing := true
     cancelled := false
+    captureId := ""
+    capturePhase := "error"
     try {
+        OverlaySuspend()
+        OverlayWriteCapture("capturing")
         ClearCalibrationPreview()
         poe := VerifyCalibration()
         gameStarted := PoeProcessStarted(poe.pid)
@@ -187,6 +214,7 @@ CapturePanel() {
         height := calibration.last.y - top + 1
 
         captureId := NewCaptureId()
+        OverlayWriteCapture("capturing", captureId)
         if !captureSession || captureSession.pid != poe.pid || captureSession.sequence >= 1000000000
             captureSession := {id: NewCaptureId(), startedAt: A_NowUTC, pid: poe.pid, sequence: 0, lastFile: ""}
         captureDir := A_ScriptDir "\captures"
@@ -228,6 +256,8 @@ CapturePanel() {
                 throw Error("Capture exceeds the supported size limit.")
             readyFile := captureDir "\fate-" captureId ".json"
             FileMove outputFile, readyFile
+            capturePhase := "saved"
+            OverlayRememberGame(poe, gameStarted)
             RecordDiagnosticEvent("capture", "ok")
             captureSession.sequence += 1
             captureSession.lastFile := readyFile
@@ -263,14 +293,17 @@ CapturePanel() {
         RecordDiagnosticEvent("capture", "error")
         Notice(err.Message)
     } finally {
+        OverlayWriteCapture(cancelled ? "cancelled" : capturePhase, captureId)
         capturing := false
+        OverlayTick()
     }
 }
 
 CaptureSymbolReport() {
-    global capturing, lastSymbolOffer, symbolReportPid
-    if capturing || symbolReportPid && ProcessExist(symbolReportPid)
+    global capturing, lastSymbolOffer, symbolReportPid, symbolReportStarting
+    if capturing || symbolReportStarting || symbolReportPid && ProcessExist(symbolReportPid)
         return
+    symbolReportStarting := true
     try {
         poe := GetForegroundPoe()
         backend := FateCaptureBackend()
@@ -288,9 +321,12 @@ CaptureSymbolReport() {
         ClearCalibrationPreview()
         SetTimer ClearNotice, 0
         ToolTip
+        OverlaySuspend()
         Run(command, A_ScriptDir, , &symbolReportPid)
     } catch as err {
         Notice(err.Message)
+    } finally {
+        symbolReportStarting := false
     }
 }
 

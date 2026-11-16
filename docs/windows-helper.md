@@ -35,6 +35,12 @@ Automatic uploads remain **unverified**, including successful OCR. They populate
 
 ## Optional local review on the website
 
+For advice over the game, helper 0.6.0 adds **More actions → In-game overlay** on
+the website and **Show/hide Fate overlay** in the helper tray menu. The website
+must remain open. This separate connection requests read/write permission for
+local overlay messages and also enables the normal capture-folder import below.
+See [overlay setup, shortcuts and limitations](overlay.md).
+
 Open Fate Collector in desktop Chrome or Edge. Click **Connect folder**, choose the `captures` folder beside `FateCollector.ahk`, and allow read access. The helper creates it on startup; **Open capture folder** in its tray menu locates it. F9 captures then appear and save locally without pasting or clicking Save. Use **Edit details** for a misread; while connected, corrections save after a short typing pause.
 
 Keep the website open for local intake. It checks the folder about every two seconds, but browser throttling or tab suspension can delay this. Files remain on disk and are caught up when the page resumes. After reopening, the browser may require **Resume local review** and renewed folder permission. **Disconnect** forgets this local link; it does not change the helper's cloud settings. Existing files in a newly connected folder are imported as well; already received or deliberately deleted captures are skipped.

@@ -1,0 +1,7 @@
+.overlay-settings > * + * { margin-top: 16px; }
+.overlay-settings > h3 { margin-top: 28px; }
+.overlay-settings li + li { margin-top: 8px; }
+.overlay-settings kbd { white-space: nowrap; }
+.overlay-preview { padding: 16px; border-radius: var(--control-radius); background: var(--surface-quiet); }
+.overlay-preview strong { display: block; font-size: 18px; line-height: 1.35; }
+.overlay-preview p { margin-top: 8px; color: var(--muted); }

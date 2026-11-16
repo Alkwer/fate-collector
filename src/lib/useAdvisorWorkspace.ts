@@ -52,11 +52,11 @@ export function useAdvisorWorkspace() {
     save(offerId === undefined ? next : bindOfferToMap(next, offerId), false)
   }
 
-  function bindOffer(offerId: string) {
+  function bindOffer(offerId: string, showOffer = false) {
     const { workspace, needsMapConfirmation } = current.current
     if (needsMapConfirmation || state.workspace.map?.id !== workspace.map?.id) return
     const next = bindOfferToMap(workspace, offerId)
-    if (next !== workspace) save(next, false)
+    if (next !== workspace || (showOffer && next.mode !== 'offer')) save({ ...next, mode: showOffer ? 'offer' : next.mode }, false)
   }
 
   function undo() {
