@@ -12,11 +12,19 @@ export async function write(page: Page, name: string, value: unknown, bridge = t
 }
 export async function state(page: Page): Promise<OverlayState | null> {
   return page.evaluate(async () => {
-    try {
-      const captures = await (await navigator.storage.getDirectory()).getDirectoryHandle('captures')
-      const folder = await captures.getDirectoryHandle('.overlay')
-      return JSON.parse(await (await (await folder.getFileHandle('state.json')).getFile()).text())
-    } catch { return null }
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const captures = await (await navigator.storage.getDirectory()).getDirectoryHandle('captures')
+        const folder = await captures.getDirectoryHandle('.overlay')
+        return JSON.parse(await (await (await folder.getFileHandle('state.json')).getFile()).text())
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'NotFoundError') return null
+        // A heartbeat can replace the OPFS file after getFile() but before text().
+        // Refresh that invalidated snapshot; other errors must fail the test.
+        if (!(error instanceof DOMException) || error.name !== 'NotReadableError' || attempt >= 3) throw error
+        await new Promise(resolve => setTimeout(resolve, 10))
+      }
+    }
   })
 }
 export async function action(page: Page, id: string, overrides: Record<string, unknown> = {}) {
