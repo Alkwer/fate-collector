@@ -125,7 +125,7 @@ export default function App() {
       const context = JSON.stringify([input, overlayDiscardedCapture])
       if (overlayCache.current?.key !== context) {
         const view = capture?.captureId && capture.captureId === overlayDiscardedCapture
-          ? { captureId: capture.captureId, status: 'idle' as const, title: 'New area started', detail: 'Open an offer in this area and press F9. The previous offer is not included.', rows: [], actions: advisor.canUndo ? [{ id: 'undo', label: 'Undo new area', slot: 12 }] : [] }
+          ? { captureId: capture.captureId, status: 'idle' as const, title: 'New area started', detail: 'Open an offer in this area. Automatic detection will capture it again; F9 also works. The previous offer is not included.', rows: [], actions: advisor.canUndo ? [{ id: 'undo', label: 'Undo new area', slot: 12 }] : [] }
           : overlayAdvice(input)
         overlayCache.current = { key: context, view }
       }

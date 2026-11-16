@@ -1,6 +1,6 @@
 # In-game Fate advice
 
-The Windows helper 0.6.0 adds a local overlay for choosing and recording Fates.
+The Windows helper 0.6.1 automatically detects offers for the local Fate overlay.
 The website remains the source of reward priorities, current-area collection and
 recommendation logic. Use desktop Chrome or Edge with HTTPS or localhost, and
 PoE in windowed or borderless mode. Exclusive fullscreen is not supported by
@@ -14,16 +14,48 @@ this first version.
 3. Choose **Connect overlay folder**, select the running helper's `captures`
    directory and allow read/write access. The helper must already have created
    `captures/.overlay`. This also connects normal local capture review.
-4. In the game, calibrate with F6/F7 if needed, then press F9.
-5. Confirm the current area with Ctrl+Alt+Enter. Check the displayed names and
-   missing data. After choosing a Fate in game, record that choice with the
-   corresponding Ctrl+Alt+number shortcut.
+4. In the game, calibrate with F6/F7 if needed. Include the Fates heading, English
+   card names and Confirm button. Keep the offer visible for two matching reads.
+5. Confirm the current area with Ctrl+Alt+Enter when prompted. Check the displayed
+   names and missing data. Record the Fate you intend to choose with the displayed
+   Ctrl+Alt+number while the panel is visible, then select it in game. Undo the
+   record if you change your mind. F9 remains available for a manual capture.
+
+## Automatic detection
+
+**Auto-detect Fate cards** is enabled in the helper tray by default, but scans run
+only with a fresh website overlay connection, valid calibration and verified PoE
+in the foreground. F8 previews, symbol reporting, manual captures, loss of focus
+and closing/disconnecting the website stop scanning. The tray toggle is saved;
+F10 clears calibration and pauses scanning until F6/F7 calibration is restored.
+After repeated capture errors, retry from the tray or use F9.
+
+A persistent local worker samples the calibrated panel, waiting 1.5 seconds after
+each completed OCR read. Two matching recognized rows are required before saving.
+Only known, readable English names inside an unambiguous Fates/Confirm panel are
+accepted; invocation screens and incomplete OCR abstain. Unknown or missed cards
+still need F9 and website review. This has been tested with archived OCR and
+generated fixtures, not established as a live-game accuracy guarantee.
+
+Probe images remain in memory. Accepted offers are saved as
+`captures/auto-fate-<id>.json` through a private `captures/.auto` staging folder.
+They never overwrite the clipboard or enter the helper's cloud upload queue:
+existing capture consent covers F9 only. Reviewed offers may still be shared
+explicitly on the website under that separate consent.
+
+An unchanged visible row is saved once. Loss of detection clears automatic advice;
+two consecutive clear non-offer reads allow an identical future row to be saved.
+OCR failures do not reset duplicate protection. Names and order identify a row;
+use F9 to refresh changed rewards or text when names stay the same. F9 also keeps
+manual advice usable when automatic recognition abstains. An explicit confirmed
+new-area action rearms detection, without guessing which area an offer belongs to.
 
 | Shortcut | Effect in Fate Collector |
 | --- | --- |
-| F9 | Capture the next offer; immediately clear prior advice |
+| F9 | Manually capture or refresh an offer; immediately clear prior advice |
+| F10 | Clear calibration and pause automatic detection; F6/F7 resumes |
 | Ctrl+Alt+Enter | Confirm the displayed area action, or cancel new-area reset |
-| Ctrl+Alt+1–9 | Record the corresponding recognized Fate in the local collection |
+| Ctrl+Alt+1–9 | Record the intended Fate while its offer is visible; choose it in game |
 | Ctrl+Alt+N | Request a new area, then confirm with a second press |
 | Ctrl+Alt+Z | Undo the latest collection/area change |
 | Ctrl+Alt+O | Show or hide the overlay |
@@ -33,7 +65,7 @@ verified game is active and never click cards or automate game actions. Numbers
 follow the recognized offer order; check the name, especially after corrections.
 More than nine recognized cards requires website review. Excluded cards cannot
 be recorded through the overlay. A new area discards the current offer binding
-and requires a fresh F9 capture.
+and requires a fresh automatic or F9 capture.
 When the full comparison cannot fit at a readable size, the overlay retains the
 recommended position, reason and uncertainty, asks you to compare on the website,
 and pauses its action shortcuts. It never hides missing-data details to fit more
@@ -77,6 +109,8 @@ The helper allows only one pending action; reconnecting gives the browser a new
 identity, preventing replay from a previous visit. Native writes are atomic and
 browser writes use `createWritable`/close.
 
+Run `npm run test:auto-capture` for offer detection, request and evidence checks;
+`npm run test:calibration` also tests automatic stability and manual fallback.
 Run `npm run test:overlay` for native protocol/render checks and
 `npx vitest run tests/overlay.test.ts` for recommendation/bridge checks.
 `npx playwright test e2e/overlay.spec.ts` exercises import, area confirmation,

@@ -72,6 +72,9 @@ jobs:
       - name: Validate native overlay protocol and rendering
         shell: powershell
         run: ./helpers/tests/Test-Overlay.ps1
+      - name: Validate automatic Fate detection
+        shell: powershell
+        run: ./helpers/tests/Test-AutoCapture.ps1
       - uses: actions/setup-node@v7
         with:
           node-version: 24

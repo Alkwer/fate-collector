@@ -43,7 +43,7 @@ describe('overlay advice uses the existing recommendation engines', () => {
   })
   it('withholds old advice while capturing, on mismatch, errors and edits', () => {
     const input = inputs()
-    for (const phase of ['capturing', 'cancelled', 'error'] as const) {
+    for (const phase of ['capturing', 'cancelled', 'error', 'watching', 'paused'] as const) {
       input.capture!.phase = phase
       expect(overlayAdvice(input).actions).toEqual([])
       expect(overlayAdvice(input).rows).toEqual([])

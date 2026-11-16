@@ -3,6 +3,7 @@
 #Include Calibration.ahk
 #Include CaptureProcess.ahk
 #Include Overlay.ahk
+#Include AutoCapture.ahk
 
 ; Game-window checks and panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
@@ -33,6 +34,7 @@ A_TrayMenu.Add "Open capture folder", (*) => Run('explorer.exe "' A_ScriptDir '\
 A_TrayMenu.Add "Cloud upload settings", ConfigureCloudUpload
 A_TrayMenu.Add "Report a problem", ReportProblem
 OverlayInit()
+AutoCaptureInit()
 RecordDiagnosticEvent("app-start", "ok")
 SetTimer () => RunCloudUploader(), 30000
 SetTimer RunCloudUploader, -200
@@ -159,6 +161,7 @@ CalibrateTopLeft() {
         return
     try {
         poe := GetForegroundPoe()
+        AutoCaptureReset()
         ClearCalibrationPreview()
         calibration := 0
         savedCalibrationAllowed := false
@@ -184,7 +187,8 @@ CalibrateBottomRight() {
         calibration.last := last
         SaveFateCalibration(calibrationFile, calibration)
         savedCalibrationAllowed := true
-        Notice("Panel saved for next time. F8 previews it; F9 saves a capture.")
+        AutoCaptureReset("watching")
+        Notice("Panel saved. Connected overlay detects offers automatically. F8 previews; F9 captures manually.")
     } catch as err {
         Notice(err.Message)
     }
@@ -196,6 +200,7 @@ CapturePanel() {
     global lastSymbolOffer
     if capturing
         return
+    AutoCaptureManual()
     capturing := true
     cancelled := false
     captureId := ""
@@ -257,6 +262,7 @@ CapturePanel() {
             readyFile := captureDir "\fate-" captureId ".json"
             FileMove outputFile, readyFile
             capturePhase := "saved"
+            AutoCaptureManual(captureId, poe, gameStarted)
             OverlayRememberGame(poe, gameStarted)
             RecordDiagnosticEvent("capture", "ok")
             captureSession.sequence += 1
@@ -304,6 +310,7 @@ CaptureSymbolReport() {
     if capturing || symbolReportStarting || symbolReportPid && ProcessExist(symbolReportPid)
         return
     symbolReportStarting := true
+    AutoCaptureStop()
     try {
         poe := GetForegroundPoe()
         backend := FateCaptureBackend()
@@ -524,6 +531,7 @@ ReportProblem(*) {
 
 CancelCapture() {
     global calibration, calibrationFile, capturing, cancelled, captureSession, savedCalibrationAllowed
+    AutoCaptureReset()
     calibration := 0
     savedCalibrationAllowed := false
     ClearCalibrationPreview()

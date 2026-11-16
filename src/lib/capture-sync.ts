@@ -12,7 +12,7 @@ export function compareCaptures(a: Offer, b: Offer): number {
   if (left && right && left.id === right.id && left.sequence !== right.sequence) return left.sequence - right.sequence
   return Date.parse(a.capturedAt) - Date.parse(b.capturedAt) || a.id.localeCompare(b.id)
 }
-export const captureName = /^fate-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i
+export const captureName = /^(?:auto-)?fate-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i
 export function directoryPicker() {
   return (window as Window & { showDirectoryPicker?: (options: { id: string; mode: 'read' }) => Promise<CaptureDirectory> }).showDirectoryPicker
 }

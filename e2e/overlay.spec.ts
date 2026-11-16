@@ -1,6 +1,27 @@
 import { expect, test } from '@playwright/test'
 import { action, capture, setup, state, write } from './overlay-support'
 
+test('automatic offers import without F9 and closing the panel revokes stale actions', async ({ page }) => {
+  await setup(page)
+  const first = await capture(page, true)
+  await action(page, 'use-offer')
+  await expect.poll(async () => (await state(page))?.actions.some(item => item.id.startsWith('collect:'))).toBe(true)
+  const collect = (await state(page))!.actions.find(item => item.id.startsWith('collect:'))!.id
+  await action(page, collect)
+  await expect(page.locator('.collected-fates li')).toHaveCount(1)
+  await write(page, 'capture.json', { protocol: 1, captureId: null, phase: 'watching', updatedAt: Date.now() })
+  await expect.poll(async () => (await state(page))?.title).toBe('Watching for Fate cards')
+  expect((await state(page))!.actions).toEqual([])
+  expect((await state(page))!.rows).toEqual([])
+  await write(page, 'capture.json', { protocol: 1, captureId: null, phase: 'paused', updatedAt: Date.now() })
+  await expect.poll(async () => (await state(page))?.title).toBe('Automatic detection paused')
+  const second = await capture(page, true)
+  expect(second).not.toBe(first)
+  await action(page, 'use-offer')
+  await expect.poll(async () => (await state(page))?.rows.length).toBe(1)
+  await expect(page.locator('.collected-fates li')).toHaveCount(1)
+})
+
 test('overlay confirms an area, records a choice once, undoes and clears an area explicitly', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

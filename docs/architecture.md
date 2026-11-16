@@ -31,6 +31,7 @@ PoE visible panel
 | `shared/overlay.ts`, `src/lib/overlay-channel.ts` | Bounded local overlay protocol, capture/snapshot identity, heartbeat and command acknowledgement |
 | `src/lib/overlay-advice.ts`, `src/lib/useOverlayConnection.ts` | Existing advisor results adapted for a compact display; explicit folder-write connection and single-tab ownership |
 | `helpers/Overlay.ahk`, `helpers/FateOverlay.cs` | Game-scoped overlay lifecycle, capture isolation, native display and advertised keyboard actions |
+| `helpers/AutoCapture.ahk`, `helpers/Watch-FatePanel.ps1`, `helpers/AutoCapture.Common.ps1` | Foreground/calibration-gated polling, conservative offer detection, stable-row deduplication and local-only capture publication |
 | `src/lib/useOfferDraft.ts` | Draft sessions, edits, save acknowledgements and conflict preservation |
 | `src/lib/local-history.ts` | Per-record decoding and corruption isolation for local receipts |
 | `src/components/` | Source inspection, optional corrections and saved history |
@@ -51,6 +52,13 @@ writes a leased display snapshot using the existing advisor. An explicit second
 folder permission enables these writes while ordinary local review stays
 read-only. Commands must match the live connection, capture and snapshot, and
 area/choice changes remain explicit. No overlay message enters cloud ingestion.
+
+Automatic detection runs only with that live connection and a calibrated foreground
+game. The persistent PowerShell worker keeps probe pixels in memory, returns bounded
+request-bound results and stages a bundle only after two matching name rows. AHK
+rechecks foreground identity and a five-second frame deadline before publication.
+The browser also accepts `auto-fate-<id>.json`; the uploader and older helpers ignore
+that prefix, preserving the existing F9-only consent. Manual F9 stays available.
 
 Direct cloud delivery runs in Windows PowerShell 5.1, launched asynchronously by
 AHK after capture, at startup and every 30 seconds. A cross-process file lock,

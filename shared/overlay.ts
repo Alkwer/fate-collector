@@ -6,7 +6,7 @@ const id = z.string().uuid()
 const timestamp = z.number().int().nonnegative()
 export const overlayCaptureSchema = z.object({
   protocol: z.literal(1), captureId: id.nullable(),
-  phase: z.enum(['capturing', 'saved', 'error', 'cancelled']), updatedAt: timestamp,
+  phase: z.enum(['capturing', 'saved', 'error', 'cancelled', 'watching', 'paused']), updatedAt: timestamp,
 }).strict()
 export const overlayStateSchema = z.object({
   protocol: z.literal(1), clientId: id, revision: id, writtenAt: timestamp,

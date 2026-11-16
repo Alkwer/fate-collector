@@ -222,7 +222,7 @@ try {
     Write-Record 'capture.json' $marker
     Assert-That (!$session.Send(2, $session.View, $now) -and $session.View.Rows.Count -eq 0) 'An old capture could still receive commands.'
     $marker.captureId = $captureId
-    foreach ($phase in @('capturing', 'error', 'cancelled')) {
+    foreach ($phase in @('capturing', 'error', 'cancelled', 'watching', 'paused')) {
         $marker.phase = $phase
         Write-Record 'capture.json' $marker
         $session.Poll($now)

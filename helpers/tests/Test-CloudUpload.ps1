@@ -141,6 +141,8 @@ try {
     Write-Output 'PASS: HTTPS-only production settings, explicit loopback test override, and DPAPI key round trip.'
 
     $fixture = Write-TestCapture -Mode 'fixture'
+    $automatic = Write-TestCapture
+    [IO.File]::Move((Join-Path $capturesDirectory "fate-$automatic.json"), (Join-Path $capturesDirectory "auto-fate-$automatic.json"))
     $pending = Write-TestCapture -Directory (Join-Path $capturesDirectory '.pending')
     $wrongId = Write-TestCapture -MismatchedId
     $largePayload = Write-TestCapture -OversizedOcr
@@ -183,7 +185,7 @@ try {
         $payload.context.area.areaId -ceq 'MapWorldsDunes' -and $payload.context.area.areaLevel -eq 83 -and
         !$payload.context.area.PSObject.Properties['rawLog']) 'Upload lost area metadata or exposed raw log.'
     Assert-True ((Get-TestState $fixture).status -eq 'ignored' -and (Get-TestState $old).status -eq 'ignored' -and
-        $null -eq (Get-TestState $pending) -and (Get-TestState $wrongId).status -eq 'rejected' -and
+        $null -eq (Get-TestState $pending) -and $null -eq (Get-TestState $automatic) -and (Get-TestState $wrongId).status -eq 'rejected' -and
         (Get-TestState $largeFile).status -eq 'rejected' -and (Get-TestState $largePayload).status -eq 'rejected') 'Invalid, old, staged, or fixture filtering failed.'
     Write-Output 'PASS: only recent finalized game captures enter the bounded OCR-only queue.'
 

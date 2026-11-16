@@ -25,6 +25,7 @@
     "test:helper": "node scripts/test-helper.mjs capture",
     "test:symbol-helper": "node scripts/test-helper.mjs symbol",
     "test:overlay": "node scripts/test-helper.mjs overlay",
+    "test:auto-capture": "node scripts/test-helper.mjs auto",
     "test:overlay:background": "npm run build && playwright test --config playwright.overlay-background.config.ts",
     "test:upload": "node scripts/test-helper.mjs upload",
     "test:upload:integration": "node scripts/test-cloud-upload.mjs",
