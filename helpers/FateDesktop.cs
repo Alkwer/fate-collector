@@ -29,7 +29,7 @@ namespace FateCollector {
   static readonly Regex CaptureName=new Regex(@"\A(?:auto-)?fate-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.json\z",RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
   static readonly HashSet<string> OverlayFiles=new HashSet<string>(new[]{"state.json","capture.json","command.json"},StringComparer.Ordinal);
   readonly string root, captures, profile; readonly Process parent; readonly Form form; readonly WebView2 view; readonly System.Windows.Forms.Timer timer; readonly JavaScriptSerializer json;
-  bool ready, tickInFlight, exiting, failed;
+  bool ready, tickInFlight, exiting, failed; int tickErrors;
   DesktopHost(string root,string profile,Process parent) {
    this.root=Path.GetFullPath(root); captures=Path.Combine(this.root,"captures"); this.profile=profile; this.parent=parent;
    json=new JavaScriptSerializer { MaxJsonLength=CaptureLimit+1024*1024, RecursionLimit=32 };
@@ -84,7 +84,8 @@ namespace FateCollector {
    if(!ready || tickInFlight) return;
    if(view.IsDisposed || view.CoreWebView2==null) { failed=true; Console.Error.WriteLine("Fate Collector local desktop stopped unexpectedly."); Exit(); return; }
    tickInFlight=true;
-   try { await view.CoreWebView2.ExecuteScriptAsync("window.dispatchEvent(new Event('fate-desktop-tick'))"); } catch { }
+   try { await view.CoreWebView2.ExecuteScriptAsync("window.dispatchEvent(new Event('fate-desktop-tick'))"); tickErrors=0; }
+   catch { if(++tickErrors>=3) { failed=true; Console.Error.WriteLine("Fate Collector local desktop stopped responding."); Exit(); } }
    finally { tickInFlight=false; }
   }
   void Exit() { if(exiting) return; exiting=true; timer.Stop(); view.Dispose(); form.Close(); form.Dispose(); ExitThread(); }

@@ -43,6 +43,15 @@ try {
         }
         throw "$Message`: no exception"
     }
+    $formType = $type.Assembly.GetType('FateCollector.DesktopForm', $true)
+    $form = [Activator]::CreateInstance($formType, $true)
+    try {
+        $handle = $form.Handle
+        $message = [Windows.Forms.Message]::Create($handle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
+        $arguments = [object[]]@($message)
+        [void]$formType.GetMethod('WndProc', [Reflection.BindingFlags]'Instance,NonPublic').Invoke($form, $arguments)
+        Assert (!$form.IsDisposed -and !$form.Visible) 'WM_CLOSE must hide without disposing the form.'
+    } finally { $form.Dispose() }
     $id = '11111111-1111-4111-8111-111111111111'
     $captureName = "fate-$id.json"
     [IO.File]::WriteAllText((Join-Path $captures $captureName), 'capture')
