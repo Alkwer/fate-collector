@@ -1,20 +1,22 @@
 import type { useOverlayConnection } from '../lib/useOverlayConnection'
 import '../overlay.css'
+import { isDesktop } from '../lib/desktop'
 
 export function OverlayConnection({ overlay }: { overlay: ReturnType<typeof useOverlayConnection> }) {
+  const desktop = isDesktop()
   return <section className="overlay-settings" aria-label="In-game overlay settings">
-    <p>See Fate advice beside the game while this website stays open. Use the updated Windows helper in windowed or borderless mode.</p>
+    <p>{desktop ? 'The helper runs the advisor locally. No browser tab or internet connection is needed for advice.' : 'Helper 0.7.0 includes a local advisor that works with your browser closed. Run the updated helper and open its local advisor from the tray. You can also use this website as the advisor.'} Use PoE in windowed or borderless mode.</p>
     <ol>
       <li>Run <strong>FateCollector.ahk</strong>.</li>
-      <li>Connect its <strong>captures</strong> folder below and allow read and write access. This also connects local review.</li>
+      <li>{desktop ? 'The local capture folder and overlay connect automatically. Keep the helper running.' : <>For website mode, select <strong>Use website advisor</strong> in the helper tray, then connect its <strong>captures</strong> folder below and allow read and write access.</>}</li>
       <li>Calibrate the Fate panel with <kbd>F6</kbd>/<kbd>F7</kbd> once. Keep it visible: the helper detects stable offers automatically. Confirm the area when prompted.</li>
     </ol>
     <p className="hint">Only overlay messages are written to the helper folder. Original captures stay unchanged. No cloud connection is needed.</p>
-    <p>Helper 0.6.1 scans while PoE is in front and this overlay is connected. Automatic captures stay local and are not added to cloud uploads. Unreadable or unknown names need a manual <kbd>F9</kbd> capture.</p>
+    <p>The helper scans while PoE is in front and the advisor is connected. Automatic captures stay local and are not added to cloud uploads. Unreadable or unknown names need a manual <kbd>F9</kbd> capture.</p>
     {!overlay.supported ? <p role="status">Overlay connection requires desktop Chrome or Edge on HTTPS or localhost.</p> : <div className="connection-actions">
-      {overlay.status === 'active' ? <button onClick={() => void overlay.disconnect()}>Disconnect overlay</button> : <button disabled={overlay.status === 'connecting'} onClick={() => void overlay.connect()}>{overlay.status === 'connecting' ? 'Connecting overlay…' : 'Connect overlay folder'}</button>}
+      {overlay.status === 'active' ? <button onClick={() => void overlay.disconnect()}>Disconnect overlay</button> : <button disabled={overlay.status === 'connecting'} onClick={() => void overlay.connect()}>{overlay.status === 'connecting' ? 'Connecting overlay…' : desktop ? 'Reconnect local advisor' : 'Connect overlay folder'}</button>}
     </div>}
-    {overlay.status === 'active' && <p role="status">Overlay connected. Keep this tab open. Closing or suspending it clears the advice after 12 seconds.</p>}
+    {overlay.status === 'active' && <p role="status">{desktop ? 'Overlay connected. Closing this window keeps the advisor running. Exiting the helper stops it.' : 'Overlay connected. In website mode, keep this tab open. Closing or suspending it clears the advice after 12 seconds.'}</p>}
     {overlay.problem && <p className="field-error" role="alert">{overlay.problem}</p>}
     <h3>While playing</h3>
     <ul>
@@ -28,7 +30,7 @@ export function OverlayConnection({ overlay }: { overlay: ReturnType<typeof useO
     </ul>
     <p>Numbers follow the recognized offer order. Record the Fate you intend to choose while the panel is visible, then select it in game. These controls update your local collection; they do not click cards in the game. If you change your mind, undo the record.</p>
     <p>Disable or retry automatic detection with <strong>Auto-detect Fate cards</strong> in the helper tray. Closing the Fate panel clears automatic advice.</p>
-    <p>Unknown rewards still need review on the website. Reward priorities, corrections and invocation planning remain available there.</p>
+    <p>Unknown rewards still need review in Fate Collector. Reward priorities, corrections and invocation planning are available in {desktop ? 'this local window' : 'the local advisor and website'}.</p>
     {overlay.preview && <div className="overlay-preview" aria-label="Current overlay message"><strong>{overlay.preview.title}</strong><p>{overlay.preview.detail}</p></div>}
   </section>
 }

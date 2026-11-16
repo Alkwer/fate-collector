@@ -128,7 +128,7 @@ describe('local overlay channel', () => {
     const snapshot = () => ({ view: overlayAdvice(input), context: '' })
     const channel = new OverlayChannel(directory)
     await channel.tick(snapshot, () => undefined)
-    await expect(new OverlayChannel(directory).tick(snapshot, () => undefined)).rejects.toThrow('Another website tab')
+    await expect(new OverlayChannel(directory).tick(snapshot, () => undefined)).rejects.toThrow('Another advisor')
     files.set('capture.json', '{')
     await expect(channel.tick(snapshot, () => undefined)).rejects.toThrow()
     files.set('capture.json', 'x'.repeat(32_769))

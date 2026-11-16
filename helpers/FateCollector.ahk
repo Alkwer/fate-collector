@@ -4,6 +4,7 @@
 #Include CaptureProcess.ahk
 #Include Overlay.ahk
 #Include AutoCapture.ahk
+#Include Desktop.ahk
 
 ; Game-window checks and panel calibration. Component attribution: THIRD_PARTY_NOTICES.md.
 DllCall("SetThreadDpiAwarenessContext", "Ptr", -4, "Ptr")
@@ -35,6 +36,7 @@ A_TrayMenu.Add "Cloud upload settings", ConfigureCloudUpload
 A_TrayMenu.Add "Report a problem", ReportProblem
 OverlayInit()
 AutoCaptureInit()
+DesktopInit()
 RecordDiagnosticEvent("app-start", "ok")
 SetTimer () => RunCloudUploader(), 30000
 SetTimer RunCloudUploader, -200

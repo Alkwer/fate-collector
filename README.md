@@ -97,10 +97,11 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.6.1 can display next-Fate advice over windowed/borderless PoE while this
-website runs in the background. Open **More actions → In-game overlay**, connect
-the running helper's `captures` folder, and allow read/write access. This also
-enables local review. After F6/F7 calibration, stable recognized offers appear
+Helper 0.7.0 includes a standalone advisor and displays next-Fate advice over
+windowed/borderless PoE without an open browser. Extract the complete ZIP,
+run the helper and set reward priorities in its local window. Closing that
+window keeps the advisor running; **Open local advisor** in the tray restores it.
+The installed Microsoft Edge WebView2 Runtime is required. After F6/F7 calibration, stable recognized offers appear
 automatically. Use **Ctrl+Alt+Enter** to confirm the area when prompted and
 **Ctrl+Alt+1–9** to record your intended Fate before closing the panel in game. Names,
 ties, provisional results and missing reward data stay visible. **Ctrl+Alt+N**
@@ -113,10 +114,12 @@ refresh a missed or same-name offer; **F10** clears calibration and pauses scann
 The helper tray's **Auto-detect Fate cards** setting enables or disables scanning.
 
 The overlay uses local files under `captures/.overlay`, with no additional server
-or cloud upload. Keep the website open; advice expires after 12 seconds without
-an update. Browser suspension may require returning to the tab. Connect the
-overlay again after reopening the website. Reward corrections, profile setup
-and invocation planning remain on the website. See [overlay setup and limits](docs/overlay.md).
+or cloud upload. Advice expires after 12 seconds without an update. The local
+collection and priorities persist across helper restarts, independently of
+website data. Reward corrections and invocation planning work in the local window.
+To use the website instead, select **Use website advisor** in the tray and connect
+the overlay folder on the website; that mode requires an open tab.
+See [overlay setup and limits](docs/overlay.md).
 
 ## What is implemented
 

@@ -37,8 +37,10 @@ import { useOverlayConnection } from './lib/useOverlayConnection'
 import { overlayAdvice, type OverlayInputs } from './lib/overlay-advice'
 import { OverlayConnection } from './components/OverlayConnection'
 import type { OverlayView } from '../shared/overlay'
+import { hideDesktop, isDesktop } from './lib/desktop'
 
 export default function App() {
+  const desktop = isDesktop()
   const releaseUpdate = useReleaseUpdate()
   const [importConflicts, setImportConflicts] = useState<ImportConflict[]>([])
   const appearance = useTheme()
@@ -329,7 +331,7 @@ export default function App() {
     <main id="main" className="workspace" tabIndex={-1}>
       <div className="page-heading"><div><h1 tabIndex={-1}>{tab === 'guide' ? 'Helper & website guide' : tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current area'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'guide' ? 'From your first capture to your next Fate.' : tab === 'review' ? 'Review this observation separately from your current area.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p>}</div>
         <div className="page-heading-actions">
-        <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>
+        {!desktop && <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>}
         <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
           {(tab === 'collector' || tab === 'review') && <section className="action-menu-group" aria-labelledby="offer-actions-heading">
             <h3 id="offer-actions-heading">{tab === 'review' ? 'Archived offer' : 'Current offer'}</h3>
@@ -337,7 +339,7 @@ export default function App() {
               <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
               {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
               <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
-              <button disabled={busy} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>
+              {!desktop && <button disabled={busy} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>}
             </div>
           </section>}
           {tab === 'collector' && <section className="action-menu-group" aria-labelledby="new-actions-heading">
@@ -354,7 +356,7 @@ export default function App() {
               {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
               <button onClick={() => { closeActions(); overlayPanel.current?.show() }}>In-game overlay</button>
               <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
-              <button onClick={() => { closeActions(); symbolReportsPanel.current?.showHistory() }}>Symbol report history</button>
+              {!desktop && <button onClick={() => { closeActions(); symbolReportsPanel.current?.showHistory() }}>Symbol report history</button>}
               {tab === 'collector' && <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(guidedExampleOffer(), null, true); announce('Guided practice: start an area, collect one Fate, then plan and record its invocation. Rewards are invented training values; nothing can be shared as live evidence.') } }}>Load guided practice</button>}
               {tab === 'collector' && <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(exampleOffer(), null, true); announce('Illustrative example loaded. It cannot be shared as a game observation.') } }}>Load example</button>}
             </div>
@@ -364,6 +366,10 @@ export default function App() {
         </div></DetailPanel>
         </div>
       </div>
+      {desktop && <aside className="desktop-status" aria-label="Local advisor">
+        <div><strong>{overlay.status === 'active' ? 'Local advisor connected' : overlay.status === 'connecting' ? 'Connecting local advisor…' : 'Local advisor needs attention'}</strong><p>Keep the helper running. You can close this window and your browser; advice continues in the game overlay. Reopen settings from the helper tray.</p><p className="hint">Your collection and priorities are saved on this PC. They are separate from website data.</p></div>
+        <button onClick={() => void hideDesktop().catch(error => announce(errorText(error), true))}>Run in background</button>
+      </aside>}
       {notice && <WorkspaceNotice notice={notice} onDismiss={() => setNotice(null)} />}
       <DetailPanel ref={overlayPanel} trigger={false} title="In-game overlay"><OverlayConnection overlay={overlay} /></DetailPanel>
       {overlay.status === 'error' && <p className="connection-warning field-error" role="alert">Overlay disconnected. {overlay.problem} <button onClick={() => overlayPanel.current?.show()}>Overlay settings</button></p>}

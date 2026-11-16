@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { isDesktop } from './desktop'
 declare const __APP_REVISION__: string
 
 export function useReleaseUpdate() {
   const [available, setAvailable] = useState(false)
   useEffect(() => {
+    if (isDesktop()) return
     let stopped = false, pending = false
     async function check() {
       if (pending || document.hidden) return

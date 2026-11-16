@@ -5,3 +5,8 @@
 .overlay-preview { padding: 16px; border-radius: var(--control-radius); background: var(--surface-quiet); }
 .overlay-preview strong { display: block; font-size: 18px; line-height: 1.35; }
 .overlay-preview p { margin-top: 8px; color: var(--muted); }
+.desktop-status { display: flex; align-items: center; gap: 24px; padding-block: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.desktop-status > div { flex: 1; }
+.desktop-status p { max-width: 70ch; margin-top: 6px; }
+.desktop-status > button { flex-shrink: 0; }
+@media (max-width: 680px) { .desktop-status { align-items: flex-start; flex-direction: column; gap: 12px; } }

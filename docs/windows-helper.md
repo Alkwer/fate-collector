@@ -1,6 +1,22 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Version 0.5.0 adds automatic campaign/map context from the local game log. **Ctrl+Shift+F9** symbol reports, saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Helper 0.7.0 includes a standalone advisor using the installed Microsoft Edge WebView2 Runtime. No browser tab or internet is needed for advice. **Ctrl+Shift+F9** symbol reports, saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+
+## Standalone advice and local collection
+
+Extract the entire helper ZIP, including its `desktop` and `webview2` folders.
+Run the helper, set reward priorities in the local window, and calibrate the
+Fate panel with F6/F7. The advisor connects automatically. Close its window or
+choose **Run in background**; the helper and overlay keep working. Open settings
+again with **Open local advisor** in the tray. Exiting the helper stops the advisor.
+
+The collection, priorities and journal persist under
+`%LOCALAPPDATA%\FateCollector\desktop`. On restart, confirm that you are still in
+the same area before using the restored collection. Website data is separate.
+Export and import offer backups to move records; there is no automatic cloud sync.
+If WebView2 Runtime is missing, install it from
+[Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/).
+For development, run `npm run prepare:helper` before launching the helper from a checkout.
 
 **F9 area context:** the helper reads `logs/Client.txt` from the running game's
 installation and records Campaign, Map, Other or Unknown, plus the internal area
@@ -35,9 +51,9 @@ Automatic uploads remain **unverified**, including successful OCR. They populate
 
 ## Optional local review on the website
 
-For advice over the game, helper 0.6.1 adds **More actions → In-game overlay** on
-the website and **Show/hide Fate overlay** in the helper tray menu. The website
-must remain open. This separate connection requests read/write permission for
+To use the website instead of the standalone advisor, select **Use website advisor**
+in the helper tray, then open **More actions → In-game overlay** on the website.
+The website must remain open in this mode. This connection requests read/write permission for
 local overlay messages and also enables the normal capture-folder import below.
 See [overlay setup, shortcuts and limitations](overlay.md).
 

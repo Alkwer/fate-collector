@@ -4,13 +4,15 @@ import type { Evidence, Offer } from '../../shared/schema'
 import { hasNewerHelper, HELPER_VERSION } from '../lib/helper-version'
 import { AREA_CATEGORY_LABELS } from '../../shared/area-context'
 import { AppIcon } from './AppIcon'
+import { isDesktop } from '../lib/desktop'
 
 interface Props { evidence: Evidence | null; automatic?: boolean; compact?: boolean; onPick: () => void; onFile: (file: File) => void }
 export function SourcePanel({ evidence, automatic = false, compact = false, onPick, onFile }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const desktop = isDesktop()
   return <section className={`panel source-panel${compact ? ' compact-source' : ''}`} aria-labelledby="source-heading">
     <h2 id="source-heading">Your capture</h2>
-    {hasNewerHelper(evidence?.helperVersion) && <aside className="helper-update" aria-label="Windows helper update">
+    {!desktop && hasNewerHelper(evidence?.helperVersion) && <aside className="helper-update" aria-label="Windows helper update">
       <strong>Newer Windows helper available</strong>
       <p>This capture used version {evidence?.helperVersion}.</p>
       <a href="/downloads/fate-collector-helper.zip" download>Download helper {HELPER_VERSION}</a>
@@ -27,11 +29,11 @@ export function SourcePanel({ evidence, automatic = false, compact = false, onPi
         <div className="evidence-caption"><span>Select image to enlarge</span><button className="text-button" onClick={onPick}>Replace</button></div>
       </> : compact ? <>
         <AppIcon name="capture" />
-        {automatic ? <strong>Waiting for F9 capture</strong> : <button className="outline-button" onClick={onPick}>Import capture</button>}
+        {automatic ? <strong>{desktop ? 'Watching for Fate offers' : 'Waiting for F9 capture'}</strong> : <button className="outline-button" onClick={onPick}>Import capture</button>}
         {!automatic && <small>or paste with Ctrl+V</small>}
       </> : <>
         <svg className="upload-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M16 22V4m-7 7 7-7 7 7M5 20v7h22v-7" /></svg>
-        <strong>{automatic ? 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}
+        <strong>{automatic ? desktop ? 'Waiting for your next Fate offer' : 'Waiting for your next F9 capture' : 'Paste your capture with Ctrl+V'}</strong><p>{automatic ? desktop ? 'Calibrate once with F6/F7 and keep the whole Fate panel visible. F9 captures manually.' : 'Keep the whole Fate offer visible in game.' : 'Or drop a helper file or screenshot here'}</p>{!automatic && <button className="outline-button" onClick={onPick}>Import capture</button>}
       </>}
     </div>
     {evidence?.visualRecognition && <DetailPanel className="visual-review" title={<>Image recognition · {evidence.visualRecognition.status === 'candidates' ? 'check suggestions' : 'no supported suggestions'}</>}><p className="hint">Recognition runs locally. The tooltip catalog covers some icons; check every suggested meaning and reward kind against your game.</p>{evidence.visualRecognition.warnings.map(warning => <p className="hint" key={warning}>{warning}</p>)}</DetailPanel>}

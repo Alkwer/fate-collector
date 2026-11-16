@@ -72,7 +72,7 @@ namespace FateCollector
         string feedback;
         public OverlayView View { get; private set; }
         public string PendingId { get { return pendingId; } }
-        public string Feedback { get { return pendingId == null ? feedback : "Waiting for the website to confirm…"; } }
+        public string Feedback { get { return pendingId == null ? feedback : "Waiting for the advisor to confirm…"; } }
 
         public OverlaySession(string directory)
         {
@@ -272,9 +272,9 @@ namespace FateCollector
                     break;
                 default:
                     if (state == null)
-                        View = Message("idle", "Waiting for Fate Collector", "Keep the website open with the captures folder connected and overlay enabled.");
+                        View = Message("idle", "Waiting for Fate Collector", "Open the local advisor from the helper tray, or connect the overlay on the website.");
                     else if (state.CaptureId != captureId)
-                        View = Message("busy", "Waiting for this capture", "The website is still catching up. Keep Fate Collector open.");
+                        View = Message("busy", "Waiting for this capture", "The advisor is still catching up. Keep the helper running.");
                     else
                         View = state;
                     break;
@@ -696,7 +696,7 @@ namespace FateCollector
                     Status = view.Status,
                     Title = view.Title,
                     Detail = String.IsNullOrWhiteSpace(reason) ? view.Detail : reason + "\n" + view.Detail,
-                    Notice = "Open the website to compare this offer. Overlay shortcuts are paused."
+                    Notice = "Open Fate Collector to compare this offer. Overlay shortcuts are paused."
                 };
                 height = PanelContent(graphics, view, width, true, false);
             }

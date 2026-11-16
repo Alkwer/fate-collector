@@ -1,10 +1,12 @@
 import { acceptsOverlayCommand, overlayCaptureSchema, overlayCommandSchema, overlayFresh, overlayStateSchema, OVERLAY_MAX_BYTES, type OverlayCapture, type OverlayState, type OverlayView } from '../../shared/overlay'
+import { desktopDirectory, isDesktop } from './desktop'
 
 export type OverlayDirectory = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: 'readwrite' }): Promise<PermissionState>
   requestPermission(options: { mode: 'readwrite' }): Promise<PermissionState>
 }
 export function overlayPicker() {
+  if (isDesktop()) return async () => desktopDirectory()
   return (window as Window & { showDirectoryPicker?: (options: { id: string; mode: 'readwrite' }) => Promise<OverlayDirectory> }).showDirectoryPicker
 }
 export async function readOverlayFile(directory: FileSystemDirectoryHandle, name: string): Promise<unknown | null> {
@@ -43,7 +45,7 @@ export class OverlayChannel {
   async tick(snapshot: (capture: OverlayCapture | null) => { view: OverlayView; context: string }, dispatch: (action: string, capture: OverlayCapture | null) => void, now = Date.now()): Promise<OverlayState | null> {
     if (!this.active) return null
     const previous = overlayStateSchema.safeParse(await readOverlayFile(this.directory, 'state.json'))
-    if (previous.success && previous.data.clientId !== this.clientId && overlayFresh(previous.data.writtenAt, now)) throw new Error('Another website tab is using this overlay folder. Disconnect it or wait 12 seconds after closing it.')
+    if (previous.success && previous.data.clientId !== this.clientId && overlayFresh(previous.data.writtenAt, now)) throw new Error('Another advisor is using this overlay folder. Disconnect it or wait 12 seconds after closing it.')
     const rawCapture = await readOverlayFile(this.directory, 'capture.json')
     const capture = rawCapture === null ? null : overlayCaptureSchema.parse(rawCapture)
     const { view, context } = snapshot(capture)
@@ -65,7 +67,7 @@ export class OverlayChannel {
         this.notice = null; this.noticeUntil = 0; state.notice = null
         // React commits the action before the next tick. Never publish the old
         // collect action again with its acknowledgement.
-        state.status = 'busy'; state.title = 'Updating your collection…'; state.detail = 'Waiting for the website.'; state.rows = []; state.actions = []
+        state.status = 'busy'; state.title = 'Updating your collection…'; state.detail = 'Waiting for the advisor.'; state.rows = []; state.actions = []
         state.revision = crypto.randomUUID()
       } else {
         this.notice = 'That action expired. Use the current overlay controls.'
@@ -87,6 +89,6 @@ export class OverlayChannel {
     await this.writing.catch(() => undefined)
     if (!this.lastState) return
     const previous = overlayStateSchema.safeParse(await readOverlayFile(this.directory, 'state.json'))
-    if (previous.success && previous.data.clientId === this.clientId) await writeState(this.directory, { ...this.lastState, writtenAt: 0, actions: [], rows: [], status: 'idle', title: 'Overlay disconnected', detail: 'Connect the overlay on the website to resume.' })
+    if (previous.success && previous.data.clientId === this.clientId) await writeState(this.directory, { ...this.lastState, writtenAt: 0, actions: [], rows: [], status: 'idle', title: 'Overlay disconnected', detail: 'Reconnect the local advisor or website to resume.' })
   }
 }

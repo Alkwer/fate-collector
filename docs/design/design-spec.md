@@ -36,6 +36,15 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
 
 ## Interaction requirements
 
+The standalone Windows advisor reuses the existing application layout, colors,
+type and controls. A compact local-status row explains background operation,
+offers **Run in background**, and distinguishes local data from website data.
+Closing the native window hides it; the helper tray reopens settings. Automatic
+connection replaces the folder picker, while the website keeps explicit folder
+permission. The local journal, collection and priorities persist across helper
+restarts, with explicit area confirmation after restore. Network-only sharing
+setup is replaced with offer export/import guidance in local mode.
+
 **More actions → In-game overlay** opens a focused setup panel using the existing
 theme and dialog. It explains the separate local write permission, running-helper
 requirement, background-tab limits and shortcuts before connection. Connection

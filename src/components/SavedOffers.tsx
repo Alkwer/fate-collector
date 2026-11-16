@@ -1,4 +1,5 @@
 import { DetailPanel } from './DetailPanel'
+import { isDesktop } from '../lib/desktop'
 import { SharingConsent } from './SharingConsent'
 import type { useSharingConsent } from '../lib/useSharingConsent'
 import { useState } from 'react'
@@ -55,11 +56,11 @@ export function SavedOffers({ consentState, records, unreadableOffers, damagedEv
       })}</tbody></table></div>}
       <p className="hint">Sharing status applies to reviewed offers. Check raw OCR uploads in the helper's settings. Full backups include available local screenshots and OCR; download every part. Offer-data backups omit that evidence.</p>
     </section>
-    <DetailPanel className="panel sharing-panel" title={<>Shared research collection <span className="muted">{connected ? consentState.active ? 'Consent active · manage below' : 'Consent required' : 'Not connected'}</span></>}>
+    {isDesktop() ? <p className="hint">This advisor keeps offers on this PC. To move offers to the website, export a backup and import it there. Cloud sharing is available on the website.</p> : <DetailPanel className="panel sharing-panel" title={<>Shared research collection <span className="muted">{connected ? consentState.active ? 'Consent active · manage below' : 'Consent required' : 'Not connected'}</span></>}>
       <p>Share sends this reviewed offer to the collection. Screenshots are not uploaded. The Windows helper can upload raw OCR separately when enabled; this list shows reviewed sharing only. Local edits are not uploaded automatically.</p>
       <div className="access-controls"><label>Collection access key<input type="password" autoComplete="off" value={accessKey} maxLength={1024} placeholder="Provided by the collection owner" onChange={e => setAccessKey(e.target.value)} /></label><button onClick={onCheckConnection}>Check connection</button>{accessKey && <button className="text-button" onClick={() => setAccessKey('')}>Forget key</button>}</div>
       <SharingConsent accessKey={accessKey} {...consentState} />
       <p className="hint">The key stays in memory and is cleared on reload. This first version uses a private collection key; it is not a public anonymous ingestion service.</p>
-    </DetailPanel>
+    </DetailPanel>}
   </>
 }

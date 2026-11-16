@@ -25,13 +25,17 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Optional in-game advice connects the helper's overlay folder with separate
-  read/write permission. The website stays open and uses the same advisor and
+- Helper 0.7.0 runs the bundled advisor locally in a WebView2 host. No browser
+  tab or internet is required for advice; closing its window keeps it running.
+  Collection, reward priorities and saved offers persist in the local Windows
+  profile. Website data is separate; offers can move through export/import.
+- Optional website advice connects the helper's overlay folder with separate
+  read/write permission. In this mode the website stays open and uses the same advisor and
   current-area collection. Explicit shortcuts confirm area membership, record
   the actual choice, undo and start a new area. They never control the game.
   Capture changes and expired heartbeats remove stale advice. Reward corrections,
   priorities and invocation planning remain on the website in this version.
-- Helper 0.6.1 detects stable calibrated offers automatically while the overlay
+- The helper detects stable calibrated offers automatically while the overlay
   connection and foreground game are active. Automatic captures stay local;
   existing raw-upload consent covers F9 captures only. Manual F9 remains a
   fallback for unreadable or unknown names. No choice or area is inferred.

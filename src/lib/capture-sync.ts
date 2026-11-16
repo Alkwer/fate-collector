@@ -1,6 +1,7 @@
 import { MAX_IMPORT_BYTES, type Evidence, type Offer } from '../../shared/schema'
 import { importJson } from './imports'
 import { captureRestoreVersion, handledCaptureIds, hasCaptureReceipt, receiveCapture } from './storage'
+import { desktopDirectory, isDesktop } from './desktop'
 
 export type CaptureDirectory = FileSystemDirectoryHandle & {
   queryPermission(options: { mode: 'read' }): Promise<PermissionState>
@@ -14,6 +15,7 @@ export function compareCaptures(a: Offer, b: Offer): number {
 }
 export const captureName = /^(?:auto-)?fate-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i
 export function directoryPicker() {
+  if (isDesktop()) return async () => desktopDirectory()
   return (window as Window & { showDirectoryPicker?: (options: { id: string; mode: 'read' }) => Promise<CaptureDirectory> }).showDirectoryPicker
 }
 

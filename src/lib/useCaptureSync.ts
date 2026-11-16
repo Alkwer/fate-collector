@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CaptureReader, directoryPicker, type CaptureDirectory, type CapturedEntry } from './capture-sync'
 import { getCaptureFolder, setCaptureFolder } from './storage'
 import { logDiagnostic } from './diagnostic-log'
+import { isDesktop, onDesktopTick } from './desktop'
 
 export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>) {
   const supported = typeof directoryPicker() === 'function' && window.isSecureContext
@@ -51,14 +52,15 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
         }
       } finally {
         working = false
-        if (!stopped) timer = window.setTimeout(() => void scan(), 2000)
+        if (!stopped && !isDesktop()) timer = window.setTimeout(() => void scan(), 2000)
       }
     }
     const wake = () => { if (!document.hidden) void scan() }
     document.addEventListener('visibilitychange', wake)
     window.addEventListener('focus', wake)
+    const stopDesktopTicks = onDesktopTick(() => void scan(), 2000)
     void scan()
-    return () => { stopped = true; window.clearTimeout(timer); document.removeEventListener('visibilitychange', wake); window.removeEventListener('focus', wake) }
+    return () => { stopped = true; stopDesktopTicks(); window.clearTimeout(timer); document.removeEventListener('visibilitychange', wake); window.removeEventListener('focus', wake) }
   }, [folder, status])
 
   async function connect() {
