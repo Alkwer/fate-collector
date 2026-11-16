@@ -156,7 +156,7 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the package-specific exception for the owner's requested
-  overlay and helper 0.6.0 publication. Use the pinned staging run below, set
+  standalone advisor and helper 0.7.0 publication. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
@@ -166,26 +166,39 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
 ### Pinned Fate hotfix exception
 
 On 16 November the owner requested publication of the overlay and updated
-downloadable helper after being informed that real Fate gameplay and physical HDR
-validation had not been performed. This pin implements that publication request
-for PR #48's tested package. It replaces the Guide navigation package pin; the
-existing `hotfix-20261116` workflow input is retained. Only this package is eligible:
+downloadable helper, then extended the task to automatic Fate detection and
+explicitly approved a standalone advisor with local advice and collection storage.
+This pin covers the tested package from PRs #50, #52 and #53. It replaces the
+manual overlay 0.6.0 package pin; the existing `hotfix-20261116` workflow input
+is retained. Only this package is eligible:
 
-- Source revision: `85b4b0e784c2e765398f68ca209298018a1352e7`
-- Package ID: `447f7e3cf9dfc6886f2e436392d75b6fcd538652eecb67496ba412ce924c2392`
-- Successful staging run: `43953639063`
+- Source revision: `d8a791e40d917865d53e8a074cce59b61e158d87`
+- Package ID: `b100b4c8dda595540ddfcde17b08d6b7f50e7b37291304175f9ac0934439832f`
+- Successful staging run: `43977132704`
 
 That run passed application, Windows helper/browser and vision checks, plus
-live staging ingestion smoke. Three overlay browser flows also passed against
-the deployed staging site. The downloaded helper's 33 files include the overlay
-and setup guide; its SHA-256 matches the immutable release manifest:
-`6a30c31de083a88258f9a667b24722cd3f3391476497f2915cc686a9edbf72d4`.
-Local checks also covered native overlay IPC,
-rendering at 100/150/200% scale, click-through/no-activation, capture suspension
-and a real minimized-Chrome background session. Browser fixtures cover capture,
-choice/undo, new-area confirmation, stale commands and exclusive ownership.
-Setup is checked at desktop, tablet and mobile sizes. Native gameplay, physical
-HDR and full manual staging checks are deferred, not attested as passed.
+live staging ingestion smoke. Four overlay browser flows also passed against
+the deployed staging site. The downloaded helper's 99 files include the
+local application, native host, WebView2 SDK and automatic detection worker.
+Its SHA-256 matches the immutable release manifest:
+`fddd57f61109627c4fc6d3d64370e053f5f4665e2884c6c63895d793806e860c`.
+
+The first staging attempt exposed an OPFS snapshot race in the E2E state reader:
+replacement between getFile() and text() raised NotReadableError. A native Chromium
+probe reproduced it, and the publication PR bounds retries to that specific error
+while allowing other failures to surface. Twenty repeated overlay scenarios passed;
+the unchanged product package then passed the staging workflow on retry.
+
+Local validation covered automatic detection and deduplication with generated
+native windows and archived OCR, native WebView2 RPC and network blocking,
+hidden-window updates, choice recording and collection restoration after restart.
+Desktop browser fixtures cover automatic connection, persistence, responsive
+layout and keeping the public website usable in other WebView2 hosts. The native
+capture backend passed clean GDI and WGC overlay exclusion, including float16,
+while Windows reported HDR active. The separate overlay foreground-window fixture
+could not acquire focus on this desktop; its pure protocol/rendering checks passed.
+Actual Fate gameplay, recognition holdout and the full physical HDR/display matrix
+remain unvalidated. Full manual staging checks are deferred, not attested as passed.
 
 The promotion workflow runs from reviewed `main`, which contains this policy
 change, and deploys the existing artifact without rebuilding it. The package
@@ -193,14 +206,16 @@ revision differs from the policy commit only in this mode. Package verification
 and deployment both enforce the pinned revision and package ID; the workflow
 also enforces the staging run identity and rechecks live staging.
 
-This is a package-specific waiver, not a general bypass. It does not attest native
-recognition accuracy, HDR coverage or actual gameplay outcomes. The standard
-native gate and expired prelaunch deadline are unchanged. The package adds an
-opt-in local folder bridge, the Windows advice overlay and helper 0.6.0. It keeps
-the existing advisor and OCR logic; it does not improve recognition accuracy.
-The browser must stay open, and PoE must use windowed or borderless mode. API,
-migrations and collection upload contracts are unchanged. Missing details that
-cannot fit in the native panel require website review and disable its actions.
+This is a package-specific waiver, not a general bypass. The standard native gate
+and expired prelaunch deadline are unchanged. Helper 0.7.0 can run advice and
+collection storage locally without a browser tab or internet; the installed
+Microsoft Edge WebView2 Runtime is required. Automatic detection reads the
+calibrated panel, requires two matching known English card-name rows, and leaves
+game input and recording the chosen card to the user. F9 remains the fallback.
+Automatic captures remain local and are excluded from existing F9 upload consent.
+PoE must use windowed or borderless mode. API, migrations and collection upload
+contracts are unchanged. Missing details that cannot fit in the overlay require
+review in the local advisor or website and disable the affected overlay actions.
 
 ### Temporary prelaunch policy
 
