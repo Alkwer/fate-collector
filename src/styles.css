@@ -649,6 +649,8 @@ td { padding: 16px 12px; }
   .wordmark { font-size: 19px; padding-inline: 4px; }
   nav { flex-direction: row; gap: 4px; }
   nav button { padding: 10px; flex: 1; justify-content: center; font-size: 13px; gap: 8px; }
+  .app-header nav { flex-wrap: wrap; }
+  .app-header nav > button { flex-basis: calc(50% - 4px); }
   nav .app-icon { width: 17px; height: 17px; }
   .diagnostics-nav { margin: 0; }
   .nav-count { margin-left: 0; }
