@@ -156,21 +156,28 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the owner's explicit exception for the 16 November Fate
-  rules update. Use the pinned staging run recorded below, set
+  source catalog and priorities update. Use the pinned staging run recorded below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
-  Inspect triple invocation guidance on staging before promotion.
+  Inspect source references, shared-icon confirmation and starter profiles on staging before promotion.
 
 ### Pinned Fate hotfix exception
 
-The owner explicitly requested the 3.30.0b Hotfix 3 fixes and production
-publication without in-game testing on 16 November. This supersedes the earlier
-`catalog-20261115` exception and is limited to this tested package:
+After staging validation of PR #44, the owner explicitly approved production
+publication with deferred in-game testing on 16 November.
+This replaces the earlier pin for the 3.30.0b Hotfix 3 package; the existing
+`hotfix-20261116` workflow input is retained. Only this tested package is eligible:
 
-- Source revision: `28d992caeb526a531db9fd487ad917109dd94a08`
-- Package ID: `4819e0064e2f5c07f392bd6c488065f2a59328e58c3771250fcbc86b77dedaef`
-- Successful staging run: `43916777689`
+- Source revision: `4074fd151722cd065cdb636e985e58705f3c48af`
+- Package ID: `4bd7396e1a074dbae19aa3969fdd2f6bf7b630905482827b84ac2dd3bd42c6a5`
+- Successful staging run: `43929690476`
+
+That run passed application, Windows helper/browser and vision checks, plus live
+staging ingestion smoke. Additional source-reference and profile flows passed
+against the deployed staging site at 390 and 1440 px; read-only release smoke
+also passed. Native gameplay, physical HDR and full manual staging checks are
+deferred, not attested as passed.
 
 The promotion workflow runs from reviewed `main`, which contains this policy
 change, and deploys the existing artifact without rebuilding it. The package
@@ -180,9 +187,9 @@ also enforces the staging run identity and rechecks live staging.
 
 This is a package-specific waiver, not a general bypass. It does not attest native
 recognition accuracy, HDR coverage or actual gameplay outcomes. The standard
-native gate and expired prelaunch deadline are unchanged. The application supports
-equal reviewed tiers and regular rewards; unknown combo/mixed-tier behavior stays
-explicit. Historical captures and user reward weights remain unchanged.
+native gate and expired prelaunch deadline are unchanged. The package adds PoEDB
+references, exact-tooltip checks for shared unique icons and explicit starter
+priorities. Historical captures and saved reward profiles are preserved.
 
 ### Temporary prelaunch policy
 
