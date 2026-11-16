@@ -155,29 +155,36 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` is the owner's explicit exception for the 16 November Guide
-  navigation fix. Use the pinned staging run recorded below, set
+- `hotfix-20261116` is the package-specific exception for the owner's requested
+  overlay and helper 0.6.0 publication. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
-  Verify stable navigation before opening Guide, within Guide and after returning on staging before promotion.
+  Verify overlay connection, capture identity, choice/undo, area confirmation,
+  stale-advice clearing and the downloadable helper on staging before promotion.
 
 ### Pinned Fate hotfix exception
 
-After staging validation of PR #46, the owner explicitly approved production
-publication with deferred in-game testing on 16 November, confirming the exact
-staging run and package for the Guide navigation fix. This replaces the earlier
-pin for the source catalog and priorities package; the existing
-`hotfix-20261116` workflow input is retained. Only this tested package is eligible:
+On 16 November the owner requested publication of the overlay and updated
+downloadable helper after being informed that real Fate gameplay and physical HDR
+validation had not been performed. This pin implements that publication request
+for PR #48's tested package. It replaces the Guide navigation package pin; the
+existing `hotfix-20261116` workflow input is retained. Only this package is eligible:
 
-- Source revision: `e4dc1756f745807d70dff4f836a05707d03822db`
-- Package ID: `b7b83dbc557839a07067adba8fb6bcf42f26e0979a2a61f3765b1c87972a3a80`
-- Successful staging run: `43936251309`
+- Source revision: `85b4b0e784c2e765398f68ca209298018a1352e7`
+- Package ID: `447f7e3cf9dfc6886f2e436392d75b6fcd538652eecb67496ba412ce924c2392`
+- Successful staging run: `43953639063`
 
-That run passed application, Windows helper/browser and vision checks, plus live
-staging ingestion smoke. Additional browser checks confirmed identical navigation
-bounds before Guide, within Guide and after return in both themes at 320, 390,
-760, 761, 1024 and 1440 px, without horizontal overflow. Native gameplay, physical
+That run passed application, Windows helper/browser and vision checks, plus
+live staging ingestion smoke. Three overlay browser flows also passed against
+the deployed staging site. The downloaded helper's 33 files include the overlay
+and setup guide; its SHA-256 matches the immutable release manifest:
+`6a30c31de083a88258f9a667b24722cd3f3391476497f2915cc686a9edbf72d4`.
+Local checks also covered native overlay IPC,
+rendering at 100/150/200% scale, click-through/no-activation, capture suspension
+and a real minimized-Chrome background session. Browser fixtures cover capture,
+choice/undo, new-area confirmation, stale commands and exclusive ownership.
+Setup is checked at desktop, tablet and mobile sizes. Native gameplay, physical
 HDR and full manual staging checks are deferred, not attested as passed.
 
 The promotion workflow runs from reviewed `main`, which contains this policy
@@ -188,10 +195,12 @@ also enforces the staging run identity and rechecks live staging.
 
 This is a package-specific waiver, not a general bypass. It does not attest native
 recognition accuracy, HDR coverage or actual gameplay outcomes. The standard
-native gate and expired prelaunch deadline are unchanged. The package moves the
-existing mobile navigation rules from the lazy Guide stylesheet to the main CSS
-and refreshes the affected visual baselines. Helper, OCR, API, migrations and
-data contracts are unchanged from the previously approved production package.
+native gate and expired prelaunch deadline are unchanged. The package adds an
+opt-in local folder bridge, the Windows advice overlay and helper 0.6.0. It keeps
+the existing advisor and OCR logic; it does not improve recognition accuracy.
+The browser must stay open, and PoE must use windowed or borderless mode. API,
+migrations and collection upload contracts are unchanged. Missing details that
+cannot fit in the native panel require website review and disable its actions.
 
 ### Temporary prelaunch policy
 
