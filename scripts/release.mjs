@@ -2,12 +2,12 @@ import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { releaseFiles, releaseId, verifyRelease } from './release-lib.mjs'
-import { assertCatalogUpdateRelease, promotionRevision } from './promotion-policy.mjs'
+import { assertHotfixUpdateRelease, promotionRevision } from './promotion-policy.mjs'
 
 const directory = resolve('.release')
 if (process.argv[2] === 'verify') {
   const manifest = await verifyRelease(directory, promotionRevision(process.env))
-  assertCatalogUpdateRelease(process.env, manifest)
+  assertHotfixUpdateRelease(process.env, manifest)
   console.log(`Verified release ${manifest.releaseId} for ${manifest.revision}.`)
 } else if (process.argv[2] === 'pack') {
   // Refuse an existing package instead of mixing builds or deleting it.

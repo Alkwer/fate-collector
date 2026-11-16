@@ -1,18 +1,18 @@
 // Temporary exception approved before live Fate encounters are available.
 export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
-// Owner-approved data update; this exception cannot promote any other package.
-export const CATALOG_UPDATE_RELEASE = Object.freeze({
-  revision: '33ab6cf796958c7b08c26933e69a2471f802c278',
-  releaseId: 'd400c5a9481d5a07a9cb6ac71e15b9a331822e3fbed2a540233c7bad4f95f92e',
-  stagingRunId: '43767408132',
+// Owner-approved Fate rules update; this exception cannot promote any other package.
+export const HOTFIX_UPDATE_RELEASE = Object.freeze({
+  revision: '28d992caeb526a531db9fd487ad917109dd94a08',
+  releaseId: '4819e0064e2f5c07f392bd6c488065f2a59328e58c3771250fcbc86b77dedaef',
+  stagingRunId: '43916777689',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
   const mode = env.RELEASE_VALIDATION_MODE || 'native-holdout'
-  if (mode === 'catalog-20261115') {
-    if (env.CATALOG_UPDATE_ACKNOWLEDGED !== 'true') throw new Error('Catalog promotion requires explicit acceptance of deferred in-game validation.')
-    if (env.RECOGNITION_RUN_ID || env.MANUAL_TESTS_PASSED === 'true') throw new Error('Catalog promotion does not attest native or full manual tests.')
+  if (mode === 'hotfix-20261116') {
+    if (env.HOTFIX_UPDATE_ACKNOWLEDGED !== 'true') throw new Error('Hotfix promotion requires explicit acceptance of deferred in-game validation.')
+    if (env.RECOGNITION_RUN_ID || env.MANUAL_TESTS_PASSED === 'true') throw new Error('Hotfix promotion does not attest native or full manual tests.')
     return mode
   }
   if (mode === 'prelaunch') {
@@ -32,15 +32,15 @@ export function assertPromotionPolicy(env, now = new Date()) {
 }
 
 export function promotionRevision(env) {
-  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261115') return env.GITHUB_SHA
+  if (env.RELEASE_VALIDATION_MODE !== 'hotfix-20261116') return env.GITHUB_SHA
   assertPromotionPolicy(env)
-  return CATALOG_UPDATE_RELEASE.revision
+  return HOTFIX_UPDATE_RELEASE.revision
 }
 
-export function assertCatalogUpdateRelease(env, manifest) {
-  if (env.RELEASE_VALIDATION_MODE !== 'catalog-20261115') return
+export function assertHotfixUpdateRelease(env, manifest) {
+  if (env.RELEASE_VALIDATION_MODE !== 'hotfix-20261116') return
   assertPromotionPolicy(env)
-  if (manifest.revision !== CATALOG_UPDATE_RELEASE.revision || manifest.releaseId !== CATALOG_UPDATE_RELEASE.releaseId) {
-    throw new Error('Catalog exception is limited to the approved screenshot catalog package.')
+  if (manifest.revision !== HOTFIX_UPDATE_RELEASE.revision || manifest.releaseId !== HOTFIX_UPDATE_RELEASE.releaseId) {
+    throw new Error('Hotfix exception is limited to the approved Fate hotfix package.')
   }
 }

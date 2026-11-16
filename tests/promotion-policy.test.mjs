@@ -1,34 +1,36 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
-import { assertCatalogUpdateRelease, assertPromotionPolicy, CATALOG_UPDATE_RELEASE, PRELAUNCH_DEADLINE, promotionRevision } from '../scripts/promotion-policy.mjs'
+import { assertHotfixUpdateRelease, assertPromotionPolicy, HOTFIX_UPDATE_RELEASE, PRELAUNCH_DEADLINE, promotionRevision } from '../scripts/promotion-policy.mjs'
 import { assertDeploymentContext } from '../scripts/release-lib.mjs'
 
 afterEach(() => vi.useRealTimers())
 const before = new Date('2026-11-13T18:59:59.999Z')
 const prelaunch = { RELEASE_VALIDATION_MODE: 'prelaunch', PRELAUNCH_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
-const catalog = { RELEASE_VALIDATION_MODE: 'catalog-20261115', CATALOG_UPDATE_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
+const hotfix = { RELEASE_VALIDATION_MODE: 'hotfix-20261116', HOTFIX_UPDATE_ACKNOWLEDGED: 'true', MANUAL_TESTS_PASSED: 'false' }
 
-test('catalog deferral requires explicit acceptance and never attests unperformed native checks', () => {
-  expect(assertPromotionPolicy(catalog)).toBe('catalog-20261115')
-  expect(promotionRevision({ ...catalog, GITHUB_SHA: 'a'.repeat(40) })).toBe(CATALOG_UPDATE_RELEASE.revision)
+test('hotfix deferral requires explicit acceptance and never attests unperformed native checks', () => {
+  expect(assertPromotionPolicy(hotfix)).toBe('hotfix-20261116')
+  expect(promotionRevision({ ...hotfix, GITHUB_SHA: 'a'.repeat(40) })).toBe(HOTFIX_UPDATE_RELEASE.revision)
   expect(promotionRevision({ GITHUB_SHA: 'a'.repeat(40) })).toBe('a'.repeat(40))
-  for (const patch of [{ CATALOG_UPDATE_ACKNOWLEDGED: 'false' }, { MANUAL_TESTS_PASSED: 'true' }, { RECOGNITION_RUN_ID: '123' }]) {
-    expect(() => assertPromotionPolicy({ ...catalog, ...patch })).toThrow()
+  for (const patch of [{ HOTFIX_UPDATE_ACKNOWLEDGED: 'false' }, { MANUAL_TESTS_PASSED: 'true' }, { RECOGNITION_RUN_ID: '123' }]) {
+    expect(() => assertPromotionPolicy({ ...hotfix, ...patch })).toThrow()
   }
 })
 
-test('the superseded catalog exception cannot promote the prior package', () => {
-  expect(() => assertPromotionPolicy({ ...catalog, RELEASE_VALIDATION_MODE: 'catalog-20261114' })).toThrow('Unknown')
-  expect(() => assertCatalogUpdateRelease(catalog, { revision: '3f92053a2c88361a17ccf74b9fed7a5aa05b4b38', releaseId: '40bc7de10609f8a797635fb03ed8ceb1267b594b3cc3e10feb8d94e8ed3fbb11' })).toThrow('approved screenshot catalog package')
+test('superseded catalog exceptions cannot promote prior packages', () => {
+  for (const mode of ['catalog-20261114', 'catalog-20261115']) {
+    expect(() => assertPromotionPolicy({ ...hotfix, RELEASE_VALIDATION_MODE: mode })).toThrow('Unknown')
+  }
+  expect(() => assertHotfixUpdateRelease(hotfix, { revision: '33ab6cf796958c7b08c26933e69a2471f802c278', releaseId: 'd400c5a9481d5a07a9cb6ac71e15b9a331822e3fbed2a540233c7bad4f95f92e' })).toThrow('approved Fate hotfix package')
 })
 
-test('catalog exception pins both package and source while keeping production workflow guards', () => {
-  const manifest = { ...CATALOG_UPDATE_RELEASE }
-  const env = { ...catalog, GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'Alkwer/fate-collector', GITHUB_SHA: 'a'.repeat(40), GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/promote.yml@refs/heads/main', STAGING_VERIFIED_RELEASE: manifest.releaseId }
+test('hotfix exception pins both package and source while keeping production workflow guards', () => {
+  const manifest = { ...HOTFIX_UPDATE_RELEASE }
+  const env = { ...hotfix, GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: 'Alkwer/fate-collector', GITHUB_SHA: 'a'.repeat(40), GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/promote.yml@refs/heads/main', STAGING_VERIFIED_RELEASE: manifest.releaseId }
   expect(() => assertDeploymentContext('production', env, manifest)).not.toThrow()
   for (const patch of [{ revision: 'a'.repeat(40) }, { releaseId: 'b'.repeat(64) }]) {
-    expect(() => assertCatalogUpdateRelease(env, { ...manifest, ...patch })).toThrow('approved screenshot catalog package')
+    expect(() => assertHotfixUpdateRelease(env, { ...manifest, ...patch })).toThrow('approved Fate hotfix package')
     expect(() => assertDeploymentContext('production', { ...env, STAGING_VERIFIED_RELEASE: patch.releaseId || manifest.releaseId }, { ...manifest, ...patch })).toThrow()
   }
   for (const patch of [{ GITHUB_ACTIONS: 'false' }, { GITHUB_REPOSITORY: 'other/repository' }, { GITHUB_REF: 'refs/heads/feature' }, { STAGING_VERIFIED_RELEASE: 'wrong' }, { GITHUB_WORKFLOW_REF: 'Alkwer/fate-collector/.github/workflows/deploy.yml@refs/heads/main' }]) {
@@ -106,16 +108,16 @@ test('the actual workflow checks staging in prelaunch and keeps exact native rep
     recognition.head_sha = context.sha;
     recognition.path = '.github/workflows/deploy.yml';
     await assert.rejects(execute(context, github, { summary }, { env: nativeEnv }), /designated successful recognition workflow/);
-    const catalogRelease = ${JSON.stringify(CATALOG_UPDATE_RELEASE)};
-    const catalogEnv = { ...env, ...${JSON.stringify(catalog)}, STAGING_RUN_ID: catalogRelease.stagingRunId };
-    const catalogGithub = { rest: { actions: { getWorkflowRun: async args => { assert.equal(args.run_id, Number(catalogRelease.stagingRunId)); return { data: staging }; } } } };
-    staging.head_sha = catalogRelease.revision;
-    await execute(context, catalogGithub, { summary }, { env: catalogEnv });
+    const hotfixRelease = ${JSON.stringify(HOTFIX_UPDATE_RELEASE)};
+    const hotfixEnv = { ...env, ...${JSON.stringify(hotfix)}, STAGING_RUN_ID: hotfixRelease.stagingRunId };
+    const hotfixGithub = { rest: { actions: { getWorkflowRun: async args => { assert.equal(args.run_id, Number(hotfixRelease.stagingRunId)); return { data: staging }; } } } };
+    staging.head_sha = hotfixRelease.revision;
+    await execute(context, hotfixGithub, { summary }, { env: hotfixEnv });
     assert.match(summaries.at(-1), /in-game validation is deferred, not passed/);
-    await assert.rejects(execute(context, catalogGithub, { summary }, { env: { ...catalogEnv, STAGING_RUN_ID: '12' } }), /pinned screenshot catalog staging run/);
+    await assert.rejects(execute(context, hotfixGithub, { summary }, { env: { ...hotfixEnv, STAGING_RUN_ID: '12' } }), /pinned Fate hotfix staging run/);
     for (const [key, value] of [['head_sha', context.sha], ['conclusion', 'failure'], ['head_branch', 'feature'], ['path', '.github/workflows/ci.yml']]) {
       const previous = staging[key]; staging[key] = value;
-      await assert.rejects(execute(context, catalogGithub, { summary }, { env: catalogEnv }), /exact main commit/);
+      await assert.rejects(execute(context, hotfixGithub, { summary }, { env: hotfixEnv }), /exact main commit/);
       staging[key] = previous;
     }
   `

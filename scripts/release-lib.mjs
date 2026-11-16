@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { assertCatalogUpdateRelease, assertPromotionPolicy, promotionRevision } from './promotion-policy.mjs'
+import { assertHotfixUpdateRelease, assertPromotionPolicy, promotionRevision } from './promotion-policy.mjs'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
 export async function releaseFiles(directory, prefix = '') {
@@ -56,7 +56,7 @@ export function assertDeploymentContext(environment, env, manifest) {
   // Recheck the deadline after any environment approval or queued job delay.
   if (environment === 'production') {
     assertPromotionPolicy(env)
-    assertCatalogUpdateRelease(env, manifest)
+    assertHotfixUpdateRelease(env, manifest)
   }
 }
 export async function verifyLiveRelease(target, environment, manifest) {
