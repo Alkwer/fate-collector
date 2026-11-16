@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       staging_run_id:
-        description: Successful staging run for this main commit, or pinned run 43929690476 for hotfix-20261116
+        description: Successful staging run for this main commit, or pinned run 43936251309 for hotfix-20261116
         required: true
         type: string
       validation_mode:
-        description: Full native validation, expired prelaunch mode, or the pinned Fate catalog update exception
+        description: Full native validation, expired prelaunch mode, or the pinned Guide navigation fix exception
         required: true
         default: native-holdout
         type: choice
@@ -16,7 +16,7 @@ on:
           - prelaunch
           - hotfix-20261116
       hotfix_update_acknowledged:
-        description: For the pinned Fate catalog update only, I accept deferred in-game validation; automated and live staging checks remain required
+        description: For the pinned Guide navigation fix only, I accept deferred in-game validation; automated and live staging checks remain required
         required: true
         default: false
         type: boolean
@@ -73,8 +73,8 @@ jobs:
               throw new Error('Choose a successful staging workflow for this exact main commit.');
             }
             if (mode === 'hotfix-20261116') {
-              await core.summary.addHeading('Pinned Fate catalog update')
-                .addRaw(`Owner-approved source catalog and priorities update: in-game validation is deferred, not passed. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
+              await core.summary.addHeading('Pinned Guide navigation fix')
+                .addRaw(`Owner-approved Guide navigation fix: in-game validation is deferred, not passed. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
                 .write();
               return;
             }
