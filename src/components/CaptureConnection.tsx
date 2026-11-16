@@ -1,11 +1,13 @@
 import type { useCaptureSync } from '../lib/useCaptureSync'
 import { CaptureVersion } from './CaptureVersion'
+import { isDesktop } from '../lib/desktop'
 
 export function CaptureConnection({ sync }: { sync: ReturnType<typeof useCaptureSync> }) {
   const active = sync.status === 'active'
+  const desktop = isDesktop()
   return <section className={`capture-connection ${active ? 'connected' : ''}`} aria-label="Local capture review">
     <div><strong>{active ? 'Local review connected' : sync.status === 'permission' ? 'Allow folder access to resume local review' : sync.status === 'error' ? 'Local auto-save is paused' : 'Local capture review'}</strong>
-      <p>{active ? `${sync.folderName} · ${sync.received} saved this session. Press F9 in game; keep this page open for local review.`
+      <p>{active ? `${sync.folderName} · ${sync.received} saved this session. ${desktop ? 'Stable Fate offers are detected automatically. F9 captures manually; review continues with this window closed.' : 'Press F9 in game; keep this page open for local review.'}`
         : sync.supported ? "Optional: connect the helper's captures folder to save and review offers here automatically." : 'Folder connection needs desktop Chrome or Edge. You can still import or paste captures here.'}</p>
       <p>Cloud upload is configured in the helper and can run with this page closed.</p>
     </div>

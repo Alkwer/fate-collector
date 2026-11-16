@@ -1,19 +1,20 @@
 # In-game Fate advice
 
-The Windows helper 0.6.1 automatically detects offers for the local Fate overlay.
-The website remains the source of reward priorities, current-area collection and
-recommendation logic. Use desktop Chrome or Edge with HTTPS or localhost, and
-PoE in windowed or borderless mode. Exclusive fullscreen is not supported by
-this first version.
+The Windows helper 0.7.0 automatically detects offers and runs the Fate advisor
+locally, without an open browser or internet connection. It bundles the same
+interface and recommendation engine as the website. Use PoE in windowed or
+borderless mode; exclusive fullscreen is not supported by this version.
 
 ## Setup
 
-1. Exit the old helper. Update the entire helper package, preserving captures,
-   symbol reports and calibration. Run `FateCollector.ahk`.
-2. On the website open **More actions → In-game overlay**.
-3. Choose **Connect overlay folder**, select the running helper's `captures`
-   directory and allow read/write access. The helper must already have created
-   `captures/.overlay`. This also connects normal local capture review.
+1. Exit the old helper. Extract the entire helper package, including `desktop`
+   and `webview2`, preserving captures, symbol reports and calibration. Run
+   `FateCollector.ahk`. Microsoft Edge WebView2 Runtime must be installed.
+2. Set reward priorities in the local Fate Collector window. Capture review
+   and the overlay connect automatically; no folder picker is needed.
+3. Choose **Run in background** or close the window. The advisor keeps running.
+   **Open local advisor** in the helper tray opens settings, corrections and
+   invocation planning again. Exiting the helper stops the advisor.
 4. In the game, calibrate with F6/F7 if needed. Include the Fates heading, English
    card names and Confirm button. Keep the offer visible for two matching reads.
 5. Confirm the current area with Ctrl+Alt+Enter when prompted. Check the displayed
@@ -21,12 +22,27 @@ this first version.
    Ctrl+Alt+number while the panel is visible, then select it in game. Undo the
    record if you change your mind. F9 remains available for a manual capture.
 
+The local collection, journal and reward priorities are saved in the Windows
+profile under `%LOCALAPPDATA%\FateCollector\desktop`. Restarting the helper
+restores them and asks you to confirm the current area. Website data is separate;
+use offer backup export/import to move observations. Cloud sharing and symbol
+submission remain website flows, with their existing explicit consent.
+
+To use the website instead, select **Use website advisor** in the helper tray.
+Open **More actions → In-game overlay** in desktop Chrome or Edge on HTTPS,
+select the helper's `captures` folder and allow read/write access. Keep that tab
+open in website mode. To return to local mode, disconnect the website overlay
+and select **Open local advisor**. Only one advisor owns the overlay at a time;
+a closed advisor's connection expires after 12 seconds.
+
 ## Automatic detection
 
 **Auto-detect Fate cards** is enabled in the helper tray by default, but scans run
-only with a fresh website overlay connection, valid calibration and verified PoE
+only with a fresh advisor connection, valid calibration and verified PoE
 in the foreground. F8 previews, symbol reporting, manual captures, loss of focus
-and closing/disconnecting the website stop scanning. The tray toggle is saved;
+and disconnecting the advisor stop scanning. In standalone mode closing the local
+window keeps the connection active; in website mode closing the tab stops it.
+The tray toggle is saved;
 F10 clears calibration and pauses scanning until F6/F7 calibration is restored.
 After repeated capture errors, retry from the tray or use F9.
 
@@ -34,7 +50,7 @@ A persistent local worker samples the calibrated panel, waiting 1.5 seconds afte
 each completed OCR read. Two matching recognized rows are required before saving.
 Only known, readable English names inside an unambiguous Fates/Confirm panel are
 accepted; invocation screens and incomplete OCR abstain. Unknown or missed cards
-still need F9 and website review. This has been tested with archived OCR and
+still need F9 and review in Fate Collector. This has been tested with archived OCR and
 generated fixtures, not established as a live-game accuracy guarantee.
 
 Probe images remain in memory. Accepted offers are saved as
@@ -67,7 +83,7 @@ More than nine recognized cards requires website review. Excluded cards cannot
 be recorded through the overlay. A new area discards the current offer binding
 and requires a fresh automatic or F9 capture.
 When the full comparison cannot fit at a readable size, the overlay retains the
-recommended position, reason and uncertainty, asks you to compare on the website,
+recommended position, reason and uncertainty, asks you to compare in Fate Collector,
 and pauses its action shortcuts. It never hides missing-data details to fit more
 choice buttons.
 
@@ -76,15 +92,17 @@ choice buttons.
 The overlay calls the existing single-goal or portfolio recommendation engine.
 It preserves equal matches, unknown rewards and provisional advice. It does not
 infer reward meanings from portraits or improve OCR. Inspect and correct unknown
-data on the website. Invocation planning remains on the website in this version.
+data in Fate Collector. Invocation planning is available in the local window and website.
 An open editor, pending changes or unavailable capture connection blocks overlay
 actions so background commands cannot overwrite a correction.
 
-The website must remain open. A background tab can be throttled or suspended;
+In website mode the page must remain open. A background tab can be throttled or suspended;
 after 12 seconds without a valid heartbeat the helper removes the advice and
 actions. Return to the website to resume updates. A new F9, failed/cancelled
 capture or mismatched capture ID also prevents an old recommendation from showing.
-Reconnect the overlay explicitly after reloading the page. Only one tab per
+Reconnect the website overlay explicitly after reloading the page. The standalone
+advisor reconnects automatically and is driven by a Windows timer while hidden.
+Only one tab per
 browser origin can own the overlay. A recently active writer from another origin
 also blocks connection until it disconnects or expires.
 
@@ -98,7 +116,17 @@ The browser's ordinary capture connection stays read-only. The separate overlay
 connection explicitly requests read/write permission, writing only
 `captures/.overlay/state.json`. The helper owns `capture.json` and `command.json`.
 Original capture files are not changed. No HTTP listener, remote service,
-credentials or additional runtime installation is needed.
+credentials are needed for advice. Standalone mode uses the installed WebView2
+Runtime; its SDK libraries and complete local application ship in the helper ZIP.
+
+`Start-FateDesktop.ps1` loads the WinForms WebView2 host with a persistent local
+profile and parent-process lifetime. HTTPS virtual-host mapping serves bundled
+assets without a server. Remote navigation and network resources are blocked.
+The origin-bound message bridge lists/reads only capture files and three overlay
+files, and writes only bounded `state.json` messages atomically. A profile mutex
+prevents two local instances from sharing storage. Native 500 ms ticks wake capture
+and overlay polling with single-flight guards, independently of browser tab timers.
+Closing the window hides it; exiting the helper disposes the host.
 
 Protocol 1 is defined by `shared/overlay.ts`. Messages are bounded to 32 KiB.
 Browser state contains a connection ID, stable snapshot revision, capture ID,
@@ -110,6 +138,10 @@ identity, preventing replay from a previous visit. Native writes are atomic and
 browser writes use `createWritable`/close.
 
 Run `npm run test:auto-capture` for offer detection, request and evidence checks;
+`npm run test:desktop` checks the packaged host's file and origin boundaries.
+`npm run prepare:helper` builds and prepares a runnable helper in this checkout.
+`npx playwright test e2e/desktop.spec.ts` covers automatic connection, local
+collection persistence and native-message adapter behavior without API requests.
 `npm run test:calibration` also tests automatic stability and manual fallback.
 Run `npm run test:overlay` for native protocol/render checks and
 `npx vitest run tests/overlay.test.ts` for recommendation/bridge checks.

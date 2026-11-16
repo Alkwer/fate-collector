@@ -23,3 +23,5 @@ helpers/fate-collector.ini
 /helpers/symbol-reports/
 /helpers/captures/.overlay/
 /helpers/captures/.auto/
+/helpers/desktop/
+/helpers/webview2/

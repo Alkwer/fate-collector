@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { isDesktop } from './desktop'
 import { bindOfferToMap, loadAdvisorWorkspace, newAdvisorWorkspace, saveAdvisorWorkspace, startMapWorkspace,
   type AdvisorWorkspace } from './advisor-workspace'
 
@@ -7,7 +8,7 @@ const unavailableStorage = 'Browser storage is unavailable. Planning notes will 
 export function useAdvisorWorkspace() {
   const [state, setState] = useState(() => {
     try {
-      const { workspace, restored, error } = loadAdvisorWorkspace(window.sessionStorage)
+      const { workspace, restored, error } = loadAdvisorWorkspace(isDesktop() ? window.localStorage : window.sessionStorage)
       return { workspace, needsMapConfirmation: restored, storageError: error }
     } catch {
       return { workspace: newAdvisorWorkspace(), needsMapConfirmation: false, storageError: unavailableStorage }
@@ -27,7 +28,7 @@ export function useAdvisorWorkspace() {
 
   function save(workspace: AdvisorWorkspace, needsMapConfirmation: boolean) {
     let storageError: string | null
-    try { storageError = saveAdvisorWorkspace(window.sessionStorage, workspace) }
+    try { storageError = saveAdvisorWorkspace(isDesktop() ? window.localStorage : window.sessionStorage, workspace) }
     catch { storageError = unavailableStorage }
     commit({ workspace, needsMapConfirmation, storageError })
   }

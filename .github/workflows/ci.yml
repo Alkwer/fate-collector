@@ -97,6 +97,7 @@ jobs:
         env:
           HELPER_SYMBOL_FIXTURE: .qa/symbol-native-contract.json
       - run: npm run build
+      - run: npm run test:desktop
       - run: npm run test:upload:integration
       - name: Install compatibility browsers
         run: npx playwright install chromium firefox msedge

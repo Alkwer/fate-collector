@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { OverlayCapture, OverlayView } from '../../shared/overlay'
 import { OverlayChannel, overlayPicker } from './overlay-channel'
 import type { CaptureDirectory } from './capture-sync'
+import { isDesktop, onDesktopTick } from './desktop'
 
 interface Options {
   snapshot: (capture: OverlayCapture | null) => { view: OverlayView; context: string }
@@ -15,25 +16,30 @@ export function useOverlayConnection(options: Options) {
   const [status, setStatus] = useState<'off' | 'connecting' | 'active' | 'error'>('off')
   const [problem, setProblem] = useState<string | null>(null)
   const [preview, setPreview] = useState<OverlayView | null>(null)
-  const session = useRef<{ channel: OverlayChannel; timer?: number; release?: () => void } | null>(null)
+  const session = useRef<{ channel: OverlayChannel; timer?: number; release?: () => void; stopTicks?: () => void } | null>(null)
   const generation = useRef(0)
+  const connecting = useRef(false)
+  const autoReconnect = useRef(true)
 
   async function disconnect() {
+    autoReconnect.current = false
     ++generation.current
     const old = session.current
     session.current = null
-    if (old) { window.clearTimeout(old.timer); old.channel.stop(); old.release?.(); await old.channel.disconnect().catch(() => undefined) }
+    if (old) { window.clearTimeout(old.timer); old.stopTicks?.(); old.channel.stop(); old.release?.(); await old.channel.disconnect().catch(() => undefined) }
     setStatus('off'); setPreview(null); setProblem(null)
   }
   useEffect(() => () => {
     ++generation.current
     const old = session.current
-    if (old) { window.clearTimeout(old.timer); old.channel.stop(); old.release?.() }
+    if (old) { window.clearTimeout(old.timer); old.stopTicks?.(); old.channel.stop(); old.release?.() }
   }, [])
 
   async function connect() {
     const picker = overlayPicker()
-    if (!picker || status === 'connecting' || status === 'active') return
+    if (!picker || connecting.current || status === 'connecting' || status === 'active') return
+    connecting.current = true
+    autoReconnect.current = true
     const version = ++generation.current
     setStatus('connecting'); setProblem(null)
     let release: (() => void) | undefined
@@ -53,32 +59,48 @@ export function useOverlayConnection(options: Options) {
         }).catch(reject)
       })
       if (version !== generation.current) { release?.(); return }
-      const active = { channel: new OverlayChannel(bridge), release, timer: undefined as number | undefined }
+      const active = { channel: new OverlayChannel(bridge), release, timer: undefined as number | undefined, stopTicks: undefined as (() => void) | undefined }
       session.current = active
       // Check ownership before changing the existing capture connection.
       await active.channel.tick(capture => current.current.snapshot(capture), () => undefined)
       await current.current.connectCaptures(directory as unknown as CaptureDirectory)
       if (version !== generation.current) { active.channel.stop(); release?.(); return }
       setStatus('active')
+      let working = false
       const poll = async () => {
+        if (working || version !== generation.current) return
+        working = true
         try {
           const state = await active.channel.tick(capture => current.current.snapshot(capture), (action, capture) => current.current.dispatch(action, capture))
           if (version !== generation.current) return
           if (state) setPreview(previous => JSON.stringify(previous) === JSON.stringify({ captureId: state.captureId, status: state.status, title: state.title, detail: state.detail, rows: state.rows, actions: state.actions }) ? previous : { captureId: state.captureId, status: state.status, title: state.title, detail: state.detail, rows: state.rows, actions: state.actions })
-          active.timer = window.setTimeout(() => void poll(), 1000)
+          if (!isDesktop()) active.timer = window.setTimeout(() => void poll(), 1000)
         } catch (error) {
-          active.channel.stop(); release?.()
+          active.stopTicks?.(); active.channel.stop(); release?.()
           if (version === generation.current) { session.current = null; setStatus('error'); setProblem(error instanceof Error ? error.message : 'Overlay connection failed. Reconnect the folder.'); setPreview(null) }
-        }
+        } finally { working = false }
       }
+      active.stopTicks = onDesktopTick(() => void poll())
       void poll()
     } catch (error) {
       release?.()
-      session.current?.channel.stop(); session.current = null
+      session.current?.stopTicks?.(); session.current?.channel.stop(); session.current = null
       if (version !== generation.current) return
       if (error instanceof DOMException && error.name === 'AbortError') { setStatus('off'); return }
       setStatus('error'); setProblem(error instanceof DOMException && error.name === 'NotFoundError' ? 'Start the updated Windows helper, then select its captures folder. The overlay folder is missing.' : error instanceof Error ? error.message : 'Could not connect the overlay.')
-    }
+    } finally { connecting.current = false }
   }
+  const local = useRef({ connect, status })
+  useLayoutEffect(() => { local.current = { connect, status } })
+  useEffect(() => {
+    if (!isDesktop()) return
+    const retry = () => {
+      if (autoReconnect.current && (local.current.status === 'off' || local.current.status === 'error')) void local.current.connect()
+    }
+    let live = true
+    queueMicrotask(() => { if (live) retry() })
+    const stop = onDesktopTick(retry, 3000)
+    return () => { live = false; stop() }
+  }, [])
   return { supported, status, problem, preview, connect, disconnect }
 }

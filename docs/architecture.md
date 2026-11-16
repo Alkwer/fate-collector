@@ -47,11 +47,22 @@ normal capture and observation endpoints remain text-only. See [symbol reports](
 No server-rendering framework or paid OCR service is required.
 
 The optional [in-game overlay](overlay.md) exchanges local messages under
-`captures/.overlay`. The helper writes capture markers and commands; the browser
-writes a leased display snapshot using the existing advisor. An explicit second
-folder permission enables these writes while ordinary local review stays
+`captures/.overlay`. The helper writes capture markers and commands; the local
+WebView2 app or connected browser writes a leased display snapshot using the
+same advisor. In browser mode an explicit second folder permission enables these writes while ordinary local review stays
 read-only. Commands must match the live connection, capture and snapshot, and
 area/choice changes remain explicit. No overlay message enters cloud ingestion.
+
+Helper 0.7.0 defaults to the bundled standalone WebView2 app. `Desktop.ahk` owns
+its process and mode; `FateDesktop.cs` maps bundled assets to `https://fate.local`,
+blocks remote network/navigation, and exposes bounded capture reads plus overlay
+state writes over origin-checked messages. `src/lib/desktop.ts` adapts that bridge
+to the existing folder readers. Native timer events drive capture/overlay polling
+while hidden. Local IndexedDB and localStorage persist in a dedicated Windows
+profile; current-area notes use localStorage in this mode, sessionStorage on the
+website. One profile mutex prevents concurrent desktop writers. SDK libraries
+are downloaded at build time from a pinned, SHA-256-checked NuGet package;
+the helper bundles the current frontend build without a nested helper ZIP.
 
 Automatic detection runs only with that live connection and a calibrated foreground
 game. The persistent PowerShell worker keeps probe pixels in memory, returns bounded

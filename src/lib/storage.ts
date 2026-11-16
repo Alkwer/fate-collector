@@ -2,6 +2,7 @@ import { z } from '../../shared/validation'
 import { evidenceSchema, offerSchema, type Archive, type Evidence, type Offer } from '../../shared/schema'
 import { sharingConsent } from './consent'
 import { inspectEvidence, verifyImage } from './evidence'
+import { desktopDirectory, isDesktop } from './desktop'
 
 const changedEvent = 'fate-collector-history-changed'
 function changed() {
@@ -467,10 +468,12 @@ export async function handledCaptureIds(): Promise<Set<string>> {
 }
 
 export async function getCaptureFolder(): Promise<FileSystemDirectoryHandle | null> {
+  if (isDesktop()) return desktopDirectory()
   const record = await value((await db()).transaction('settings').objectStore('settings').get('capture-folder')) as { handle: FileSystemDirectoryHandle } | undefined
   return record?.handle ?? null
 }
 export async function setCaptureFolder(handle: FileSystemDirectoryHandle | null): Promise<void> {
+  if (isDesktop()) return
   const transaction = (await db()).transaction('settings', 'readwrite')
   const done = complete(transaction)
   if (handle) transaction.objectStore('settings').put({ id: 'capture-folder', handle })

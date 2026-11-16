@@ -5,6 +5,7 @@ if (process.platform !== 'win32') throw new Error('Helper tests require Windows 
 const suites = { capture: 'Test-FateCapture.ps1', upload: 'Test-CloudUpload.ps1', diagnostics: 'Test-Diagnostics.ps1', image: 'Test-CaptureImage.ps1', ocr: 'Test-OcrPasses.ps1', backend: 'Test-CaptureBackend.ps1', symbol: 'Test-SymbolReport.ps1' }
 suites.overlay = 'Test-Overlay.ps1'
 suites.auto = 'Test-AutoCapture.ps1'
+suites.desktop = 'Test-Desktop.ps1'
 if (process.argv[2] === 'calibration') {
   const ahk = process.env.AUTOHOTKEY_EXE || join(process.env.ProgramFiles, 'AutoHotkey', 'v2', 'AutoHotkey64.exe')
   for (const args of [
@@ -20,7 +21,7 @@ if (process.argv[2] === 'calibration') {
   process.exit(0)
 }
 const suite = suites[process.argv[2]]
-if (!suite) throw new Error('Choose capture, upload, diagnostics, calibration, image, backend, ocr, symbol or overlay.')
+if (!suite) throw new Error('Choose capture, upload, diagnostics, calibration, image, backend, ocr, symbol, overlay, auto or desktop.')
 const executable = join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
 const env = { ...process.env }
 // npm launched from PowerShell 7 inherits incompatible standard-module paths.

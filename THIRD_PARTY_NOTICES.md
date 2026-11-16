@@ -45,5 +45,11 @@ The project license does not relicense this material.
 
 ## Dependencies
 
+The Windows helper packages the Microsoft Edge WebView2 SDK version 1.0.3537.50
+from [Microsoft.Web.WebView2 on NuGet](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.3537.50).
+Microsoft's SDK license and third-party notices are included as
+`webview2/LICENSE.txt` and `webview2/NOTICE.txt`. The helper uses the WebView2
+Runtime installed on Windows.
+
 JavaScript and Python dependencies retain their own licenses. Their versions are
 recorded in `package-lock.json` and `prototypes/vision/requirements.txt`.

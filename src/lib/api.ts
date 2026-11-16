@@ -1,11 +1,13 @@
 import type { Offer } from '../../shared/schema'
 import { blockConsent, sharingConsent } from './consent'
 import { logDiagnostic } from './diagnostic-log'
+import { isDesktop } from './desktop'
 
 export async function collectionStatus(): Promise<boolean> {
   return (await collectionInfo()).ingestionEnabled
 }
 export async function collectionInfo(): Promise<{ ingestionEnabled: boolean; environment: string }> {
+  if (isDesktop()) return { ingestionEnabled: false, environment: 'local' }
   const response = await fetch('/api/status', { signal: AbortSignal.timeout(5000) }).catch(error => { logDiagnostic('api-status', 'error'); throw error })
   logDiagnostic('api-status', response.ok ? 'ok' : 'error', response.status)
   if (!response.ok) return { ingestionEnabled: false, environment: 'unknown' }
