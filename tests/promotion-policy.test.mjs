@@ -18,7 +18,8 @@ test('hotfix deferral requires explicit acceptance and never attests unperformed
   }
 })
 
-test('superseded catalog and Guide exceptions cannot promote prior packages', () => {
+test('superseded catalog, Guide and manual overlay exceptions cannot promote prior packages', () => {
+  expect(() => assertHotfixUpdateRelease(hotfix, { revision: '85b4b0e784c2e765398f68ca209298018a1352e7', releaseId: '447f7e3cf9dfc6886f2e436392d75b6fcd538652eecb67496ba412ce924c2392' })).toThrow('approved Fate hotfix package')
   for (const mode of ['catalog-20261114', 'catalog-20261115']) {
     expect(() => assertPromotionPolicy({ ...hotfix, RELEASE_VALIDATION_MODE: mode })).toThrow('Unknown')
   }

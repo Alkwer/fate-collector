@@ -10,7 +10,10 @@ function webview(): WebView | undefined {
   if (typeof window === 'undefined') return undefined
   return (window as Window & { chrome?: { webview?: WebView } }).chrome?.webview
 }
-export function isDesktop(): boolean { return typeof webview()?.postMessage === 'function' }
+export function isDesktop(): boolean {
+  return typeof window !== 'undefined' && (window as Window & { __fateCollectorDesktop?: unknown }).__fateCollectorDesktop === 1
+    && typeof webview()?.postMessage === 'function'
+}
 const pending = new Map<string, { resolve: (value: unknown) => void; reject: (reason: Error) => void; timer: number; deadline: number }>()
 let listening = false
 

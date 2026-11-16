@@ -62,6 +62,7 @@ namespace FateCollector {
     var environment=await CoreWebView2Environment.CreateAsync(null,profile);
     await view.EnsureCoreWebView2Async(environment);
     var core=view.CoreWebView2;
+    await core.AddScriptToExecuteOnDocumentCreatedAsync("Object.defineProperty(window, '__fateCollectorDesktop', { value: 1 });");
     core.Settings.AreDevToolsEnabled=false; core.Settings.AreDefaultContextMenusEnabled=false;
     core.Settings.AreHostObjectsAllowed=false;
     core.NavigationStarting += delegate(object s,CoreWebView2NavigationStartingEventArgs e) { if(!Local(e.Uri)) e.Cancel=true; };

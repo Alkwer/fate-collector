@@ -1,8 +1,9 @@
 import { expect, test, type BrowserContext } from '@playwright/test'
 import { action, capture, state } from './overlay-support'
 
-async function installHost(context: BrowserContext) {
-  await context.addInitScript(() => {
+async function installHost(context: BrowserContext, identified = true) {
+  await context.addInitScript(identified => {
+    if (identified) Object.defineProperty(window, '__fateCollectorDesktop', { value: 1 })
     const listeners: ((event: { data: unknown }) => void)[] = []
     const host = {
       addEventListener(_: string, listener: (event: { data: unknown }) => void) { listeners.push(listener) },
@@ -40,8 +41,16 @@ async function installHost(context: BrowserContext) {
     Object.defineProperty(window, 'showDirectoryPicker', { value: () => { throw new Error('Desktop must not ask for a browser folder picker.') } })
     // A real native host drives this event with its own Windows timer.
     setInterval(() => window.dispatchEvent(new Event('fate-desktop-tick')), 500)
-  })
+  }, identified)
 }
+
+test('a website in another WebView remains a normal website', async ({ page, context }) => {
+  await installHost(context, false)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Your current area', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Download Windows helper' })).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Local advisor' })).toHaveCount(0)
+})
 
 test('local advisor connects without a picker, records choices and restores its collection after restart', async ({ page, context }) => {
   test.setTimeout(60_000)
