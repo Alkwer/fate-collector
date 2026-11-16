@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
-import { applyTradeStarter, MAX_PROFILE_BYTES, newSolverSettings, parseSolverSettings, serializeSolverSettings, type SolverSettings } from '../lib/solver-settings'
+import { applyTradeStarter, MAX_PROFILE_BYTES, newSolverSettings, parseSolverSettings, serializeSolverSettings, replaceStarterPriorities, STARTER_PROFILES, type StarterProfileId, type SolverSettings } from '../lib/solver-settings'
+import { rewardFamily } from '../../shared/reward-families'
 
 export interface SolverSettingsControl {
   settings: SolverSettings
@@ -13,6 +14,7 @@ const key = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.lab
 export function SolverControls({ control, availableGoals }: { control: SolverSettingsControl; availableGoals: AdvisorGoal[] }) {
   const { settings, change } = control
   const [selected, setSelected] = useState('')
+  const [starterId, setStarterId] = useState<StarterProfileId>('trade')
   const [customLabel, setCustomLabel] = useState('')
   const [customKind, setCustomKind] = useState<'regular' | 'combo'>('regular')
   const [filterText, setFilterText] = useState(settings.profile.avoidModifiers.join('\n'))
@@ -22,6 +24,8 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   const current = useRef(settings); current.current = settings
   useEffect(() => { setFilterText(settings.profile.avoidModifiers.join('\n')) }, [settings.profile.avoidModifiers])
   const choices = availableGoals.filter(goal => !settings.profile.goals.some(row => key(row) === key(goal)))
+  const starter = STARTER_PROFILES[starterId]
+  const families = [...new Set(settings.profile.goals.map(goal => rewardFamily(goal.label)))]
   function update(next: SolverSettings) {
     try {
       serializeSolverSettings(next)
@@ -71,13 +75,18 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       <h3>Priorities, build filters & profile <span className="muted">{settings.profile.goals.length} priorities · {settings.profile.avoidModifiers.length} filters</span></h3>
       <p>Weights are provisional priority points. A regular reward earns points per icon. A combo earns its points once when completed. Set weights based on what matters to you, independently of market prices or expected profit.</p>
       <p className="hint">Incomplete combo progress breaks equal-score ties. Unlisted rewards remain visible but add no points. A weight of 0 disables that priority.</p>
-      <p id={starterDescription} className="hint">The trade starter enables comparison and sets weights for Exceptional Gem, Item Rarity, Dreadmaidens' Sacrament and Additional Currency Items. The currency priority applies only to confirmed regular rewards.</p>
-      <button className="outline-button" aria-describedby={starterDescription} onClick={useTradeStarter}>Use trade starter</button>
-      {!!settings.profile.goals.length && <ul className="priority-list">{settings.profile.goals.map((goal, index) => <li key={key(goal)}>
+      <div className="starter-profile">
+        <label>Starter priorities<select value={starterId} onChange={event => setStarterId(event.target.value as StarterProfileId)}>{Object.entries(STARTER_PROFILES).map(([id, entry]) => <option key={id} value={id}>{entry.label}</option>)}</select></label>
+        <p className="hint">{starter.description} These are editable preferences, not measured reward values.</p>
+        <p id={starterDescription} className="hint">Replace your {settings.profile.goals.length} priorities with {starter.priorities.length} starter priorities. Build filters and personal templates stay unchanged.</p>
+        <button className="outline-button" aria-describedby={starterDescription} onClick={() => { if (update(replaceStarterPriorities(settings, starterId))) { setSelected(''); setMessage({ text: `${starter.label} priorities applied.`, error: false }) } }}>Replace priorities</button>
+        {starterId === 'trade' && <><p className="hint">To keep other priorities, update only the trade starter’s rewards.</p><button className="text-button" onClick={useTradeStarter}>Use trade starter</button></>}
+      </div>
+      {families.map(family => <section className="priority-group" key={family}><h4>{family}</h4><ul className="priority-list">{settings.profile.goals.map((goal, index) => rewardFamily(goal.label) === family ? <li key={key(goal)}>
         <div><strong>{goal.label}</strong><span className="cell-sub">{goal.kind === 'combo' ? 'Per completed combo' : 'Per regular icon'}</span></div>
         <label>Weight<input aria-label={`${goal.label} ${goal.kind} weight`} type="number" min={0} max={1_000_000} step="any" value={goal.weight} onChange={event => update({ ...settings, profile: { ...settings.profile, goals: settings.profile.goals.map((row, i) => i === index ? { ...row, weight: Number(event.target.value) } : row) } })} /></label>
         <button className="text-button" aria-label={`Remove priority ${goal.label} ${goal.kind}`} onClick={() => update({ ...settings, profile: { ...settings.profile, goals: settings.profile.goals.filter((_, i) => i !== index) } })}>Remove</button>
-      </li>)}</ul>}
+      </li> : null)}</ul></section>)}
       <div className="priority-add"><label>Add reward<select value={selected} onChange={event => setSelected(event.target.value)}><option value="">Choose a reward</option>{choices.map(goal => <option key={key(goal)} value={key(goal)}>{goal.label} · {goal.kind}</option>)}<option value="custom">Enter another reward…</option></select></label><button onClick={addGoal} disabled={settings.profile.goals.length >= 30}>Add priority</button></div>
       {selected === 'custom' && <div className="priority-add"><label>Reward name<input maxLength={160} value={customLabel} onChange={event => setCustomLabel(event.target.value)} /></label><label>Reward kind<select value={customKind} onChange={event => setCustomKind(event.target.value as 'regular' | 'combo')}><option value="regular">Regular</option><option value="combo">Combo</option></select></label></div>}
       <label className="modifier-filter">Avoid modifiers containing<textarea rows={3} maxLength={30_030} value={filterText} onChange={event => setFilterText(event.target.value)} placeholder="One phrase per line, for example a modifier your build cannot handle" /></label>

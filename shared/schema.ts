@@ -51,6 +51,7 @@ export const rewardSchema = z.object({
   count: z.number().int().min(1).max(100),
   threshold: z.number().int().min(1).max(100).nullable(),
   identified: z.boolean(),
+  tooltipConfirmed: z.boolean().optional(),
   visualId: z.enum(['blue-diamond', 'gold-stack', 'gold-grid', 'gold-ring', 'silver-cluster', 'orange-feathers', 'three-gems', 'gold-axe']).optional(),
 }).strict().refine(r => !r.identified || r.label.trim().length > 0, 'An identified reward needs a label.')
 

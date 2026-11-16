@@ -37,23 +37,23 @@ test('partial reward coverage stays provisional and unreviewed tiers cannot enab
   expect(planInvocation(cards, goal).status).toBe('ready')
   expect(planInvocation(cards, goal).plans[0].targetCount).toBe(3)
 })
-test('tooltip-backed flask suggestions reach both advisor stages without approving the image review', () => {
+test('shared unique motifs never identify a flask or activate a combo from the image alone', () => {
   const cards = [newCard(), newCard()].map(card => ({ ...card, name: 'Torchbearer' }))
   const result: VisualAnalysis = { version: 'browser-v1', status: 'candidates', warnings: [], cards: [{
     name: 'Torchbearer', header: line('Torchbearer', 40, 100), tier: 2,
     symbols: [{ visualId: 'orange-feathers', box: { x: 40, y: 400, width: 24, height: 24 }, score: .99, margin: .2 }],
   }] }
   const [first] = applyVisualSuggestions(cards, capture, result)
-  expect(first).toMatchObject({ rewards: [{ label: "Dreadmaidens' Sacrament", kind: 'combo', threshold: 2, identified: true, count: 1 }],
+  expect(first).toMatchObject({ rewards: [{ label: 'League unique', kind: 'unknown', threshold: null, identified: false, count: 1 }],
     visualReview: { version: `browser-v1/${REWARD_CATALOG_VERSION}`, rewardsReviewed: false, tierReviewed: false } })
   const second = { ...first, id: crypto.randomUUID(), name: 'Wildfire' }
   const goal = { kind: 'combo' as const, label: "Dreadmaidens' Sacrament" }
-  expect(recommendFates([second], [first], goal)).toMatchObject({ status: 'provisional', recommendedCardIds: [second.id] })
+  expect(recommendFates([second], [first], goal)).toMatchObject({ status: 'insufficient', recommendedCardIds: [] })
   const plan = planInvocation([first, second], goal)
-  expect(plan.status).toBe('provisional')
-  expect(plan.plans[0]).toMatchObject({ targetCount: 2, threshold: 2, activated: true })
+  expect(plan.status).toBe('insufficient')
+  expect(plan.plans).toEqual([])
   const reviewed = [first, second].map(card => ({ ...card, visualReview: { ...card.visualReview!, rewardsReviewed: true } }))
-  expect(planInvocation(reviewed, goal).status).toBe('ready')
+  expect(planInvocation(reviewed, goal).status).toBe('insufficient')
   expect(cards.every(card => !card.rewards.length)).toBe(true)
 })
 test('motif-only rarity/currency and three coloured gems never imply a combo', () => {

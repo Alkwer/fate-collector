@@ -1,7 +1,7 @@
 import type { Reward } from './schema'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const REWARD_CATALOG_VERSION = 'rewards-v3-screenshots-20261115'
+export const REWARD_CATALOG_VERSION = 'rewards-v4-sources-20261116'
 
 export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
 type CatalogDetails = { id: string; label: string; description: string; source: string; sourceLabel: string }
@@ -53,7 +53,7 @@ export function selectedCatalogReward(reward: Reward): CatalogReward | undefined
 }
 
 export function visualRewardFields(visualId: NonNullable<Reward['visualId']>): Partial<Reward> {
-  if (visualId === 'orange-feathers') return catalogFields(REWARD_CATALOG.find(entry => entry.id === 'dreadmaidens-sacrament')!)
+  if (visualId === 'orange-feathers') return { label: 'League unique', kind: 'unknown', threshold: null, identified: false, tooltipConfirmed: false }
   if (visualId === 'gold-grid') return catalogFields(REWARD_CATALOG.find(entry => entry.id === 'additional-currency')!)
   // Item Rarity's combo variant is verified, but a bare ring must not become
   // combo(3) automatically. Only an explicit tooltip-based selection does that.

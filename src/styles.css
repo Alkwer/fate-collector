@@ -726,3 +726,15 @@ td { padding: 16px 12px; }
 @media (min-width: 761px) and (max-width: 1000px) {
   button, .text-button, .panel-trigger, .row-actions button, .map-session-actions button, .decision-toolbar > .text-button, .notice button { min-width: 44px; min-height: 44px; }
 }
+
+/* Source references and explicitly applied reward presets. */
+.solver-settings { text-align: left; }
+.starter-profile { padding-block: 16px; border-block: 1px solid var(--border); margin-block: 16px; }
+.starter-profile > label { max-width: 420px; }
+.starter-profile p, .reward-references p { margin-block: 12px; max-width: 72ch; }
+.priority-group { margin-block: 20px; }
+.priority-group h4 { font-size: 16px; margin-bottom: 8px; }
+.reference-results { list-style: none; padding: 0; }
+.reference-results li { padding-block: 12px; border-bottom: 1px solid var(--border); }
+.unweighted-rewards { margin-block: 12px; }
+.unweighted-rewards ul { margin-block: 16px; }

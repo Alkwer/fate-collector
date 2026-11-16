@@ -1,4 +1,4 @@
-# Browser visual suggestions — 10 November 2026
+# Browser visual suggestions — updated 16 November 2026
 
 The local capture importer now proposes supported tier feathers and icon motifs
 before saving a fresh offer. It runs for connected F9 folders, pasted helper JSON
@@ -14,9 +14,10 @@ It uses bounded OCR-guided regions, sampled grayscale proposals and bilinear RGB
 comparison, not the prototype's full-frame FFT/Lanczos scan or header rereads.
 The frozen Python code, bank and historical reports remain unchanged.
 
-The dictionary contains 24 observed names, including Black Frost, Blood Moon,
+The dictionary contains 26 names, including Black Frost, Blood Moon,
 Golemancer, Murderous, Rot, Pestilent and Sadist from campaign and map screenshots
-through 14 November 2026. [Versioned catalog provenance](../shared/catalog-metadata.json)
+through 14 November 2026, plus Rotted and Savage from PoEDB on 16 November.
+Rot and Rotted remain distinct pending evidence. [Versioned catalog provenance](../shared/catalog-metadata.json)
 records the source/date and explicitly unresolved semantics. This expands name
 recognition only; it does not associate rewards with those names or establish
 native accuracy. Standard [production promotion](recognition-validation.md#required-promotion-artifact)
@@ -51,9 +52,11 @@ No partial worker output is applied after a timeout.
 
 ## What the suggestions establish
 
-A motif match does not by itself establish a reward's kind or threshold. The
-[tooltip-backed catalog](../research/REWARD_CATALOG_2026-11-10.md) supplies a
-provisional Dreadmaidens' Sacrament combo (2) for orange feathers. Gold ring and
+A motif match does not by itself establish a reward's kind or threshold. Orange
+feathers are labelled League unique, with unknown kind and threshold. PoEDB shows
+that several league uniques share the icon. A complete matching tooltip selection
+or an explicit tooltip check is required before scoring, including old records
+that labelled this motif Dreadmaidens' Sacrament. Gold ring and
 gold grid receive the names Item Rarity and Additional Currency Items, but keep
 unknown kind, no threshold and `identified: false`. Other motifs remain unknown.
 The editor retains three prerelease combo presets with reference icons and GGG
@@ -63,8 +66,10 @@ complete reward tooltip variants for explicit selection: 44 regular and 10
 requiring two reward copies. It also supplies a read-only reference for 34
 tier-specific Fate effects, two of them short descriptions only. The expanded
 catalog does not introduce visual matches or assign rewards by Fate name.
-Fresh card review versions include `rewards-v3-screenshots-20261115`; saved
-records are not backfilled. Helper 0.5.1 carries the expanded name dictionary.
+Fresh card review versions include `rewards-v4-sources-20261116`; saved records are
+not backfilled. Parser `live-names-6` and Helper 0.5.1 carry the expanded dictionary.
+The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
+It is read-only and does not supply new visual matches, combo thresholds or kinds.
 
 Tiers appear as **suggested** until checked. The reward list is partial until the
 user checks the whole row, including unrecognized icons, kinds, counts and
@@ -75,6 +80,11 @@ coverage as uncertainty. Saving/reviewing an offer does not implicitly confirm
 either visual field. Reimport preserves existing corrections.
 
 ## Executed evidence
+
+The results below are historical runs from 10 November. Their orange-feather
+semantic mapping was superseded on 16 November; current regression tests require
+an exact tooltip before Dreadmaidens' Sacrament can score. Pixel matching remains
+unchanged. These historical runs are not validation of the new release.
 
 - Fresh Windows en-US OCR from helper 0.3.3 on 10 November, without editing its text
   or rectangles: both 1920×1080 press offers and their panel crops now give four

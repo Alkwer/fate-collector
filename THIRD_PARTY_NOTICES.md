@@ -33,6 +33,16 @@ Source URLs, timestamps and hashes are documented in `research/`,
 The project's MIT license does not relicense these materials or the presenters'
 likenesses. Consult the original rights holders' terms before reusing them.
 
+## PoEDB reference data and artwork
+
+The offline Fate and reward references were transcribed from
+[PoEDB Fates](https://poedb.tw/us/Fates), checked on 16 November 2026. Game text and
+artwork remain the property of Grinding Gear Games. The eight original WebP
+portraits mirrored by PoEDB have individual source URLs and SHA-256 hashes in
+[PoEDB artwork credits](public/game-art/poedb/credits.json). Data provenance and
+official patch corrections are recorded in [the catalog report](research/POEDB_CATALOG_2026-11-16.md).
+The project license does not relicense this material.
+
 ## Dependencies
 
 JavaScript and Python dependencies retain their own licenses. Their versions are

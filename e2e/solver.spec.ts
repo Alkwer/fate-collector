@@ -37,7 +37,7 @@ test('trade starter defaults are visible and the action updates only its priorit
   await openPanel(page, '.reward-settings')
   const compare = page.getByLabel('Compare multiple rewards', { exact: true })
   const gem = page.getByLabel('Exceptional Gem combo weight')
-  const rarity = page.getByLabel('Item Rarity combo weight')
+  const rarity = page.getByLabel('Item Rarity combo weight', { exact: true })
   const sacrament = page.getByLabel("Dreadmaidens' Sacrament combo weight")
   const currency = page.getByLabel('Additional Currency Items regular weight')
   await expect(compare).toBeChecked()

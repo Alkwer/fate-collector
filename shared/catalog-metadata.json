@@ -5,7 +5,7 @@
   "gameVersion": "3.30 Covens League",
   "completeness": "partial",
   "names": {
-    "version": "fate-names-v3",
+    "version": "fate-names-v4",
     "added": [
       "Black Frost",
       "Blood Moon",
@@ -13,15 +13,18 @@
       "Murderous",
       "Rot",
       "Pestilent",
-      "Sadist"
+      "Sadist",
+      "Rotted",
+      "Savage"
     ],
     "evidence": "shared/screenshot-catalog.json",
     "source": "research/SCREENSHOT_CATALOG_2026-11-14.md",
-    "method": "Manually transcribed campaign and map screenshot headers. Source IDs and SHA-256 recorded; not an independent native recognition holdout.",
+    "method": "24 manually transcribed screenshot names plus Rotted and Savage from the 16 November PoEDB snapshot. Rot and Rotted are not aliases. Source IDs and SHA-256 recorded; not an independent native recognition holdout.",
+    "externalEvidence": "shared/poedb-catalog.json",
     "rewardsInferredFromName": false
   },
   "rewards": {
-    "version": "rewards-v3-screenshots-20261115",
+    "version": "rewards-v4-sources-20261116",
     "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-15.md",
     "newSemanticsConfirmed": [
       "additional-currency-items",
@@ -79,9 +82,16 @@
       "valuable-unique-jewellery-item",
       "viscera-item"
     ],
-    "status": "54 complete tooltip variants: 44 regular and 10 conditional on two reward copies. Explicit manual selection only; existing motif mappings remain unchanged. Historical prerelease entries remain labelled separately."
+    "status": "54 complete tooltip variants: 44 regular and 10 conditional on two reward copies. Explicit manual selection only. Orange feathers are a shared league-unique icon and require exact tooltip confirmation before scoring, including old records. Historical prerelease entries remain labelled separately."
   },
   "freshSources": [
+    {
+      "url": "https://poedb.tw/us/Fates",
+      "owner": "PoEDB community data",
+      "checkedAt": "2026-11-16",
+      "result": "25 Tier 3 Fate references, 146 reward definitions and eight original portraits. Official Hotfix 2 corrections override stale effects. Shared unique icon is ambiguous. No reward kind, threshold, drop rate or observed card is inferred.",
+      "snapshot": "shared/poedb-catalog.json"
+    },
     {
       "url": "https://www.pathofexile.com/forum/view-thread/4015683",
       "owner": "GGG",
@@ -140,6 +150,16 @@
     "repeat combo payouts"
   ],
   "advisorPolicy": "conservative",
+  "externalReferences": {
+    "version": "poedb-fates-2026-11-16",
+    "evidence": "shared/poedb-catalog.json",
+    "report": "research/POEDB_CATALOG_2026-11-16.md",
+    "fates": 25,
+    "tier": 3,
+    "rewards": 146,
+    "portraits": 8,
+    "status": "Read-only reference; official patch corrections take precedence over source text. Not native recognition evidence."
+  },
   "effects": {
     "evidence": "shared/screenshot-catalog.json",
     "fates": 24,

@@ -27,7 +27,31 @@ const TRADE_STARTER_PRIORITIES: readonly Priority[] = [
   { kind: 'combo', label: 'Item Rarity', weight: 4 },
   { kind: 'combo', label: "Dreadmaidens' Sacrament", weight: 2 },
   { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
+  { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
+  { kind: 'regular', label: 'Increased Item Rarity', weight: 1 },
+  { kind: 'regular', label: 'Highly Increased Item Rarity', weight: 2 },
+  { kind: 'combo', label: 'Massively Increased Item Rarity', weight: 4 },
+  { kind: 'regular', label: 'Additional Stacked Decks', weight: 2 },
+  { kind: 'combo', label: 'Many Additional Stacked Decks', weight: 4 },
+  { kind: 'regular', label: 'Additional Threads', weight: 1 },
+  { kind: 'combo', label: 'Many Additional Threads', weight: 2 },
 ]
+export const STARTER_PROFILES = {
+  trade: { label: 'Trade / mapping', description: 'Currency, rarity, gems, stacked decks and threads.', priorities: TRADE_STARTER_PRIORITIES },
+  campaign: { label: 'Campaign / SSF', description: 'Currency, quality gems, equipment and early progression.', priorities: [
+    { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
+    { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
+    { kind: 'regular', label: 'Gem with Quality', weight: 2 },
+    { kind: 'combo', label: 'Additional Gems, Some with Maximum Quality', weight: 4 },
+    { kind: 'regular', label: 'Rare Boots with a Speed Modifier', weight: 3 },
+    { kind: 'regular', label: 'Rare Weapons with a Physical Modifier', weight: 2 },
+    { kind: 'regular', label: 'Rare Map', weight: 2 },
+  ] as readonly Priority[] },
+  viscera: { label: 'Viscera rewards', description: 'The identified Viscera reward combo. This does not estimate the extra drop chance from Fate count or duplicates.', priorities: [
+    { kind: 'combo', label: 'Viscera Item', weight: 10 },
+  ] as readonly Priority[] },
+} as const
+export type StarterProfileId = keyof typeof STARTER_PROFILES
 const priorityKey = ({ kind, label }: Priority) => `${kind}:${normalizeRewardLabel(label)}`
 
 export function newSolverSettings(): SolverSettings {
@@ -52,6 +76,13 @@ export function applyTradeStarter(settings: SolverSettings): SolverSettings | nu
   goals.push(...Array.from(missing.values(), priority => ({ ...priority })))
   if (!solverProfileSchema.shape.goals.safeParse(goals).success) return null
   return { ...settings, mode: 'portfolio', profile: { ...settings.profile, goals } }
+}
+
+// Explicit replacement action only. Loading an existing profile never applies it.
+export function replaceStarterPriorities(settings: SolverSettings, id: StarterProfileId): SolverSettings {
+  return { ...settings, mode: 'portfolio', profile: { ...settings.profile,
+    goals: STARTER_PROFILES[id].priorities.map(priority => ({ ...priority })),
+  } }
 }
 
 export function parseSolverSettings(text: string): SolverSettings {

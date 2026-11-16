@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import screenshots from '../shared/screenshot-catalog.json'
 import names from '../shared/fate-names.json'
+import { POEDB_CATALOG } from '../shared/poedb-catalog'
 import { catalogFields, REWARD_CATALOG, selectedCatalogReward, visualRewardFields } from '../shared/reward-catalog'
 import { newCard, newReward } from '../shared/offers'
 import { solveInvocation } from '../shared/solver'
@@ -26,7 +27,8 @@ test('published evidence has valid source references and complete tooltip condit
     expect(reward.kind).toBe(condition ? 'combo' : 'regular')
     expect(reward.threshold).toBe(condition ? 2 : null)
   }
-  expect([...names].sort()).toEqual(screenshots.fates.map(fate => fate.name).sort())
+  const sourcedNames = new Set([...screenshots.fates, ...POEDB_CATALOG.fates].map(fate => fate.name))
+  expect([...names].sort()).toEqual([...sourcedNames].sort())
   expect(JSON.stringify(screenshots)).not.toMatch(/C:\\|C:\/|data:image|arkid|OneDrive/)
 })
 

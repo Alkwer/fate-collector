@@ -1,5 +1,6 @@
 import { cardSchema, rewardSchema, type FateCard } from './schema'
 import { KNOWN_COMBOS } from './reward-catalog'
+import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 export { KNOWN_COMBOS } from './reward-catalog'
 
 export type AdvisorGoal = { kind: 'regular' | 'combo'; label: string }
@@ -54,7 +55,7 @@ export function getAdvisorGoals(cards: FateCard[]): AdvisorGoal[] {
   const combo = new Map<string, AdvisorGoal>(KNOWN_COMBOS.map(({ label }) => [normalizeRewardLabel(label), { kind: 'combo', label }]))
   for (const card of cards) {
     for (const reward of card.rewards) {
-      if (!reward.identified || reward.kind === 'unknown') continue
+      if (!isRewardIdentified(reward) || reward.kind === 'unknown') continue
       const label = cleanLabel(reward.label)
       const key = normalizeRewardLabel(label)
       const goals = reward.kind === 'regular' ? regular : combo
@@ -180,7 +181,11 @@ function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
     let targetCount = 0
     for (const reward of card.rewards) {
       const label = normalizeRewardLabel(reward.label)
-      if (reward.kind === 'unknown' || (reward.kind === goal.kind && (!reward.identified || !label))) {
+      if (needsUniqueTooltipCheck(reward)) {
+        warnings.add('A shared league-unique icon needs its exact tooltip checked before it can score.')
+        continue
+      }
+      if (reward.kind === 'unknown' || (reward.kind === goal.kind && (!isRewardIdentified(reward) || !label))) {
         warnings.add('An unidentified reward or reward kind could match this goal.')
         continue
       }
