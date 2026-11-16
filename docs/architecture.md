@@ -28,6 +28,9 @@ PoE visible panel
 | `src/lib/storage.ts` | Local evidence, revisions and atomic archive imports |
 | `src/lib/capture-sync.ts` | Bounded folder intake and duplicate-safe delivery |
 | `src/lib/useCaptureSync.ts` | Persistent connection, permissions, polling and resume |
+| `shared/overlay.ts`, `src/lib/overlay-channel.ts` | Bounded local overlay protocol, capture/snapshot identity, heartbeat and command acknowledgement |
+| `src/lib/overlay-advice.ts`, `src/lib/useOverlayConnection.ts` | Existing advisor results adapted for a compact display; explicit folder-write connection and single-tab ownership |
+| `helpers/Overlay.ahk`, `helpers/FateOverlay.cs` | Game-scoped overlay lifecycle, capture isolation, native display and advertised keyboard actions |
 | `src/lib/useOfferDraft.ts` | Draft sessions, edits, save acknowledgements and conflict preservation |
 | `src/lib/local-history.ts` | Per-record decoding and corruption isolation for local receipts |
 | `src/components/` | Source inspection, optional corrections and saved history |
@@ -41,6 +44,13 @@ observations and optional raw OCR. The separate opt-in symbol-report endpoint st
 two bounded PNG images in its own D1 table with 30-day retention and withdrawal;
 normal capture and observation endpoints remain text-only. See [symbol reports](symbol-reports.md).
 No server-rendering framework or paid OCR service is required.
+
+The optional [in-game overlay](overlay.md) exchanges local messages under
+`captures/.overlay`. The helper writes capture markers and commands; the browser
+writes a leased display snapshot using the existing advisor. An explicit second
+folder permission enables these writes while ordinary local review stays
+read-only. Commands must match the live connection, capture and snapshot, and
+area/choice changes remain explicit. No overlay message enters cloud ingestion.
 
 Direct cloud delivery runs in Windows PowerShell 5.1, launched asynchronously by
 AHK after capture, at startup and every 30 seconds. A cross-process file lock,

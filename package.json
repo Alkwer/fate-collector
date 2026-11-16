@@ -24,6 +24,8 @@
     "test:staging": "node scripts/smoke-staging.mjs",
     "test:helper": "node scripts/test-helper.mjs capture",
     "test:symbol-helper": "node scripts/test-helper.mjs symbol",
+    "test:overlay": "node scripts/test-helper.mjs overlay",
+    "test:overlay:background": "npm run build && playwright test --config playwright.overlay-background.config.ts",
     "test:upload": "node scripts/test-helper.mjs upload",
     "test:upload:integration": "node scripts/test-cloud-upload.mjs",
     "predev": "node scripts/stage-helper.mjs",

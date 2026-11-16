@@ -25,6 +25,12 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
+- Optional in-game advice connects the helper's overlay folder with separate
+  read/write permission. The website stays open and uses the same advisor and
+  current-area collection. Explicit shortcuts confirm area membership, record
+  the actual choice, undo and start a new area. They never control the game.
+  Capture changes and expired heartbeats remove stale advice. Reward corrections,
+  priorities and invocation planning remain on the website in this version.
 - **Add Fate manually** provides direct website entry by name or sourced portrait,
   with optional tiers and rewards. A portrait never supplies reward mechanics.
 - Connected captures and corrections save automatically. Manual imports retain

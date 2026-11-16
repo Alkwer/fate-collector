@@ -79,6 +79,12 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
       else { setProblem(error instanceof Error ? error.message : 'Could not connect the folder.'); setStatus('error') }
     }
   }
+  async function connectDirectory(directory: CaptureDirectory) {
+    const version = ++actionVersion.current
+    await setCaptureFolder(directory)
+    if (version !== actionVersion.current) return
+    setFolder(directory); setProblem(null); setReceived(0); setStatus('active')
+  }
   async function resume() {
     if (!folder) { await connect(); return }
     const version = ++actionVersion.current
@@ -95,5 +101,5 @@ export function useCaptureSync(onSaved: (entry: CapturedEntry) => Promise<void>)
     setStatus('off'); setFolder(null); setProblem(null)
     try { await setCaptureFolder(null) } catch { if (version === actionVersion.current) { setProblem('Could not forget the folder. Revoke access in browser settings before reloading.'); setStatus('error') } }
   }
-  return { supported, folderName: folder?.name, status, problem, received, connect, resume, disconnect }
+  return { supported, folderName: folder?.name, status, problem, received, connect, connectDirectory, resume, disconnect }
 }

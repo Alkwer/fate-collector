@@ -69,6 +69,9 @@ jobs:
       - name: Validate diagnostic privacy and consent
         shell: powershell
         run: ./helpers/tests/Test-Diagnostics.ps1
+      - name: Validate native overlay protocol and rendering
+        shell: powershell
+        run: ./helpers/tests/Test-Overlay.ps1
       - uses: actions/setup-node@v7
         with:
           node-version: 24

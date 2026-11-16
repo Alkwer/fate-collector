@@ -1,7 +1,7 @@
 import { DetailPanel, type DetailPanelHandle } from './components/DetailPanel'
 import { useSharingConsent } from './lib/useSharingConsent'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { offerSchema, formatValidationError, type FateCard, type Offer } from '../shared/schema'
+import { offerSchema, formatValidationError, type Evidence, type FateCard, type Offer } from '../shared/schema'
 import { newOffer, exampleOffer, guidedExampleOffer, submissionProblem } from '../shared/offers'
 import { SourcePanel, CaptureDetails } from './components/SourcePanel'
 import { OfferEditor } from './components/OfferEditor'
@@ -33,6 +33,10 @@ const Diagnostics = lazy(() => import('./components/Diagnostics').then(module =>
 import type { SymbolReportsHandle } from './components/SymbolReports'
 import { LazySymbolReports } from './components/LazySymbolReports'
 import { ImportConflicts, offerDifferences, type ImportConflict } from './components/ImportConflicts'
+import { useOverlayConnection } from './lib/useOverlayConnection'
+import { overlayAdvice, type OverlayInputs } from './lib/overlay-advice'
+import { OverlayConnection } from './components/OverlayConnection'
+import type { OverlayView } from '../shared/overlay'
 
 export default function App() {
   const releaseUpdate = useReleaseUpdate()
@@ -61,6 +65,11 @@ export default function App() {
   const recoveryInput = useRef<HTMLInputElement>(null)
   const moreActions = useRef<DetailPanelHandle>(null)
   const connectionPanel = useRef<DetailPanelHandle>(null)
+  const overlayPanel = useRef<DetailPanelHandle>(null)
+  const [overlayNewArea, setOverlayNewArea] = useState<string | null>(null)
+  const [overlayDiscardedCapture, setOverlayDiscardedCapture] = useState<string | null>(null)
+  const overlayCache = useRef<{ key: string; view: OverlayView } | null>(null)
+  const overlayPreviousOffer = useRef<{ offer: Offer; evidence: Evidence | null } | null>(null)
   const symbolReportsPanel = useRef<SymbolReportsHandle>(null)
   function editCurrentOffer(cardId?: string) {
     if (!detailsPanel.current) return
@@ -103,6 +112,63 @@ export default function App() {
   const { draft, evidence, dirty, autoSaving, setBusy, loadDraft, change, canReplace, save,
     savedLocally, canConfirm } = editor
   const { backup, exportAll, exportRecovery, closeBackup } = useArchiveBackup({ busy, setBusy, setDamagedEvidenceCount, announce })
+  const overlay = useOverlayConnection({
+    connectCaptures: sync.connectDirectory,
+    snapshot: capture => {
+      const input: OverlayInputs = {
+        offer: mapEditor.draft, workspace: advisor.workspace, settings: solver.settings, capture,
+        needsMapConfirmation: advisor.needsMapConfirmation, canUndo: advisor.canUndo,
+        blocked: busy || mapEditor.dirty || mapEditor.autoSaving || !mapEditor.savedLocally || sync.status !== 'active'
+          || !!detailsPanel.current?.isOpen() || !!manualPanel.current?.isOpen(),
+        confirmNewArea: !!capture?.captureId && overlayNewArea === capture.captureId,
+      }
+      const context = JSON.stringify([input, overlayDiscardedCapture])
+      if (overlayCache.current?.key !== context) {
+        const view = capture?.captureId && capture.captureId === overlayDiscardedCapture
+          ? { captureId: capture.captureId, status: 'idle' as const, title: 'New area started', detail: 'Open an offer in this area and press F9. The previous offer is not included.', rows: [], actions: advisor.canUndo ? [{ id: 'undo', label: 'Undo new area', slot: 12 }] : [] }
+          : overlayAdvice(input)
+        overlayCache.current = { key: context, view }
+      }
+      return { view: overlayCache.current.view, context }
+    },
+    dispatch: (action, capture) => {
+      if (busy || mapEditor.dirtyRef.current || mapEditor.autoSaving || detailsPanel.current?.isOpen() || manualPanel.current?.isOpen()) return
+      if (action === 'new-area') { setOverlayNewArea(capture?.captureId ?? null); return }
+      if (action === 'cancel-new-area') { setOverlayNewArea(null); return }
+      if (action === 'confirm-new-area') {
+        setOverlayNewArea(null); setOverlayDiscardedCapture(capture?.captureId ?? null)
+        overlayPreviousOffer.current = { offer: mapEditor.draft, evidence: mapEditor.evidence }
+        advisor.startMap(); mapEditor.loadDraft(newOffer(), null); return
+      }
+      if (action === 'continue-area') { advisor.confirmMap(); return }
+      if (action === 'undo') {
+        advisor.undo()
+        if (overlayDiscardedCapture && overlayPreviousOffer.current) mapEditor.loadDraft(overlayPreviousOffer.current.offer, overlayPreviousOffer.current.evidence)
+        setOverlayDiscardedCapture(null); return
+      }
+      if (capture?.phase !== 'saved' || capture.captureId !== mapEditor.draft.captureId || advisor.needsMapConfirmation) return
+      if (action === 'use-offer') {
+        if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft.id, true)
+        else advisor.startMap(mapEditor.draft.id)
+        return
+      }
+      if (action.startsWith('collect:')) {
+        const card = mapEditor.draft.cards.find(item => item.id === action.slice(8))
+        if (card) advisor.changeWorkspace({ ...advisor.workspace, mode: 'offer', collection: { ...advisor.workspace.collection, cards: [...advisor.workspace.collection.cards, structuredClone(card)] }, sources: { ...advisor.workspace.sources, [card.id]: mapEditor.draft.id } })
+      }
+    },
+  })
+  useEffect(() => {
+    const id = overlay.preview?.captureId
+    if (!id || id === mapEditor.draft.captureId || id === overlayDiscardedCapture || mapEditor.dirty || busy || editing || manualPanel.current?.isOpen()) return
+    const saved = records.find(record => record.offer.captureId === id)
+    if (!saved) return
+    let cancelled = false
+    void storage.getEvidence(id).then(source => {
+      if (!cancelled && !mapEditor.dirtyRef.current && !detailsPanel.current?.isOpen() && !manualPanel.current?.isOpen()) mapEditor.loadDraft(saved.offer, source)
+    }).catch(error => announce(errorText(error), true))
+    return () => { cancelled = true }
+  }, [overlay.preview?.captureId, overlayDiscardedCapture, mapEditor, records, busy, editing, announce])
   useEffect(() => { void refresh().catch(e => announce(errorText(e), true)); void collectionInfo().then(info => { setConnected(info.ingestionEnabled); setEnvironment(info.environment) }).catch(() => setConnected(false)) }, [refresh, announce])
   useEffect(() => storage.onHistoryChange(() => { void refresh().catch(error => announce(errorText(error), true)) }), [refresh, announce])
   async function acceptImport(result: Imported) {
@@ -286,6 +352,7 @@ export default function App() {
             <h3 id="setup-actions-heading">Setup & help</h3>
             <div className="action-menu-items">
               {tab === 'collector' && <button onClick={() => { closeActions(); connectionPanel.current?.show() }}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Connect captures folder'}</button>}
+              <button onClick={() => { closeActions(); overlayPanel.current?.show() }}>In-game overlay</button>
               <button onClick={() => { closeActions(); setTab('guide') }}>Setup & usage guide</button>
               <button onClick={() => { closeActions(); symbolReportsPanel.current?.showHistory() }}>Symbol report history</button>
               {tab === 'collector' && <button disabled={busy} onClick={() => { closeActions(); if (canReplace()) { loadDraft(guidedExampleOffer(), null, true); announce('Guided practice: start an area, collect one Fate, then plan and record its invocation. Rewards are invented training values; nothing can be shared as live evidence.') } }}>Load guided practice</button>}
@@ -298,6 +365,8 @@ export default function App() {
         </div>
       </div>
       {notice && <WorkspaceNotice notice={notice} onDismiss={() => setNotice(null)} />}
+      <DetailPanel ref={overlayPanel} trigger={false} title="In-game overlay"><OverlayConnection overlay={overlay} /></DetailPanel>
+      {overlay.status === 'error' && <p className="connection-warning field-error" role="alert">Overlay disconnected. {overlay.problem} <button onClick={() => overlayPanel.current?.show()}>Overlay settings</button></p>}
       {releaseUpdate && <aside className="notice" aria-label="Website update"><p>A new website version is available. Save or export open drafts before reloading; local records are kept.</p><button onClick={() => location.reload()}>Reload when ready</button></aside>}
       <DraftRecovery busy={busy} onRecover={record => { if (!mapEditor.recover(record)) return false; setTab('collector'); announce('Draft recovered. Check it before saving; your saved offer has not been replaced.'); return true }} />
       {editor.recoveryError && <p className="notice error" role="alert">{editor.recoveryError}</p>}

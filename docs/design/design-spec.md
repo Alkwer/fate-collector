@@ -36,6 +36,16 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
 
 ## Interaction requirements
 
+**More actions → In-game overlay** opens a focused setup panel using the existing
+theme and dialog. It explains the separate local write permission, running-helper
+requirement, background-tab limits and shortcuts before connection. Connection
+errors remain visible outside the panel. A preview names the latest outgoing
+message without claiming the native window is visible. Native advice uses Mineral
+Depth colors and Segoe UI, clear names and numbered offer rows, text-labelled
+supported/provisional/check states and displayed shortcuts. It stays out of capture
+pixels and does not activate the game or intercept clicks. New captures clear
+prior advice; stale state never retains actions. See [overlay](../overlay.md).
+
 Minimize manual entry and keep the default capture and advice view read-only.
 Show source evidence and extracted names and descriptions. Put card corrections,
 the optional archived choice, context and a single **Review status** selector
