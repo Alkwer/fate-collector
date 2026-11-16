@@ -4,10 +4,11 @@ The **Current area** screen combines the current offer, next-Fate recommendation
 collected cards and the order of up to three invocation inputs. Ordinary Fates
 can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation
-schemas. The rule baseline is the [prerelease research updated on 11 November
-2026](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md). Video evidence was checked
-on 8 November; the update adds FAQ and patch-note context, not live-game validation
-or additional engine rules.
+schemas. The rule baseline combines the [prerelease research](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md)
+with [3.30.0b Hotfix 3](https://www.pathofexile.com/forum/view-thread/4015683),
+checked on 16 November 2026. Advice uses the current rules, including three-copy
+invocations; it does not simulate historical patches. See the
+[post-launch evidence record](../research/PATCH_NOTES_2026-11-16.md).
 
 ## Use
 
@@ -89,7 +90,8 @@ icons. These are configurable preferences or user estimates in a consistent unit
 not measured item quantities, market prices, expected value or profit.
 
 The search evaluates all supported subsets of up to three inputs, both confirmed
-T2 duplicate orders, and every eligible offered card against the collected-only
+T2 duplicate orders, all three choices of discarded middle card in a supported
+three-copy invocation, and every eligible offered card against the collected-only
 baseline. It ranks total points, then weighted capped combo progress, then fewer
 inputs. Progress is a tie-breaker, not an extra payout. Equal offered choices are
 all shown; invocation shows the best plan and up to two alternatives. **All rewards
@@ -153,8 +155,16 @@ tooltip meanings without waiting for an application release.
 - Next-card recommendations require improved target progress over the best plan
   available from the collection alone. A neutral reward can still help when the
   new card enables a confirmed duplicate merge. No improvement means no preference.
-- Three duplicates, mixed-tier merges, merges involving T3 and duplicate/combo
-  interactions are unresolved, not assigned a zero benefit. They produce warnings.
+- Three copies of the same named Fate retain the first and third regular rewards
+  at ×3 and discard the second card's rewards, using all three inputs. The engine
+  requires equal known, reviewed tiers; it does not infer an output tier. Swapping
+  the retained first/third cards is equivalent for the supported reward model.
+- Mixed-tier duplicate interactions, pairs outside T2 and duplicate/combo
+  scaling remain unresolved, not assigned a zero benefit. They produce warnings.
+  For triples, combos on retained cards stay unknown; discarded rewards do not score.
+- Hotfix 2 removed Crowkeeper T3 Culling Strike, reduced Crowkeeper/Wildfire damage
+  and fixed Viscera from some Fate-spawned bosses. Historical source text remains
+  intact. No damage coefficients, Viscera probabilities or weight changes are inferred.
 - Empty reward lists, unread names or relevant unidentified icons prevent a firm
   ranking. Positive known progress can yield a provisional preference; no supported
   progress yields no recommendation. All tied offered cards are named.
@@ -186,14 +196,14 @@ Corrections in saved source offers are highlighted beside collected snapshots;
 
 ## Remaining game-data validation
 
-The prelaunch implementation supports manual reward entry, reusable definitions,
+The implementation supports manual reward entry, reusable definitions,
 single and combined priorities, build filters, conservative exhaustive planning,
 explanations and collection lifecycle. The following still need live evidence:
 
 - Native Fate captures for recognition precision/recall, full reward-row coverage,
   tooltip mappings, HDR and UI-scale/resolution calibration. Synthetic tests and
   prerelease screenshots do not certify those properties.
-- Rules for mixed tiers, T3 merges, a third duplicate, combo behavior after merging,
+- Rules for mixed tiers, pairs outside T2, combo behavior after duplicate invocation,
   and whether merges alter the usable input-slot limit. Unsupported combinations
   remain explicit unknowns until those rules are established.
 - Actual reward distributions, quantity/rarity effects, Viscera probabilities and
@@ -203,5 +213,6 @@ explanations and collection lifecycle. The following still need live evidence:
 The pending offer is hidden until a choice is made according to the GGG FAQ; a
 future-offer forecast cannot be inferred from the current capture. Confirming map
 identity, visual review and the chosen/invoked cards remains a deliberate user step:
-the app does not observe or control those game actions. The release remains under
-the documented prelaunch exception until the native validation gates can pass.
+the app does not observe or control those game actions. The owner waived in-game
+checks for the 16 November hotfix update only. Automated validation and staging
+checks remain required; this does not establish native recognition accuracy.

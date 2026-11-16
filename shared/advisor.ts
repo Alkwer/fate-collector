@@ -7,6 +7,7 @@ export type AdvisorGoal = { kind: 'regular' | 'combo'; label: string }
 export const MAX_COLLECTED_FATES = 12
 export const MAX_OFFERED_FATES = 30
 export const MERGED_REGULAR_MULTIPLIER = 3
+export const TRIPLED_REGULAR_MULTIPLIER = 3
 
 export type InvocationPlan = {
   cardIds: string[]
@@ -14,6 +15,7 @@ export type InvocationPlan = {
   threshold: number | null
   activated: boolean
   merges: { firstId: string; consumedId: string; outputTier: 3 }[]
+  triples?: { firstId: string; consumedId: string; thirdId: string }[]
   warnings: string[]
 }
 
@@ -36,6 +38,8 @@ const MAX_INVOCATION_INPUTS = 3
 const COMBAT_WARNING = 'Combat difficulty and modifier risk are outside this comparison.'
 const NO_PROGRESS = 'No positive result could be established for this goal.'
 export const UNKNOWN_FATE_NAME = 'A Fate name is missing, so possible duplicate interactions are unresolved.'
+export const UNRESOLVED_COMBO_MERGE = 'Combo behavior after merging duplicate Fates is unresolved.'
+export const UNRESOLVED_COMBO_TRIPLE = 'Combo behavior after invoking three copies of the same Fate is unresolved.'
 
 function cleanLabel(label: string): string {
   return label.normalize().trim().replace(/\s+/g, ' ').replace(/[\u2018\u2019\u201B\u02BC\uFF07]/g, "'")
@@ -107,7 +111,7 @@ type InvocationInput = Pick<GoalCard, 'name' | 'tier' | 'tierReviewed'>
 export function visitInvocationOrders<Card extends InvocationInput>(
   cards: Card[],
   required: Card | undefined,
-  addPlan: (active: Card[], pair?: [Card, Card]) => void,
+  addPlan: (active: Card[], pair?: [Card, Card], triple?: [Card, Card, Card]) => void,
   warn: (warning: string) => void,
 ): void {
   function consider(selected: Card[]) {
@@ -122,7 +126,18 @@ export function visitInvocationOrders<Card extends InvocationInput>(
     }
     const copies = selected.filter(card => card.name === duplicate.name)
     if (copies.length > 2) {
-      warn('Invoking three copies of the same Fate is unresolved.')
+      const [first, second, third] = copies
+      if (first.tier === null || copies.some(card => card.tier !== first.tier)) {
+        warn('Invoking three copies of the same Fate with mixed or unknown tiers is unresolved.')
+      } else if (copies.some(card => !card.tierReviewed)) {
+        warn('Check the suggested tiers before invoking three copies of the same Fate.')
+      } else {
+        // Interchanging the first and third Fates gives the same rewards.
+        // Evaluate each possible middle Fate once.
+        addPlan([], undefined, [first, second, third])
+        addPlan([], undefined, [second, first, third])
+        addPlan([], undefined, [first, third, second])
+      }
     } else if (copies.some(card => card.tier !== 2)) {
       warn('Only pairs of the same Fate at Tier 2 have a confirmed merge.')
     } else if (copies.some(card => !card.tierReviewed)) {
@@ -196,24 +211,26 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
   const plans: InvocationPlan[] = []
   const warnings = new Set(goalWarnings)
 
-  function addPlan(active: GoalCard[], pair?: [GoalCard, GoalCard]) {
-    if (pair && goal.kind === 'combo') {
-      warnings.add('Combo behavior after merging duplicate Fates is unresolved.')
+  function addPlan(active: GoalCard[], pair?: [GoalCard, GoalCard], triple?: [GoalCard, GoalCard, GoalCard]) {
+    if ((pair || triple) && goal.kind === 'combo') {
+      warnings.add(triple ? UNRESOLVED_COMBO_TRIPLE : UNRESOLVED_COMBO_MERGE)
       return
     }
     const targetCount = active.reduce((sum, card) => sum + card.targetCount, 0)
       + (pair ? pair[0].targetCount * MERGED_REGULAR_MULTIPLIER : 0)
-    const retained = pair ? [pair[0], ...active] : active
+      + (triple ? (triple[0].targetCount + triple[2].targetCount) * TRIPLED_REGULAR_MULTIPLIER : 0)
+    const retained = triple ? [triple[0], triple[2]] : pair ? [pair[0], ...active] : active
     const planWarnings = [...new Set([...goalWarnings, ...retained.flatMap(card => card.warnings)])]
     for (const warning of planWarnings) warnings.add(warning)
     if (!targetCount) return
 
     plans.push({
-      cardIds: [...(pair ?? []), ...active].map(card => card.id),
+      cardIds: [...(triple ?? pair ?? []), ...active].map(card => card.id),
       targetCount,
       threshold,
       activated: threshold !== null && targetCount >= threshold,
       merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
+      ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       warnings: planWarnings,
     })
   }
