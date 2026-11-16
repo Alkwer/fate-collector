@@ -229,7 +229,7 @@ namespace FateCollector
                 updated = Timestamp(marker["updatedAt"]);
                 if (updated > now + FutureSkew) throw new FormatException();
                 captureId = Id(marker["captureId"], true);
-                phase = Choice(marker["phase"], "capturing", "saved", "cancelled", "error");
+                phase = Choice(marker["phase"], "capturing", "saved", "cancelled", "error", "watching", "paused");
                 if (phase == "saved" && captureId == null) throw new FormatException();
             }
             catch (FileNotFoundException)
@@ -251,6 +251,12 @@ namespace FateCollector
 
             switch (phase)
             {
+                case "watching":
+                    View = Message("idle", "Watching for Fate cards", "Keep the calibrated Fate panel visible. Stable offers appear automatically. F9 captures manually.");
+                    break;
+                case "paused":
+                    View = Message("idle", "Automatic detection paused", "Check F6/F7 calibration and Auto-detect Fate cards in the helper tray. F9 captures manually.");
+                    break;
                 case "capturing":
                     View = now - updated > 100000
                         ? Message("error", "Capture interrupted", "Press F9 to try a new capture.")

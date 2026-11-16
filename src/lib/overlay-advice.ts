@@ -16,8 +16,10 @@ const number = (value: number) => new Intl.NumberFormat('en', { maximumSignifica
 
 export function overlayAdvice(input: OverlayInputs): OverlayView {
   const { offer, workspace, settings, capture } = input
-  const view: OverlayView = { captureId: capture?.captureId ?? null, status: 'idle', title: 'Ready for your next Fate', detail: 'Open an offer in game and press F9. Keep the website open.', rows: [], actions: [] }
+  const view: OverlayView = { captureId: capture?.captureId ?? null, status: 'idle', title: 'Ready for your next Fate', detail: 'Open a calibrated Fate panel in game. The updated helper detects offers automatically; F9 captures manually. Keep the website open.', rows: [], actions: [] }
   if (!capture) return view
+  if (capture.phase === 'watching') return { ...view, title: 'Watching for Fate cards', detail: 'Keep the Fate heading, card names and Confirm button visible. A stable recognized offer appears automatically. Use F9 if detection misses it.' }
+  if (capture.phase === 'paused') return { ...view, title: 'Automatic detection paused', detail: 'Check calibration with F6/F7 and Auto-detect Fate cards in the helper tray. F9 remains available for manual captures.' }
   if (capture.phase === 'error' || capture.phase === 'cancelled') return { ...view, status: 'error', title: capture.phase === 'error' ? 'Capture failed' : 'Capture cancelled', detail: 'Check the helper message, then capture the offer again with F9.' }
   if (capture.phase === 'capturing' || capture.captureId !== offer.captureId) return { ...view, status: 'busy', title: 'Analyzing your capture…', detail: 'Waiting for this capture to be imported. If this persists, open the website and check local review.' }
   if (input.blocked) return { ...view, status: 'check', title: 'Finish the website edit', detail: 'Close the editor and resolve any unsaved changes or connection problem before using overlay controls.' }
@@ -29,7 +31,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   if (!offerBelongsToMap(workspace, offer.id)) return { ...view, status: 'confirm-area', title: workspace.map ? 'Offer from your current area?' : 'Start with this offer?', detail: 'Confirm the area before comparing Fates. This does not choose a card in game.', actions: [...view.actions, { id: 'use-offer', label: workspace.map ? 'Use offer in this area' : 'Start area with offer', slot: 10 }] }
   const chosen = workspace.collection.cards.find(card => workspace.sources[card.id] === offer.id)
   const collected = chosen || workspace.usedOfferIds.includes(offer.id) || workspace.collection.cards.some(card => offer.cards.some(offered => offered.id === card.id))
-  if (collected) return { ...view, status: 'collected', title: chosen ? shorten(`Recorded: ${chosen.name || 'Unnamed Fate'}`, 240) : 'Choice already used', detail: `${workspace.collection.cards.length}/${MAX_COLLECTED_FATES} Fates collected. Press F9 for the next offer. Invocation planning is available on the website.` }
+  if (collected) return { ...view, status: 'collected', title: chosen ? shorten(`Recorded: ${chosen.name || 'Unnamed Fate'}`, 240) : 'Choice already used', detail: `${workspace.collection.cards.length}/${MAX_COLLECTED_FATES} Fates collected. Open the next offer for automatic detection, or use F9. Invocation planning is available on the website.` }
   if (offer.cards.length > 9) return { ...view, status: 'check', title: 'Review this offer on the website', detail: 'More than nine cards were recognized. Check which cards belong to the offered row before recording a choice.' }
   const portfolio = settings.mode === 'portfolio' ? recommendPortfolio(offer.cards, workspace.collection.cards, settings.profile, workspace.excludedCardIds) : null
   const single = settings.mode === 'single' && workspace.goal ? recommendFates(offer.cards, workspace.collection.cards, workspace.goal) : null

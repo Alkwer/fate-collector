@@ -46,6 +46,12 @@ supported/provisional/check states and displayed shortcuts. It stays out of capt
 pixels and does not activate the game or intercept clicks. New captures clear
 prior advice; stale state never retains actions. See [overlay](../overlay.md).
 
+Automatic detection instructions distinguish calibration, local-only automatic
+captures and the manual F9 fallback. Watching/paused states contain no choice
+actions. Recording a choice remains explicit while the offer is visible; no
+selection or area membership is inferred from a closing panel. The helper tray
+exposes the automatic-detection toggle, and F10 clears calibration to pause it.
+
 Minimize manual entry and keep the default capture and advice view read-only.
 Show source evidence and extracted names and descriptions. Put card corrections,
 the optional archived choice, context and a single **Review status** selector

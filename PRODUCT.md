@@ -31,6 +31,10 @@ must not require filling every field or interpreting every unknown icon.
   the actual choice, undo and start a new area. They never control the game.
   Capture changes and expired heartbeats remove stale advice. Reward corrections,
   priorities and invocation planning remain on the website in this version.
+- Helper 0.6.1 detects stable calibrated offers automatically while the overlay
+  connection and foreground game are active. Automatic captures stay local;
+  existing raw-upload consent covers F9 captures only. Manual F9 remains a
+  fallback for unreadable or unknown names. No choice or area is inferred.
 - **Add Fate manually** provides direct website entry by name or sourced portrait,
   with optional tiers and rewards. A portrait never supplies reward mechanics.
 - Connected captures and corrections save automatically. Manual imports retain

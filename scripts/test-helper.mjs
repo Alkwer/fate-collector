@@ -4,12 +4,14 @@ import { dirname, join, resolve } from 'node:path'
 if (process.platform !== 'win32') throw new Error('Helper tests require Windows PowerShell 5.1.')
 const suites = { capture: 'Test-FateCapture.ps1', upload: 'Test-CloudUpload.ps1', diagnostics: 'Test-Diagnostics.ps1', image: 'Test-CaptureImage.ps1', ocr: 'Test-OcrPasses.ps1', backend: 'Test-CaptureBackend.ps1', symbol: 'Test-SymbolReport.ps1' }
 suites.overlay = 'Test-Overlay.ps1'
+suites.auto = 'Test-AutoCapture.ps1'
 if (process.argv[2] === 'calibration') {
   const ahk = process.env.AUTOHOTKEY_EXE || join(process.env.ProgramFiles, 'AutoHotkey', 'v2', 'AutoHotkey64.exe')
   for (const args of [
     ['/ErrorStdOut', '/Validate', resolve('helpers/tests/Validate-Helper.ahk')],
     ['/ErrorStdOut', resolve('helpers/tests/Test-Calibration.ahk')],
     ['/ErrorStdOut', resolve('helpers/tests/Test-CaptureProcess.ahk')],
+    ['/ErrorStdOut', resolve('helpers/tests/Test-AutoCaptureState.ahk')],
   ]) {
     const result = spawnSync(ahk, args, { stdio: 'inherit', windowsHide: true, timeout: 30000 })
     if (result.error) throw result.error

@@ -42,21 +42,21 @@ export async function setup(page: Page, url = '/') {
   await expect(page.getByText('Overlay connected.', { exact: false })).toBeVisible()
   await closePanels(page)
 }
-export async function capture(page: Page) {
+export async function capture(page: Page, automatic = false) {
   const bundle = await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 500
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = '#172b34'; ctx.fillRect(0, 0, 800, 500)
     ctx.fillStyle = '#edf5f5'; ctx.font = '24px sans-serif'; ctx.fillText('Alchemist', 30, 70)
-    return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.6.0', context: { captureMode: 'fixture' },
+    return { kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.6.1', context: { captureMode: 'fixture' },
       image: { width: 800, height: 500, mimeType: 'image/png', dataBase64: canvas.toDataURL('image/png').split(',')[1] },
       ocr: { status: 'ok', text: 'Fates\nAlchemist\nCONFIRM', language: 'en-US', lines: [
         { text: 'Fates', x: 350, y: 5, width: 70, height: 20 }, { text: 'Alchemist', x: 30, y: 45, width: 140, height: 30 }, { text: 'CONFIRM', x: 350, y: 400, width: 120, height: 20 },
       ] } }
   })
-  await write(page, 'capture.json', { protocol: 1, captureId: bundle.captureId, phase: 'capturing', updatedAt: Date.now() })
-  await expect.poll(async () => (await state(page))?.title).toContain('Analyzing')
-  await write(page, `fate-${bundle.captureId}.json`, bundle, false)
+  await write(page, 'capture.json', { protocol: 1, captureId: automatic ? null : bundle.captureId, phase: automatic ? 'watching' : 'capturing', updatedAt: Date.now() })
+  await expect.poll(async () => (await state(page))?.title).toContain(automatic ? 'Watching' : 'Analyzing')
+  await write(page, `${automatic ? 'auto-' : ''}fate-${bundle.captureId}.json`, bundle, false)
   await write(page, 'capture.json', { protocol: 1, captureId: bundle.captureId, phase: 'saved', updatedAt: Date.now() })
   await expect.poll(async () => (await state(page))?.actions.some(item => item.id === 'use-offer')).toBe(true)
   return bundle.captureId

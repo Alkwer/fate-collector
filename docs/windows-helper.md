@@ -35,11 +35,16 @@ Automatic uploads remain **unverified**, including successful OCR. They populate
 
 ## Optional local review on the website
 
-For advice over the game, helper 0.6.0 adds **More actions → In-game overlay** on
+For advice over the game, helper 0.6.1 adds **More actions → In-game overlay** on
 the website and **Show/hide Fate overlay** in the helper tray menu. The website
 must remain open. This separate connection requests read/write permission for
 local overlay messages and also enables the normal capture-folder import below.
 See [overlay setup, shortcuts and limitations](overlay.md).
+
+With this connection active, readable English offers are detected automatically
+after F6/F7 calibration. **Auto-detect Fate cards** in the tray toggles scanning;
+F9 remains the manual fallback. Automatic `auto-fate-*.json` captures stay local,
+do not replace the clipboard and are excluded from the F9 cloud upload consent.
 
 Open Fate Collector in desktop Chrome or Edge. Click **Connect folder**, choose the `captures` folder beside `FateCollector.ahk`, and allow read access. The helper creates it on startup; **Open capture folder** in its tray menu locates it. F9 captures then appear and save locally without pasting or clicking Save. Use **Edit details** for a misread; while connected, corrections save after a short typing pause.
 

@@ -3,6 +3,9 @@ import { zipSync } from 'fflate'
 const files = ['FateCollector.ahk', 'Calibration.ahk', 'CaptureProcess.ahk', 'Export-FateCapture.ps1', 'CaptureImage.cs', 'WindowCapture.Common.ps1', 'OcrImage.cs', 'Ocr.Common.ps1', 'CaptureContext.Common.ps1', 'AreaContext.Common.ps1', 'Consent.Common.ps1', 'Diagnostics.Common.ps1', 'Report-Problem.ps1', 'Report-Symbol.ps1', 'SymbolReport.Common.ps1', 'SymbolReport.cs', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.third-party.txt']
 const release = JSON.parse(await readFile(new URL('../shared/helper-release.json', import.meta.url), 'utf8'))
 files.push('Overlay.ahk', 'Show-FateOverlay.ps1', 'FateOverlay.cs')
+files.push('AutoCapture.ahk', 'AutoCapture.Common.ps1', 'Watch-FatePanel.ps1')
+const autoCapture = await readFile(new URL('../helpers/AutoCapture.ahk', import.meta.url), 'utf8')
+if (autoCapture.match(/-HelperVersion ([0-9.]+)/)?.[1] !== release.version) throw new Error('Automatic capture helper version does not match the release.')
 for (const name of ['Export-FateCapture.ps1', 'SymbolReport.Common.ps1']) {
   const producer = await readFile(new URL(`../helpers/${name}`, import.meta.url), 'utf8')
   if (producer.match(/helperVersion = '([^']+)'/)?.[1] !== release.version) {

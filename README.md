@@ -97,14 +97,20 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.6.0 can display next-Fate advice over windowed/borderless PoE while this
+Helper 0.6.1 can display next-Fate advice over windowed/borderless PoE while this
 website runs in the background. Open **More actions → In-game overlay**, connect
 the running helper's `captures` folder, and allow read/write access. This also
-enables local review. Press **F9**, then **Ctrl+Alt+Enter** to confirm the area.
-After choosing in game, use **Ctrl+Alt+1–9** to record the numbered Fate. Names,
+enables local review. After F6/F7 calibration, stable recognized offers appear
+automatically. Use **Ctrl+Alt+Enter** to confirm the area when prompted and
+**Ctrl+Alt+1–9** to record your intended Fate before closing the panel in game. Names,
 ties, provisional results and missing reward data stay visible. **Ctrl+Alt+N**
 starts a new area with a second confirmation; **Ctrl+Alt+Z** undoes a collection
 change; **Ctrl+Alt+O** toggles the panel. These shortcuts do not control the game.
+
+Automatic captures stay local, use the `auto-fate-` filename prefix and never
+enter the F9 cloud-upload queue. They leave the clipboard unchanged. **F9** can
+refresh a missed or same-name offer; **F10** clears calibration and pauses scanning.
+The helper tray's **Auto-detect Fate cards** setting enables or disables scanning.
 
 The overlay uses local files under `captures/.overlay`, with no additional server
 or cloud upload. Keep the website open; advice expires after 12 seconds without
