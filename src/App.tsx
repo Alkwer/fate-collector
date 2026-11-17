@@ -49,7 +49,7 @@ export default function App() {
   useEffect(installDiagnosticLog, [])
   const [tab, setTab] = useState<'collector' | 'review' | 'saved' | 'diagnostics' | 'guide'>('collector')
   const advisor = useAdvisorWorkspace()
-  const solver = useSolverSettings()
+  const solver = useSolverSettings(advisor.workspace.goal)
   const [records, setRecords] = useState<storage.SavedOffer[]>([])
   const [unreadableOffers, setUnreadableOffers] = useState<storage.UnreadableOffer[]>([])
   const [damagedEvidenceCount, setDamagedEvidenceCount] = useState(0)

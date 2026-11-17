@@ -4,7 +4,7 @@ import type { Offer } from '../../shared/schema'
 import type { OverlayCapture, OverlayView } from '../../shared/overlay'
 import { cardReviewReasons } from './card-review'
 import { offerBelongsToMap, type AdvisorWorkspace } from './advisor-workspace'
-import type { SolverSettings } from './solver-settings'
+import { selectedRewardGoal, type SolverSettings } from './solver-settings'
 
 export interface OverlayInputs {
   offer: Offer; workspace: AdvisorWorkspace; settings: SolverSettings
@@ -34,8 +34,9 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   if (collected) return { ...view, status: 'collected', title: chosen ? shorten(`Recorded: ${chosen.name || 'Unnamed Fate'}`, 240) : 'Choice already used', detail: `${workspace.collection.cards.length}/${MAX_COLLECTED_FATES} Fates collected. Open the next offer for automatic detection, or use F9. Invocation planning is available in Fate Collector.` }
   if (offer.cards.length > 9) return { ...view, status: 'check', title: 'Review this offer in Fate Collector', detail: 'More than nine cards were recognized. Check which cards belong to the offered row before recording a choice.' }
   const farming = settings.profile.objective === 'viscera'
+  const goal = selectedRewardGoal(settings, workspace.goal)
   const portfolio = settings.mode === 'portfolio' || farming ? recommendPortfolio(offer.cards, workspace.collection.cards, settings.profile, workspace.excludedCardIds) : null
-  const single = settings.mode === 'single' && !farming && workspace.goal ? recommendFates(offer.cards, workspace.collection.cards, workspace.goal, { ...settings.profile, excludedCardIds: workspace.excludedCardIds }) : null
+  const single = settings.mode === 'single' && !farming && goal ? recommendFates(offer.cards, workspace.collection.cards, goal, { ...settings.profile, excludedCardIds: workspace.excludedCardIds }) : null
   const result = portfolio ?? single
   const excluded = new Map(result?.excluded?.map(item => [item.cardId, item.reasons.join(' · ')]))
   const recommended = result?.recommendedCardIds ?? []
@@ -50,7 +51,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
     if (!excluded.has(card.id) && workspace.collection.cards.length < MAX_COLLECTED_FATES) view.actions.push({ id: `collect:${card.id}`, label: shorten(`Record ${card.name || 'Unnamed Fate'}`, 160), slot: index + 1 })
     return { label: shorten(`${index + 1}. ${card.name || 'Unnamed Fate'}`, 240), detail: shorten(reason, 500), recommended: recommended.includes(card.id) }
   })
-  const hasGoal = farming || (portfolio ? settings.profile.goals.some(goal => goal.weight > 0) : !!workspace.goal)
+  const hasGoal = farming || (portfolio ? settings.profile.goals.some(goal => goal.weight > 0) : !!goal)
   view.status = !hasGoal || !recommended.length ? 'check' : result?.status === 'ready' ? 'ready' : result?.status === 'provisional' ? 'provisional' : 'check'
   view.title = !hasGoal ? 'Set reward priorities in Fate Collector'
     : farming && !recommended.length && result?.candidates.some(candidate => candidate.plan) ? 'No better known Viscera option'
@@ -64,7 +65,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   view.detail = [
     recommended.length > 1 ? 'No single winner.' : '',
     view.status === 'provisional' ? 'Missing data may change this ranking.' : '',
-    farming ? 'Viscera farming: Fate count and duplicates; drop chances unknown.' : portfolio ? 'Compared with your collection using your reward priorities.' : workspace.goal ? `Goal: ${workspace.goal.label}. Compared with your collection.` : '',
+    farming ? 'Viscera farming: Fate count and duplicates; drop chances unknown.' : portfolio ? 'Compared with your collection using your reward priorities.' : goal ? `Goal: ${goal.label}. Compared with your collection.` : '',
     reviews.length ? `Check ${reviews[0]}${reviews.length > 1 ? `; ${reviews.length - 1} more cards need review` : ''}.` : '',
     result?.warnings.length ? result.warnings[0] : '',
     unweighted.length ? `${unweighted.length} identified reward types have weight 0.` : '',

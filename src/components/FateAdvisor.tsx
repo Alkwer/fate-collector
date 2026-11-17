@@ -13,6 +13,7 @@ import { FateArtwork, GainMark, InvocationSequence, RewardStrip, RewardSymbol, T
 import { AppIcon } from './AppIcon'
 import { BuildWarnings } from './BuildWarnings'
 import { RecordInvocation } from './RecordInvocation'
+import { selectedRewardGoal } from '../lib/solver-settings'
 const goalKey = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.label)}`
 const cardName = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 
@@ -40,7 +41,8 @@ interface Props {
   savedOffers: Offer[]
 }
 export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManual, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers, solverControl }: Props) {
-  const { collection, goal, mode, sources } = workspace
+  const { collection, mode, sources } = workspace
+  const goal = selectedRewardGoal(solverControl.settings, workspace.goal)
   const portfolioMode = solverControl.settings.mode === 'portfolio' || solverControl.settings.profile.objective === 'viscera'
   const filters = useMemo(() => ({ ...solverControl.settings.profile, excludedCardIds: workspace.excludedCardIds }), [solverControl.settings.profile, workspace.excludedCardIds])
   const collectionEditor = useRef<DetailPanelHandle>(null)
@@ -112,7 +114,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
         {mapReady && manualAction}
         <DetailPanel trigger={mapReady} ref={priorities} className="reward-settings" autoOpen={!!solverControl.error} title={<>Reward priorities<span className="summary-detail">{portfolioMode ? `${solverControl.settings.profile.goals.length} priorities` : goal?.label || 'Choose a reward'}</span></>}>
 
-          {!portfolioMode && <label className="reward-goal">Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => onChange({ ...workspace, goal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>
+          {!portfolioMode && <label className="reward-goal">Reward goal<select value={goal ? goalKey(goal) : ''} onChange={event => solverControl.change({ ...solverControl.settings, singleGoal: goals.find(option => goalKey(option) === event.target.value) ?? null })}>
             <option value="">Select a reward</option>{goals.map(option => <option key={goalKey(option)} value={goalKey(option)}>{option.label} · {option.kind === 'combo' ? 'Combo' : 'Regular'}</option>)}
           </select></label>}
           <SolverControls control={solverControl} availableGoals={goals} />

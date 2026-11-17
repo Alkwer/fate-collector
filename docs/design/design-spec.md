@@ -36,6 +36,13 @@ reports the failure. See [DESIGN.md](../../DESIGN.md) for the implemented tokens
 
 ## Interaction requirements
 
+**Reward priorities → Build profiles** uses a compact selector and name field above
+the existing settings. New, duplicate and delete actions remain secondary. Names
+are saved explicitly; settings retain autosave. Profile switching preserves map
+state and keyboard focus. Storage errors appear beside the library controls, with
+export/reload recovery. Library restore and deletion require confirmation; unfinished
+modifier filters and names require an explicit discard before switching.
+
 The standalone Windows advisor reuses the existing application layout, colors,
 type and controls. A compact local-status row explains background operation,
 offers **Run in background**, and distinguishes local data from website data.

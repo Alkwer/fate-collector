@@ -1,5 +1,5 @@
 import { z } from '../../shared/validation'
-import { normalizeRewardLabel } from '../../shared/advisor'
+import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
 import { solverProfileSchema } from '../../shared/solver'
 
 export const rewardDefinitionSchema = z.object({
@@ -10,6 +10,7 @@ export const rewardDefinitionSchema = z.object({
 export const solverSettingsSchema = z.object({
   kind: z.literal('fate-collector.solver-profile'), schemaVersion: z.literal(1),
   mode: z.enum(['single', 'portfolio']), profile: solverProfileSchema,
+  singleGoal: z.object({ kind: z.enum(['regular', 'combo']), label: z.string().trim().min(1).max(160) }).strict().nullable().optional(),
   definitions: z.array(rewardDefinitionSchema).max(64),
 }).strict().refine(value => {
   const keys = value.definitions.map(row => `${row.kind}:${normalizeRewardLabel(row.label)}`)
@@ -19,7 +20,12 @@ export const solverSettingsSchema = z.object({
 export type SolverSettings = z.infer<typeof solverSettingsSchema>
 export type RewardDefinition = z.infer<typeof rewardDefinitionSchema>
 export const SOLVER_SETTINGS_KEY = 'fate-collector.solver-profile.v1'
-export const MAX_PROFILE_BYTES = 64_000
+// Keep room for the explicit single-goal metadata on previously valid 64,000-byte profiles.
+export const MAX_PROFILE_BYTES = 65_536
+
+export function selectedRewardGoal(settings: SolverSettings, legacyGoal: AdvisorGoal | null) {
+  return settings.singleGoal === undefined ? legacyGoal : settings.singleGoal
+}
 
 type Priority = SolverSettings['profile']['goals'][number]
 const TRADE_STARTER_PRIORITIES: readonly Priority[] = [
@@ -86,14 +92,14 @@ export function replaceStarterPriorities(settings: SolverSettings, id: StarterPr
 }
 
 export function parseSolverSettings(text: string): SolverSettings {
-  if (new TextEncoder().encode(text).byteLength > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KB maximum).')
+  if (new TextEncoder().encode(text).byteLength > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KiB maximum).')
   const result = solverSettingsSchema.safeParse(JSON.parse(text))
   if (!result.success) throw new Error('Invalid profile. Check reward names, weights (0–1,000,000), modifier filters and combo thresholds.')
   return result.data
 }
 export function serializeSolverSettings(value: SolverSettings): string {
   const text = JSON.stringify(solverSettingsSchema.parse(value), null, 2)
-  if (new TextEncoder().encode(text).byteLength > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KB maximum).')
+  if (new TextEncoder().encode(text).byteLength > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KiB maximum).')
   return text
 }
 export function upsertDefinition(settings: SolverSettings, definition: RewardDefinition): SolverSettings {
