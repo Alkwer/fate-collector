@@ -1,5 +1,22 @@
 # Fate Collector releases
 
+## 0.9.0 — 17 November 2026
+
+- Keep up to 20 named build profiles. Create, duplicate, rename and switch
+  configurations with independent reward priorities, build filters, planning
+  objectives, single-reward goals and personal templates. Existing settings
+  migrate to the first profile; map state and collection undo stay unchanged.
+- Back up the full library with Export library, or transfer one configuration
+  with Export profile. Import and recovery protect other profiles, unreadable
+  stored data and newer edits from another tab.
+
+The website and Windows helper keep separate profile libraries. Exit the helper
+before replacing the complete program bundle; retain `captures`, `symbol-reports`
+and `fate-collector.ini`. Export the library before downgrading: older helpers use
+the preserved original single profile and cannot read the new library.
+
+In-game validation remains deferred at the owner's request.
+
 ## 0.8.0 — 17 November 2026
 
 - Incomplete combos guide collection without being presented as active invocation

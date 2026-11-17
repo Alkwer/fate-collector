@@ -748,6 +748,17 @@ td { padding: 16px 12px; }
 .record-invocation .checkbox-row { margin-block: 12px; }
 .advisor-candidates .storage-warning { padding: 12px; font-size: 13px; }
 .advisor-candidates .storage-warning ul { padding-left: 18px; }
+.profile-library { padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.profile-library > p { max-width: 70ch; margin-block: 12px; }
+.profile-library-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-block: 16px; }
+.profile-library-fields label { min-width: 0; }
+.profile-name { display: flex; align-items: end; gap: 12px; min-width: 0; }
+.profile-name label { flex: 1; }
+.profile-name button { flex-shrink: 0; }
+.profile-library-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+@media (max-width: 760px) {
+  .profile-library-fields { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 500px) {
   .risk-settings .priority-list > li { grid-template-columns: minmax(0, 1fr); }
 }

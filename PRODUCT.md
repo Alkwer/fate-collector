@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.8.0 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.9.0 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.
@@ -52,6 +52,11 @@ must not require filling every field or interpreting every unknown icon.
   and Viscera starters replace priorities only through an explicit action;
   saved profiles are preserved. Points are not profit estimates. Identified
   rewards with no positive weight are visible beside advice.
+- A local library holds up to 20 named build profiles with independent priorities,
+  danger filters, objectives, single-reward goals and personal templates. Settings
+  save automatically. Explicit create, duplicate, rename and delete actions preserve
+  map state. Library backups include all profiles; single-profile import replaces
+  only the active configuration. Existing settings migrate without discarding them.
 - Source references include versioned PoEDB effects and official patch corrections.
   They never confirm captured rewards, tiers or modifier lists. Shared unique
   icons require the exact tooltip before scoring, including in older records.

@@ -139,16 +139,37 @@ desired Viscera; the app does not identify the encounter. Unknown duplicate mech
 are not counted as confirmed duplicate bonuses. The Viscera reward starter still
 values only the explicitly identified combo and is separate from this objective.
 
-The profile is stored separately in `localStorage`, surviving new maps, reloads
-and browser restarts unless browser data is cleared or evicted. **Export profile**
-and **Import profile** transfer a bounded, validated versioned JSON profile with
-weights, modifier filters, build dangers, objective and personal reward templates.
+**Reward priorities → Build profiles** stores up to 20 named configurations.
+The existing settings and single-reward goal become **My build** on first use.
+**New profile** starts with the trade defaults; **Duplicate profile** copies the
+active configuration. **Save name** renames it. Settings save automatically; each
+profile keeps its weights, modifier filters, build dangers, planning objective,
+single-reward goal, comparison mode and personal reward templates. Switching
+profiles recomputes advice, including the overlay, without changing the current
+map, collected cards, exclusions or undo history. Deletion requires confirmation
+and leaves at least one profile. Pending modifier filters must be applied or
+explicitly discarded before switching.
+
+The library is stored separately in `localStorage` under
+`fate-collector.solver-library.v1`, surviving new maps, reloads and browser restarts
+unless browser data is cleared or evicted. Migration preserves the previous
+`fate-collector.solver-profile.v1` bytes; once a library exists it takes precedence.
+The website and local helper keep separate libraries.
+**Export library** backs up every profile and the active selection in one validated
+JSON file (1.5 MB maximum). **Import library** explicitly replaces the library after
+confirmation. **Export profile** and **Import profile** transfer only the active
+profile's settings (64 KiB maximum); import keeps its name and all other profiles.
+Older single-profile exports remain supported; if they omit a single-reward goal,
+import keeps the active profile's current goal. Library entries without that field
+explicitly use no single-reward goal, independently of the current map.
 The new fields are optional: existing profiles retain their weights and default to
 reward planning with category filters disabled. Map state, individual
 card exclusions, screenshots and observations are not included. New maps clear
-individual exclusions. Corrupt profiles are preserved until explicitly replaced;
-stale tabs must reload newer settings before overwriting them. Failed saves warn
-the user and keep current edits available for export.
+individual exclusions. Corrupt libraries stay untouched until an explicit restore
+or reset; **Export stored copy** preserves their original bytes for recovery.
+Stale tabs must reload newer settings before overwriting them, and imports cannot
+overwrite changes made while the file is being read. Failed saves warn the user
+and keep the entire in-memory library available for export.
 
 In the reward editor, **Save personal template** stores an explicitly identified
 reward's label, kind and combo threshold. Applying a personal entry from **Tooltip

@@ -16,6 +16,16 @@ function inputs(): OverlayInputs {
 }
 
 describe('overlay advice uses the existing recommendation engines', () => {
+  it('uses the active profile single goal and respects an explicitly empty goal', () => {
+    const input = inputs()
+    input.settings.mode = 'single'
+    input.workspace.goal = { kind: 'regular', label: 'Armour' }
+    input.settings.singleGoal = { kind: 'regular', label: 'Currency' }
+    expect(overlayAdvice(input)).toMatchObject({ title: 'Recommended: 2. Crowkeeper', detail: expect.stringContaining('Goal: Currency.') })
+    input.settings.singleGoal = null
+    expect(overlayAdvice(input)).toMatchObject({ status: 'check', title: 'Set reward priorities in Fate Collector' })
+    expect(input.workspace.goal.label).toBe('Armour')
+  })
   it('honors build rules in single-goal mode and uses the Viscera objective without reward weights', () => {
     const input = inputs()
     input.settings.mode = 'single'

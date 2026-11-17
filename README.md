@@ -97,7 +97,7 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.8.0 includes a standalone advisor and displays next-Fate advice over
+Helper 0.9.0 includes a standalone advisor and displays next-Fate advice over
 windowed/borderless PoE without an open browser. Extract the complete ZIP,
 run the helper and set reward priorities in its local window. Closing that
 window keeps the advisor running; **Open local advisor** in the tray restores it.
@@ -126,6 +126,10 @@ See [overlay setup and limits](docs/overlay.md).
 - A local [Fate advisor](docs/fate-advisor.md) on the Current area screen: next-card
   recommendations, map-scoped collection and invocation order, with duplicate handling
   and uncertainty. New maps clear planning state; archive entries require explicit transfer.
+- Up to 20 named build profiles with create, duplicate, rename and switch actions;
+  independent priorities, danger filters, objectives and personal templates;
+  full-library backup plus single-profile import/export. Existing settings migrate
+  to the first profile without changing the current map or collected Fates.
 - Combined reward priorities with user-defined weights, modifier/card exclusions,
   complete reward breakdowns, and durable importable/exportable profiles. Personal
   tooltip templates reuse manually verified meanings without claiming automatic recognition.

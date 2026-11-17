@@ -1,15 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
-import { applyTradeStarter, MAX_PROFILE_BYTES, newSolverSettings, parseSolverSettings, serializeSolverSettings, replaceStarterPriorities, STARTER_PROFILES, type StarterProfileId, type SolverSettings } from '../lib/solver-settings'
+import { applyTradeStarter, MAX_PROFILE_BYTES, parseSolverSettings, serializeSolverSettings, replaceStarterPriorities, STARTER_PROFILES, type StarterProfileId, type SolverSettings } from '../lib/solver-settings'
 import { rewardFamily } from '../../shared/reward-families'
 import { RISK_CATEGORIES, type FateRiskSettings } from '../../shared/fate-risk'
+import type { useSolverSettings } from '../lib/useSolverSettings'
+import { SolverProfiles } from './SolverProfiles'
 
-export interface SolverSettingsControl {
-  settings: SolverSettings
-  error: string | null
-  change: (settings: SolverSettings, replaceUnreadable?: boolean) => boolean
-  reload: () => void
-}
+export type SolverSettingsControl = ReturnType<typeof useSolverSettings>
 const key = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.label)}`
 
 export function SolverControls({ control, availableGoals }: { control: SolverSettingsControl; availableGoals: AdvisorGoal[] }) {
@@ -23,7 +20,10 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   const starterDescription = useId()
   const fileInput = useRef<HTMLInputElement>(null)
   const current = useRef(settings); current.current = settings
+  const beforeSwitch = () => filterText === settings.profile.avoidModifiers.join('\n') || window.confirm('Discard unapplied modifier filters before changing profiles?')
+  const latestSwitch = useRef(beforeSwitch); latestSwitch.current = beforeSwitch
   useEffect(() => { setFilterText(settings.profile.avoidModifiers.join('\n')) }, [settings.profile.avoidModifiers])
+  useEffect(() => { setSelected(''); setCustomLabel(''); setMessage(null) }, [control.library.activeProfileId])
   const choices = availableGoals.filter(goal => !settings.profile.goals.some(row => key(row) === key(goal)))
   const starter = STARTER_PROFILES[starterId]
   const families = [...new Set(settings.profile.goals.map(goal => rewardFamily(goal.label)))]
@@ -61,15 +61,19 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   }
   async function importProfile(file: File) {
     const previous = current.current
+    const previousLibrary = control.library
     try {
-      if (file.size > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KB maximum).')
+      if (file.size > MAX_PROFILE_BYTES) throw new Error('Profile is too large (64 KiB maximum).')
       const imported = parseSolverSettings(await file.text())
       if (current.current !== previous) throw new Error('Your settings changed while reading the file. Import it again to replace them.')
-      if (!change(imported, true)) throw new Error('Profile was not imported. Resolve the storage message and retry.')
+      if (!latestSwitch.current()) return
+      const next = { ...imported, singleGoal: imported.singleGoal === undefined ? previous.singleGoal ?? null : imported.singleGoal }
+      if (!change(next, previousLibrary)) throw new Error('Profile was not imported. Your profiles may have changed; check storage and import again.')
       setMessage({ text: 'Profile imported. Your map and collected cards are unchanged.', error: false })
     } catch (error) { setMessage({ text: error instanceof Error ? error.message : 'Could not import this profile.', error: true }) }
   }
   return <section className="solver-settings" aria-label="Solver settings">
+    <SolverProfiles control={control} beforeSwitch={beforeSwitch} />
     <label>Planning objective<select value={settings.profile.objective ?? 'rewards'} onChange={event => update({ ...settings, profile: { ...settings.profile, objective: event.target.value as 'rewards' | 'viscera' } })}><option value="rewards">Reward priorities</option><option value="viscera">Farm boss Viscera</option></select></label>
     {settings.profile.objective === 'viscera' && <p className="hint">Compare Fate count and duplicates while respecting your build filters. Exact drop chances are unknown; a duplicate pair and three different Fates are shown as alternatives. Confirm that the boss can drop the Viscera you want. <a href="https://www.pathofexile.com/forum/view-thread/4013527/page/1" target="_blank" rel="noreferrer">GGG FAQ</a></p>}
     <label className="checkbox-row"><input type="checkbox" checked={settings.mode === 'portfolio' || settings.profile.objective === 'viscera'} disabled={settings.profile.objective === 'viscera'} onChange={event => { update({ ...settings, mode: event.target.checked ? 'portfolio' : 'single' }) }} />Compare multiple rewards</label>
@@ -99,10 +103,9 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       <p className="hint">Applies to every planning mode. Matches literal phrases in recorded modifiers, ignoring case. Unread effects remain unassessed. Individual Fate exclusions also apply in every mode.</p>
       <button className="outline-button" onClick={() => update({ ...settings, profile: { ...settings.profile, avoidModifiers: filterText.split('\n').map(line => line.trim()).filter(Boolean) } })}>Apply modifier filters</button>
       <div className="profile-transfer"><button onClick={exportProfile}>Export profile</button><button onClick={() => fileInput.current?.click()}>Import profile</button><input hidden ref={fileInput} type="file" accept="application/json,.json" aria-label="Import solver profile" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importProfile(file) }} /></div>
-      <p className="hint">Stored on this device across maps and browser restarts. Profile exports include priorities, filters and personal reward templates, but no captured offers or images. Import replaces the profile.</p>
+      <p className="hint">Profile exports include the active profile’s priorities, filters and personal reward templates, but no captured offers or images. Import replaces only the active profile’s settings and keeps its name. Use Export library above to back up all profiles.</p>
       {!!settings.definitions.length && <section className="personal-definitions"><h3>Personal reward templates ({settings.definitions.length})</h3><ul>{settings.definitions.map(row => <li key={row.id}><span>{row.label} · {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}{row.note ? ` · ${row.note}` : ''}</span><button className="text-button" aria-label={`Delete template ${row.label} ${row.kind}`} onClick={() => update({ ...settings, definitions: settings.definitions.filter(item => item.id !== row.id) })}>Delete</button></li>)}</ul></section>}
     </section>
     {message && <p role={message.error ? 'alert' : 'status'} className={message.error ? 'field-error' : 'hint'}>{message.text}</p>}
-    {control.error && <div className="storage-warning" role="alert"><p>{control.error}</p><button onClick={control.reload}>Reload saved profile</button>{control.error.startsWith('Your saved profile') && <button onClick={() => { if (window.confirm('Replace the unreadable profile with the default trade starter?')) change(newSolverSettings(), true) }}>Replace unreadable profile</button>}</div>}
   </section>
 }

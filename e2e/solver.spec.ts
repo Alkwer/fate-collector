@@ -323,7 +323,7 @@ for (const width of [1440, 820, 390]) {
 test('denied profile storage keeps edits usable and exportable without claiming persistence', async ({ page }) => {
   await page.addInitScript(() => {
     const original = Storage.prototype.setItem
-    Storage.prototype.setItem = function (key, value) { if (key === 'fate-collector.solver-profile.v1') throw new DOMException('Full', 'QuotaExceededError'); return original.call(this, key, value) }
+    Storage.prototype.setItem = function (key, value) { if (key === 'fate-collector.solver-library.v1') throw new DOMException('Full', 'QuotaExceededError'); return original.call(this, key, value) }
   })
   await page.goto('/')
   await openPanel(page, '.reward-settings')
