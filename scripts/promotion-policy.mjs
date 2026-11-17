@@ -1,11 +1,11 @@
 // Temporary exception approved before live Fate encounters are available.
 export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
-// Owner-requested dependency update with game testing waived; no other package is eligible.
+// Owner-requested advisor 0.8.0 release with game testing waived; no other package is eligible.
 export const HOTFIX_UPDATE_RELEASE = Object.freeze({
-  revision: 'f6001e50cbf579577f69df735fb1e210f713601c',
-  releaseId: '9757a0c80a2bd0c963258acca508df5f370f0504fb4b587087ab586b7bb09835',
-  stagingRunId: '43985917681',
+  revision: '27b03552b3d530dbe3268d0bc437039f82c189df',
+  releaseId: '2f3251370a46279db12a9058625987d2e1561edcfc57c12d5c92405467535fbb',
+  stagingRunId: '44063315418',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
