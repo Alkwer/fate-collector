@@ -6,7 +6,8 @@ can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation
 schemas. The rule baseline combines the [prerelease research](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md)
 with [3.30.0b Hotfix 3](https://www.pathofexile.com/forum/view-thread/4015683),
-checked on 16 November 2026. Advice uses the current rules, including three-copy
+checked on 16 November 2026; the [planning follow-up](../research/ADVISOR_RULES_2026-11-17.md)
+records the 17 November FAQ and community review. Advice uses the current rules, including three-copy
 invocations; it does not simulate historical patches. See the
 [post-launch evidence record](../research/PATCH_NOTES_2026-11-16.md).
 
@@ -95,28 +96,55 @@ not measured item quantities, market prices, expected value or profit.
 The search evaluates all supported subsets of up to three inputs, both confirmed
 T2 duplicate orders, all three choices of discarded middle card in a supported
 three-copy invocation, and every eligible offered card against the collected-only
-baseline. It ranks total points, then weighted capped combo progress, then fewer
-inputs. Progress is a tie-breaker, not an extra payout. Equal offered choices are
+baseline. While collecting, it ranks total points, then weighted capped combo
+progress, then fewer inputs. Invocation ranks active points, then fewer inputs;
+incomplete combo progress never justifies consuming an extra card. Progress is
+not an extra payout. Equal offered choices are
 all shown; invocation shows the best plan and up to two alternatives. **All rewards
 & invocation order** explains retained rewards, per-reward points, merge order,
 consumed cards, and unresolved outcomes. Unlisted rewards remain visible with zero
 weight. Relevant unknowns keep the result provisional instead of asserting a zero
 return. **Mark this invocation completed** consumes exactly the listed inputs;
 the existing collection undo also restores them.
-If no plan establishes positive points or combo progress, invocation advice
-abstains and offers no completion action. Neutral cards can still enable useful
-merges during the search, but zero-result plans are not suggested as alternatives.
+In reward-priority mode, if no plan establishes positive points, invocation advice
+abstains and offers no recommended completion action. Partial combos instead show
+**Progress while collecting**. The single-goal engine likewise requires an active
+combo with a known threshold. **Record a different invocation** separately records
+up to three inputs actually used in game, even when no recommendation is available;
+collection undo restores exactly those inputs. Neutral cards can still enable
+useful merges during the search, but zero-result reward plans are not suggested.
 
 Build filters exclude whole cards whose recorded modifiers contain any supplied
 literal phrase (case-insensitive). Individual offered or collected cards can also
-be excluded. Both controls apply to combined-priority mode only. Missing modifiers
-produce an explicit safety warning when filters are active. This is a user-defined
-filter, not an automatic assessment of the build or encounter difficulty.
+be excluded. These controls apply to single-goal, combined-priority and Viscera
+planning, including overlay choice advice.
+
+**Build dangers** adds Allow / Warn / Exclude for physical damage over time, chaos
+and poison, bleeding, curses, boss life recovery and additional bosses. The matcher
+uses explicit recorded effects and the versioned PoEDB reference for a known,
+reviewed Tier 3 Fate. Supported T2 merges check the resulting Tier 3 reference.
+Source matches are labelled and never overwrite recorded modifiers. Missing effects
+and unknown triple output effects remain unverified. Matching dangers appear beside
+the plan or offer. Allow disables that category's filter; it does not establish a
+safe encounter. This is a bounded effect filter, not a full build or difficulty model.
+
+**Planning objective → Farm boss Viscera** compares the two factors established by
+the GGG FAQ: input count and supported duplicate presence. Both nondecreasing with
+one improving makes one factor combination preferable; a duplicate pair versus three
+distinct Fates remains incomparable. Among plans with identical factors, reward
+points break ties. This is an application policy, not an estimated drop formula.
+Plans can have zero reward points and always remain provisional. The UI shows factors
+and priority points below the best active reward plan. Verify that the boss drops the
+desired Viscera; the app does not identify the encounter. Unknown duplicate mechanics
+are not counted as confirmed duplicate bonuses. The Viscera reward starter still
+values only the explicitly identified combo and is separate from this objective.
 
 The profile is stored separately in `localStorage`, surviving new maps, reloads
 and browser restarts unless browser data is cleared or evicted. **Export profile**
 and **Import profile** transfer a bounded, validated versioned JSON profile with
-weights, modifier filters and personal reward templates. Map state, individual
+weights, modifier filters, build dangers, objective and personal reward templates.
+The new fields are optional: existing profiles retain their weights and default to
+reward planning with category filters disabled. Map state, individual
 card exclusions, screenshots and observations are not included. New maps clear
 individual exclusions. Corrupt profiles are preserved until explicitly replaced;
 stale tabs must reload newer settings before overwriting them. Failed saves warn
@@ -146,7 +174,8 @@ tooltip meanings without waiting for an application release.
 - **Viscera and boss rewards** links the GGG FAQ: Grim-Fate empowered Pinnacles
   guarantee Viscera, while regular empowered bosses have better chances with more
   invoked Fates and duplicates. No probabilities or duplicate/combo formulas are
-  given, so this guidance does not change numerical icon ranking.
+  given. The separate farming objective compares these factors without converting
+  them to numerical reward points or drop probabilities.
 - Combo goals use identified matching icons and a consistent threshold. The small
   verified catalog supplies Item Rarity (3), Exceptional Gem (3) and Dreadmaidens'
   Sacrament (2). A conflicting explicit threshold leaves activation unresolved.
@@ -154,7 +183,7 @@ tooltip meanings without waiting for an application release.
 - The search considers subsets of up to three input cards, including both orders
   of a supported duplicate pair. Two identical named T2 cards merge to T3: regular
   rewards of the first ×3; the second card's rewards are discarded. Two inputs are
-  still consumed. At equal target progress, fewer input cards are preferred.
+  still consumed. At equal active reward output, fewer invocation inputs are preferred.
 - Next-card recommendations require improved target progress over the best plan
   available from the collection alone. A neutral reward can still help when the
   new card enables a confirmed duplicate merge. No improvement means no preference.

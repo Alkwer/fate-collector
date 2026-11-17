@@ -16,6 +16,20 @@ function inputs(): OverlayInputs {
 }
 
 describe('overlay advice uses the existing recommendation engines', () => {
+  it('honors build rules in single-goal mode and uses the Viscera objective without reward weights', () => {
+    const input = inputs()
+    input.settings.mode = 'single'
+    input.workspace.goal = { kind: 'regular', label: 'Currency' }
+    input.settings.profile.risks = { bleeding: 'exclude' }
+    input.offer.cards[1].modifiers = ['Inflicts Bleeding on Hit']
+    const single = overlayAdvice(input)
+    expect(single.rows[1].detail).toContain('Excluded:')
+    expect(single.actions.some(action => action.id === `collect:${input.offer.cards[1].id}`)).toBe(false)
+    input.settings.profile.objective = 'viscera'
+    input.settings.profile.goals = []
+    input.workspace.goal = null
+    expect(overlayAdvice(input)).toMatchObject({ status: 'provisional', detail: expect.stringContaining('Viscera farming') })
+  })
   it('ranks the exact offered IDs and supports both priorities and a single goal', () => {
     const input = inputs()
     const portfolio = overlayAdvice(input)

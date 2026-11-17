@@ -226,7 +226,7 @@ describe('combo goals', () => {
     const a = fate('a', [combo()])
     const b = fate('b', [combo()])
     const c = fate('c', [combo()])
-    expect(planInvocation([a], gem)).toMatchObject({ status: 'ready', plans: [{ targetCount: 1, threshold: 3, activated: false }] })
+    expect(planInvocation([a], gem)).toMatchObject({ status: 'insufficient', plans: [], collectingPlans: [{ targetCount: 1, threshold: 3, activated: false }] })
     expect(planInvocation([a, b, c], gem).plans[0]).toMatchObject({ targetCount: 3, threshold: 3, activated: true })
     expect(recommendFates([a, fate('other', [reward('Armour')])], [b, c], gem)).toMatchObject({
       status: 'ready', recommendedCardIds: ['a'],
@@ -245,20 +245,20 @@ describe('combo goals', () => {
     const goal = { kind: 'combo', label: 'Custom' } as const
     const result = planInvocation([fate('a', [combo(1, null, goal.label)]), fate('b', [combo(1, 2, goal.label)])], goal)
 
-    expect(result).toMatchObject({ status: 'ready', plans: [{ activated: true, threshold: 2, targetCount: 2 }, {}, {}] })
+    expect(result).toMatchObject({ status: 'ready', plans: [{ activated: true, threshold: 2, targetCount: 2 }] })
   })
 
   it('shows observed progress while leaving missing and conflicting thresholds unresolved', () => {
     const missing = { kind: 'combo', label: 'Custom' } as const
     expect(planInvocation([fate('a', [combo(4, null, missing.label)])], missing)).toMatchObject({
-      status: 'provisional', plans: [{ targetCount: 4, threshold: null, activated: false }],
+      status: 'insufficient', plans: [], collectingPlans: [{ targetCount: 4, threshold: null, activated: false }],
     })
     expect(recommendFates([fate('a', [combo(4, 2, missing.label)]), fate('b', [combo(1, 3, missing.label)])], [], missing)).toMatchObject({
       status: 'provisional', candidates: [{ plan: { threshold: null, activated: false } }, { plan: { threshold: null, activated: false } }],
       warnings: expect.arrayContaining([expect.stringMatching(/Conflicting thresholds/)]),
     })
     expect(planInvocation([fate('a', [combo(4, 2)])], gem)).toMatchObject({
-      status: 'provisional', plans: [{ targetCount: 4, threshold: null, activated: false }],
+      status: 'insufficient', plans: [], collectingPlans: [{ targetCount: 4, threshold: null, activated: false }],
     })
   })
 
@@ -269,9 +269,10 @@ describe('combo goals', () => {
       fate('c', [combo()], { name: 'Rot' }),
     ], gem)
 
-    expect(result.status).toBe('provisional')
-    expect(result.plans.every(plan => plan.cardIds.length === 1 && !plan.activated)).toBe(true)
-    expect(result.plans[0].targetCount).toBe(2)
+    expect(result.status).toBe('insufficient')
+    expect(result.plans).toEqual([])
+    expect(result.collectingPlans?.every(plan => plan.cardIds.length === 1 && !plan.activated)).toBe(true)
+    expect(result.collectingPlans?.[0].targetCount).toBe(2)
     expect(result.warnings).toContainEqual(expect.stringMatching(/Combo behavior after merging/))
     expect(result.warnings).toContainEqual(expect.stringMatching(/Combo behavior after invoking three copies/))
   })

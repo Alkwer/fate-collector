@@ -1,6 +1,6 @@
 # Capture a Fate offer on Windows
 
-Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Helper 0.7.0 includes a standalone advisor using the installed Microsoft Edge WebView2 Runtime. No browser tab or internet is needed for advice. **Ctrl+Shift+F9** symbol reports, saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
+Use Windows 10 or 11, AutoHotkey v2, and the built-in Windows PowerShell 5.1. Open Path of Exile in windowed or borderless windowed mode, then run `helpers/FateCollector.ahk`. Keep the panel fully visible. Helper 0.8.0 includes a standalone advisor using the installed Microsoft Edge WebView2 Runtime. No browser tab or internet is needed for advice. **Ctrl+Shift+F9** symbol reports, saved calibration, guarded capture and automatic HDR detection remain available. Exclusive fullscreen remains unvalidated.
 
 ## Standalone advice and local collection
 

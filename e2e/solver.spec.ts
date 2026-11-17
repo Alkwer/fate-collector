@@ -1,4 +1,4 @@
-import { openPanel, closePanels, expectEmptyMap } from './ui'
+import { openPanel, closePanels, expectEmptyMap, selectRewardGoal } from './ui'
 import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -31,6 +31,77 @@ function errorsOn(page: Page) {
   page.on('console', entry => { if (entry.type() === 'error') errors.push(entry.text()) })
   return errors
 }
+
+for (const width of [1440, 820, 390]) {
+  test(`partial combos, build dangers and Viscera remain usable at ${width}px`, async ({ page }) => {
+    const errors = errorsOn(page)
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto('/')
+    await load(page, [fate('Tempest', [reward('Exceptional Gem', 1, { kind: 'combo', threshold: 3 })])])
+    await page.getByRole('button', { name: 'Add Tempest to collected', exact: true }).click()
+    await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Combo incomplete — collect more Fates' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Mark this invocation completed' })).toHaveCount(0)
+    await expect(page.locator('.combo-progress')).toContainText('1/3')
+    await selectRewardGoal(page, 'combo:exceptional gem')
+    await closePanels(page)
+    await expect(page.getByRole('heading', { name: 'Combo incomplete — collect more Fates' })).toBeVisible()
+    const excludedCollected = page.getByRole('checkbox', { name: 'Exclude collected Tempest #1 from plans', exact: true })
+    await excludedCollected.check()
+    await expect(page.locator('.combo-progress')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Mark this invocation completed' })).toHaveCount(0)
+    await excludedCollected.uncheck()
+    await expect(page.locator('.combo-progress')).toContainText('1/3')
+    await page.screenshot({ path: join(tmpdir(), `fate-partial-${width}.png`), fullPage: true })
+    await page.getByRole('button', { name: 'Record a different invocation', exact: true }).click()
+    await page.getByRole('checkbox', { name: '1. Tempest · Tier 2', exact: true }).check()
+    await page.getByRole('button', { name: 'Record used Fates', exact: true }).click()
+    await expect(page.getByRole('complementary')).toContainText('0/12')
+    await page.getByRole('button', { name: 'Undo collection change', exact: true }).click()
+    await expect(page.getByRole('complementary')).toContainText('1/12')
+
+    await load(page, [fate('Blood Moon', [reward('Currency', 4)], ['Inflicts Bleeding on Hit']), fate('Alchemist', [reward('Currency', 1)], ['More monster life'])], false)
+    await page.getByRole('button', { name: 'Choose a Fate', exact: true }).click()
+    await selectRewardGoal(page, 'regular:currency')
+    await page.getByRole('combobox', { name: 'Bleeding action', exact: true }).selectOption('exclude')
+    await page.getByRole('combobox', { name: 'Physical damage over time action', exact: true }).focus()
+    await expect(page.getByRole('combobox', { name: 'Physical damage over time action', exact: true })).toBeFocused()
+    await page.screenshot({ path: join(tmpdir(), `fate-dangers-${width}.png`), fullPage: true })
+    await closePanels(page)
+    await expect(page.getByRole('button', { name: 'Add Blood Moon to collected', exact: true })).toBeDisabled()
+    await expect(page.getByRole('heading', { name: /Alchemist/ }).first()).toBeVisible()
+    await page.getByRole('button', { name: 'Add Alchemist to collected', exact: true }).click()
+    await openPanel(page, '.reward-settings')
+    await page.getByRole('combobox', { name: 'Planning objective', exact: true }).selectOption('viscera')
+    await closePanels(page)
+    await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Viscera farming options', exact: true })).toBeVisible()
+    await expect(page.locator('.advisor-plans')).toContainText('2 input Fates')
+    await expect(page.getByRole('button', { name: 'Mark this invocation completed' }).first()).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: join(tmpdir(), `fate-viscera-${width}.png`), fullPage: true })
+    await page.reload()
+    await page.getByRole('button', { name: 'Continue this area', exact: true }).click()
+    await openPanel(page, '.reward-settings')
+    await expect(page.getByRole('combobox', { name: 'Planning objective', exact: true })).toHaveValue('viscera')
+    await expect(page.getByRole('combobox', { name: 'Bleeding action', exact: true })).toHaveValue('exclude')
+    expect(errors).toEqual([])
+  })
+}
+
+test('Viscera distinguishes no better known factors from missing reward data', async ({ page }) => {
+  await page.goto('/')
+  for (const [index, name] of ['Tempest', 'Alchemist', 'Wildfire'].entries()) {
+    await load(page, [fate(name, [reward('Currency', 1)])], index === 0)
+    await page.getByRole('button', { name: `Add ${name} to collected`, exact: true }).click()
+  }
+  await load(page, [fate('Rot', [reward('Currency', 1)])], false)
+  await openPanel(page, '.reward-settings')
+  await page.getByRole('combobox', { name: 'Planning objective', exact: true }).selectOption('viscera')
+  await closePanels(page)
+  await expect(page.getByRole('heading', { name: 'No better known Viscera option.', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add Rot to collected', exact: true })).toBeEnabled()
+})
 
 test('trade starter defaults are visible and the action updates only its priorities', async ({ page }) => {
   await page.goto('/')

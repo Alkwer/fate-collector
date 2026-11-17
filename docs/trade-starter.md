@@ -32,6 +32,13 @@ Open **Reward priorities → Starter priorities** to choose:
 - **Viscera rewards**: Viscera Item combo 10. This values the explicit reward;
   it does not estimate boss drop chances or infer bonuses from duplicates.
 
+**Planning objective → Farm boss Viscera** is separate from the Viscera reward
+starter. It compares invocation input count and supported duplicate presence,
+even with no positive reward weights. Incomparable factors remain alternatives;
+no numerical drop odds are assigned. Priorities measure the reward trade-off,
+and all build filters still apply. Switching objectives preserves the saved
+single/combined reward mode and restores it on returning to reward priorities.
+
 **Replace priorities** shows the current and replacement counts, then replaces
 all priorities while preserving filters and personal templates. **Use trade
 starter** instead updates or adds only the 12 trade rewards, keeping other goals.
