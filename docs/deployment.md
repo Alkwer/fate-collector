@@ -156,21 +156,51 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the package-specific exception for the owner's requested
-  standalone advisor and helper 0.7.0 publication. Use the pinned staging run below, set
+  17 November dependency maintenance update. The owner explicitly waived game
+  testing for this update. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
   Verify overlay connection, capture identity, choice/undo, area confirmation,
   stale-advice clearing and the downloadable helper on staging before promotion.
 
-### Pinned Fate hotfix exception
+### Pinned dependency maintenance exception
+
+On 17 November the owner requested production deployment of PR #51 and explicitly
+confirmed that this dependency update does not need in-game testing. The update
+changes Workers types, Playwright, the Vite React plugin, fake-indexeddb, Vite,
+Wrangler and the matching Playwright CI image. Application, native helper, shared
+recognition, API and migration source files are unchanged from the previous
+production revision `d8a791e40d917865d53e8a074cce59b61e158d87`.
+
+Only this tested package is eligible for the existing `hotfix-20261116` mode:
+
+- Source revision: `f6001e50cbf579577f69df735fb1e210f713601c`
+- Package ID: `9757a0c80a2bd0c963258acca508df5f370f0504fb4b587087ab586b7bb09835`
+- Successful staging run: `43985917681`
+
+The staging run passed the complete application, Windows helper/browser and
+vision checks, then deployed the immutable artifact and passed live synthetic
+ingestion, consent, withdrawal and diagnostic smoke tests. Local verification
+confirmed every artifact checksum and that the live staging helper matches the
+manifest SHA-256:
+`9a38d61d720df7fa6c2d87c3a36339f72880248d4888e528fcb328918ad4f2d7`.
+
+In-game validation and the full manual staging checklist are not attested as
+passed. The explicit waiver applies only to this package; the standard native
+gate and expired prelaunch deadline remain unchanged. Promotion still checks the
+staging workflow, main revision, package checksums and live staging identity,
+then deploys that same artifact without rebuilding it. The prior standalone
+advisor package is no longer eligible for this exception.
+
+### Previous standalone advisor release (historical)
 
 On 16 November the owner requested publication of the overlay and updated
 downloadable helper, then extended the task to automatic Fate detection and
 explicitly approved a standalone advisor with local advice and collection storage.
-This pin covers the tested package from PRs #50, #52 and #53. It replaces the
-manual overlay 0.6.0 package pin; the existing `hotfix-20261116` workflow input
-is retained. Only this package is eligible:
+The previous pin covered the tested package from PRs #50, #52 and #53 and
+replaced the manual overlay 0.6.0 package. The record below is historical
+evidence; this package is no longer eligible for the current exception:
 
 - Source revision: `d8a791e40d917865d53e8a074cce59b61e158d87`
 - Package ID: `b100b4c8dda595540ddfcde17b08d6b7f50e7b37291304175f9ac0934439832f`

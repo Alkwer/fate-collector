@@ -18,7 +18,7 @@ test('hotfix deferral requires explicit acceptance and never attests unperformed
   }
 })
 
-test('superseded catalog, Guide and manual overlay exceptions cannot promote prior packages', () => {
+test('superseded catalog, Guide, overlay and standalone advisor exceptions cannot promote prior packages', () => {
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: '85b4b0e784c2e765398f68ca209298018a1352e7', releaseId: '447f7e3cf9dfc6886f2e436392d75b6fcd538652eecb67496ba412ce924c2392' })).toThrow('approved Fate hotfix package')
   for (const mode of ['catalog-20261114', 'catalog-20261115']) {
     expect(() => assertPromotionPolicy({ ...hotfix, RELEASE_VALIDATION_MODE: mode })).toThrow('Unknown')
@@ -27,6 +27,7 @@ test('superseded catalog, Guide and manual overlay exceptions cannot promote pri
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: '28d992caeb526a531db9fd487ad917109dd94a08', releaseId: '4819e0064e2f5c07f392bd6c488065f2a59328e58c3771250fcbc86b77dedaef' })).toThrow('approved Fate hotfix package')
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: '4074fd151722cd065cdb636e985e58705f3c48af', releaseId: '4bd7396e1a074dbae19aa3969fdd2f6bf7b630905482827b84ac2dd3bd42c6a5' })).toThrow('approved Fate hotfix package')
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: 'e4dc1756f745807d70dff4f836a05707d03822db', releaseId: 'b7b83dbc557839a07067adba8fb6bcf42f26e0979a2a61f3765b1c87972a3a80' })).toThrow('approved Fate hotfix package')
+  expect(() => assertHotfixUpdateRelease(hotfix, { revision: 'd8a791e40d917865d53e8a074cce59b61e158d87', releaseId: 'b100b4c8dda595540ddfcde17b08d6b7f50e7b37291304175f9ac0934439832f' })).toThrow('approved Fate hotfix package')
 })
 
 test('hotfix exception pins both package and source while keeping production workflow guards', () => {
