@@ -156,15 +156,53 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the package-specific exception for the owner's requested
-  17 November dependency maintenance update. The owner explicitly waived game
-  testing for this update. Use the pinned staging run below, set
+  17 November advisor 0.8.0 release. The owner explicitly deferred game testing and
+  the live real-widget check for this release. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
   Verify overlay connection, capture identity, choice/undo, area confirmation,
   stale-advice clearing and the downloadable helper on staging before promotion.
 
-### Pinned dependency maintenance exception
+### Pinned advisor 0.8.0 exception
+
+On 17 November the owner authorized publication of the completed planning changes
+and explicitly deferred tests in the game. PR #56 adds incomplete-combo guidance,
+six build-danger categories, a separate boss Viscera objective and manual invocation
+recording with undo. It packages the same planner in Windows helper 0.8.0. API,
+migrations, capture algorithms and upload contracts are unchanged.
+
+Only this tested package is eligible for the `hotfix-20261116` mode:
+
+- Source revision: `27b03552b3d530dbe3268d0bc437039f82c189df`
+- Package ID: `2f3251370a46279db12a9058625987d2e1561edcfc57c12d5c92405467535fbb`
+- Successful staging run: `44063315418`
+- Downloadable helper SHA-256: `fea63beb1c9e8fa15921c3e8f0c92d7c00384d95a631208c41b3af7bc1273a36`
+
+The staging workflow passed the complete application, Windows helper/browser and
+vision checks, including 155 E2E scenarios, 30 compatibility cases, 20 visual
+comparisons and live synthetic ingestion/consent/withdrawal/diagnostic smoke.
+Four additional planner scenarios passed against the live staging site at desktop,
+tablet and mobile sizes. Local verification checked every artifact checksum and
+confirmed that the live helper matches the manifest and contains all 100 files,
+including the bundled application, version 0.8.0 producer metadata and changelog.
+
+Local generated-window checks passed the desktop bridge, clean GDI, overlay
+rejection, WGC window isolation and a forced float16 path while Windows HDR was off.
+These are fixture checks, not game tests or physical HDR validation. The live
+real-widget submission/replay/withdrawal check timed out during verification,
+before any report submission. On 17 November the owner explicitly deferred this
+check as well for this pinned release. It is not recorded as passed. Production
+Turnstile verification remains enabled; the automated local suite uses its
+existing test-only verifier.
+
+In-game testing, native recognition holdout and the full manual staging checklist
+are not attested as passed. The package-specific deferral does not change the
+standard native gate or expired prelaunch deadline. Promotion rechecks the pinned
+main staging workflow, checksums and live staging identity, then deploys the exact
+artifact without rebuilding it. The dependency maintenance package is superseded.
+
+### Previous dependency maintenance release (historical)
 
 On 17 November the owner requested production deployment of PR #51 and explicitly
 confirmed that this dependency update does not need in-game testing. The update
@@ -173,7 +211,7 @@ Wrangler and the matching Playwright CI image. Application, native helper, share
 recognition, API and migration source files are unchanged from the previous
 production revision `d8a791e40d917865d53e8a074cce59b61e158d87`.
 
-Only this tested package is eligible for the existing `hotfix-20261116` mode:
+This historical package is no longer eligible for the `hotfix-20261116` mode:
 
 - Source revision: `f6001e50cbf579577f69df735fb1e210f713601c`
 - Package ID: `9757a0c80a2bd0c963258acca508df5f370f0504fb4b587087ab586b7bb09835`
@@ -321,7 +359,9 @@ Successful submission, retry, consent, quotas and withdrawal run against the rea
 local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
-check replay rejection and withdraw it. Real user evidence must not enter staging.
+check replay rejection and withdraw it. The owner explicitly deferred this check
+only for the [pinned advisor 0.8.0 exception](#pinned-advisor-080-exception) above.
+Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
 ```sh
