@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       staging_run_id:
-        description: Successful staging run for this main commit, or pinned run 43977132704 for hotfix-20261116
+        description: Successful staging run for this main commit, or pinned run 43985917681 for hotfix-20261116
         required: true
         type: string
       validation_mode:
-        description: Full native validation, expired prelaunch mode, or the pinned standalone advisor and helper 0.7.0 exception
+        description: Full native validation, expired prelaunch mode, or the pinned dependency maintenance exception
         required: true
         default: native-holdout
         type: choice
@@ -16,7 +16,7 @@ on:
           - prelaunch
           - hotfix-20261116
       hotfix_update_acknowledged:
-        description: For the pinned standalone advisor and helper 0.7.0 only, I accept deferred in-game validation; automated and live staging checks remain required
+        description: For the pinned dependency update only, I accept deferred in-game validation; automated and live staging checks remain required
         required: true
         default: false
         type: boolean
@@ -73,8 +73,8 @@ jobs:
               throw new Error('Choose a successful staging workflow for this exact main commit.');
             }
             if (mode === 'hotfix-20261116') {
-              await core.summary.addHeading('Pinned standalone advisor and helper 0.7.0 release')
-                .addRaw(`Owner-requested standalone advisor and helper 0.7.0 publication: in-game validation is deferred, not passed. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
+              await core.summary.addHeading('Pinned dependency maintenance release')
+                .addRaw(`Owner-requested dependency update: in-game validation is deferred, not passed. The owner explicitly waived game testing for this maintenance package. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
                 .write();
               return;
             }
