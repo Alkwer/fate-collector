@@ -16,7 +16,7 @@ on:
           - prelaunch
           - hotfix-20261116
       hotfix_update_acknowledged:
-        description: For the pinned advisor 0.8.0 release only, I accept deferred in-game validation; automated and live staging checks remain required
+        description: For the pinned advisor 0.8.0 release only, I accept deferred in-game and real-widget validation; automated and synthetic staging checks remain required
         required: true
         default: false
         type: boolean
@@ -74,7 +74,7 @@ jobs:
             }
             if (mode === 'hotfix-20261116') {
               await core.summary.addHeading('Pinned advisor 0.8.0 release')
-                .addRaw(`Owner-requested advisor 0.8.0 release: in-game validation is deferred, not passed. The owner explicitly waived game testing for this advisor package. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
+                .addRaw(`Owner-requested advisor 0.8.0 release: in-game validation is deferred, not passed. The owner also deferred real-widget validation after it timed out before submission; production Turnstile verification remains enabled. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed; the package and live staging are rechecked below.\n`)
                 .write();
               return;
             }

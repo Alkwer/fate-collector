@@ -156,8 +156,8 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the package-specific exception for the owner's requested
-  17 November advisor 0.8.0 release. The owner explicitly waived game testing for
-  this release. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
+  17 November advisor 0.8.0 release. The owner explicitly deferred game testing and
+  the live real-widget check for this release. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
@@ -189,9 +189,12 @@ including the bundled application, version 0.8.0 producer metadata and changelog
 
 Local generated-window checks passed the desktop bridge, clean GDI, overlay
 rejection, WGC window isolation and a forced float16 path while Windows HDR was off.
-These are fixture checks, not game tests or physical HDR validation. Real-widget
-submission/replay/withdrawal remains a separate pre-promotion check as described
-below; the automated local suite uses its existing test-only verifier.
+These are fixture checks, not game tests or physical HDR validation. The live
+real-widget submission/replay/withdrawal check timed out during verification,
+before any report submission. On 17 November the owner explicitly deferred this
+check as well for this pinned release. It is not recorded as passed. Production
+Turnstile verification remains enabled; the automated local suite uses its
+existing test-only verifier.
 
 In-game testing, native recognition holdout and the full manual staging checklist
 are not attested as passed. The package-specific deferral does not change the
@@ -356,7 +359,9 @@ Successful submission, retry, consent, quotas and withdrawal run against the rea
 local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
-check replay rejection and withdraw it. Real user evidence must not enter staging.
+check replay rejection and withdraw it. The owner explicitly deferred this check
+only for the [pinned advisor 0.8.0 exception](#pinned-advisor-080-exception) above.
+Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
 ```sh
