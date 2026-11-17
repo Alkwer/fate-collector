@@ -119,6 +119,13 @@ counts: select in order, see the pictured merge, then Confirm in game. It runs
 left to right on desktop and top to bottom on mobile. Portfolio calculations
 open in Reward breakdown; unresolved outcomes stay visible. Keep combo thresholds/activation and priority
 point units distinct; never imply item quantities or resolved unknown mechanics.
+Incomplete combos show **Progress while collecting** and no recommended completion
+action. **Record a different invocation** separately records up to three actual
+inputs and retains collection undo. The reward-priority panel contains the planning
+objective and six optional **Build dangers**, each with Allow / Warn / Exclude.
+Show matching dangers and missing effect evidence beside the affected option.
+The boss Viscera objective shows input count, duplicate presence and the priority
+points forgone compared with the best reward plan, with unknown odds explicit.
 Keep the recommendation and its gain over the existing collection prominent, with
 equal matches and provisional results explicitly labelled. Missing data links to
 the affected card. **Back to advice** closes current-offer editing and restores

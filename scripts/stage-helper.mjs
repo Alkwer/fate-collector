@@ -96,6 +96,7 @@ archive['FateCollector/consent-policy.json'] = new Uint8Array(await readFile(new
 archive['FateCollector/diagnostics-policy.json'] = new Uint8Array(await readFile(new URL('../shared/diagnostics-policy.json', import.meta.url)))
 archive['FateCollector/fate-names.json'] = new Uint8Array(await readFile(new URL('../shared/fate-names.json', import.meta.url)))
 archive['FateCollector/LICENSE'] = new Uint8Array(await readFile(new URL('../LICENSE', import.meta.url)))
+archive['FateCollector/CHANGELOG.md'] = new Uint8Array(await readFile(new URL('../CHANGELOG.md', import.meta.url)))
 archive['FateCollector/THIRD_PARTY_NOTICES.md'] = new TextEncoder().encode((await readFile(new URL('../THIRD_PARTY_NOTICES.md', import.meta.url), 'utf8'))
   .replaceAll('(helpers/LICENSE.third-party.txt)', '(LICENSE.third-party.txt)')
   .replaceAll('(prototypes/vision/fixtures/dataset.json)', '(https://github.com/Alkwer/fate-collector/blob/main/prototypes/vision/fixtures/dataset.json)')

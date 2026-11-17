@@ -1,8 +1,11 @@
 # Fate Collector Windows helper
 
-Start with the [Windows capture guide](../docs/windows-helper.md). Extract the entire ZIP, including `desktop` and `webview2`. Helper 0.7.0 runs the advisor locally with the installed Microsoft Edge WebView2 Runtime. Close its window to keep working in the background; use **Open local advisor** in the tray to reopen it. Collection and priorities persist on this PC. Direct cloud upload is optional and configured separately from the tray.
+Start with the [Windows capture guide](../docs/windows-helper.md). Extract the entire ZIP, including `desktop` and `webview2`. Helper 0.8.0 runs the advisor locally with the installed Microsoft Edge WebView2 Runtime. Close its window to keep working in the background; use **Open local advisor** in the tray to reopen it. Collection and priorities persist on this PC. Direct cloud upload is optional and configured separately from the tray.
 
 ## Capture and OCR
+
+Version 0.8.0 adds incomplete-combo guidance, build-danger filters, a boss Viscera
+objective and manual invocation recording. See `CHANGELOG.md` in the downloaded ZIP.
 
 - The helper automatically detects calibrated, readable English Fate offers while PoE is in front and the advisor is connected. The local advisor connects automatically. Two matching reads save one offer; uncertain reads clear automatic advice. F9 captures manually and F10 clears calibration. Use **Auto-detect Fate cards** in the tray to disable or retry detection.
 - Automatic `auto-fate-*.json` captures remain local and leave the clipboard unchanged. The F9 upload consent does not cover them. Ctrl+Alt+Enter confirms the area; Ctrl+Alt+1–9 records the intended Fate while its panel is visible; Ctrl+Alt+N requests/confirms a new area; Ctrl+Alt+Z undoes; Ctrl+Alt+O toggles the overlay. These shortcuts never control the game. Corrections and invocation planning work in the local advisor.

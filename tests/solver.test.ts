@@ -32,7 +32,7 @@ describe('weighted invocation search', () => {
     expect(merged.plans.map(plan => plan.score)).toEqual([6, 2])
     expect(merged.plans[0]).toMatchObject({ cardIds: ['useful', 'neutral'], discardedCardIds: ['neutral'] })
     expect(solveInvocation([fate('partial', [combo(gem.label, 1)])], { goals: [gem], avoidModifiers: [] })).toMatchObject({
-      status: 'ready', plans: [{ score: 0, progress: expect.closeTo(8 / 3) }],
+      status: 'insufficient', plans: [], collectingPlans: [{ score: 0, progress: expect.closeTo(8 / 3) }],
     })
   })
   it('finds the compromise outside the top three single-goal plans', () => {

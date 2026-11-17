@@ -29,8 +29,9 @@ test('different unique meanings do not form a shared-icon combo', () => {
     rewards: [{ ...newReward(), ...catalogFields(REWARD_CATALOG.find(row => row.id === id)!), visualId: 'orange-feathers' as const, tooltipConfirmed: true }],
   }))
   const plan = solveInvocation(cards, { goals: cards.map(card => ({ kind: 'combo', label: card.rewards[0].label, weight: 5 })), avoidModifiers: [] })
-  expect(plan.plans[0].score).toBe(0)
-  expect(plan.plans[0].rewards.every(row => !row.activated)).toBe(true)
+  expect(plan.plans).toEqual([])
+  expect(plan.collectingPlans?.[0].score).toBe(0)
+  expect(plan.collectingPlans?.[0].rewards.every(row => !row.activated)).toBe(true)
 })
 
 test('unweighted report distinguishes kinds and excludes unknown or unconfirmed rewards', () => {

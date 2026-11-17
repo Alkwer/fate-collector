@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.7.0 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.8.0 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.
@@ -55,6 +55,15 @@ must not require filling every field or interpreting every unknown icon.
 - Source references include versioned PoEDB effects and official patch corrections.
   They never confirm captured rewards, tiers or modifier lists. Shared unique
   icons require the exact tooltip before scoring, including in older records.
+- Invocation advice requires an active weighted reward; incomplete combos remain
+  collection progress. Players can separately record a different invocation already
+  performed in game, with undo.
+- Optional build-danger actions (Allow / Warn / Exclude) apply to both solvers and
+  overlay advice. Matching Tier 3 PoEDB effects are labelled as source references,
+  not captured evidence. These filters do not assess overall encounter safety.
+- Boss Viscera farming is a separate planning objective. It compares input count
+  and supported duplicate presence, retaining incomparable alternatives without
+  inventing drop probabilities. Reward weights show the reward trade-off.
 - **Report symbol** is an independent, opt-in image-research flow with preview,
   source references, durable local retries and withdrawal. Normal capture/offer
   sharing stays text-only. Symbol reports are public, with no account or collection

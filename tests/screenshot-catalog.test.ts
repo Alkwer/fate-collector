@@ -42,7 +42,9 @@ test('conditional rewards activate from two different Fates without pooling the 
     expect.objectContaining({ label: combo.label, threshold: 2, count: 2, activated: true }),
   ]))
   cards[1].rewards = [{ ...newReward(), ...catalogFields(regular) }]
-  expect(solveInvocation(cards, profile).plans[0].rewards.find(reward => reward.kind === 'combo')?.activated).toBe(false)
+  const incomplete = solveInvocation(cards, profile)
+  expect(incomplete.plans).toEqual([])
+  expect(incomplete.collectingPlans?.[0].rewards.find(reward => reward.kind === 'combo')?.activated).toBe(false)
   expect(visualRewardFields('gold-grid')).toMatchObject({ kind: 'unknown', threshold: null, identified: false })
 })
 

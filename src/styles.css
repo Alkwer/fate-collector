@@ -740,3 +740,14 @@ td { padding: 16px 12px; }
 .reference-results li { padding-block: 12px; border-bottom: 1px solid var(--border); }
 .unweighted-rewards { margin-block: 12px; }
 .unweighted-rewards ul { margin-block: 16px; }
+
+.risk-settings, .combo-progress { margin-block: 20px; }
+.risk-settings .priority-list > li { grid-template-columns: minmax(0, 1fr) minmax(120px, 170px); }
+.risk-settings label { min-width: 0; }
+.record-invocation { margin-block: 16px; }
+.record-invocation .checkbox-row { margin-block: 12px; }
+.advisor-candidates .storage-warning { padding: 12px; font-size: 13px; }
+.advisor-candidates .storage-warning ul { padding-left: 18px; }
+@media (max-width: 500px) {
+  .risk-settings .priority-list > li { grid-template-columns: minmax(0, 1fr); }
+}
