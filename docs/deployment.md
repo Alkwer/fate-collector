@@ -156,15 +156,55 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
 - `hotfix-20261116` is the package-specific exception for the owner's requested
-  17 November advisor 0.8.0 release. The owner explicitly deferred game testing and
-  the live real-widget check for this release. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
+  17 November build profiles 0.9.0 release. The owner explicitly deferred game
+  testing; the prior real-widget deferral is retained for the unchanged verification
+  flow. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
   `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
   `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
   Windows helper/browser checks and live synthetic staging smoke remain required.
-  Verify overlay connection, capture identity, choice/undo, area confirmation,
-  stale-advice clearing and the downloadable helper on staging before promotion.
+  Verify build profile switching, migration, backup/import, recovery, map preservation
+  and the downloadable helper on staging before promotion.
 
-### Pinned advisor 0.8.0 exception
+### Pinned build profiles 0.9.0 exception
+
+On 17 November the owner requested production publication without in-game tests.
+PR #58 adds up to 20 named build profiles, legacy migration, full-library backup
+and recovery, and protection against stale tabs and delayed imports. It packages
+the same interface in Windows helper 0.9.0. Capture algorithms, API, migrations
+and upload verification are unchanged.
+
+Only this tested package is eligible for the `hotfix-20261116` mode:
+
+- Source revision: `680cd745ab36211b866bb1ea584d2dbcc88dc159`
+- Package ID: `ac4c865fa34f60c111b6d6683c261125c0e356e8140867efbd909845bdf351a0`
+- Successful staging run: `44146493587`
+- Downloadable helper SHA-256: `559232c4492c397b290286628250bbd9ddfcbffc45c31bb2089d4c8b61e9ab22`
+
+The complete staging workflow passed application, Windows helper/browser and vision
+checks, including 383 unit tests (one existing skip), 168 E2E scenarios, 30 browser
+compatibility cases, 20 visual comparisons and live synthetic API smoke. All 13
+build-profile scenarios also passed against the live staging site, including
+1440, 820 and 390 px layouts, both themes, migration, map preservation, import/export,
+failed storage and delayed file reads. Local verification checked all 79 artifact
+checksums and the live staging identity. The downloaded helper matches the manifest
+and contains all 100 files, the bundled application and version 0.9.0 metadata.
+Codex Review of PR #58 completed without findings.
+
+In-game testing, native recognition holdout and the full manual checklist remain
+deferred, not passed. The owner's prior real-widget deferral is retained for the
+unchanged verification flow; no new live-widget check is attested. Production
+Turnstile remains enabled. Select the staging run above, set
+`hotfix_update_acknowledged=true`, keep `manual_tests_passed=false` and leave
+`recognition_run_id` empty. Promotion rechecks the pinned main workflow, package
+checksums and live staging, then deploys that artifact without rebuilding it.
+The standard native gate and expired prelaunch deadline are unchanged.
+
+Website and helper libraries are separate. When upgrading the helper, close it,
+replace the complete program bundle and retain `captures`, `symbol-reports` and
+`fate-collector.ini`. Export the library before downgrading: older helpers read
+only the preserved original single profile. The advisor 0.8.0 package is superseded.
+
+### Previous advisor 0.8.0 release (historical)
 
 On 17 November the owner authorized publication of the completed planning changes
 and explicitly deferred tests in the game. PR #56 adds incomplete-combo guidance,
@@ -172,7 +212,7 @@ six build-danger categories, a separate boss Viscera objective and manual invoca
 recording with undo. It packages the same planner in Windows helper 0.8.0. API,
 migrations, capture algorithms and upload contracts are unchanged.
 
-Only this tested package is eligible for the `hotfix-20261116` mode:
+This historical package is no longer eligible for the `hotfix-20261116` mode:
 
 - Source revision: `27b03552b3d530dbe3268d0bc437039f82c189df`
 - Package ID: `2f3251370a46279db12a9058625987d2e1561edcfc57c12d5c92405467535fbb`
@@ -359,8 +399,9 @@ Successful submission, retry, consent, quotas and withdrawal run against the rea
 local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
-check replay rejection and withdraw it. The owner explicitly deferred this check
-only for the [pinned advisor 0.8.0 exception](#pinned-advisor-080-exception) above.
+check replay rejection and withdraw it. The owner's earlier deferral of this check
+is retained for the unchanged verification flow in the
+[pinned build profiles 0.9.0 exception](#pinned-build-profiles-090-exception) above.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
