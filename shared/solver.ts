@@ -2,7 +2,7 @@ import { z } from './validation.ts'
 import {
   advisorInputProblem, MAX_COLLECTED_FATES, MAX_INVOCATION_INPUTS, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
   normalizeRewardLabel, TRIPLED_REGULAR_MULTIPLIER, UNKNOWN_FATE_NAME, UNRESOLVED_COMBO_MERGE,
-  UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, visitInvocationOrders,
+  UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, supportsDuplicateCombo, visitInvocationOrders,
   type AdvisorGoal, type InvocationPlan, type PlanResult, type Recommendation,
 } from './advisor'
 import { KNOWN_COMBOS } from './reward-catalog'
@@ -65,6 +65,7 @@ export type SolverPlan = {
   rewards: SolverReward[]
   merges: InvocationPlan['merges']
   triples?: InvocationPlan['triples']
+  duplicateCurrency?: InvocationPlan['duplicateCurrency']
   retained: { cardId: string; multiplier: number }[]
   discardedCardIds: string[]
   warnings: string[]
@@ -87,7 +88,12 @@ export type SolverCandidate = {
   warnings: string[]
 }
 
-export type ComboOpportunity = { label: string; icons: number; points: number }
+export type ComboOpportunity = { label: string; icons: number; points: number; duplicateName?: string }
+
+export function completionCondition(option: ComboOpportunity): string {
+  if (option.duplicateName) return `another T2 ${option.duplicateName}`
+  return `${option.icons} more ${option.label} ${option.icons === 1 ? 'icon on a new Fate' : 'icons on separate new Fates'}`
+}
 
 // Each future input is a distinct, eligible Fate with one matching icon.
 // Its other rewards are unspecified and contribute no points in this comparison.
@@ -258,13 +264,17 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     if (triple && (profile?.avoidModifiers.length || Object.values(profile?.risks ?? {}).some(action => action !== 'allow'))) recordWarning(planWarnings, { message: UNRESOLVED_TRIPLE_RISK, affectsRanking: true })
     for (const message of mergeRisk?.warnings ?? []) recordWarning(planWarnings, { message, affectsRanking: true })
     const totals = new Map<string, ObservedReward>()
+    const scaledCombos = new Set<string>()
     if (discarded?.modifiersUnrecorded) recordWarning(planWarnings, { message: CHECK_MODIFIERS, affectsRanking: true })
 
     for (const { card, multiplier } of retained) {
       for (const warning of cardWarnings(card)) recordWarning(planWarnings, warning)
       for (const reward of card.rewards) {
         const existing = totals.get(reward.key)
-        const unresolvedCount = multiplier > 1 && reward.kind !== 'regular'
+        const scaledCombo = multiplier > 1 && reward.kind === 'combo'
+          && supportsDuplicateCombo(card.original, reward.label, thresholds.get(reward.key)?.threshold ?? null)
+        if (scaledCombo) scaledCombos.add(reward.key)
+        const unresolvedCount = multiplier > 1 && reward.kind !== 'regular' && !scaledCombo
         if (unresolvedCount && reward.kind === 'combo') {
           recordWarning(planWarnings, {
             message: triple ? UNRESOLVED_COMBO_TRIPLE : UNRESOLVED_COMBO_MERGE,
@@ -280,12 +290,14 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     let score = 0
     let progress = 0
     const rewards: SolverReward[] = []
+    const duplicateCurrency: NonNullable<InvocationPlan['duplicateCurrency']> = []
     for (const [key, { kind, label, count }] of totals) {
       const combo = thresholds.get(key)
       if (combo?.warning) recordWarning(planWarnings, combo.warning)
       const threshold = combo?.threshold ?? null
       const weight = weights.get(key) ?? 0
       const activated = count !== null && threshold !== null && count >= threshold
+      if (scaledCombos.has(key) && count !== null && threshold !== null) duplicateCurrency.push({ label, count, threshold })
       const points = roundPoints(kind === 'regular' ? (count ?? 0) * weight : activated ? weight : 0)
       if (count !== null && threshold !== null) progress += weight * Math.min(count / threshold, 1)
       score += points
@@ -298,6 +310,7 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
       merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       retained: retained.map(({ card, multiplier }) => ({ cardId: card.id, multiplier })),
+      ...(duplicateCurrency.length ? { duplicateCurrency } : {}),
       discardedCardIds: discarded ? [discarded.id] : [],
       warnings: [...planWarnings.keys()],
     })
@@ -389,11 +402,38 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   const baseline = initial.plans[0] ?? null
   const warnings = initial.warnings
   const projections = new Map<string, ReturnType<typeof completionScores>>()
+  const futureDuplicates = new Map<string, PreparedCard>()
+  if (input.profile.objective !== 'viscera') for (const card of [...pool, ...eligible]) {
+    if (futureDuplicates.has(card.name) || !card.tierReviewed || !card.rewards.some(reward =>
+      reward.kind === 'combo' && (input.weights.get(reward.key) ?? 0) > 0
+      && supportsDuplicateCombo(card.original, reward.label, thresholds.get(reward.key)?.threshold ?? null))) continue
+    // The future copy is eligible but supplies no reward or modifier of its own.
+    // Validated real cards cannot have an empty ID.
+    futureDuplicates.set(card.name, { ...card, id: '', rewards: [], warnings: [], modifiersUnrecorded: false,
+      original: { id: '', name: card.original.name.trim(), tier: 2, rewards: [], modifiers: [] } })
+  }
+  const duplicateOutlook = (cards: PreparedCard[], future: PreparedCard) => {
+    if (!cards.some(card => card.name === future.name)) return { points: 0 }
+    const projected = searchPlans(cards, input.weights, thresholds, future, input.profile).plans
+    const points = projected[0]?.score ?? 0
+    for (const plan of projected) {
+      if (plan.score < points) break
+      if (!plan.discardedCardIds.includes(future.id)) continue
+      const combo = plan.duplicateCurrency?.find(row => (input.weights.get(rewardKey('combo', row.label)) ?? 0) > 0)
+      if (combo) return { points, label: combo.label }
+    }
+    return { points }
+  }
+  const projectDuplicates = (cards: PreparedCard[]) => new Map(
+    [...futureDuplicates].map(([name, future]) => [name, duplicateOutlook(cards, future)] as const))
+  const duplicateScores = new Map<string, ReturnType<typeof projectDuplicates>>()
+  const duplicateBaseline = projectDuplicates(pool)
   const candidates: SolverCandidate[] = eligible.map(card => {
     const result = searchPlans(pool, input.weights, thresholds, card, input.profile)
     for (const [message, affectsRanking] of result.warnings) recordWarning(warnings, { message, affectsRanking })
     const plan = result.plans[0] ?? null
     if (input.profile.objective !== 'viscera') projections.set(card.id, completionScores(result.plans))
+    if (futureDuplicates.size) duplicateScores.set(card.id, projectDuplicates([...pool, card]))
     return { cardId: card.id, plan,
       gain: plan ? roundPoints(plan.score - (baseline?.score ?? 0)) : null,
       progressGain: plan ? roundPoints(plan.progress - (baseline?.progress ?? 0)) : null,
@@ -430,12 +470,18 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
       points > bestNow && points > (baselineCompletions.get(key)?.points ?? 0)
       && others.every(other => points > (projections.get(other.cardId)?.get(key)?.points ?? 0)))
       .map(([, opportunity]) => opportunity)
-      .sort((a, b) => a.icons - b.icons || b.points - a.points || a.label.localeCompare(b.label))
+    for (const [name, outcome] of duplicateScores.get(candidate.cardId) ?? []) {
+      if (outcome.label && outcome.points > bestNow && outcome.points > (duplicateBaseline.get(name)?.points ?? 0)
+        && others.every(other => outcome.points > (duplicateScores.get(other.cardId)?.get(name)?.points ?? 0))) {
+        wins.push({ label: outcome.label, icons: 1, points: outcome.points, duplicateName: futureDuplicates.get(name)!.original.name })
+      }
+    }
+    wins.sort((a, b) => a.icons - b.icons || b.points - a.points || a.label.localeCompare(b.label))
     const shown = new Set<string>()
     candidate.opportunities = wins.filter(option => {
-      const label = normalizeRewardLabel(option.label)
-      if (shown.has(label)) return false
-      shown.add(label)
+      const condition = JSON.stringify([normalizeRewardLabel(option.label), option.duplicateName ?? null])
+      if (shown.has(condition)) return false
+      shown.add(condition)
       return true
     })
   }

@@ -120,6 +120,10 @@ alone. A conditional total shows how a different choice could take the lead
 by completing a specific weighted combo. Each additional icon occupies one
 future input on a distinct eligible Fate. The comparison counts only those
 icons on the future Fates, and gives every alternative the same opportunity.
+For a reviewed T2 Fate carrying an identified Currency combo, the advisor also
+checks a future eligible T2 copy of that same Fate. It compares
+every option and the collection under that same condition, credits no rewards
+from the future card, and shows the condition only for a strict lead.
 The overlay shows the nearest such condition. Unknown, conflicting or
 duplicate-scaled counters cannot establish a conditional total. These scenarios
 do not predict future offers or affect the current recommendation.
@@ -229,9 +233,19 @@ tooltip meanings without waiting for an application release.
   at ×3 and discard the second card's rewards, using all three inputs. The engine
   requires equal known, reviewed tiers; it does not infer an output tier. Swapping
   the retained first/third cards is equivalent for the supported reward model.
-- Mixed-tier duplicate interactions, pairs outside T2 and duplicate/combo
-  scaling remain unresolved, not assigned a zero benefit. They produce warnings.
-  For triples, combos on retained cards stay unknown; discarded rewards do not score.
+- In Armoury on 18 November, adding a second Black Frost T2 completed the
+  first card's three-segment Currency set. Adding a third Black Frost T2 with
+  the same icon showed a second full set. The [two-Conjurer preview](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md#duplicates-statement-and-interface-observation)
+  also shows a Currency combo activating with a spare icon. Both planners apply
+  the same-name duplicate rule to **Additional Currency Items** (two segments)
+  and **Additional Valuable Currency Items** (three). A retained T2 Fate carrying
+  one identified icon supplies three segments to its own combo. The middle card contributes
+  no rewards. The combo earns its configured weight once even with two full
+  sets. The four ShareX frames are `Awakened_PoE_Trade_7hP14yA4JG` (inputs),
+  `ciFsUz5sGd` (1/3), `k5WyUVJYZ7` (3/3) and `Fn6Xloj4OP` (two full sets).
+  The captures end before Confirm, so repeated payouts are unverified.
+- Other duplicate combos, mixed tiers, and pairs outside T2 remain unresolved.
+  A generic Currency icon or a conflicting threshold cannot establish this combo.
 - Hotfix 2 removed Crowkeeper T3 Culling Strike, reduced Crowkeeper/Wildfire damage
   and fixed Viscera from some Fate-spawned bosses. Historical source text remains
   intact. No damage coefficients, Viscera probabilities or weight changes are inferred.

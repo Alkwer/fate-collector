@@ -1,5 +1,5 @@
 import { cardSchema, rewardSchema, type FateCard } from './schema'
-import { KNOWN_COMBOS } from './reward-catalog'
+import { KNOWN_COMBOS, VALUABLE_CURRENCY_LABEL } from './reward-catalog'
 import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 import { assessPlanningCard, assessPlanningMerge, type PlanningFilters } from './planning-filters'
 export { KNOWN_COMBOS } from './reward-catalog'
@@ -18,6 +18,7 @@ export type InvocationPlan = {
   activated: boolean
   merges: { firstId: string; consumedId: string; outputTier: 3 }[]
   triples?: { firstId: string; consumedId: string; thirdId: string }[]
+  duplicateCurrency?: { label: string; count: number; threshold: number }[]
   warnings: string[]
 }
 
@@ -53,6 +54,18 @@ function cleanLabel(label: string): string {
 
 export function normalizeRewardLabel(label: string): string {
   return cleanLabel(label).toLowerCase()
+}
+
+// The Armoury and Conjurer previews show Currency activation. The invocation
+// order search enforces matching names and checked tiers before applying this.
+export function supportsDuplicateCombo(card: FateCard, label: string, threshold: number | null): boolean {
+  if (card.tier !== 2 || !card.name.trim()) return false
+  const key = normalizeRewardLabel(label)
+  if (!(key === VALUABLE_CURRENCY_LABEL.toLowerCase() && threshold === 3)
+    && !(key === 'additional currency items' && threshold === 2)) return false
+  const matches = card.rewards.filter(reward => reward.kind === 'combo' && isRewardIdentified(reward)
+    && normalizeRewardLabel(reward.label) === key)
+  return matches.length === 0 || (matches.length === 1 && matches[0].count === 1 && card.visualReview?.rewardsReviewed !== false)
 }
 
 export function getAdvisorGoals(cards: FateCard[]): AdvisorGoal[] {
@@ -229,14 +242,15 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
       for (const reason of mergeRisk.reasons) warnings.add(`Merged plan excluded: ${reason}`)
       return
     }
-    if ((pair || triple) && goal.kind === 'combo') {
+    const retainedCopies = triple ? [triple[0], triple[2]] : pair ? [pair[0]] : []
+    if (goal.kind === 'combo' && retainedCopies.some(card => !supportsDuplicateCombo(card.original, goal.label, threshold))) {
       warnings.add(triple ? UNRESOLVED_COMBO_TRIPLE : UNRESOLVED_COMBO_MERGE)
       return
     }
+    const retainedCount = retainedCopies.reduce((sum, card) => sum + card.targetCount, 0)
     const targetCount = active.reduce((sum, card) => sum + card.targetCount, 0)
-      + (pair ? pair[0].targetCount * MERGED_REGULAR_MULTIPLIER : 0)
-      + (triple ? (triple[0].targetCount + triple[2].targetCount) * TRIPLED_REGULAR_MULTIPLIER : 0)
-    const retained = triple ? [triple[0], triple[2]] : pair ? [pair[0], ...active] : active
+      + retainedCount * (triple ? TRIPLED_REGULAR_MULTIPLIER : MERGED_REGULAR_MULTIPLIER)
+    const retained = [...retainedCopies, ...active]
     const tripleWarnings = triple && (filters.avoidModifiers?.length || Object.values(filters.risks ?? {}).some(action => action !== 'allow')) ? [UNRESOLVED_TRIPLE_RISK] : []
     const planWarnings = [...new Set([...goalWarnings, ...retained.flatMap(card => card.warnings), ...(mergeRisk?.warnings ?? []), ...tripleWarnings])]
     for (const warning of planWarnings) warnings.add(warning)
@@ -247,6 +261,8 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
       targetCount,
       threshold,
       activated: threshold !== null && targetCount >= threshold,
+      ...(goal.kind === 'combo' && retainedCount > 0 && threshold !== null
+        ? { duplicateCurrency: [{ label: goal.label, count: targetCount, threshold }] } : {}),
       merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       warnings: planWarnings,

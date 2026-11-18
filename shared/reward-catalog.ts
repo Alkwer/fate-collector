@@ -2,6 +2,7 @@ import type { Reward } from './schema'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
 export const REWARD_CATALOG_VERSION = 'rewards-v5-tooltips-20261117'
+export const VALUABLE_CURRENCY_LABEL = 'Additional Valuable Currency Items'
 
 export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
 type CatalogDetails = { id: string; label: string; description: string; source: string; sourceLabel: string }
@@ -43,7 +44,7 @@ const sessionRewards = [
     description: 'Empowered Monster will drop additional Gems with Quality.' },
   { id: 'rare-bows-with-a-critical-modifier', label: 'Rare Bows with a Critical Modifier', kind: 'regular', threshold: null,
     description: 'Empowered Monster will drop additional Rare Bows. Bows dropped by Empowered Monster will have a Critical modifier.' },
-  { id: 'additional-valuable-currency-items', label: 'Additional Valuable Currency Items', kind: 'combo', threshold: 3,
+  { id: 'additional-valuable-currency-items', label: VALUABLE_CURRENCY_LABEL, kind: 'combo', threshold: 3,
     description: 'Empowered Monster will drop additional Valuable Currency Items. To claim this reward, invoke three copies of it.' },
   { id: 'greatly-increased-item-rarity', label: 'Greatly Increased Item Rarity', kind: 'regular', threshold: null,
     description: 'Empowered Monster has greatly increased Item Rarity.' },

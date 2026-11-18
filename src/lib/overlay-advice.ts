@@ -1,5 +1,5 @@
 import { MAX_COLLECTED_FATES, recommendFates } from '../../shared/advisor'
-import { recommendPortfolio, unweightedRewards, type SolverPortfolio } from '../../shared/solver'
+import { completionCondition, recommendPortfolio, unweightedRewards, type SolverPortfolio } from '../../shared/solver'
 import type { Offer } from '../../shared/schema'
 import type { OverlayCapture, OverlayView } from '../../shared/overlay'
 import { cardReviewReasons } from './card-review'
@@ -41,7 +41,10 @@ function weightedHeader(portfolio: SolverPortfolio, cards: Offer['cards']) {
   const alternatives = choices.flatMap(c => c.option ? [{ ...c.option, name: c.name, now: c.score }] : [])
   const next = alternatives.sort((a, b) => a.icons - b.icons || b.points - a.points)[0]
   let second = portfolio.status === 'provisional' ? 'Review missing data for another option.' : 'No known combo puts another choice ahead.'
-  if (next) second = `${next.name} ${number(next.now)}→${number(next.points)} pts with ${next.icons}× ${next.label.replace(/\s+/g, ' ').trim()}`
+  if (next) {
+    const condition = next.duplicateName ? completionCondition(next) : `${next.icons}× ${next.label.replace(/\s+/g, ' ').trim()}`
+    second = `${next.name} ${number(next.now)}→${number(next.points)} pts with ${condition}`
+  }
   return { title, second, winner: !collectionWins && leaders.length === 1 ? leaders[0].id : null }
 }
 
@@ -83,7 +86,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
     const weighted = !farming && portfolio?.candidates.find(item => item.cardId === card.id)
     const option = weighted && weighted.opportunities?.[0]
     const score = weighted && weighted.plan ? `${number(weighted.plan.score)} known plan pts now` : gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`
-    const projection = option ? `${number(option.points)} pts with ${option.icons} more ${option.label} ${option.icons === 1 ? 'icon on a new Fate' : 'icons on separate new Fates'}` : ''
+    const projection = option ? `${number(option.points)} pts with ${completionCondition(option)}` : ''
     const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [score, projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
     if (!excluded.has(card.id) && workspace.collection.cards.length < MAX_COLLECTED_FATES) view.actions.push({ id: `collect:${card.id}`, label: shorten(`Record ${card.name || 'Unnamed Fate'}`, 160), slot: index + 1 })
     return { label: shorten(`${index + 1}. ${card.name || 'Unnamed Fate'}`, 240), detail: shorten(reason, 500), recommended: header ? header.winner === card.id : recommended.includes(card.id) }

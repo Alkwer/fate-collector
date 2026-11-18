@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_COLLECTED_FATES, MAX_OFFERED_FATES, planInvocation } from '../shared/advisor'
+import { MAX_COLLECTED_FATES, MAX_OFFERED_FATES, planInvocation, recommendFates } from '../shared/advisor'
 import type { FateCard, Reward } from '../shared/schema'
 import { recommendPortfolio, solveInvocation, solverProfileSchema, type SolverProfile } from '../shared/solver'
 
@@ -19,6 +19,113 @@ const currency = { kind: 'regular', label: 'Currency', weight: 1 } as const
 const armour = { kind: 'regular', label: 'Armour', weight: 1 } as const
 const gem = { kind: 'combo', label: 'Exceptional Gem', weight: 8 } as const
 const currencyProfile: SolverProfile = { goals: [currency], avoidModifiers: [] }
+
+describe('Armoury Black Frost invocation preview', () => {
+  const goal = { kind: 'combo', label: 'Additional Valuable Currency Items', weight: 6 } as const
+  const profile = { goals: [goal], avoidModifiers: [] }
+  const icon = combo(goal.label, 1, 3)
+  const blackFrost = (id: string, rewards: Reward[]) => fate(id, rewards, { name: 'Black Frost' })
+  const first = blackFrost('first', [reward('Belt'), icon])
+  const middle = blackFrost('middle', [reward('Gloves'), reward('Amulet')])
+  const third = blackFrost('third', [reward('Wand'), icon])
+
+  it('recommends the duplicate over one matching icon and retains the Currency card in either collection order', () => {
+    const ordinary = fate('ordinary', [icon])
+    for (const [owned, offered] of [[first, middle], [middle, first]]) {
+      const choices = [ordinary, offered]
+      const plan = { cardIds: ['first', 'middle'], duplicateCurrency: [{ label: goal.label, count: 3, threshold: 3 }] }
+      expect(recommendFates(choices, [owned], goal)).toMatchObject({
+        recommendedCardIds: [offered.id], status: 'ready', candidates: [
+          { plan: { ...plan, targetCount: 3, activated: true } }, {},
+        ],
+      })
+      expect(recommendPortfolio(choices, [owned], profile)).toMatchObject({
+        recommendedCardIds: [offered.id], status: 'ready', candidates: [
+          { gain: 6, plan: { ...plan, score: 6 } }, {},
+        ],
+      })
+    }
+    expect(solveInvocation([first], profile).plans).toEqual([])
+    expect(planInvocation([first], goal).plans).toEqual([])
+    expect(solveInvocation([first, middle], profile).plans[0].rewards).toEqual([
+      expect.objectContaining({ label: 'Belt', count: 3 }),
+      expect.objectContaining({ label: goal.label, count: 3, threshold: 3, activated: true, uncertain: false }),
+    ])
+  })
+
+  it('shows two full sets on the retained cards and awards the combo weight once', () => {
+    const cards = [first, middle, third]
+    const weighted = { ...profile, goals: [...profile.goals, { ...armour, label: 'Belt' }, { ...armour, label: 'Wand' }] }
+    expect(solveInvocation(cards, weighted).plans[0]).toMatchObject({
+      cardIds: ['first', 'middle', 'third'], discardedCardIds: ['middle'], duplicateCurrency: [{ label: goal.label, count: 6, threshold: 3 }], score: 12,
+      rewards: [{ label: 'Belt', count: 3 }, { label: goal.label, count: 6, threshold: 3, points: 6 }, { label: 'Wand', count: 3 }],
+    })
+    // With only the combo weighted, a pair already earns all supported points.
+    expect(solveInvocation(cards, profile).plans[0].cardIds).toHaveLength(2)
+    expect(planInvocation(cards, goal).plans[0]).toMatchObject({ targetCount: 3, duplicateCurrency: [{ count: 3 }] })
+    expect(recommendFates([third], [first, middle], goal).recommendedCardIds).toEqual([])
+    expect(recommendPortfolio([third], [first, middle], profile).recommendedCardIds).toEqual([])
+  })
+
+  it('compares a future duplicate against the other choices and the collection under that same condition', () => {
+    const trade = { ...profile, goals: [goal, { ...armour, label: 'Belt' }] }
+    const competitor = fate('other', [reward('Belt', 4)])
+    const offer = recommendPortfolio([first, competitor], [], trade)
+    expect(offer.recommendedCardIds).toEqual(['other'])
+    expect(offer.candidates.find(row => row.cardId === 'first')).toMatchObject({
+      plan: { score: 1 }, opportunities: [{ duplicateName: 'Black Frost', icons: 1, points: 9 }, { icons: 2, points: 7 }],
+    })
+    const rival = blackFrost('rival', [reward('Belt', 3)])
+    for (const result of [recommendPortfolio([first, rival], [], trade), recommendPortfolio([first], [rival], trade)]) {
+      const candidate = result.candidates.find(row => row.cardId === 'first')!
+      expect(candidate.opportunities ?? []).not.toContainEqual(expect.objectContaining({ duplicateName: 'Black Frost' }))
+    }
+  })
+
+  it.each([
+    { name: '' }, { tier: 1 }, { tier: 3 }, { tier: null },
+    { visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } },
+    { visualReview: { version: 'test', tierReviewed: true, rewardsReviewed: false } },
+    { rewards: [{ ...icon, identified: false }] }, { rewards: [{ ...icon, threshold: 2 }] },
+    { rewards: [{ ...icon, label: 'Additional Currency Items', threshold: 2 }] },
+    { rewards: [{ ...icon, kind: 'unknown' as const }] }, { rewards: [{ ...icon, count: 2 }] },
+    { rewards: [icon, { ...icon, id: 'another' }] },
+  ])('keeps unsupported or unreviewed inputs from completing this combo (%j)', fields => {
+    const cards = [{ ...first, ...fields }, { ...middle, name: fields.name ?? middle.name, tier: fields.tier ?? middle.tier }]
+    expect(planInvocation(cards, goal).plans).toEqual([])
+    expect(solveInvocation(cards, profile).plans).toEqual([])
+  })
+})
+
+it('completes both identified Currency variants on matching T2 Conjurers and keeps their thresholds separate', () => {
+  const small = { kind: 'combo', label: 'Additional Currency Items', weight: 4 } as const
+  const valuable = { ...small, label: 'Additional Valuable Currency Items', weight: 6 }
+  const profile = { goals: [small, valuable], avoidModifiers: [] }
+  const kept = fate('kept', [combo(small.label, 1, 2), combo(valuable.label, 1, 3)], { name: 'Conjurer' })
+  const copy = fate('copy', [reward('Gloves')], { name: ' CONJURER ' })
+  const other = { ...copy, id: 'other', name: 'Rot' }
+  expect(recommendFates([copy, other], [kept], small).recommendedCardIds).toEqual(['copy'])
+  expect(recommendPortfolio([copy, other], [kept], profile).recommendedCardIds).toEqual(['copy'])
+  expect(solveInvocation([kept, other], profile).plans).toEqual([])
+  expect(solveInvocation([copy, kept], profile).plans[0]).toMatchObject({
+    cardIds: ['kept', 'copy'], score: 10, duplicateCurrency: [
+      { label: small.label, threshold: 2, count: 3 }, { label: valuable.label, threshold: 3, count: 3 },
+    ],
+  })
+})
+
+it('compares each future duplicate name separately against the same possible Fate for every choice', () => {
+  const label = 'Additional Valuable Currency Items'
+  const profile = { goals: [{ kind: 'combo' as const, label, weight: 6 }, armour], avoidModifiers: [] }
+  const lead = fate('Rot', [reward('Armour', 4)])
+  const offers = [lead, fate('Conjurer', [combo(label, 1)]), fate('Dryad', [combo(label, 1)])]
+  const result = recommendPortfolio(offers, [], profile)
+  expect(result.recommendedCardIds).toEqual(['Rot'])
+  for (const id of ['Conjurer', 'Dryad']) {
+    expect(result.candidates.find(candidate => candidate.cardId === id)?.opportunities)
+      .toEqual([{ label, duplicateName: id, icons: 1, points: 6 }])
+  }
+})
 
 describe('conditional offer points', () => {
   const goals = [currency, { kind: 'combo' as const, label: 'Decks', weight: 4 }]

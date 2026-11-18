@@ -16,6 +16,20 @@ function inputs(): OverlayInputs {
 }
 
 describe('overlay advice uses the existing recommendation engines', () => {
+  it('distinguishes a future Tempest duplicate from a Currency set available now', () => {
+    const input = inputs()
+    const goal = { kind: 'combo', label: 'Additional Valuable Currency Items', weight: 6 } as const
+    input.settings.profile.goals.push(goal)
+    const tempest = input.offer.cards[0]
+    tempest.name = 'Tempest'
+    tempest.rewards.push({ ...newReward(), kind: goal.kind, label: goal.label, threshold: 3, identified: true })
+    expect(overlayAdvice(input)).toMatchObject({ title: 'Now: #2 Crowkeeper · 2 pts',
+      detail: expect.stringContaining('Tempest 1→9 pts with another T2 Tempest') })
+    input.workspace.collection.cards.push({ ...newCard(), name: 'Tempest', tier: 2,
+      rewards: [{ ...newReward(), label: 'Gloves', kind: 'regular', identified: true }] })
+    expect(overlayAdvice(input)).toMatchObject({ title: 'Now: #1 Tempest · 9 pts',
+      rows: [{ recommended: true }, { recommended: false }] })
+  })
   it('puts current points and the nearest winning icon before the review guidance', () => {
     const input = inputs()
     input.settings.profile.goals.push({ kind: 'combo', label: 'Decks', weight: 4 })
@@ -35,7 +49,7 @@ describe('overlay advice uses the existing recommendation engines', () => {
     ]
     const view = overlayAdvice(input)
     expect(view.title).toBe('Now: #4 Gravewalker · 4 pts')
-    expect(view.detail.split('\n')[0]).toBe('Bloodthirsty 1→5 pts with 1× Many Additional Stacked Decks')
+    expect(view.detail.split('\n')[0]).toBe('Bloodthirsty 1→9 pts with another T2 Bloodthirsty')
     expect(view.rows.filter(row => row.recommended).map(row => row.label)).toEqual(['4. Gravewalker'])
   })
   it('shows a tie on Belfry and chooses the more valuable of two one-icon completions', () => {
