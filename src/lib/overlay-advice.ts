@@ -1,5 +1,6 @@
 import { MAX_COLLECTED_FATES, recommendFates } from '../../shared/advisor'
-import { completionCondition, recommendPortfolio, unweightedRewards, type SolverPortfolio } from '../../shared/solver'
+import { completionCondition, recommendPortfolio, unweightedRewards, visceraFactors, type SolverPortfolio } from '../../shared/solver'
+import { COMPANION_VISCERA } from '../../shared/viscera'
 import type { Offer } from '../../shared/schema'
 import type { OverlayCapture, OverlayView } from '../../shared/overlay'
 import { cardReviewReasons } from './card-review'
@@ -94,11 +95,14 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   view.rows = offer.cards.map((card, index) => {
     const candidate = result?.candidates.find(item => item.cardId === card.id)
     const gain = candidate?.gain
-    const weighted = !farming && portfolio?.candidates.find(item => item.cardId === card.id)
-    const option = weighted && weighted.opportunities?.[0]
-    const score = weighted && weighted.plan ? `${number(weighted.plan.score)} known plan pts now` : gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`
+    const portfolioCandidate = portfolio?.candidates.find(item => item.cardId === card.id)
+    const plan = portfolioCandidate?.plan
+    const factors = farming && plan ? visceraFactors(plan) : null
+    const option = !farming && portfolioCandidate?.opportunities?.[0]
+    const score = !farming && plan ? `${number(plan.score)} known plan pts now` : gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`
+    const viscera = factors ? [factors.companion ? COMPANION_VISCERA : '', `${factors.inputs} ${factors.inputs === 1 ? 'Fate' : 'Fates'}`, factors.duplicate ? 'duplicate included' : ''].filter(Boolean).join(' · ') : ''
     const projection = option ? `${number(option.points)} pts with ${completionCondition(option)}` : ''
-    const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [score, projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
+    const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [viscera, score, projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
     if (!excluded.has(card.id) && workspace.collection.cards.length < MAX_COLLECTED_FATES) view.actions.push({ id: `collect:${card.id}`, label: shorten(`Record ${card.name || 'Unnamed Fate'}`, 160), slot: index + 1 })
     return { label: shorten(`${index + 1}. ${card.name || 'Unnamed Fate'}`, 240), detail: shorten(reason, 500), recommended: header ? header.winner === card.id : recommended.includes(card.id) }
   })
@@ -106,7 +110,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   view.title = header ? header.title : !hasGoal ? 'Set reward priorities in Fate Collector'
     : farming && !recommended.length && result?.candidates.some(candidate => candidate.plan) ? 'No better known Viscera option'
     : result?.comparison === 'no-improvement' ? 'No improvement for your goal'
-    : !recommended.length || result?.status === 'insufficient' ? 'Check rewards before choosing'
+    : !recommended.length || result?.status === 'insufficient' ? farming ? 'Check Fates before choosing' : 'Check rewards before choosing'
     : `${result?.status === 'provisional' ? 'Provisional: ' : recommended.length > 1 ? 'Equal matches: ' : 'Recommended: '}${recommended.map(id => {
       const index = offer.cards.findIndex(card => card.id === id)
       return `${index + 1}. ${offer.cards[index]?.name || 'Unnamed Fate'}`
@@ -115,7 +119,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   view.detail = [
     !header && recommended.length > 1 ? 'No single winner.' : '',
     view.status === 'provisional' ? 'Missing data may change this ranking.' : '',
-    farming ? 'Viscera farming: Fate count and duplicates; drop chances unknown.' : portfolio ? 'Compared with your collection using your reward priorities.' : goal ? `Goal: ${goal.label}. Compared with your collection.` : '',
+    farming ? 'Viscera farming compares companion drops, Fate count and duplicates. The companion boss is random.' : portfolio ? 'Compared with your collection using your reward priorities.' : goal ? `Goal: ${goal.label}. Compared with your collection.` : '',
     reviews.length ? `Check ${reviews[0]}${reviews.length > 1 ? `; ${reviews.length - 1} more cards need review` : ''}.` : '',
     result?.warnings.length ? result.warnings[0] : '',
     unweighted.length ? `${unweighted.length} identified reward types have weight 0.` : '',
@@ -123,7 +127,8 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   ].filter(Boolean).join(' ')
   // Keep the two header lines readable to protocol v1 clients. New helpers
   // draw the first detail line above the review notes in both panel sizes.
+  const companionOption = farming && portfolio?.candidates.some(candidate => recommended.includes(candidate.cardId) && candidate.plan?.companionViscera)
   const outlook = lastOffer && !farming ? 'Last offer. Only active rewards count.' : header?.second
-  if (tooltip || outlook) view.detail = [tooltip, outlook, view.detail].filter(Boolean).join('\n')
+  if (companionOption || tooltip || outlook) view.detail = [tooltip, companionOption ? 'Guaranteed Viscera on kill from a random companion.' : '', outlook, view.detail].filter(Boolean).join('\n')
   return { ...view, title: shorten(view.title, 240), detail: shorten(view.detail, 1200) }
 }

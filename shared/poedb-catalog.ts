@@ -2,6 +2,7 @@ import { z } from './validation.ts'
 import { normalizeFateName } from './fate-names.ts'
 import sourceCatalog from './poedb-catalog.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
+import { chaseRewards, equipmentCorrection } from './patch-3300c-rewards.ts'
 
 const date = z.iso.date()
 const identifier = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -72,7 +73,19 @@ export function getScreenshotFate(name: string) {
   return screenshots.fates.find(entry => normalizeFateName(entry.name) === key)
 }
 
-export function getPoedbRewardReferences(query = '') {
+const equipmentReferences = POEDB_CATALOG.rewards.map(entry => {
+  const correction = equipmentCorrection(entry.description)
+  return correction ? { ...entry, ...correction, sourceId: 'ggg-3-30-0c' } : entry
+})
+// Patched text has no verified current icon. Keep the snapshot intact for provenance.
+export const unchangedIconReferences = equipmentReferences.filter(entry => entry.sourceId === 'poedb-fates')
+const currentRewardReferences = [
+  ...chaseRewards.map(entry => ({ ...entry, minLevel: null, sourceId: 'ggg-3-30-0c' })),
+  ...equipmentReferences,
+]
+
+export function getCurrentRewardReferences(query = '') {
   const key = normalizeText(query.slice(0, 120))
-  return POEDB_CATALOG.rewards.filter(entry => normalizeText(entry.description).includes(key)).slice(0, 30)
+  return currentRewardReferences.filter(entry => normalizeText(entry.description).includes(key)
+    || ('label' in entry && normalizeText(entry.label).includes(key))).slice(0, 30)
 }

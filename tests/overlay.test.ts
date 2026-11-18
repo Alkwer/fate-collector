@@ -119,6 +119,22 @@ describe('overlay advice uses the existing recommendation engines', () => {
     input.workspace.goal = null
     expect(overlayAdvice(input)).toMatchObject({ status: 'provisional', detail: expect.stringContaining('Viscera farming') })
   })
+  it('shows the random companion drop in the recommendation and applies the build filter', () => {
+    const input = inputs()
+    input.settings.profile.objective = 'viscera'
+    input.offer.cards[0].name = 'Sadist'
+    const companion = overlayAdvice(input)
+    expect(companion.title).toBe('Provisional: 1. Sadist')
+    expect(companion.detail.split('\n')[0]).toBe('Guaranteed Viscera on kill from a random companion.')
+    expect(companion.rows[0]).toMatchObject({ recommended: true, detail: expect.stringContaining('Guaranteed companion Viscera on kill') })
+    expect(companion.rows[1].recommended).toBe(false)
+
+    input.settings.profile.risks = { extraBoss: 'exclude' }
+    const filtered = overlayAdvice(input)
+    expect(filtered.rows[0]).toMatchObject({ recommended: false, detail: 'Excluded: Additional boss (Tier 2 screenshot description).' })
+    expect(filtered.rows[1].recommended).toBe(true)
+    expect(filtered.detail).not.toContain('Guaranteed Viscera on kill from a random companion.')
+  })
   it('ranks the exact offered IDs and supports both priorities and a single goal', () => {
     const input = inputs()
     const portfolio = overlayAdvice(input)

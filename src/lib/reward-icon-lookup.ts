@@ -1,10 +1,10 @@
-import { POEDB_CATALOG } from '../../shared/poedb-catalog'
-import { REWARD_CATALOG } from '../../shared/reward-catalog'
+import { POEDB_CATALOG, unchangedIconReferences } from '../../shared/poedb-catalog'
+import { recordedRewardReferences } from '../../shared/reward-catalog'
 import type { Reward } from '../../shared/schema'
 
 const normalize = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'").replace(/[.,:;]/g, ' ').replace(/\s+/g, ' ').trim()
 const iconKey = (url: string) => url.split('/').pop()!.replace(/^AuguryRewardIcon|\.webp$/g, '')
-export const iconGroups = [...new Set(POEDB_CATALOG.rewards.map(row => iconKey(row.iconUrl)))].sort()
+export const iconGroups = [...new Set(unchangedIconReferences.map(row => iconKey(row.iconUrl)))].sort()
 const groupNames: Record<string, string> = {
   IncreasedRarityAffectedMonster: 'Item rarity', Divination: 'Stacked decks', UniqueAuguryItem: 'League unique',
 }
@@ -17,21 +17,23 @@ export function suggestedIconGroup(visual: Reward['visualId']) {
   return ''
 }
 
-const catalogDescriptions = REWARD_CATALOG.filter(entry => entry.kind !== 'unknown').map(entry => ({
+const catalogDescriptions = recordedRewardReferences.filter(entry => entry.kind !== 'unknown').map(entry => ({
   entry, text: normalize(entry.description.split(/To claim this reward/i)[0]),
 }))
-export const iconVariants = POEDB_CATALOG.rewards.map(row => {
+const recordedIconVariants = POEDB_CATALOG.rewards.map(row => {
   const text = normalize(row.description)
   const matches = catalogDescriptions.filter(({ entry, text: tooltip }) => tooltip === text
     || (entry.id === 'exceptional-gem' && text === 'empowered monster will drop an additional exceptional gem')
     || (entry.id === 'dreadmaidens-sacrament' && text === "empowered monster will drop dreadmaidens' sacrament")).map(item => item.entry)
   return { ...row, group: iconKey(row.iconUrl), text, matches }
 })
+const currentIconIds = new Set(unchangedIconReferences.map(row => row.id))
+export const iconVariants = recordedIconVariants.filter(row => currentIconIds.has(row.id))
 
 // A tooltip label can supply reference artwork only when every matching
 // definition points to the same image. Recorded motifs retain precedence.
 const labelGroups = new Map<string, Set<string>>()
-for (const row of iconVariants) for (const entry of row.matches) {
+for (const row of recordedIconVariants) for (const entry of row.matches) {
   const key = normalize(entry.label)
   const groups = labelGroups.get(key) ?? new Set<string>()
   groups.add(row.group)

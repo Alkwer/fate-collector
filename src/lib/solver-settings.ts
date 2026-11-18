@@ -31,7 +31,16 @@ export function selectedRewardGoal(settings: SolverSettings, legacyGoal: Advisor
 type Priority = SolverSettings['profile']['goals'][number]
 // One point is the baseline for a confirmed reward, including ordinary rare gear
 // whose base, affix tiers and sale price are unknown. IDs distinguish same-label variants.
-const tradeWeights: Readonly<Record<string, number>> = {
+const tradeWeights: Readonly<Partial<Record<string, number>>> = {
+  'hinekoras-lock': 30,
+  'mirror-shard': 25,
+  'additional-divine-orbs': 12,
+  'fracturing-orb': 8,
+  'amulets-with-a-gem-modifier': 5,
+  'rare-body-armours-with-a-defence-modifier': 1,
+  'rare-shields-with-a-defence-modifier': 1,
+  'rare-gloves-with-a-life-modifier': 1,
+  'rare-helmets-with-a-life-modifier': 1,
   'exceptional-gem': 10,
   'observed-viscera-item': 8,
   'additional-valuable-currency-items': 6,
@@ -59,10 +68,15 @@ const tradeWeights: Readonly<Record<string, number>> = {
   'observed-doedres-tongue': 2,
   'observed-ordered-fate': 2,
 }
-const TRADE_STARTER_PRIORITIES: Priority[] = REWARD_CATALOG.flatMap(entry =>
-  entry.kind === 'unknown' ? [] : [{ kind: entry.kind, label: entry.label, weight: tradeWeights[entry.id] ?? 1 }])
+const TRADE_STARTER_PRIORITIES = REWARD_CATALOG.flatMap<Priority>(({ id, label, kind }) => {
+  const weight = tradeWeights[id]
+  if (kind !== 'unknown') return [{ kind, label, weight: weight ?? 1 }]
+  // An explicit preference can cover either kind without defining an observation or threshold.
+  if (weight === undefined) return []
+  return [{ kind: 'regular', label, weight }, { kind: 'combo', label, weight }]
+})
 export const STARTER_PROFILES = {
-  trade: { label: 'Trade / mapping', description: 'Weights for every tooltip-confirmed reward, including equipment and completed combos.', priorities: TRADE_STARTER_PRIORITIES },
+  trade: { label: 'Trade / mapping', description: 'Weights for known rewards and patch rewards once verified on a card.', priorities: TRADE_STARTER_PRIORITIES },
   campaign: { label: 'Campaign / SSF', description: 'Currency, quality gems, equipment and early progression.', priorities: [
     { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
     { kind: 'combo', label: 'Additional Currency Items', weight: 4 },

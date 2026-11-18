@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { PlanningFilters } from '../../shared/planning-filters'
 import type { FateCard, Offer } from '../../shared/schema'
 import { VISCERA_SOURCE_URL, VISCERA_TARGETS, getVisceraTarget, isVisceraSourceHere, resolveVisceraArea, visceraCompanion } from '../../shared/viscera-target'
+import { VISCERA_COMPANION_PATCH_URL } from '../../shared/viscera'
 import './VisceraTarget.css'
 
 const storageKey = 'fate-collector.viscera-target'
@@ -22,16 +23,16 @@ export function VisceraTarget({ offer, collected, filters = {}, offerReady = fal
   const target = getVisceraTarget(targetId)
   const area = resolveVisceraArea(offer)
   const sourcesHere = target?.sources.filter(source => isVisceraSourceHere(source, area))
-  const companions = target ? [
+  const companions = [
     ...(offerReady && offer ? offer.cards.flatMap(card => {
-      const candidate = visceraCompanion(card, filters, offer.reviewed)
+      const candidate = visceraCompanion(card, filters)
       return candidate ? [{ ...candidate, id: card.id, location: 'This offer' }] : []
     }) : []),
     ...collected.flatMap(card => {
-      const candidate = visceraCompanion(card, filters, !!offer?.reviewed && offer.cards.some(entry => entry.id === card.id && entry.name === card.name && entry.tier === card.tier))
+      const candidate = visceraCompanion(card, filters)
       return candidate ? [{ ...candidate, id: card.id, location: 'Collected' }] : []
     }),
-  ] : []
+  ]
 
   function changeTarget(id: string) {
     setTargetId(id)
@@ -59,16 +60,16 @@ export function VisceraTarget({ offer, collected, filters = {}, offerReady = fal
         <li key={index}><strong>{source.boss}</strong> · {source.act && `Act ${source.act}, `}{source.area ?? 'Area unknown'}</li>
       )}</ul>
       <p className="hint"><a href={VISCERA_SOURCE_URL} target="_blank" rel="noreferrer">Viscera sources on PoEDB</a>{!storageError && ' · Target saved on this device.'}</p>
-      {companions.length > 0 && <div className="viscera-companions">
-        <h4>Companion boss</h4>
-        <p className="hint">Adds a random campaign boss from a pool without Atlas equivalents. It inherits the other invoked Fates and may drop its own Viscera. Target availability and drop odds are unknown.</p>
-        <ul>{companions.map(({ id, name, location, excluded, reasons, warnings }) =>
-          <li key={`${location}:${id}`}><strong>{name} · Tier 3</strong> · {location}{excluded && ' · Excluded by your settings'}
-            {[...reasons, ...warnings].map(message => <p className="hint" key={message}>{message}</p>)}
-          </li>
-        )}</ul>
-        <p className="hint"><a href="https://poedb.tw/us/Fates" target="_blank" rel="noreferrer">Companion Fate effects on PoEDB</a></p>
-      </div>}
     </>}
+    {companions.length > 0 && <div className="viscera-companions">
+      <h4>Fates that spawn a companion boss</h4>
+      <p className="hint">The companion is a random campaign boss without an Atlas equivalent. It always drops its own Viscera when killed. {target ? 'Your chance at this target depends on which boss spawns.' : 'Which Viscera drops depends on which boss spawns.'}</p>
+      <ul>{companions.map(({ id, name, tier, location, excluded, reasons, warnings }) =>
+        <li key={`${location}:${id}`}><strong>{name} · Tier {tier}</strong> · {location}{excluded && ' · Excluded by your settings'}
+          {[...reasons, ...warnings].map(message => <p className="hint" key={message}>{message}</p>)}
+        </li>
+      )}</ul>
+      <p className="hint"><a href={VISCERA_COMPANION_PATCH_URL} target="_blank" rel="noreferrer">GGG 3.30.0c</a></p>
+    </div>}
   </section>
 }

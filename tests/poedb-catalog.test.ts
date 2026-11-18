@@ -2,9 +2,11 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import credits from '../public/game-art/poedb/credits.json'
-import { REWARD_CATALOG } from '../shared/reward-catalog'
+import { catalogFields, REWARD_CATALOG, selectedCatalogReward } from '../shared/reward-catalog'
+import { newReward } from '../shared/offers'
+import { confirmedRewardIcon, iconVariants } from '../src/lib/reward-icon-lookup'
 import { extractCards, knownFateName } from '../shared/recognition'
-import { getPoedbFate, getPoedbRewardReferences, getScreenshotFate, POEDB_CATALOG } from '../shared/poedb-catalog'
+import { getPoedbFate, getCurrentRewardReferences, getScreenshotFate, POEDB_CATALOG } from '../shared/poedb-catalog'
 
 test('the versioned reference records have unique IDs and source provenance', () => {
   const { version, checkedAt, sources, fates, rewards } = POEDB_CATALOG
@@ -55,9 +57,9 @@ test('the exact Rot and Rotted aliases find each reference while preserving sour
 })
 
 test('reward definitions are bounded references with source levels and no solver fields', () => {
-  expect(getPoedbRewardReferences()).toHaveLength(30)
-  expect(getPoedbRewardReferences('there is no such reward')).toEqual([])
-  expect(getPoedbRewardReferences('  Additional  Currency Items  ')).toEqual(expect.arrayContaining([
+  expect(getCurrentRewardReferences()).toHaveLength(30)
+  expect(getCurrentRewardReferences('there is no such reward')).toEqual([])
+  expect(getCurrentRewardReferences('  Additional  Currency Items  ')).toEqual(expect.arrayContaining([
     expect.objectContaining({ minLevel: 81, sourceId: 'poedb-fates' }),
   ]))
   for (const reference of POEDB_CATALOG.rewards) {
@@ -65,6 +67,42 @@ test('reward definitions are bounded references with source levels and no solver
     expect(reference.iconUrl).toMatch(/^https:\/\/cdn\.poedb\.tw\//)
   }
   expect(REWARD_CATALOG.every(reward => !reward.id.startsWith('poedb-reward-'))).toBe(true)
+})
+
+test('3.30.0c chase entries can be recorded without inferring kind, threshold or artwork', () => {
+  for (const [label, words] of [
+    ['Additional Divine Orbs', 'Divine Orbs'], ['Mirror Shard', 'Mirror Shard'], ['Fracturing Orb', 'Fracturing Orb'],
+    ["Hinekora's Lock", 'Hinekora’s Lock'], ['Amulets with a Gem Modifier', 'Amulets with a Gem Modifier'],
+  ]) {
+    const entry = REWARD_CATALOG.find(row => row.label === label)!
+    expect(catalogFields(entry)).toEqual({ label, kind: 'unknown', threshold: null, identified: false })
+    expect(getCurrentRewardReferences(words)).toContainEqual(expect.objectContaining({ id: entry.id, sourceId: 'ggg-3-30-0c', minLevel: null }))
+    expect(confirmedRewardIcon(label)).toBeNull()
+  }
+})
+
+test('the current equipment references replace only the affected lines and retain both drop variants', () => {
+  for (const [slot, oldMod, mod, kind] of [
+    ['Shields', 'Life', 'Defence', 'regular'], ['Body Armours', 'Life', 'Defence', 'regular'],
+    ['Helmets', 'Defence', 'Life', 'unknown'], ['Gloves', 'Defence', 'Life', 'unknown'],
+  ]) {
+    const label = `Rare ${slot} with a ${mod} Modifier`
+    const old = `${slot} dropped by Empowered Monster will have no ${oldMod} modifiers`
+    const current = getCurrentRewardReferences(`${slot} dropped by Empowered Monster will have a ${mod} modifier`)
+    expect(current).toHaveLength(2)
+    expect(current.some(row => row.description.includes('has a chance to drop'))).toBe(true)
+    expect(REWARD_CATALOG.find(row => row.label === label)).toMatchObject({ kind, threshold: null })
+    expect(getCurrentRewardReferences(old)).toHaveLength(0)
+    expect(iconVariants.some(row => row.description.includes(old))).toBe(false)
+    expect(confirmedRewardIcon(label)).toBeNull()
+    expect(POEDB_CATALOG.rewards.filter(row => row.description.includes(old))).toHaveLength(2)
+  }
+  expect(getCurrentRewardReferences('Boots dropped by Empowered Monster will have no Defence modifiers')).toHaveLength(2)
+  const recorded = { ...newReward(), label: 'Rare Shields without Life Modifiers', kind: 'regular' as const, identified: true }
+  expect(REWARD_CATALOG.some(row => row.label === recorded.label)).toBe(false)
+  expect(selectedCatalogReward(recorded)?.label).toBe(recorded.label)
+  expect(confirmedRewardIcon(recorded.label)).toMatch(/RewardIconShield\.webp$/)
+  expect(getCurrentRewardReferences('Rare Shields with a Defence Modifier')).toHaveLength(1)
 })
 
 test('credited portraits are original local WebP files with matching digests', () => {

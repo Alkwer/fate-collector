@@ -1,5 +1,6 @@
 import { normalizeRewardLabel } from '../../shared/advisor'
 import { z } from '../../shared/validation'
+import { patchEquipmentRewards } from '../../shared/patch-3300c-rewards'
 
 export const PROMISED_PROFITS_SOURCE = 'https://poedb.tw/us/Promised_Profits'
 export const OVERPOWERING_OMENS_SOURCE = 'https://poedb.tw/us/Overpowering_Omens'
@@ -9,14 +10,14 @@ export const OVERPOWERING_OMENS_SOURCE = 'https://poedb.tw/us/Overpowering_Omens
 export const profitObjectives = [
   { id: 'unique', label: 'Unique Item', target: 30, rewards: ['Unique Armour', 'Unique Flask', 'Unique Jewellery Item', 'Unique Weapon', 'Unique Jewel', 'Valuable Unique Jewellery Item', "Dreadmaidens' Sacrament", 'Hide of the Vendigo', 'Corpse Rose', 'Ordered Fate', "Doedre's Tongue"] },
   { id: 'gem', label: 'Gem', target: 30, rewards: ['Exceptional Gem', 'Gem with Quality', 'Additional Gems with Quality', 'Additional Gems, Some with Maximum Quality'] },
-  { id: 'rarity', label: 'Increased Item Rarity', target: 30, rewards: ['Item Rarity', 'Increased Item Rarity', 'Highly Increased Item Rarity', 'Greatly Increased Item Rarity', 'Massively Increased Item Rarity'] },
-  { id: 'currency', label: 'Currency Items', target: 30, rewards: ['Additional Currency Items', 'Additional Valuable Currency Items'] },
+  { id: 'rarity', label: 'Increased Item Rarity', target: 30, rewards: ['Item Rarity', 'Increased Item Rarity', 'Highly Increased Item Rarity', 'Greatly Increased Item Rarity', 'Massively Increased Item Rarity', 'Extremely Increased Item Rarity'] },
+  { id: 'currency', label: 'Currency Items', target: 30, rewards: ['Additional Currency Items', 'Additional Valuable Currency Items', 'Additional Divine Orbs', 'Mirror Shard', 'Fracturing Orb', "Hinekora's Lock"] },
   { id: 'viscera', label: 'Viscera Item', target: 30, rewards: ['Viscera Item'] },
   { id: 'threads', label: 'Threads', target: 30, rewards: ['Additional Threads', 'Many Additional Threads'] },
   { id: 'decks', label: 'Stacked Decks', target: 30, rewards: ['Additional Stacked Decks', 'Many Additional Stacked Decks'] },
   { id: 'gold', label: 'Gold', target: 30, rewards: ['Gold', 'Hoards of Gold'] },
   { id: 'maps', label: 'Maps', target: 30, rewards: ['Rare Map'] },
-  { id: 'equipment', label: 'Fated Equipment', target: 60, rewards: ['Rare Body Armours without Life Modifiers', 'Rare Body Armours with a Life Modifier', 'Rare Boots with a Resistance Modifier', 'Rare Boots with a Speed Modifier', 'Rare Gloves with a Defence Modifier', 'Rare Gloves with an Attack Modifier', 'Rare Helmets with a Defence Modifier', 'Rare Helmets with a Drop Modifier', 'Rare Shields with a Life Modifier', 'Rare Shields with a Resistance Modifier', 'Rare Shields without Life Modifiers'] },
+  { id: 'equipment', label: 'Fated Equipment', target: 60, rewards: ['Rare Body Armours without Life Modifiers', 'Rare Body Armours with a Life Modifier', 'Rare Boots with a Resistance Modifier', 'Rare Boots with a Speed Modifier', 'Rare Gloves with a Defence Modifier', 'Rare Gloves with an Attack Modifier', 'Rare Helmets with a Defence Modifier', 'Rare Helmets with a Drop Modifier', 'Rare Shields with a Life Modifier', 'Rare Shields with a Resistance Modifier', 'Rare Shields without Life Modifiers', ...patchEquipmentRewards.map(entry => entry.label), 'Amulets with a Gem Modifier'] },
   { id: 'dreadmaidens', label: "Dreadmaidens' Sacrament", target: 1, rewards: ["Dreadmaidens' Sacrament"] },
   { id: 'vendigo', label: 'Hide of the Vendigo', target: 1, rewards: ['Hide of the Vendigo'] },
   { id: 'corpse-rose', label: 'Corpse Rose', target: 1, rewards: ['Corpse Rose'] },

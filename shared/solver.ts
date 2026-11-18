@@ -11,6 +11,7 @@ import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 import { cardSchema, rewardSchema, type FateCard } from './schema'
 import { riskSettingsSchema } from './fate-risk'
 import { assessPlanningCard, assessPlanningMerge } from './planning-filters'
+import { isCompanionFate, visceraCompanionName } from './viscera'
 
 function rewardKey(kind: SolverReward['kind'], label: string): string {
   return `${kind}:${normalizeRewardLabel(label)}`
@@ -67,6 +68,7 @@ export type SolverPlan = {
   merges: InvocationPlan['merges']
   triples?: InvocationPlan['triples']
   duplicateCurrency?: InvocationPlan['duplicateCurrency']
+  companionViscera?: true
   retained: { cardId: string; multiplier: number }[]
   discardedCardIds: string[]
   warnings: string[]
@@ -247,6 +249,7 @@ function comparePayablePlans(a: SolverPlan, b: SolverPlan): number {
 function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresholds: Map<string, ComboThreshold>, required: PreparedCard | undefined, profile: SolverProfile, limit: InvocationLimit, compare = comparePlans) {
   const plans: SolverPlan[] = []
   const warnings = new Map<string, boolean>()
+  const farming = profile.objective === 'viscera'
   for (const card of required ? [...pool, required] : pool) {
     for (const warning of cardWarnings(card)) recordWarning(warnings, warning)
   }
@@ -266,6 +269,17 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     const selected = [...(triple ?? pair ?? []), ...active]
     const discarded = triple?.[1] ?? pair?.[1]
     const planWarnings = new Map<string, boolean>()
+    const companionEffects = farming ? active.filter(card => isCompanionFate(card.name))
+      .map(card => card.tierReviewed && !!visceraCompanionName(card.name, card.tier)) : []
+    if (farming && pair && isCompanionFate(pair[0].name)) {
+      companionEffects.push(!!visceraCompanionName(pair[0].name, mergeRisk?.outputTier ?? null))
+    }
+    if (farming && triple && isCompanionFate(triple[0].name)) {
+      recordWarning(planWarnings, { message: 'The three-copy output tier is unresolved. Check whether the invocation will spawn a companion boss.', affectsRanking: true })
+    }
+    if (companionEffects.includes(false)) {
+      recordWarning(planWarnings, { message: 'Check the Fate tier and companion boss effect in game.', affectsRanking: true })
+    }
     if (triple && (profile.avoidModifiers.length || Object.values(profile.risks ?? {}).some(action => action !== 'allow'))) recordWarning(planWarnings, { message: UNRESOLVED_TRIPLE_RISK, affectsRanking: true })
     for (const message of mergeRisk?.warnings ?? []) recordWarning(planWarnings, { message, affectsRanking: true })
     const totals = new Map<string, ObservedReward>()
@@ -314,6 +328,7 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
       cardIds: selected.map(card => card.id), score: roundPoints(score), progress: roundPoints(progress), rewards,
       merges: pair && mergeRisk?.outputTier ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: mergeRisk.outputTier }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
+      ...(companionEffects.includes(true) ? { companionViscera: true } : {}),
       retained: retained.map(({ card, multiplier }) => ({ cardId: card.id, multiplier })),
       ...(duplicateCurrency.length ? { duplicateCurrency } : {}),
       discardedCardIds: discarded ? [discarded.id] : [],
@@ -338,28 +353,29 @@ function initialize(profile: SolverProfile, excludedCardIds: string[], problem: 
 }
 
 export function visceraFactors(plan: SolverPlan) {
-  return { inputs: plan.cardIds.length, duplicate: plan.merges.length > 0 || !!plan.triples?.length }
+  return { inputs: plan.cardIds.length, duplicate: plan.merges.length > 0 || !!plan.triples?.length, companion: plan.companionViscera === true }
 }
 
-// GGG gives two monotonic factors, not their relative strength or probabilities.
-// A duplicate pair and three distinct Fates remain incomparable.
+// The regular boss's odds and a separate companion's drop are independent
+// factors for comparison. Preserve alternatives when they improve different factors.
 function dominatesViscera(a: SolverPlan, b: SolverPlan) {
   const x = visceraFactors(a), y = visceraFactors(b)
-  return x.inputs >= y.inputs && Number(x.duplicate) >= Number(y.duplicate)
-    && (x.inputs > y.inputs || Number(x.duplicate) > Number(y.duplicate))
+  return x.inputs >= y.inputs && (x.duplicate || !y.duplicate) && (x.companion || !y.companion)
+    && (x.inputs > y.inputs || x.duplicate !== y.duplicate || x.companion !== y.companion)
 }
 
 function sameVisceraFactors(a: SolverPlan, b: SolverPlan) {
   const x = visceraFactors(a), y = visceraFactors(b)
-  return x.inputs === y.inputs && x.duplicate === y.duplicate
+  return x.inputs === y.inputs && x.duplicate === y.duplicate && x.companion === y.companion
 }
 
 function visceraFrontier(plans: SolverPlan[]) {
   return plans.filter(plan => !plans.some(other => dominatesViscera(other, plan)
     || (sameVisceraFactors(other, plan) && other.score > plan.score)))
+    .sort((a, b) => Number(b.companionViscera === true) - Number(a.companionViscera === true))
 }
 
-const VISCERA_WARNING = 'Viscera farming compares Fate count and duplicate presence. Drop chances and the trade-off between these factors are unknown. Check that this boss has the Viscera you want.'
+const VISCERA_WARNING = 'A spawned companion always drops its own Viscera when killed. The companion boss is random and your target item is never guaranteed by this effect. Drop chances for the main boss are unknown.'
 
 function displayVisceraPlans(plans: SolverPlan[]) {
   // Show distinct factor combinations before alternative reward orders.
@@ -409,6 +425,26 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   const initial = searchPlans(pool, input.weights, thresholds, undefined, input.profile, limit, planOrder)
   const baseline = initial.plans[0] ?? null
   const warnings = initial.warnings
+  if (input.profile.objective === 'viscera') {
+    const baselinePlans = visceraFrontier(initial.plans)
+    const farmBaseline = baselinePlans[0] ?? null
+    const byCandidate = eligible.map(card => {
+      const result = searchPlans(pool, input.weights, thresholds, card, input.profile, limit, planOrder)
+      for (const [message, affectsRanking] of result.warnings) recordWarning(warnings, { message, affectsRanking })
+      return { cardId: card.id, plans: visceraFrontier(result.plans), warnings: [...result.warnings.keys()] }
+    })
+    const frontier = new Set(visceraFrontier([...baselinePlans, ...byCandidate.flatMap(candidate => candidate.plans)]))
+    const recommendedCardIds = byCandidate.filter(candidate => candidate.plans.some(plan => frontier.has(plan)
+      && !baselinePlans.some(base => sameVisceraFactors(base, plan) && base.score >= plan.score))).map(candidate => candidate.cardId)
+    warnings.set(VISCERA_WARNING, true)
+    return { status: frontier.size ? 'provisional' : 'insufficient', comparison: recommendedCardIds.length ? 'improvement' : 'unknown',
+      warnings: [...warnings.keys()], excluded, baseline: farmBaseline, recommendedCardIds,
+      candidates: byCandidate.map(({ cardId, plans, warnings: candidateWarnings }) => {
+        const plan = plans.find(item => frontier.has(item)) ?? plans[0] ?? null
+        return { cardId, plan, warnings: candidateWarnings, gain: plan ? roundPoints(plan.score - (farmBaseline?.score ?? 0)) : null,
+          progressGain: plan ? roundPoints(plan.progress - (farmBaseline?.progress ?? 0)) : null }
+      }) }
+  }
   const projections = new Map<string, ReturnType<typeof completionScores>>()
   const futureDuplicates = new Map<string, PreparedCard>()
   if (projectFuture) for (const card of [...pool, ...eligible]) {
@@ -447,26 +483,6 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
       progressGain: plan ? roundPoints(plan.progress - (baseline?.progress ?? 0)) : null,
       warnings: [...result.warnings.keys()] }
   })
-  if (input.profile.objective === 'viscera') {
-    const baselinePlans = visceraFrontier(initial.plans)
-    const byCandidate = eligible.map(card => {
-      const result = searchPlans(pool, input.weights, thresholds, card, input.profile, limit)
-      return { cardId: card.id, plans: visceraFrontier(result.plans) }
-    })
-    const frontier = visceraFrontier([...initial.plans, ...byCandidate.flatMap(candidate => candidate.plans)])
-    const recommendedCardIds = byCandidate.filter(candidate => candidate.plans.some(plan => frontier.includes(plan)
-      && !baselinePlans.some(base => sameVisceraFactors(base, plan) && base.score >= plan.score))).map(candidate => candidate.cardId)
-    warnings.set(VISCERA_WARNING, true)
-    const farmBaseline = baselinePlans[0] ?? null
-    return { status: frontier.length ? 'provisional' : 'insufficient', comparison: recommendedCardIds.length ? 'improvement' : 'unknown',
-      warnings: [...warnings.keys()], excluded, baseline: farmBaseline, recommendedCardIds,
-      candidates: candidates.map(candidate => {
-        const choices = byCandidate.find(row => row.cardId === candidate.cardId)?.plans ?? []
-        const plan = choices.find(item => frontier.includes(item)) ?? choices[0] ?? null
-        return { ...candidate, plan, gain: plan ? roundPoints(plan.score - (farmBaseline?.score ?? 0)) : null,
-          progressGain: plan ? roundPoints(plan.progress - (farmBaseline?.progress ?? 0)) : null }
-      }) }
-  }
   // On the last offer, equally valuable choices tie even if their best plans use different inputs.
   const compareChoices = finalRewards ? (a: SolverPlan, b: SolverPlan) => b.score - a.score : comparePlans
   candidates.sort((a, b) => a.plan && b.plan ? compareChoices(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))

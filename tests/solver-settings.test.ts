@@ -10,6 +10,16 @@ function memory() {
   return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
 }
 
+const flexiblePatchPriorities = [
+  ["Hinekora's Lock", 30],
+  ['Mirror Shard', 25],
+  ['Additional Divine Orbs', 12],
+  ['Fracturing Orb', 8],
+  ['Amulets with a Gem Modifier', 5],
+  ['Rare Gloves with a Life Modifier', 1],
+  ['Rare Helmets with a Life Modifier', 1],
+] as const
+
 test('new profiles cover live reward variants without changing an existing saved profile', () => {
   const store = memory()
   const starter = readSolverSettings(store).settings
@@ -20,17 +30,26 @@ test('new profiles cover live reward variants without changing an existing saved
     { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
     { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
     { kind: 'combo', label: 'Massively Increased Item Rarity', weight: 4 },
+    { kind: 'regular', label: 'Rare Body Armours with a Defence Modifier', weight: 1 },
+    { kind: 'regular', label: 'Rare Shields with a Defence Modifier', weight: 1 },
+    ...flexiblePatchPriorities.flatMap(([label, weight]) => [
+      { kind: 'regular', label, weight }, { kind: 'combo', label, weight },
+    ]),
   ]), avoidModifiers: [] }, definitions: [] })
   const known = REWARD_CATALOG.filter(entry => entry.kind !== 'unknown')
+  const patchVariants = flexiblePatchPriorities.flatMap(([label]) => [['regular', label], ['combo', label]])
   expect(starter.profile.goals.map(({ kind, label }) => [kind, label]).sort())
-    .toEqual(known.map(({ kind, label }) => [kind, label]).sort())
+    .toEqual([...known.map(({ kind, label }) => [kind, label]), ...patchVariants].sort())
   expect(starter.profile.goals.every(goal => goal.weight > 0)).toBe(true)
   starter.profile.goals.find(goal => goal.label === 'Exceptional Gem')!.weight = 99
   expect(newSolverSettings().profile.goals.find(goal => goal.label === 'Exceptional Gem')?.weight).toBe(10)
   expect(store.getItem(SOLVER_SETTINGS_KEY)).toBeNull()
 
   const previous = { ...newSolverSettings(), mode: 'single' as const, profile: {
-    goals: [{ kind: 'combo' as const, label: 'Exceptional Gem', weight: 50 }], avoidModifiers: ['reflect'],
+    goals: [
+      { kind: 'combo' as const, label: 'Exceptional Gem', weight: 50 },
+      { kind: 'regular' as const, label: "Hinekora's Lock", weight: 0 },
+    ], avoidModifiers: ['reflect'],
   } }
   const saved = writeSolverSettings(store, previous, null)
   expect(readSolverSettings(store)).toEqual({ settings: previous, ...saved })
@@ -43,6 +62,8 @@ test('applying the starter updates matching weights and keeps unrelated prioriti
       { kind: 'combo', label: 'dreadmaidens’   sacrament', weight: 15 },
       { kind: 'combo', label: 'Additional Currency Items', weight: 20 },
       { kind: 'regular', label: 'Armour', weight: 9 },
+      { kind: 'regular', label: 'Hinekora’s Lock', weight: 0 },
+      { kind: 'regular', label: 'Rare Body Armours without Life Modifiers', weight: 7 },
     ],
     avoidModifiers: ['reflect'],
   } }, { id: crypto.randomUUID(), label: 'Custom Gem', kind: 'combo', threshold: 2, note: '' })
@@ -52,11 +73,17 @@ test('applying the starter updates matching weights and keeps unrelated prioriti
     { ...previous.profile.goals[0], weight: 2 },
     { ...previous.profile.goals[1], weight: 4 },
     previous.profile.goals[2],
+    { ...previous.profile.goals[3], weight: 30 },
+    previous.profile.goals[4],
     ...newSolverSettings().profile.goals.filter(goal =>
-      !(goal.kind === 'combo' && ["Dreadmaidens' Sacrament", 'Additional Currency Items'].includes(goal.label))),
+      !(goal.kind === 'combo' && ["Dreadmaidens' Sacrament", 'Additional Currency Items'].includes(goal.label))
+      && !(goal.kind === 'regular' && goal.label === "Hinekora's Lock")),
   ] } })
   expect(previous.profile.goals[0].weight).toBe(15)
-  expect(applyTradeStarter(applied!)).toEqual(applied)
+  const store = memory()
+  const saved = writeSolverSettings(store, applied!, null)
+  expect(readSolverSettings(store)).toEqual({ settings: applied, ...saved })
+  expect(applyTradeStarter(readSolverSettings(store).settings)).toEqual(applied)
 })
 
 test('applying the starter is atomic at the profile capacity limit', () => {
@@ -90,6 +117,25 @@ test('the starter scores confirmed regular currency and completed combos', () =>
       expect.objectContaining({ kind: 'unknown', label, points: 0 }),
       expect.objectContaining({ kind: 'combo', label: 'Exceptional Gem', points: 10 }),
     ]),
+  })
+})
+
+test.each([
+  { kind: 'unknown', identified: false, count: 1, threshold: null, points: 0 },
+  { kind: 'regular', identified: false, count: 1, threshold: null, points: 0 },
+  { kind: 'regular', identified: true, count: 2, threshold: null, points: 60 },
+  { kind: 'combo', identified: true, count: 3, threshold: null, points: 0 },
+  { kind: 'combo', identified: true, count: 2, threshold: 3, points: 0 },
+  { kind: 'combo', identified: true, count: 3, threshold: 3, points: 30 },
+] as const)('the patch starter gives $points active points to a $kind reward (identified: $identified, count: $count, threshold: $threshold)', ({ points, ...observation }) => {
+  const label = 'Hinekora’s Lock'
+  const card: FateCard = { id: 'starter', name: 'Rot', tier: 2, modifiers: [], rewards: [
+    { id: 'patch-reward', label, ...observation },
+    { id: 'gold', label: 'Gold', kind: 'regular', identified: true, count: 1, threshold: null },
+  ] }
+  expect(solveInvocation([card], newSolverSettings().profile).plans[0]).toMatchObject({
+    score: 1 + points,
+    rewards: expect.arrayContaining([expect.objectContaining({ label, points })]),
   })
 })
 

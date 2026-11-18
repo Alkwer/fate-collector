@@ -49,24 +49,28 @@ export function assessFateRisk(card: FateCard, settings: FateRiskSettings, effec
   const tierReviewed = card.tier !== null && card.visualReview?.tierReviewed !== false
   const poedb = tierReviewed && effectiveTier === 3 ? getPoedbFate(card.name, effectiveTier) : undefined
   const screenshot = tierReviewed && (effectiveTier === 1 || effectiveTier === 2)
-    ? getScreenshotFate(card.name)?.variants.find(variant => variant.tier === effectiveTier && variant.completeness === 'full')
+    ? getScreenshotFate(card.name)?.variants.find(variant => variant.tier === effectiveTier)
     : undefined
-  const referenceText = poedb ? [...poedb.description.split('\n'), ...poedb.effects] : screenshot?.lines
+  const referenceText = poedb ? [...poedb.description.split('\n'), ...poedb.effects] : screenshot?.completeness === 'full' ? screenshot.lines : undefined
   const referenceSource = poedb ? 'Tier 3 source reference, PoEDB' : `Tier ${effectiveTier} screenshot tooltip reference`
+  const extraBossDescription = screenshot?.completeness === 'short-only' && modifierPatterns.extraBoss.test(screenshot.shortDescription)
+  const missingReference = !referenceText && active.some(({ id }) => id !== 'extraBoss' || !extraBossDescription)
 
-  if (effectiveTier !== card.tier && !referenceText) {
+  if (effectiveTier !== card.tier && missingReference) {
     warnings.push(`Merged Fate risk is unverified. Its Tier ${effectiveTier} effects have no matching source reference; recorded input modifiers do not establish the upgraded effects.`)
-  } else if (modifiers.length === 0 && !referenceText) {
+  } else if (modifiers.length === 0 && missingReference) {
     warnings.push('Build risk is unverified. No recorded modifiers or matching full source reference are available.')
   }
 
   for (const { id, label } of active) {
     const pattern = modifierPatterns[id]
     const recorded = modifiers.some(modifier => pattern.test(modifier))
-    const fromReference = !recorded && referenceText?.some(line => pattern.test(line))
+    const fromShortDescription = id === 'extraBoss' && extraBossDescription
+    const fromReference = !recorded && (fromShortDescription || referenceText?.some(line => pattern.test(line)))
     if (!recorded && !fromReference) continue
 
-    const message = `${label} (${recorded ? 'recorded modifier' : referenceSource}).`
+    const source = recorded ? 'recorded modifier' : fromShortDescription ? `Tier ${effectiveTier} screenshot description` : referenceSource
+    const message = `${label} (${source}).`
     const messages = settings[id] === 'exclude' ? reasons : warnings
     messages.push(message)
   }

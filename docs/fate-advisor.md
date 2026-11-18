@@ -9,7 +9,7 @@ with [3.30.0b Hotfix 3](https://www.pathofexile.com/forum/view-thread/4015683),
 checked on 16 November 2026; the [planning follow-up](../research/ADVISOR_RULES_2026-11-17.md)
 records the 17 November FAQ and community review. Advice uses the current rules, including three-copy
 invocations; it does not simulate historical patches. See the
-[post-launch evidence record](../research/PATCH_NOTES_2026-11-16.md).
+[post-launch evidence record](../research/PATCH_NOTES_2026-11-16.md). High-tier rewards, equipment modifier replacements and extra-boss Viscera follow [3.30.0c](https://www.pathofexile.com/forum/view-thread/4017172).
 
 ## Use
 
@@ -163,9 +163,7 @@ and unknown triple output effects remain unverified. Matching dangers appear bes
 the plan or offer. Allow disables that category's filter; it does not establish a
 safe encounter. This is a bounded effect filter, not a full build or difficulty model.
 
-**Planning objective → Farm boss Viscera** compares the two factors established by
-the GGG FAQ: input count and supported duplicate presence. Both nondecreasing with
-one improving makes one factor combination preferable; a duplicate pair versus three
+**Planning objective → Farm boss Viscera** compares input count and supported duplicate presence from the GGG FAQ, alongside confirmed extra bosses that guarantee an associated Viscera under 3.30.0c. A random companion does not guarantee a particular target item. When every factor is at least as good and one improves, that plan is preferable. A duplicate pair versus three
 distinct Fates remains incomparable. Among plans with identical factors, reward
 points break ties. This is an application policy, not an estimated drop formula.
 Plans can have zero reward points and always remain provisional. The UI shows factors

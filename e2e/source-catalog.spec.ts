@@ -27,6 +27,23 @@ test('compare an unknown icon offline and apply only a checked tooltip', async (
   await expect(page.getByLabel('Identified', { exact: true })).toBeChecked()
 })
 
+test('review a pre-patch equipment tooltip without silently reinterpreting it', async ({ page }) => {
+  await page.goto('/')
+  const oldLabel = 'Rare Shields without Life Modifiers'
+  const offer = { ...newOffer(), gameVersion: '3.30.0b', cards: [{ ...newCard(), name: 'Alchemist',
+    rewards: [{ ...newReward(), label: oldLabel, kind: 'regular', identified: true }] }] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'old-shields.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Start area with this offer' }).click()
+  await page.getByRole('button', { name: 'Edit current offer' }).click()
+  const catalog = page.getByRole('combobox', { name: 'Tooltip catalog', exact: true })
+  await expect(catalog.locator('option:checked')).toHaveText(`${oldLabel} · before 3.30.0c`)
+  await expect(page.getByLabel('Label', { exact: true })).toHaveValue(oldLabel)
+  await catalog.selectOption('rare-shields-with-a-defence-modifier')
+  await expect(page.getByLabel('Label', { exact: true })).toHaveValue('Rare Shields with a Defence Modifier')
+  await expect(catalog.locator('option').filter({ hasText: oldLabel })).toHaveCount(0)
+})
+
 test('target a map Viscera with a reviewed companion and keep its build exclusion visible', async ({ page }) => {
   await page.goto('/')
   const offer = { ...newOffer(), reviewed: true, area: 'MapWorldsTribunal', areaCategory: 'map', cards: [
@@ -102,6 +119,9 @@ for (const width of [1440, 390]) test(`source references, unweighted rewards and
   await page.getByLabel('Search reward effects', { exact: true }).fill('additional valuable currency')
   await expect(page.locator('.reference-results')).toContainText('additional Valuable Currency Items')
   await expect(page.getByRole('status').filter({ hasText: 'matching definition' })).toBeVisible()
+  await page.getByLabel('Search reward effects', { exact: true }).fill('Mirror Shard')
+  await expect(page.locator('.reference-results')).toContainText('high-tier maps')
+  await expect(page.locator('.reference-results').getByRole('link')).toHaveAttribute('href', 'https://www.pathofexile.com/forum/view-thread/4017172')
   await page.screenshot({ path: join(tmpdir(), `fate-source-references-${width}.png`) })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.getByLabel('Search reward effects', { exact: true }).fill('no-such-reward-xyz')
