@@ -100,7 +100,7 @@ Coverage and recognition quality are separate checks. Set the minimum recall for
 
 | Pipeline and corpus | Evidence |
 | --- | --- |
-| Production importer replay | Replayed for 0.10.4 on 18 November 2026. Two press offers matched 8/8 names, 8/8 tiers and 13/13 motifs with zero wrong-row suggestions. One showcase invocation and two historical Character-panel F9 bundles produced zero suggestions. All five retained the image and positioned OCR. The historical F9 cases lack confirmed display settings. |
+| Production importer replay | Replayed for 0.10.6 (PoE 3.30.0c) on 18 November 2026. Two press offers matched 8/8 names, 8/8 tiers and 13/13 motifs with zero wrong-row suggestions. One showcase invocation and two historical Character-panel F9 bundles produced zero suggestions. All five retained the image and positioned OCR. The historical F9 cases lack confirmed display settings. |
 | Archived live campaign screenshots | First screenshot of each of the 15 labeled offers from 13 November, with a verified PNG hash per frame. Both the archived Windows OCR and a fresh run of the helper's automatic Windows OCR on the same PNGs produced 8/35 expected names (22.9%), 27 omissions and zero unexpected names. All 15 OCR runs returned positioned text. In the 12 omitted offers the OCR lacked an aligned panel heading above Confirm. Tooltips covered the heading on reviewed sample frames. |
 | Production independent release holdout | **FAIL**. The checked-in inventory has zero measured scenes and no staging release attached. |
 | Production parser fixture | [Parser tests](../tests/recognition.test.ts) cover the offered row at three scaled OCR geometries, unknown names and invocation abstention. |
