@@ -51,6 +51,82 @@ function Write-Record([string]$Name, $Record) {
     [IO.File]::WriteAllText((Join-Path $directory $Name), ($Record | ConvertTo-Json -Depth 8 -Compress), $utf8)
 }
 
+function Get-ImageRegion([Drawing.Bitmap]$Image, [Drawing.Rectangle]$Region) {
+    $part = $Image.Clone($Region, $Image.PixelFormat)
+    $stream = [IO.MemoryStream]::new()
+    try {
+        $part.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+        [Convert]::ToBase64String($stream.ToArray())
+    } finally {
+        $stream.Dispose()
+        $part.Dispose()
+    }
+}
+
+function Test-AdviceHeader {
+    $advice = $state.Clone()
+    $advice.title = 'Now: 2. Fate of Fortune (+7 priority points)'
+    $outlook = "Bloodthirsty: 1 $([char]0x2192) 5 pts with 1$([char]0x00d7) Many Additional Stacked Decks"
+    $context = 'A missing modifier may change the ranking. Record the Fate you choose in game.'
+    $advice.detail = "$outlook`n$context"
+    $advice.notice = 'Review the unidentified reward.'
+    $iconPath = Join-Path $PSScriptRoot '..\overlay-icons.json'
+    $headerSession = [FateCollector.OverlaySession]::new($directory)
+    $shortcutsFit = $false
+    $images = [Collections.Generic.List[Drawing.Bitmap]]::new()
+    $advice.rows = $regularRows
+    $advice.actions = $regularActions
+    try {
+        Write-Record 'state.json' $advice
+        $headerSession.Poll($now)
+        $regular = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 720, $iconPath, [ref]$shortcutsFit)
+        $images.Add($regular)
+        Assert-That $shortcutsFit 'The weighted header hid shortcuts when the full panel could fit.'
+        $withoutIcon = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 720, [ref]$shortcutsFit)
+        $images.Add($withoutIcon)
+        $iconRegion = [Drawing.Rectangle]::new(16, 110, 20, 20)
+        Assert-That ((Get-ImageRegion $regular $iconRegion) -cne (Get-ImageRegion $withoutIcon $iconRegion)) 'The known reward did not alter the painted outlook with its bundled icon.'
+        Write-Record 'invalid-icons.json' @{ 'Many Additional Stacked Decks' = 'invalid base64' }
+        $invalidMap = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 720, (Join-Path $directory 'invalid-icons.json'), [ref]$shortcutsFit)
+        $images.Add($invalidMap)
+        $header = [Drawing.Rectangle]::new(0, 0, $regular.Width, 150)
+        Assert-That ((Get-ImageRegion $invalidMap $header) -ceq (Get-ImageRegion $withoutIcon $header)) 'Invalid bundled artwork prevented the text outlook fallback.'
+        $regular.Save((Join-Path $results 'overlay-native-advice.png'), [Drawing.Imaging.ImageFormat]::Png)
+
+        $advice.rows = $state.rows
+        $advice.actions = $state.actions
+        Write-Record 'state.json' $advice
+        $headerSession.Poll($now)
+        $compact = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, $iconPath, [ref]$shortcutsFit)
+        $images.Add($compact)
+        Assert-That (!$shortcutsFit -and $compact.Height -le 316) 'The two-part compact advice advertised hidden shortcuts.'
+        Assert-That ((Get-ImageRegion $regular $header) -ceq (Get-ImageRegion $compact $header)) 'Compact advice changed the current choice or conditional outlook.'
+        $compact.Save((Join-Path $results 'overlay-native-advice-compact.png'), [Drawing.Imaging.ImageFormat]::Png)
+        $highDpi = [FateCollector.OverlayWindow]::Snapshot($headerSession, 192, 768, 720, $iconPath, [ref]$shortcutsFit)
+        $images.Add($highDpi)
+        Assert-That (!$shortcutsFit -and $highDpi.Width -eq 720 -and $highDpi.Height -lt 672) 'The compact weighted advice exceeded the 200% work area.'
+        $highDpi.Save((Join-Path $results 'overlay-native-advice-tight.png'), [Drawing.Imaging.ImageFormat]::Png)
+
+        $advice.detail = "$($outlook.Replace('Many Additional Stacked Decks', 'Unlisted reward'))`n$context"
+        Write-Record 'state.json' $advice
+        $headerSession.Poll($now)
+        $unknown = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, $iconPath, [ref]$shortcutsFit)
+        $images.Add($unknown)
+        $unknownWithoutMap = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, [ref]$shortcutsFit)
+        $images.Add($unknownWithoutMap)
+        Assert-That ((Get-ImageRegion $unknown $header) -ceq (Get-ImageRegion $unknownWithoutMap $header)) 'An unlisted reward acquired an unrelated icon.'
+        $advice.detail = "No reliable combo outlook yet.`n$context"
+        Write-Record 'state.json' $advice
+        $headerSession.Poll($now)
+        $fallback = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, $iconPath, [ref]$shortcutsFit)
+        $images.Add($fallback)
+        Assert-That (!$shortcutsFit -and (Get-ImageRegion $fallback $header) -cne (Get-ImageRegion $unknown $header)) 'Compact advice did not render the text outlook fallback.'
+    } finally {
+        foreach ($image in $images) { $image.Dispose() }
+        Write-Record 'state.json' $state
+    }
+}
+
 function Test-WindowBridge {
     Add-Type -ReferencedAssemblies System.Drawing -TypeDefinition @'
 using System;
@@ -284,6 +360,7 @@ try {
         Assert-That (!$shortcutsFit -and $tight.Width -eq 784 -and $tight.Height -le 672) 'The 200% layout did not pause shortcuts when the detailed comparison could not fit.'
         $tight.Save((Join-Path $results 'overlay-native-tight.png'), [Drawing.Imaging.ImageFormat]::Png)
     } finally { $tight.Dispose() }
+    Test-AdviceHeader
     Write-Output 'PASS: overlay freshness, capture identity, bounded input, action acknowledgment, placement and native rendering.'
     if ($CheckWindow) { Test-WindowBridge }
 } finally {
