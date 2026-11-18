@@ -1,6 +1,6 @@
 # In-game Fate advice
 
-The Windows helper 0.7.0 automatically detects offers and runs the Fate advisor
+The Windows helper automatically detects offers and runs the Fate advisor
 locally, without an open browser or internet connection. It bundles the same
 interface and recommendation engine as the website. Use PoE in windowed or
 borderless mode; exclusive fullscreen is not supported by this version.
@@ -34,6 +34,17 @@ select the helper's `captures` folder and allow read/write access. Keep that tab
 open in website mode. To return to local mode, disconnect the website overlay
 and select **Open local advisor**. Only one advisor owns the overlay at a time;
 a closed advisor's connection expires after 12 seconds.
+
+## Reading the choice
+
+With weighted rewards, **Now** shows the highest current plan score. Choices
+with equal current points tie even when one is closer to a combo. **Known
+pts** means unchecked rewards or mechanics could change the comparison.
+The next line shows which Fate could take the lead, its current and potential
+points, and the matching icon needed on a future Fate. If two icons are
+needed, they come from separate new Fates. The overlay favors the fewest
+missing icons, then the highest resulting score. Both lines stay visible
+when the panel switches to compact mode.
 
 ## Automatic detection
 

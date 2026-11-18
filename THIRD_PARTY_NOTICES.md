@@ -46,6 +46,8 @@ The project license does not relicense this material.
 The offline icon picker uses the 38 original GGG reward images from the same
 PoEDB table. Their filenames and original CDN URLs are recorded in
 [`shared/poedb-catalog.json`](shared/poedb-catalog.json).
+The native overlay displays 32-pixel PNG renditions of the same sourced
+reward artwork used in the web advisor.
 
 ## Dependencies
 

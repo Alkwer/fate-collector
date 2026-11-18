@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.1 — 18 November 2026
+
+- The weighted overlay shows the best choice or a tie on current points,
+  followed by the nearest winning combo, its missing reward icon and projected
+  points. Compact mode retains both lines.
+
 ## 0.10.0 — 18 November 2026
 
 - Compare current plan points and the matching icons that would put a different

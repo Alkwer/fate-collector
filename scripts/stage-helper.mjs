@@ -66,7 +66,7 @@ async function writeAtomically(path, data) {
 
 const files = ['FateCollector.ahk', 'Calibration.ahk', 'CaptureProcess.ahk', 'Export-FateCapture.ps1', 'CaptureImage.cs', 'WindowCapture.Common.ps1', 'OcrImage.cs', 'Ocr.Common.ps1', 'CaptureContext.Common.ps1', 'AreaContext.Common.ps1', 'Consent.Common.ps1', 'Diagnostics.Common.ps1', 'Report-Problem.ps1', 'Report-Symbol.ps1', 'SymbolReport.Common.ps1', 'SymbolReport.cs', 'CloudUpload.Common.ps1', 'Configure-CloudUpload.ps1', 'Upload-FateCaptures.ps1', 'README.md', 'LICENSE.third-party.txt']
 const release = JSON.parse(await readFile(new URL('../shared/helper-release.json', import.meta.url), 'utf8'))
-files.push('Overlay.ahk', 'Show-FateOverlay.ps1', 'FateOverlay.cs')
+files.push('Overlay.ahk', 'Show-FateOverlay.ps1', 'FateOverlay.cs', 'overlay-icons.json')
 files.push('AutoCapture.ahk', 'AutoCapture.Common.ps1', 'Watch-FatePanel.ps1')
 files.push('Desktop.ahk', 'Start-FateDesktop.ps1', 'FateDesktop.cs')
 const producerVersions = {

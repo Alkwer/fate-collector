@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { overlayAdvice, type OverlayInputs } from '../src/lib/overlay-advice'
-import { newOffer } from '../shared/offers'
+import { newCard, newOffer, newReward } from '../shared/offers'
 import { bindOfferToMap, newAdvisorWorkspace, startMapWorkspace } from '../src/lib/advisor-workspace'
 import { newSolverSettings } from '../src/lib/solver-settings'
 import { overlayStateSchema, type OverlayCommand, type OverlayState } from '../shared/overlay'
@@ -21,6 +21,40 @@ describe('overlay advice uses the existing recommendation engines', () => {
     input.settings.profile.goals.push({ kind: 'combo', label: 'Decks', weight: 4 })
     input.offer.cards[0].rewards.push({ ...input.offer.cards[0].rewards[0], id: crypto.randomUUID(), kind: 'combo', label: 'Decks', threshold: 2 })
     expect(overlayAdvice(input).rows[0].detail).toContain('1 known plan pts now · 5 pts with 1 more Decks icon on a new Fate')
+  })
+  it('separates the immediate winner on Malformation from the nearest winning completion', () => {
+    const input = inputs()
+    input.settings = newSolverSettings()
+    const regular = (label: string) => ({ ...newReward(), label, kind: 'regular' as const, identified: true })
+    const combo = (label: string, threshold: number) => ({ ...regular(label), kind: 'combo' as const, threshold })
+    input.offer.cards = [
+      { ...newCard(), name: 'Rot', tier: 2, rewards: [regular('Gold'), regular('Rare Helmets with a Drop Modifier')] },
+      { ...newCard(), name: 'Alchemist', tier: 2, rewards: [regular('Additional Gems with Quality')] },
+      { ...newCard(), name: 'Bloodthirsty', tier: 2, rewards: [regular('Rare Bows with a Critical Modifier'), combo('Additional Valuable Currency Items', 3), combo('Many Additional Stacked Decks', 2)] },
+      { ...newCard(), name: 'Gravewalker', tier: 2, rewards: [regular('Greatly Increased Item Rarity'), regular('Rare Body Armours with a Life Modifier')] },
+    ]
+    const view = overlayAdvice(input)
+    expect(view.title).toBe('Now: #4 Gravewalker · 4 pts')
+    expect(view.detail.split('\n')[0]).toBe('Bloodthirsty: 1 → 5 pts with 1× Many Additional Stacked Decks')
+    expect(view.rows.filter(row => row.recommended).map(row => row.label)).toEqual(['4. Gravewalker'])
+  })
+  it('shows a tie on Belfry and chooses the more valuable of two one-icon completions', () => {
+    const input = inputs()
+    input.settings = newSolverSettings()
+    input.offer.cards = [
+      { ...newCard(), name: 'Houndmaster', tier: 2, rewards: [newReward()] },
+      ...[['Avalanche', 'Many Additional Stacked Decks'], ['Dryad', 'Valuable Unique Jewellery Item']].map(([name, label]) => ({
+        ...newCard(), name, tier: 2, rewards: [newReward(), { ...newReward(), label, kind: 'combo' as const, threshold: 2, identified: true }],
+      })),
+    ]
+    const view = overlayAdvice(input)
+    expect(view.title).toBe('Now: tie · 0 known pts')
+    expect(view.detail.split('\n')[0]).toBe('Dryad: 0 → 5 pts with 1× Valuable Unique Jewellery Item')
+    expect(view.rows.some(row => row.recommended)).toBe(false)
+    input.workspace.excludedCardIds = [input.offer.cards[2].id]
+    expect(overlayAdvice(input).detail.split('\n')[0]).toBe('Avalanche: 0 → 4 pts with 1× Many Additional Stacked Decks')
+    input.offer.cards.forEach(card => { card.rewards = [newReward()] })
+    expect(overlayAdvice(input).title).toBe('Check rewards before choosing')
   })
   it('uses the active profile single goal and respects an explicitly empty goal', () => {
     const input = inputs()
@@ -49,16 +83,16 @@ describe('overlay advice uses the existing recommendation engines', () => {
   it('ranks the exact offered IDs and supports both priorities and a single goal', () => {
     const input = inputs()
     const portfolio = overlayAdvice(input)
-    expect(portfolio).toMatchObject({ status: 'ready', title: 'Recommended: 2. Crowkeeper' })
+    expect(portfolio).toMatchObject({ status: 'ready', title: 'Now: #2 Crowkeeper · 2 pts' })
     expect(portfolio.rows.map(row => row.recommended)).toEqual([false, true])
     expect(portfolio.actions).toContainEqual({ id: `collect:${input.offer.cards[1].id}`, slot: 2, label: 'Record Crowkeeper' })
     input.settings.mode = 'single'; input.workspace.goal = { kind: 'regular', label: 'Currency' }
-    expect(overlayAdvice(input).title).toBe(portfolio.title)
+    expect(overlayAdvice(input).title).toBe('Recommended: 2. Crowkeeper')
   })
   it('keeps ties, missing rewards and exclusions explicit', () => {
     const input = inputs()
     input.offer.cards[1].rewards[0].count = 1
-    expect(overlayAdvice(input).title).toContain('Equal matches')
+    expect(overlayAdvice(input).title).toBe('Now: tie · 1 pt')
     input.offer.cards[1].rewards[0].identified = false
     expect(overlayAdvice(input).status).not.toBe('ready')
     input.workspace.excludedCardIds = [input.offer.cards[1].id]

@@ -337,6 +337,7 @@ namespace FateCollector
         readonly bool preview;
         readonly Timer timer;
         readonly WinEvent foregroundEvent;
+        readonly Dictionary<string, Bitmap> rewardIcons;
         IntPtr hook, game;
         int gamePid;
         Rectangle crop;
@@ -360,11 +361,12 @@ namespace FateCollector
         static readonly Color Blue = Color.FromArgb(177, 214, 243);
         static readonly Color Danger = Color.FromArgb(255, 190, 180);
 
-        OverlayWindow(OverlaySession session, Process parent, bool preview)
+        OverlayWindow(OverlaySession session, Process parent, bool preview, string rewardIconPath)
         {
             this.session = session;
             this.parent = parent;
             this.preview = preview;
+            rewardIcons = LoadRewardIcons(rewardIconPath);
             Text = "Fate Collector Overlay";
             AutoScaleMode = AutoScaleMode.None;
             FormBorderStyle = FormBorderStyle.None;
@@ -385,13 +387,18 @@ namespace FateCollector
 
         public static void Run(string path, int parentPid, bool preview)
         {
+            Run(path, parentPid, preview, null);
+        }
+
+        public static void Run(string path, int parentPid, bool preview, string rewardIconPath)
+        {
             Process parent = preview ? null : Process.GetProcessById(parentPid);
             try
             {
                 // Acquire the actual process handle before accepting any
                 // viewport, so PID reuse cannot extend the sidecar lifetime.
                 if (parent != null) { var handle = parent.Handle; }
-                using (var overlay = new OverlayWindow(new OverlaySession(path), parent, preview))
+                using (var overlay = new OverlayWindow(new OverlaySession(path), parent, preview, rewardIconPath))
                 {
                     var handle = overlay.Handle;
                     overlay.hook = SetWinEventHook(ForegroundEvent, ForegroundEvent, IntPtr.Zero, overlay.foregroundEvent, 0, 0, 0);
@@ -432,6 +439,8 @@ namespace FateCollector
             if (disposing)
             {
                 timer.Dispose();
+                foreach (var icon in rewardIcons.Values) icon.Dispose();
+                rewardIcons.Clear();
                 if (hook != IntPtr.Zero) UnhookWinEvent(hook);
                 hook = IntPtr.Zero;
             }
@@ -680,37 +689,122 @@ namespace FateCollector
             }
         }
 
+        // The launch script supplies the bundled map. State text only selects
+        // an exact label and never provides an image path or image bytes.
+        static Dictionary<string, Bitmap> LoadRewardIcons(string path)
+        {
+            var icons = new Dictionary<string, Bitmap>(StringComparer.Ordinal);
+            if (String.IsNullOrEmpty(path)) return icons;
+
+            const int maxMapBytes = 128 * 1024;
+            Dictionary<string, object> records;
+            try
+            {
+                using (var file = File.OpenRead(path))
+                using (var reader = new StreamReader(file, new UTF8Encoding(false, true)))
+                {
+                    if (file.Length == 0 || file.Length > maxMapBytes) return icons;
+                    var json = new JavaScriptSerializer { MaxJsonLength = maxMapBytes, RecursionLimit = 3 };
+                    records = json.DeserializeObject(reader.ReadToEnd()) as Dictionary<string, object>;
+                }
+            }
+            catch (Exception error)
+            {
+                if (!(error is IOException || error is UnauthorizedAccessException ||
+                    error is ArgumentException || error is InvalidOperationException)) throw;
+                return icons;
+            }
+
+            if (records == null || records.Count > 32) return icons;
+            foreach (var entry in records)
+            {
+                string encoded = entry.Value as string;
+                if (entry.Key.Length == 0 || entry.Key.Length > 120 || encoded == null || encoded.Length > 16384)
+                    continue;
+
+                try
+                {
+                    var bytes = Convert.FromBase64String(encoded);
+                    // Check the PNG signature and bounded IHDR dimensions before decoding.
+                    if (bytes.Length < 33 || bytes[0] != 137 || bytes[1] != 80 || bytes[2] != 78 || bytes[3] != 71 ||
+                        bytes[4] != 13 || bytes[5] != 10 || bytes[6] != 26 || bytes[7] != 10 ||
+                        bytes[12] != 73 || bytes[13] != 72 || bytes[14] != 68 || bytes[15] != 82 ||
+                        bytes[16] != 0 || bytes[17] != 0 || bytes[18] != 0 || bytes[19] == 0 || bytes[19] > 128 ||
+                        bytes[20] != 0 || bytes[21] != 0 || bytes[22] != 0 || bytes[23] == 0 || bytes[23] > 128)
+                        continue;
+                    using (var stream = new MemoryStream(bytes, false))
+                    using (var image = Image.FromStream(stream, false, true))
+                    {
+                        if (image.RawFormat.Guid == System.Drawing.Imaging.ImageFormat.Png.Guid)
+                            icons.Add(entry.Key, new Bitmap(image));
+                    }
+                }
+                catch (Exception error)
+                {
+                    if (!(error is FormatException || error is ArgumentException || error is ExternalException ||
+                        error is OutOfMemoryException)) throw;
+                }
+            }
+            return icons;
+        }
+
+        int RewardOutlook(Graphics graphics, string outlook, Font font, int x, int y, int width, bool paint)
+        {
+            const string rewardSeparator = "\u00d7 ";
+            int separator = outlook.LastIndexOf(rewardSeparator, StringComparison.Ordinal);
+            Bitmap icon;
+            int size = Pixels(20), space = size + Pixels(6);
+            if (separator < 0 || width <= space ||
+                !rewardIcons.TryGetValue(outlook.Substring(separator + rewardSeparator.Length), out icon))
+                return TextBlock(graphics, outlook, font, Ink, x, y, width, 4, paint);
+
+            int height = TextBlock(graphics, outlook, font, Ink, x + space, y, width - space, 4, paint);
+            if (paint)
+            {
+                var interpolation = graphics.InterpolationMode;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(icon, new Rectangle(x, y, size, size));
+                graphics.InterpolationMode = interpolation;
+            }
+            return Math.Max(size, height);
+        }
+
         int PaintPanel(Graphics graphics, int width, int maxHeight, bool paint)
         {
             var view = displayed;
             if (view == null) return Pixels(110);
-            int height = PanelContent(graphics, view, width, false, false);
+            string outlook = null, detail = view.Detail;
+            // Protocol v1 keeps the current choice in the title and uses the
+            // first detail line for its conditional outlook.
+            if (view.Title.StartsWith("Now: ", StringComparison.Ordinal))
+            {
+                int end = detail.IndexOf('\n');
+                outlook = end < 0 ? detail : detail.Substring(0, end).TrimEnd('\r');
+                detail = end < 0 ? "" : detail.Substring(end + 1);
+            }
+            int height = PanelContent(graphics, view, outlook, detail, width, false, false);
             bool fits = height <= maxHeight;
             if (!fits)
             {
-                // Retain the reason and confidence even when the complete
-                // comparison cannot fit. No action is safe in this view.
-                var recommendations = view.Rows.FindAll(row => row.Recommended);
-                string reason = recommendations.Count == 1 ? recommendations[0].Detail : "";
-                view = new OverlayView {
-                    Status = view.Status,
-                    Title = view.Title,
-                    Detail = String.IsNullOrWhiteSpace(reason) ? view.Detail : reason + "\n" + view.Detail,
-                    Notice = "Open Fate Collector to compare this offer. Overlay shortcuts are paused."
-                };
-                height = PanelContent(graphics, view, width, true, false);
+                if (outlook == null)
+                {
+                    var recommendations = view.Rows.FindAll(row => row.Recommended);
+                    if (recommendations.Count == 1 && !String.IsNullOrWhiteSpace(recommendations[0].Detail))
+                        detail = recommendations[0].Detail + "\n" + detail;
+                }
+                height = PanelContent(graphics, view, outlook, detail, width, true, false);
             }
             if (!paint) actionsFit = fits;
             if (paint)
             {
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 graphics.Clear(Surface);
-                PanelContent(graphics, view, width, !fits, true);
+                PanelContent(graphics, view, outlook, detail, width, !fits, true);
             }
             return Math.Max(1, Math.Min(height, maxHeight));
         }
 
-        int PanelContent(Graphics graphics, OverlayView view, int width, bool shortcutsPaused, bool paint)
+        int PanelContent(Graphics graphics, OverlayView view, string outlook, string detail, int width, bool shortcutsPaused, bool paint)
         {
             int pad = Pixels(16), content = Math.Max(1, width - 2 * pad), y = 0;
             int bar = Pixels(41);
@@ -733,11 +827,16 @@ namespace FateCollector
                 y = bar + Pixels(12);
                 y += TextBlock(graphics, view.Title, title, Ink, pad, y, content, 2, paint);
                 y += Pixels(3);
-                y += TextBlock(graphics, view.Detail, body, Muted, pad, y, content, shortcutsPaused ? 5 : 3, paint);
-                y += Pixels(11);
+                if (outlook != null)
+                {
+                    y += RewardOutlook(graphics, outlook, rowTitle, pad, y, content, paint);
+                    if (!String.IsNullOrWhiteSpace(detail)) y += Pixels(4);
+                }
+                y += TextBlock(graphics, detail, body, Muted, pad, y, content, shortcutsPaused && outlook == null ? 5 : 3, paint);
+                y += Pixels(shortcutsPaused ? 3 : 11);
 
                 var shown = new HashSet<int>();
-                for (int i = 0; i < view.Rows.Count; i++)
+                for (int i = 0; !shortcutsPaused && i < view.Rows.Count; i++)
                 {
                     var row = view.Rows[i];
                     var action = view.Action(i + 1);
@@ -768,7 +867,7 @@ namespace FateCollector
                     y += rowHeight;
                 }
 
-                for (int slot = 1; slot <= 12; slot++)
+                for (int slot = 1; !shortcutsPaused && slot <= 12; slot++)
                 {
                     var action = view.Action(slot);
                     if (action == null) continue;
@@ -784,12 +883,18 @@ namespace FateCollector
                     y += rowHeight;
                 }
 
-                string notice = shortcutsPaused ? view.Notice : displayedFeedback ?? view.Notice;
+                string notice = displayedFeedback ?? view.Notice;
                 if (!String.IsNullOrEmpty(notice))
                 {
                     y += Pixels(5);
-                    y += TextBlock(graphics, notice, small, shortcutsPaused || displayedFeedback != null ? Amber : Blue,
+                    y += TextBlock(graphics, notice, small, displayedFeedback != null ? Amber : Blue,
                         pad, y, content, 2, paint);
+                }
+                if (shortcutsPaused)
+                {
+                    y += Pixels(5);
+                    y += TextBlock(graphics, "Open Fate Collector to compare this offer. Overlay shortcuts are paused.",
+                        small, Amber, pad, y, content, 2, paint);
                 }
 
                 y += Pixels(8);
@@ -798,7 +903,7 @@ namespace FateCollector
                 {
                     Fill(graphics, Quiet, new Rectangle(0, y, width, footer));
                     Fill(graphics, Border, new Rectangle(0, y, width, 1));
-                    TextLine(graphics, view.Actions.Count == 0 ? "F9  Capture   ·   Ctrl+Alt+O  Hide" : "Hold Ctrl+Alt for shortcuts   ·   O  Hide",
+                    TextLine(graphics, shortcutsPaused || view.Actions.Count == 0 ? "F9  Capture   ·   Ctrl+Alt+O  Hide" : "Hold Ctrl+Alt for shortcuts   ·   O  Hide",
                         small, Muted, new Rectangle(pad, y, content, footer));
                 }
                 return y + footer;
@@ -826,7 +931,12 @@ namespace FateCollector
         // without entering the Windows foreground or writing commands.
         public static Bitmap Snapshot(OverlaySession session, int dpi, int workWidth, int workHeight, out bool shortcutsFit)
         {
-            using (var overlay = new OverlayWindow(session, null, true))
+            return Snapshot(session, dpi, workWidth, workHeight, null, out shortcutsFit);
+        }
+
+        public static Bitmap Snapshot(OverlaySession session, int dpi, int workWidth, int workHeight, string rewardIconPath, out bool shortcutsFit)
+        {
+            using (var overlay = new OverlayWindow(session, null, true, rewardIconPath))
             {
                 overlay.scale = dpi / 96f;
                 overlay.displayed = session.View;
