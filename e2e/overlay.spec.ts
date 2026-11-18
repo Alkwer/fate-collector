@@ -7,6 +7,12 @@ test('automatic offers import without F9 and closing the panel revokes stale act
   await action(page, 'use-offer')
   await expect.poll(async () => (await state(page))?.actions.some(item => item.id.startsWith('collect:'))).toBe(true)
   const collect = (await state(page))!.actions.find(item => item.id.startsWith('collect:'))!.id
+  await action(page, 'last-offer')
+  await expect(page.getByRole('checkbox', { name: 'Last offer in this area' })).toBeChecked()
+  await expect.poll(async () => (await state(page))?.detail).toContain('Last offer.')
+  await action(page, 'more-offers')
+  await expect(page.getByRole('checkbox', { name: 'Last offer in this area' })).not.toBeChecked()
+  await expect.poll(async () => (await state(page))?.actions.some(item => item.id === 'last-offer')).toBe(true)
   await action(page, collect)
   await expect(page.locator('.collected-fates li')).toHaveCount(1)
   await write(page, 'capture.json', { protocol: 1, captureId: null, phase: 'watching', updatedAt: Date.now() })

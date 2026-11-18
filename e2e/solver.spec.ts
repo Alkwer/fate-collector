@@ -3,16 +3,16 @@ import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { newCard, newOffer, newReward } from '../shared/offers'
-import type { FateCard, Reward } from '../shared/schema'
+import type { FateCard, Offer, Reward } from '../shared/schema'
 import { newSolverSettings } from '../src/lib/solver-settings'
 
 function reward(label: string, count: number, extra: Partial<Reward> = {}): Reward {
   return { ...newReward(), label, count, kind: 'regular', identified: true, ...extra }
 }
 function fate(name: string, rewards: Reward[], modifiers: string[] = []): FateCard { return { ...newCard(), name, tier: 2, rewards, modifiers } }
-async function load(page: Page, cards: FateCard[], first = true) {
+async function load(page: Page, cards: FateCard[], first = true, areaCategory?: Offer['areaCategory']) {
   await closePanels(page)
-  await page.getByLabel('Import capture file').setInputFiles({ name: 'solver.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newOffer(), cards })) })
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'solver.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...newOffer(), cards, areaCategory })) })
   await closePanels(page)
   await page.getByRole('button', { name: first ? 'Start area with this offer' : 'Use this offer in current area', exact: true }).click()
 }
@@ -33,6 +33,51 @@ function errorsOn(page: Page) {
 }
 
 for (const width of [1440, 820, 390]) {
+  test(`campaign invocation uses two slots and merges a Tier 1 pair at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+    for (const [index, name] of ['Alchemist', 'Crowkeeper', 'Alchemist'].entries()) {
+      const card = { ...fate(name, [reward('Rare Jewellery Items', index === 0 ? 2 : 1)]), tier: 1 }
+      await load(page, [card], index === 0, index === 0 ? 'campaign' : undefined)
+      await page.getByRole('button', { name: `Add ${name} to collected`, exact: true }).click()
+    }
+    await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+    const best = page.locator('.advisor-plans article[data-best]')
+    await expect(best.locator('.sequence-heading')).toContainText('2 / 2 inputs')
+    await expect(best.getByLabel('Alchemist: Tier 1 plus Tier 1 becomes Tier 2')).toBeVisible()
+    await expect(best.locator('.plan-result')).toContainText('6')
+    await best.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath(`campaign-merge-${width}.png`) })
+    await page.getByRole('button', { name: 'Record a different invocation' }).click()
+    const record = page.locator('.record-invocation').getByRole('checkbox')
+    await record.nth(0).check()
+    await record.nth(1).check()
+    await expect(record.nth(2)).toBeDisabled()
+  })
+
+  test(`last offer compares payable rewards at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+    const choices = [fate('Gravewalker', [reward('Gold', 1)]),
+      fate('Bloodthirsty', [reward('Gold', 1), reward('Many Additional Stacked Decks', 1, { kind: 'combo', threshold: 2 })])]
+    await load(page, choices)
+    const last = page.getByRole('checkbox', { name: 'Last offer in this area' })
+    await expect(page.locator('.advisor-outcome')).toContainText('Recommended: Bloodthirsty')
+    await last.focus()
+    await page.keyboard.press('Space')
+    await expect(last).toBeChecked()
+    await expect(page.locator('.advisor-outcome')).toContainText('Equal matches: Gravewalker / Bloodthirsty')
+    await expect(page.locator('.combo-opportunity')).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await last.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath(`last-offer-${width}.png`) })
+    await last.uncheck()
+    await expect(page.locator('.advisor-outcome')).toContainText('Recommended: Bloodthirsty')
+    await last.check()
+    await load(page, choices, false)
+    await expect(last).not.toBeChecked()
+  })
+
   test(`partial combos, build dangers and Viscera remain usable at ${width}px`, async ({ page }) => {
     const errors = errorsOn(page)
     await page.setViewportSize({ width, height: 1000 })
@@ -88,6 +133,25 @@ for (const width of [1440, 820, 390]) {
     expect(errors).toEqual([])
   })
 }
+
+test('build dangers use the captured tier and recognize Rot without recorded modifiers', async ({ page }) => {
+  await page.goto('/')
+  await load(page, [
+    { ...fate('Rot', [reward('Gold', 1)]), tier: 1 },
+    fate('Tempest', [reward('Gold', 1)]),
+    { ...fate('Torchbearer', [reward('Gold', 1)]), tier: 1 },
+  ])
+  await openPanel(page, '.reward-settings')
+  await page.getByRole('combobox', { name: 'Curses action', exact: true }).selectOption('exclude')
+  await page.getByRole('combobox', { name: 'Chaos damage and poison action', exact: true }).selectOption('exclude')
+  await closePanels(page)
+  await expect(page.getByRole('button', { name: 'Add Rot to collected', exact: true })).toBeDisabled()
+  await expect(page.locator('.exclusion-reason')).toContainText([
+    'Chaos damage and poison (Tier 1 screenshot tooltip reference)', 'Curses (Tier 2 screenshot tooltip reference)',
+  ])
+  await expect(page.getByRole('button', { name: 'Add Tempest to collected', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Add Torchbearer to collected', exact: true })).toBeEnabled()
+})
 
 test('Viscera distinguishes no better known factors from missing reward data', async ({ page }) => {
   await page.goto('/')

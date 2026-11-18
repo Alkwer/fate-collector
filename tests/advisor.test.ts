@@ -156,6 +156,23 @@ describe('invocation planning', () => {
     expect(result.plans[0]).not.toHaveProperty('triples')
   })
 
+  it('merges reviewed Tier 1 copies into Tier 2 in either order', () => {
+    const first = fate('first', [reward('Currency', 2)], { name: 'Rot', tier: 1 })
+    const second = fate('second', [reward()], { name: 'Rotted', tier: 1 })
+    expect(planInvocation([first, second], currency, {}, 2)).toMatchObject({ status: 'ready', plans: [
+      { cardIds: ['first', 'second'], targetCount: 6, merges: [{ firstId: 'first', consumedId: 'second', outputTier: 2 }] },
+      { cardIds: ['second', 'first'], targetCount: 3, merges: [{ firstId: 'second', consumedId: 'first', outputTier: 2 }] },
+      { cardIds: ['first'], targetCount: 2 },
+    ] })
+    expect(recommendFates([second], [first], currency, {}, true, 2)).toMatchObject({
+      recommendedCardIds: ['second'], candidates: [{ gain: 4, plan: { merges: [{ outputTier: 2 }] } }],
+    })
+    const unreviewed = { ...second, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }
+    expect(planInvocation([first, unreviewed], currency, {}, 2)).toMatchObject({
+      status: 'provisional', plans: [{ cardIds: ['first'] }, { cardIds: ['second'] }],
+    })
+  })
+
   it('evaluates distinct subsets once and prefers fewer inputs at the same score', () => {
     const result = planInvocation([
       fate('first', [reward()]), fate('irrelevant', [reward('Armour')]), fate('second', [reward()]),

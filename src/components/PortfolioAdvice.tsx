@@ -1,7 +1,7 @@
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
 import { lazy, Suspense, useMemo, useRef } from 'react'
 import { completionCondition, recommendPortfolio, solveInvocation, unweightedRewards, visceraFactors, type SolverPlan, type SolverProfile } from '../../shared/solver'
-import { MAX_COLLECTED_FATES } from '../../shared/advisor'
+import { MAX_COLLECTED_FATES, type InvocationLimit } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
 import { OfferPreview } from './OfferPreview'
 import { GainMark, InvocationSequence, RewardSymbol } from './DecisionVisuals'
@@ -13,10 +13,10 @@ const number = (value: number) => new Intl.NumberFormat('en', { maximumSignifica
 const named = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 const signed = (value: number) => `${value > 0 ? '+' : ''}${number(value)}`
 
-export function PortfolioPlan({ plan, cards, collected }: { plan: SolverPlan; cards: FateCard[]; collected: FateCard[] }) {
+export function PortfolioPlan({ plan, cards, collected, limit, lastOffer = false }: { limit: InvocationLimit; plan: SolverPlan; cards: FateCard[]; collected: FateCard[]; lastOffer?: boolean }) {
   return <div className="portfolio-plan">
-    <InvocationSequence plan={plan} cards={cards} collected={collected} />
-    <div className="plan-result"><AppIcon name="reward" /><strong>{number(plan.score)}</strong><div><span>priority points</span><small>{number(plan.progress)} combo progress · useful while collecting</small></div></div>
+    <InvocationSequence limit={limit} plan={plan} cards={cards} collected={collected} />
+    <div className="plan-result"><AppIcon name="reward" /><strong>{number(plan.score)}</strong><div><span>priority points</span>{!lastOffer && <small>{number(plan.progress)} combo progress · useful while collecting</small>}</div></div>
     {plan.rewards.some(reward => reward.uncertain || reward.count === null) && <p className="hint reward-uncertainty">Unresolved reward outcomes · check breakdown</p>}
     <DetailPanel className="plan-notes" title="Reward breakdown"><dl className="reward-breakdown" aria-label="Reward breakdown">{plan.rewards.map((reward, i) => <div key={`${reward.kind}:${reward.label}:${i}`}>
       <dt><RewardSymbol label={reward.label} identified={reward.kind !== 'unknown'} />{reward.label || 'Unidentified reward'} <span className="muted">{reward.kind}</span></dt>
@@ -27,17 +27,18 @@ export function PortfolioPlan({ plan, cards, collected }: { plan: SolverPlan; ca
 }
 
 interface Props {
+  limit: InvocationLimit
   offer: Offer; collected: FateCard[]; mode: 'offer' | 'invoke'; profile: SolverProfile
   excludedCardIds: string[]; onExclude: (id: string) => void
-  mapReady: boolean; offerReady: boolean; alreadyCollected: boolean; chosen: FateCard | undefined
+  mapReady: boolean; offerReady: boolean; lastOffer: boolean; alreadyCollected: boolean; chosen: FateCard | undefined
   saved: boolean; automatic: boolean; onCollect: (card: FateCard) => void
   onInvoke: (plan: SolverPlan) => void; onPlan: () => void
   onPriorities: () => void
 }
 export function PortfolioAdvice(props: Props) {
-  const { offer, collected, mode, profile, excludedCardIds, mapReady, offerReady, alreadyCollected, chosen } = props
-  const portfolio = useMemo(() => mapReady && offerReady && mode === 'offer' ? recommendPortfolio(offer.cards, collected, profile, excludedCardIds) : null, [offer.cards, collected, profile, excludedCardIds, mapReady, offerReady, mode])
-  const invocation = useMemo(() => mapReady && mode === 'invoke' ? solveInvocation(collected, profile, excludedCardIds) : null, [collected, profile, excludedCardIds, mapReady, mode])
+  const { offer, collected, mode, profile, excludedCardIds, mapReady, offerReady, lastOffer, limit, alreadyCollected, chosen } = props
+  const portfolio = useMemo(() => mapReady && offerReady && mode === 'offer' ? recommendPortfolio(offer.cards, collected, profile, excludedCardIds, lastOffer, limit) : null, [offer.cards, collected, profile, excludedCardIds, mapReady, offerReady, mode, lastOffer, limit])
+  const invocation = useMemo(() => mapReady && mode === 'invoke' ? solveInvocation(collected, profile, excludedCardIds, limit) : null, [collected, profile, excludedCardIds, mapReady, mode, limit])
   const result = mode === 'offer' ? portfolio : invocation
   const unweightedPanel = useRef<DetailPanelHandle>(null)
   const cards = [...collected, ...offer.cards]
@@ -71,7 +72,7 @@ export function PortfolioAdvice(props: Props) {
         <ul>{unweighted.map(reward => <li key={`${reward.kind}:${reward.label}`}>{reward.label} · {reward.kind}</li>)}</ul>
         <button onClick={() => { unweightedPanel.current?.close(); props.onPriorities() }}>Set reward priorities</button>
       </DetailPanel>}
-      {portfolio && !alreadyCollected && collected.length > 0 && <p className="advisor-baseline"><AppIcon name="reward" /><span>Collection best</span><strong>{number(portfolio.baseline?.score ?? 0)}</strong><span>priority points · {number(portfolio.baseline?.progress ?? 0)} combo progress</span></p>}
+      {portfolio && !alreadyCollected && collected.length > 0 && <p className="advisor-baseline"><AppIcon name="reward" /><span>Collection best</span><strong>{number(portfolio.baseline?.score ?? 0)}</strong><span>priority points{!lastOffer && <> · {number(portfolio.baseline?.progress ?? 0)} combo progress</>}</span></p>}
       {!!result.excluded.length && <DetailPanel className="advisor-caveats" title={<>Excluded by your settings ({result.excluded.length})</>}><ul>{result.excluded.map(row => <li key={row.cardId}><strong>{named(cards.find(card => card.id === row.cardId))}</strong>: {row.reasons.join(' · ')}</li>)}</ul></DetailPanel>}
       {!!result.warnings.length && <DetailPanel className="advisor-caveats" title={<>What limits this recommendation</>}><ul className="advisor-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
     </>}
@@ -89,7 +90,7 @@ export function PortfolioAdvice(props: Props) {
             <span><strong>{number(option.points)} pts</strong> with {completionCondition(option)}</span></div>)}
         </div>)}
         <button className={featured?.id === card.id ? 'primary-choice collect-fate' : 'collect-fate'} aria-label={`Add ${named(card)} to collected`} disabled={alreadyCollected || excluded.has(card.id) || collected.length >= MAX_COLLECTED_FATES} onClick={() => props.onCollect(card)}><AppIcon name="plus" />Collect Fate</button>
-        {candidate?.plan && <DetailPanel className="candidate-plan" title="All rewards & invocation order" triggerLabel="Preview plan"><PortfolioPlan plan={candidate.plan} cards={cards} collected={collected} /></DetailPanel>}
+        {candidate?.plan && <DetailPanel className="candidate-plan" title="All rewards & invocation order" triggerLabel="Preview plan"><PortfolioPlan limit={limit} lastOffer={lastOffer} plan={candidate.plan} cards={cards} collected={collected} /></DetailPanel>}
       </div>
     } : undefined} /> : invocation && <div className="advisor-plans">
       {!!invocation.collectingPlans?.length && <div className="combo-progress"><h3>Progress while collecting</h3><ul>{invocation.collectingPlans[0].rewards.filter(reward => reward.kind === 'combo' && !reward.activated).map((reward, index) => <li key={index}>{reward.label}: {reward.count ?? '?'}/{reward.threshold ?? '?'} icons · not active</li>)}</ul></div>}
@@ -98,7 +99,7 @@ export function PortfolioAdvice(props: Props) {
         const content = <article data-best={index === 0 || undefined} data-state={status}><h3 className={index === 0 ? 'sr-only' : undefined}>{farming ? `Viscera option ${index + 1}` : index === 0 ? 'Best supported portfolio' : `Alternative ${index + 1}`}</h3>
           {farming && <p>{visceraFactors(plan).inputs} input Fates · {visceraFactors(plan).duplicate ? 'duplicate included' : 'no duplicate'} · {number(Math.max(0, (invocation.rewardBaseline?.score ?? 0) - plan.score))} priority points below your best reward plan</p>}
           <BuildWarnings cards={collected.filter(card => plan.cardIds.includes(card.id))} filters={profile} merges={plan.merges} planWarnings={plan.warnings} />
-          <PortfolioPlan plan={plan} cards={collected} collected={collected} /><button className={index === 0 ? 'primary-choice' : undefined} aria-label="Mark this invocation completed" onClick={() => props.onInvoke(plan)}><AppIcon name="check" />Done in game</button><p className="hint">Removes these cards. Undo is available.</p></article>
+          <PortfolioPlan limit={limit} plan={plan} cards={collected} collected={collected} /><button className={index === 0 ? 'primary-choice' : undefined} aria-label="Mark this invocation completed" onClick={() => props.onInvoke(plan)}><AppIcon name="check" />Done in game</button><p className="hint">Removes these cards. Undo is available.</p></article>
         return index === 0 ? <div key={plan.cardIds.join(':')}>{content}</div> : <DetailPanel className="alternative-plan" key={plan.cardIds.join(':')} title={<>Alternative {index + 1} · {number(plan.score)} points · {plan.cardIds.length} inputs</>}>{content}</DetailPanel>
       })}
     </div>}

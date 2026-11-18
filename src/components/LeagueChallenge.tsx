@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import type { InvocationLimit } from '../../shared/advisor'
 import type { FateCard } from '../../shared/schema'
 import type { SolverProfile } from '../../shared/solver'
 import { challengeAdvice } from '../lib/challenge-advice'
 import type { OmenMap } from '../lib/fight-journal'
 import {
-  leagueGoalSchema, omenMaps, OVERPOWERING_OMENS_SOURCE, profitObjectives, PROMISED_PROFITS_SOURCE, type LeagueGoal,
+  activeProfitGoal, leagueGoalSchema, omenMaps, OVERPOWERING_OMENS_SOURCE, profitObjectives, PROMISED_PROFITS_SOURCE, type LeagueGoal,
 } from '../lib/league-challenges'
 import type { FightJournalControl } from '../lib/useFightJournal'
 import { DetailPanel } from './DetailPanel'
@@ -38,6 +39,7 @@ function ChallengeProgress({ goal, control }: { goal: NonNullable<LeagueGoal>; c
 interface Props {
   control: FightJournalControl
   mode: 'offer' | 'invoke'
+  limit: InvocationLimit
   mapReady: boolean
   offered: FateCard[]
   collected: FateCard[]
@@ -47,7 +49,7 @@ interface Props {
   onConfirmOmenMap: (map: OmenMap | null) => void
 }
 
-export function LeagueChallenge({ control, mode, mapReady, offered, collected, profile, excludedCardIds, confirmedOmenMap, onConfirmOmenMap }: Props) {
+export function LeagueChallenge({ control, mode, mapReady, limit, offered, collected, profile, excludedCardIds, confirmedOmenMap, onConfirmOmenMap }: Props) {
   const goal = control.journal?.goal ?? null
   const progress = control.journal?.progress ?? {}
   const profitDone = profitObjectives.filter(row => (progress[`profit:${row.id}`] ?? 0) >= row.target).length
@@ -55,10 +57,10 @@ export function LeagueChallenge({ control, mode, mapReady, offered, collected, p
   const objective = goal?.kind === 'profit' ? profitObjectives.find(row => row.id === goal.objective) : undefined
   const option = goal ? goal.kind === 'profit' ? `profit:${goal.objective}` : `omen:${goal.map}` : ''
   const completed = goal?.kind === 'omen' ? omenDone >= 12 || progress[option] === 1
-    : goal?.kind === 'profit' && (profitDone >= 10 || (progress[option] ?? 0) >= (objective?.target ?? 1))
+    : goal?.kind === 'profit' && !activeProfitGoal(control.journal)
   const suggestion = useMemo(() => mapReady && goal && !completed
-    ? challengeAdvice({ goal, offered, collected, mode, confirmedOmenMap, profile, excludedCardIds }) : '',
-    [completed, goal, offered, collected, mode, confirmedOmenMap, profile, excludedCardIds, mapReady])
+    ? challengeAdvice({ goal, offered, collected, mode, confirmedOmenMap, profile, excludedCardIds, limit }) : '',
+    [completed, goal, offered, collected, mode, confirmedOmenMap, profile, excludedCardIds, mapReady, limit])
 
   function setGoal(value: string) {
     const [kind, target] = value.split(':')

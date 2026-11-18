@@ -1,7 +1,7 @@
 import { z } from '../../shared/validation'
 import { offerSchema } from '../../shared/schema'
 import { newOffer } from '../../shared/offers'
-import { MAX_COLLECTED_FATES } from '../../shared/advisor'
+import { invocationLimit, MAX_COLLECTED_FATES } from '../../shared/advisor'
 import { invocationSnapshotSchema, omenMapSchema } from './fight-journal'
 
 const legacyWorkspaceSchema = z.object({
@@ -18,7 +18,9 @@ const workspaceSchema = legacyWorkspaceSchema.extend({
   excludedCardIds: z.array(z.string().uuid()).max(1000).default([]),
   lastInvocation: invocationSnapshotSchema.nullable().default(null),
   confirmedOmenMap: omenMapSchema.default(null),
-}).refine(workspace => workspace.map !== null || (
+  lastOfferId: offerIdSchema.nullable().default(null),
+}).refine(workspace => workspace.lastOfferId === null || workspace.offerIds.includes(workspace.lastOfferId))
+  .refine(workspace => workspace.map !== null || (
   workspace.collection.cards.length === 0 && workspace.offerIds.length === 0 && Object.keys(workspace.sources).length === 0
 )).refine(workspace => Object.entries(workspace.sources).every(([cardId, offerId]) => (
   workspace.collection.cards.some(card => card.id === cardId) && workspace.offerIds.includes(offerId)
@@ -27,7 +29,7 @@ const workspaceSchema = legacyWorkspaceSchema.extend({
 export type AdvisorWorkspace = z.infer<typeof workspaceSchema>
 
 export function newAdvisorWorkspace(): AdvisorWorkspace {
-  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [], lastInvocation: null, confirmedOmenMap: null }
+  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [], lastInvocation: null, confirmedOmenMap: null, lastOfferId: null }
 }
 
 export function startMapWorkspace(current: AdvisorWorkspace): AdvisorWorkspace {
@@ -38,9 +40,16 @@ export function offerBelongsToMap(workspace: AdvisorWorkspace, offerId: string):
   return workspace.map !== null && workspace.offerIds.includes(offerId)
 }
 
-export function bindOfferToMap(workspace: AdvisorWorkspace, offerId: string): AdvisorWorkspace {
+export function workspaceInvocationLimit(workspace: AdvisorWorkspace, offer: Pick<AdvisorWorkspace['collection'], 'id' | 'areaCategory'>) {
+  const area = workspace.collection.areaCategory
+  const boundCategory = offerBelongsToMap(workspace, offer.id) ? offer.areaCategory : undefined
+  return invocationLimit(area === 'campaign' || area === 'map' ? area : boundCategory)
+}
+
+export function bindOfferToMap(workspace: AdvisorWorkspace, offerId: string, category?: AdvisorWorkspace['collection']['areaCategory']): AdvisorWorkspace {
   if (!workspace.map || offerBelongsToMap(workspace, offerId) || !offerIdSchema.safeParse(offerId).success) return workspace
-  return { ...workspace, offerIds: [...workspace.offerIds, offerId] }
+  const collection = category === 'campaign' || category === 'map' ? { ...workspace.collection, areaCategory: category } : workspace.collection
+  return { ...workspace, collection, offerIds: [...workspace.offerIds, offerId] }
 }
 
 const storageKey = 'fate-collector.advisor-area.v2'

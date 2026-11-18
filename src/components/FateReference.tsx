@@ -1,10 +1,9 @@
-import screenshots from '../../shared/screenshot-catalog.json' with { type: 'json' }
 import { SCREENSHOT_CATALOG_SOURCE } from '../../shared/reward-catalog'
 import { DetailPanel } from './DetailPanel'
-import { getPoedbFate, POEDB_CATALOG } from '../../shared/poedb-catalog'
+import { getPoedbFate, getScreenshotFate, POEDB_CATALOG } from '../../shared/poedb-catalog'
 
 export function FateReference({ name, tier }: { name: string; tier: number | null }) {
-  const fate = screenshots.fates.find(entry => entry.name.toLowerCase() === name.trim().toLowerCase())
+  const fate = getScreenshotFate(name)
   const external = getPoedbFate(name, tier === null ? 3 : tier)
   if (!fate && !external) return null
   const variants = !fate ? [] : tier === null ? fate.variants : fate.variants.filter(variant => variant.tier === tier)

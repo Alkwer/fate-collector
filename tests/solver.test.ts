@@ -20,6 +20,61 @@ const armour = { kind: 'regular', label: 'Armour', weight: 1 } as const
 const gem = { kind: 'combo', label: 'Exceptional Gem', weight: 8 } as const
 const currencyProfile: SolverProfile = { goals: [currency], avoidModifiers: [] }
 
+describe('last offer in the area', () => {
+  const profile = { goals: [currency, gem], avoidModifiers: [] }
+  const current = fate('current', [reward('Currency')])
+  const partial = fate('partial', [reward('Currency'), combo(gem.label, 1, 3)])
+  const offers = [current, partial]
+  it('ties equal payable rewards and omits future completions', () => {
+    expect(recommendPortfolio(offers, [], profile).recommendedCardIds).toEqual(['partial'])
+    const last = recommendPortfolio(offers, [], profile, [], true)
+    expect(last.recommendedCardIds).toEqual(['current', 'partial'])
+    expect(last.candidates.every(row => !row.opportunities?.length && row.plan?.score === 1)).toBe(true)
+    expect(recommendFates(offers, [], gem, {}, true).recommendedCardIds).toEqual([])
+    expect(recommendFates(offers, [], gem).recommendedCardIds).toEqual(['partial'])
+  })
+  it('still completes a combo with the collection and respects its filters', () => {
+    const owned = [fate('owned', [combo(gem.label, 2, 3)])]
+    expect(recommendPortfolio(offers, owned, profile, [], true).recommendedCardIds).toEqual(['partial'])
+    expect(recommendFates(offers, owned, gem, {}, true).recommendedCardIds).toEqual(['partial'])
+    expect(recommendPortfolio(offers, owned, profile, ['partial'], true).recommendedCardIds).toEqual(['current'])
+    expect(recommendFates(offers, owned, gem, { excludedCardIds: ['partial'] }, true).recommendedCardIds).toEqual([])
+  })
+  it('abstains when an incomplete combo only improves collection progress', () => {
+    const owned = [fate('held', [reward('Currency', 2)])]
+    const choices = [fate('deck', [combo(gem.label, 1, 3)])]
+    expect(recommendPortfolio(choices, owned, profile, [], true)).toMatchObject({
+      recommendedCardIds: [], comparison: 'no-improvement', baseline: { score: 2 },
+    })
+  })
+  it('recognizes a payable same-Fate merge across the two observed spellings', () => {
+    const first = fate('first', [reward('Currency')], { name: 'Rot' })
+    const other = fate('copy', [reward('Armour')], { name: 'Rotted' })
+    expect(recommendPortfolio([other], [first], currencyProfile, [], true).candidates[0].plan?.score).toBe(3)
+    expect(recommendFates([other], [first], currency, {}, true).candidates[0].plan?.targetCount).toBe(3)
+  })
+
+  it('retains the first Tier 1 reward row without assuming Tier 2 combo scaling', () => {
+    const goal = { kind: 'combo', label: 'Additional Valuable Currency Items', weight: 6 } as const
+    const first = fate('first', [reward('Currency', 2), combo(goal.label, 1, 3)], { name: 'Rot', tier: 1 })
+    const copy = fate('copy', [reward('Armour')], { name: 'Rotted', tier: 1 })
+    const trade = { ...currencyProfile, goals: [currency, goal] }
+    expect(recommendPortfolio([copy], [first], trade, [], true, 2)).toMatchObject({
+      status: 'provisional', recommendedCardIds: ['copy'], candidates: [{
+        gain: 4, plan: {
+          cardIds: ['first', 'copy'], score: 6, discardedCardIds: ['copy'],
+          merges: [{ firstId: 'first', consumedId: 'copy', outputTier: 2 }],
+          rewards: [
+            { label: 'Currency', count: 6 },
+            { label: goal.label, count: null, activated: false, uncertain: true, points: 0 },
+          ],
+        },
+      }],
+    })
+    expect(planInvocation([first, copy], goal, {}, 2).plans).toEqual([])
+  })
+})
+
 describe('Armoury Black Frost invocation preview', () => {
   const goal = { kind: 'combo', label: 'Additional Valuable Currency Items', weight: 6 } as const
   const profile = { goals: [goal], avoidModifiers: [] }
@@ -80,6 +135,20 @@ describe('Armoury Black Frost invocation preview', () => {
       const candidate = result.candidates.find(row => row.cardId === 'first')!
       expect(candidate.opportunities ?? []).not.toContainEqual(expect.objectContaining({ duplicateName: 'Black Frost' }))
     }
+  })
+
+  it('projects future duplicate and distinct completion using the area slots', () => {
+    const trade = { ...profile, goals: [goal, { ...armour, label: 'Belt' }] }
+    const competitor = fate('other', [reward('Belt', 4)])
+    const held = fate('held', [reward('Belt', 2)])
+    const choices = [first, competitor]
+    const opportunity = (limit: 2 | 3) => recommendPortfolio(choices, [held], trade, [], false, limit)
+      .candidates.find(row => row.cardId === first.id)?.opportunities
+    expect(opportunity(2)).toEqual([{ label: goal.label, duplicateName: 'Black Frost', icons: 1, points: 9 }])
+    expect(opportunity(3)).toEqual([
+      { label: goal.label, duplicateName: 'Black Frost', icons: 1, points: 11 },
+      { label: goal.label, icons: 2, points: 7 },
+    ])
   })
 
   it.each([
@@ -313,12 +382,15 @@ describe('weighted invocation search', () => {
     expect(solveInvocation(cards, currencyProfile).status).toBe('ready')
   })
 
-  it.each([1, 3])('scores a reviewed same-tier triple at Tier %i while keeping pairs unresolved', tier => {
+  it.each([1, 3])('scores a reviewed same-tier triple at Tier %i', tier => {
     const cards = ['a', 'b', 'c'].map(id => fate(id, [reward('Currency')], { name: 'Rot', tier }))
     const result = solveInvocation(cards, currencyProfile)
-    expect(result).toMatchObject({ status: 'provisional', plans: [
+    expect(result).toMatchObject({ status: tier === 1 ? 'ready' : 'provisional', plans: [
       { score: 6, merges: [], triples: [{ firstId: 'a', consumedId: 'b', thirdId: 'c' }], warnings: [] }, {}, {},
-    ], warnings: ['Only pairs of the same Fate at Tier 2 have a confirmed merge.'] })
+    ], warnings: tier === 1 ? [] : ['Only pairs of the same Fate with matching Tier 1 or Tier 2 have a confirmed merge.'] })
+    const campaign = solveInvocation(cards, currencyProfile, [], 2)
+    expect(campaign.plans[0]).toMatchObject(tier === 1 ? { score: 3, merges: [{ outputTier: 2 }] } : { score: 1, merges: [] })
+    expect(campaign.plans.every(plan => plan.cardIds.length <= 2 && !plan.triples)).toBe(true)
   })
 
   it.each([

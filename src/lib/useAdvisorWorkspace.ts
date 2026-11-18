@@ -1,3 +1,4 @@
+import type { Offer } from '../../shared/schema'
 import { useRef, useState } from 'react'
 import { isDesktop } from './desktop'
 import { bindOfferToMap, loadAdvisorWorkspace, newAdvisorWorkspace, saveAdvisorWorkspace, startMapWorkspace,
@@ -65,18 +66,18 @@ export function useAdvisorWorkspace() {
     commit({ ...current.current, needsMapConfirmation: false })
   }
 
-  function startMap(offerId?: string) {
+  function startMap(offer?: Offer) {
     const { workspace } = current.current
     if (state.workspace.map?.id !== workspace.map?.id) return
     remember()
     const next = startMapWorkspace(workspace)
-    save(offerId === undefined ? next : bindOfferToMap(next, offerId), false)
+    save(offer === undefined ? next : bindOfferToMap(next, offer.id, offer.areaCategory), false)
   }
 
-  function bindOffer(offerId: string, showOffer = false) {
+  function bindOffer(offer: Offer, showOffer = false) {
     const { workspace, needsMapConfirmation } = current.current
     if (needsMapConfirmation || state.workspace.map?.id !== workspace.map?.id) return
-    const next = bindOfferToMap(workspace, offerId)
+    const next = bindOfferToMap(workspace, offer.id, offer.areaCategory)
     if (next !== workspace || (showOffer && next.mode !== 'offer')) save({ ...next, mode: showOffer ? 'offer' : next.mode }, false)
   }
 

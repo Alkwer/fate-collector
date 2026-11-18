@@ -1,7 +1,8 @@
 import { cardSchema, rewardSchema, type FateCard } from './schema'
+import { normalizeFateName } from './fate-names'
 import { KNOWN_COMBOS, VALUABLE_CURRENCY_LABEL } from './reward-catalog'
 import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
-import { assessPlanningCard, assessPlanningMerge, type PlanningFilters } from './planning-filters'
+import { assessPlanningCard, assessPlanningMerge, mergeOutputTier, type PlanningFilters } from './planning-filters'
 export { KNOWN_COMBOS } from './reward-catalog'
 
 export type AdvisorGoal = { kind: 'regular' | 'combo'; label: string }
@@ -16,7 +17,7 @@ export type InvocationPlan = {
   targetCount: number
   threshold: number | null
   activated: boolean
-  merges: { firstId: string; consumedId: string; outputTier: 3 }[]
+  merges: { firstId: string; consumedId: string; outputTier: 2 | 3 }[]
   triples?: { firstId: string; consumedId: string; thirdId: string }[]
   duplicateCurrency?: { label: string; count: number; threshold: number }[]
   warnings: string[]
@@ -41,6 +42,12 @@ export type Recommendation = {
 }
 
 export const MAX_INVOCATION_INPUTS = 3
+export type InvocationLimit = 2 | 3
+
+export function invocationLimit(areaCategory?: string): InvocationLimit {
+  return areaCategory === 'campaign' ? 2 : MAX_INVOCATION_INPUTS
+}
+
 const COMBAT_WARNING = 'Combat difficulty remains unassessed. Build filters flag only selected effects.'
 const NO_PROGRESS = 'No positive result could be established for this goal.'
 export const UNKNOWN_FATE_NAME = 'A Fate name is missing, so possible duplicate interactions are unresolved.'
@@ -134,6 +141,7 @@ export function visitInvocationOrders<Card extends InvocationInput>(
   required: Card | undefined,
   addPlan: (active: Card[], pair?: [Card, Card], triple?: [Card, Card, Card]) => void,
   warn: (warning: string) => void,
+  limit: InvocationLimit = MAX_INVOCATION_INPUTS,
 ): void {
   function consider(selected: Card[]) {
     if (selected.length > 1 && selected.some(card => !card.name)) {
@@ -159,8 +167,8 @@ export function visitInvocationOrders<Card extends InvocationInput>(
         addPlan([], undefined, [second, first, third])
         addPlan([], undefined, [first, third, second])
       }
-    } else if (copies.some(card => card.tier !== 2)) {
-      warn('Only pairs of the same Fate at Tier 2 have a confirmed merge.')
+    } else if (copies[0].tier !== copies[1].tier || mergeOutputTier(copies[0].tier) === null) {
+      warn('Only pairs of the same Fate with matching Tier 1 or Tier 2 have a confirmed merge.')
     } else if (copies.some(card => !card.tierReviewed)) {
       warn('Check the suggested tiers before relying on a duplicate merge.')
     } else {
@@ -175,7 +183,7 @@ export function visitInvocationOrders<Card extends InvocationInput>(
 
   function visit(selected: Card[], start: number) {
     if (selected.length) consider(selected)
-    if (selected.length === MAX_INVOCATION_INPUTS) return
+    if (selected.length === limit) return
     for (let index = start; index < cards.length; index += 1) {
       visit([...selected, cards[index]], index + 1)
     }
@@ -193,7 +201,7 @@ function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
   }
 
   const goalCards: GoalCard[] = cards.map(card => {
-    const name = normalizeRewardLabel(card.name)
+    const name = normalizeFateName(card.name)
     const warnings = new Set<string>()
     if (!name) warnings.add(UNKNOWN_FATE_NAME)
     if (!card.rewards.length) warnings.add('At least one Fate has no recorded rewards.')
@@ -232,7 +240,7 @@ function comparePlans(a: InvocationPlan, b: InvocationPlan): number {
   return score(b) - score(a) || a.cardIds.length - b.cardIds.length
 }
 
-function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | null, goalWarnings: string[], required?: GoalCard, filters: PlanningFilters = {}, invoking = false) {
+function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | null, goalWarnings: string[], required: GoalCard | undefined, filters: PlanningFilters, invoking: boolean, limit: InvocationLimit) {
   const plans: InvocationPlan[] = []
   const warnings = new Set(goalWarnings)
 
@@ -263,13 +271,13 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
       activated: threshold !== null && targetCount >= threshold,
       ...(goal.kind === 'combo' && retainedCount > 0 && threshold !== null
         ? { duplicateCurrency: [{ label: goal.label, count: targetCount, threshold }] } : {}),
-      merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
+      merges: pair && mergeRisk?.outputTier ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: mergeRisk.outputTier }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       warnings: planWarnings,
     })
   }
 
-  visitInvocationOrders(cards, required, addPlan, warning => warnings.add(warning))
+  visitInvocationOrders(cards, required, addPlan, warning => warnings.add(warning), limit)
   return { plans: plans.sort(comparePlans).slice(0, 3), warnings: [...warnings] }
 }
 
@@ -285,20 +293,20 @@ function filterCards(cards: FateCard[], filters: PlanningFilters) {
   return { eligible, excluded, warnings: [...new Set(warnings)] }
 }
 
-export function planInvocation(cards: FateCard[], goal: AdvisorGoal, filters: PlanningFilters = {}): PlanResult {
+export function planInvocation(cards: FateCard[], goal: AdvisorGoal, filters: PlanningFilters = {}, limit: InvocationLimit = MAX_INVOCATION_INPUTS): PlanResult {
   const problem = advisorInputProblem(cards, MAX_COLLECTED_FATES, 'collected')
   if (problem || !validGoal(goal)) return { status: 'insufficient', plans: [], warnings: [problem ?? 'Choose a reward goal.'] }
 
   const filtered = filterCards(cards, filters)
   const analysis = analyzeGoal(filtered.eligible, goal)
   analysis.warnings.push(...filtered.warnings)
-  const { plans, warnings } = searchPlans(analysis.cards, goal, analysis.threshold, analysis.warnings, undefined, filters, true)
-  const collectingPlans = !plans.length ? searchPlans(analysis.cards, goal, analysis.threshold, analysis.warnings, undefined, filters).plans : []
+  const { plans, warnings } = searchPlans(analysis.cards, goal, analysis.threshold, analysis.warnings, undefined, filters, true, limit)
+  const collectingPlans = !plans.length ? searchPlans(analysis.cards, goal, analysis.threshold, analysis.warnings, undefined, filters, false, limit).plans : []
   const status = !plans.length ? 'insufficient' : warnings.length ? 'provisional' : 'ready'
   return { status, plans, collectingPlans, excluded: filtered.excluded, warnings: [...warnings, ...(!plans.length ? [collectingPlans.length ? 'No active reward for this goal. Incomplete combo progress is only useful while collecting.' : NO_PROGRESS] : []), COMBAT_WARNING] }
 }
 
-export function recommendFates(offered: FateCard[], collected: FateCard[], goal: AdvisorGoal, filters: PlanningFilters = {}): Recommendation {
+export function recommendFates(offered: FateCard[], collected: FateCard[], goal: AdvisorGoal, filters: PlanningFilters = {}, lastOffer = false, limit: InvocationLimit = MAX_INVOCATION_INPUTS): Recommendation {
   const problem = advisorInputProblem(offered, MAX_OFFERED_FATES, 'offered') ?? advisorInputProblem(collected, MAX_COLLECTED_FATES, 'collected')
   if (problem || !validGoal(goal)) {
     return { status: 'insufficient', comparison: 'unknown', baseline: null, candidates: [], recommendedCardIds: [], warnings: [problem ?? 'Choose a reward goal.'] }
@@ -312,11 +320,11 @@ export function recommendFates(offered: FateCard[], collected: FateCard[], goal:
   const analysis = analyzeGoal([...collected, ...eligible], goal)
   analysis.warnings.push(...filteredCollected.warnings, ...filteredOffered.warnings)
   const pool = analysis.cards.slice(0, collected.length)
-  const baseline = searchPlans(pool, goal, analysis.threshold, analysis.warnings, undefined, filters)
+  const baseline = searchPlans(pool, goal, analysis.threshold, analysis.warnings, undefined, filters, lastOffer, limit)
   const baselineScore = baseline.plans[0] ? score(baseline.plans[0]) : 0
   const warnings = new Set(baseline.warnings)
   const candidates = analysis.cards.slice(collected.length).map(card => {
-    const result = searchPlans(pool, goal, analysis.threshold, analysis.warnings, card, filters)
+    const result = searchPlans(pool, goal, analysis.threshold, analysis.warnings, card, filters, lastOffer, limit)
     for (const warning of result.warnings) warnings.add(warning)
     const plan = result.plans[0] ?? null
     return { cardId: card.id, plan, gain: plan ? score(plan) - baselineScore : null, warnings: result.warnings }
@@ -324,7 +332,7 @@ export function recommendFates(offered: FateCard[], collected: FateCard[], goal:
   candidates.sort((a, b) => a.plan && b.plan ? comparePlans(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
   const best = candidates[0]?.plan
   const recommendedCardIds = best && score(best) > baselineScore
-    ? candidates.filter(({ plan }) => plan && comparePlans(plan, best) === 0).map(({ cardId }) => cardId)
+    ? candidates.filter(({ plan }) => plan && (lastOffer ? score(plan) === score(best) : comparePlans(plan, best) === 0)).map(({ cardId }) => cardId)
     : []
   const status = !recommendedCardIds.length ? 'insufficient' : warnings.size ? 'provisional' : 'ready'
   const comparison = recommendedCardIds.length ? 'improvement' : warnings.size ? 'unknown' : 'no-improvement'

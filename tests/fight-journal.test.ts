@@ -62,6 +62,7 @@ test('only suggests eligible Tier 3 options when the selected Omens area is conf
     goal: { kind: 'omen', map: 'Sanctuary' } as const, mode: 'offer' as const, offered: [tierThree, copy], collected: [tierTwo],
     confirmedOmenMap: 'Sanctuary' as const, profile: { goals: [], avoidModifiers: [] }, excludedCardIds: [],
   }
+  expect(challengeAdvice({ ...options, collected: [{ ...tierTwo, tier: 1 }, { ...copy, tier: 1 }], offered: [], mode: 'invoke' })).toMatch(/^No supported Tier 3/)
   expect(challengeAdvice(options)).toContain('Crowkeeper + Dryad')
   expect(challengeAdvice({ ...options, excludedCardIds: [copy.id] })).not.toContain('Dryad')
   expect(challengeAdvice({ ...options, offered: [tierThree], collected: [], confirmedOmenMap: 'Citadel' })).toMatch(/^Check the map/)
@@ -78,6 +79,12 @@ test('Promised Profits requires a modeled active reward and leaves unknown visua
     confirmedOmenMap: null, profile: { goals: [], avoidModifiers: [] }, excludedCardIds: [],
   }
   expect(challengeAdvice(options)).toContain('Blood Moon')
+  expect(challengeAdvice({ ...options, limit: 2 })).toMatch(/^No active/)
+  const tongue = { ...exceptional, label: "Doedre's Tongue", threshold: 2 }
+  for (const objective of ['doedres', 'unique']) {
+    const pair = [one, two].map(card => ({ ...card, rewards: [tongue] }))
+    expect(challengeAdvice({ ...options, collected: pair, offered: [], mode: 'invoke', goal: { kind: 'profit', objective: objective as 'doedres' | 'unique' } })).toContain('Dryad + Crowkeeper')
+  }
   expect(challengeAdvice({ ...options, collected: [one] })).toMatch(/^No active/)
   const unknown = {
     ...one, rewards: [{ ...newReward(), label: "Dreadmaidens' Sacrament", kind: 'combo' as const, threshold: 2, count: 2, identified: true, visualId: 'orange-feathers' as const }],

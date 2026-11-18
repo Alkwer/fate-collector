@@ -4,7 +4,7 @@ import { expect, test } from 'vitest'
 import credits from '../public/game-art/poedb/credits.json'
 import { REWARD_CATALOG } from '../shared/reward-catalog'
 import { extractCards, knownFateName } from '../shared/recognition'
-import { getPoedbFate, getPoedbRewardReferences, POEDB_CATALOG } from '../shared/poedb-catalog'
+import { getPoedbFate, getPoedbRewardReferences, getScreenshotFate, POEDB_CATALOG } from '../shared/poedb-catalog'
 
 test('the versioned reference records have unique IDs and source provenance', () => {
   const { version, checkedAt, sources, fates, rewards } = POEDB_CATALOG
@@ -35,9 +35,13 @@ test('Crowkeeper reference applies Hotfix 2 and retains the superseded source wo
   expect(getPoedbFate('wildfire', 3)?.corrections?.[0]).toMatchObject({ sourceId: 'ggg-hotfix-2' })
 })
 
-test('PoEDB names match exact normalized names and preserve the separate screenshot name Rot', () => {
-  expect(getPoedbFate('Rot', 3)).toBeUndefined()
+test('the exact Rot and Rotted aliases find each reference while preserving source and OCR names', () => {
+  expect(getPoedbFate(' Rot ', 3)?.name).toBe('Rotted')
   expect(getPoedbFate('rotted', 3)?.name).toBe('Rotted')
+  expect(getScreenshotFate('Rot')?.name).toBe('Rot')
+  expect(getScreenshotFate('rotted')?.name).toBe('Rot')
+  expect(getScreenshotFate(' Rotten ')).toBeUndefined()
+  expect(getPoedbFate('The Rot', 3)).toBeUndefined()
   expect(getPoedbFate('SAVAGE', 3)?.name).toBe('Savage')
   expect(getPoedbFate('  black   frost  ', 3)?.name).toBe('Black Frost')
   expect(['Rot', 'Rotted', 'Savage'].map(knownFateName)).toEqual(['Rot', 'Rotted', 'Savage'])
