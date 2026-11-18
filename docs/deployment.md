@@ -155,13 +155,36 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.4 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.6 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.4 exception
+### Pinned Fate Collector 0.10.6 exception
+
+PoE 3.30.0c updates the reward catalog, editable trade priorities, equipment
+modifiers and the Viscera planner for additional bosses.
+
+- Source revision `8e720915c04e0c2261474a286b77f60a99fd3a8e`
+- Package ID `51e5475daef1720556a2c5d1d9f486fbf863859d3c6e781df6c298a50008f2e1`
+- Staging run [44408922338](https://github.com/Alkwer/fate-collector/actions/runs/44408922338)
+- Downloadable helper SHA-256 `c3cf768870342d7e062df685d70ae3599de9d1e97d4313145eb007c144dccf4f`
+
+Full CI and the synthetic staging API checks passed. The 120 manifest files
+passed checksum verification. The live entry point, its JS and CSS, and the
+141-file helper ZIP matched the artifact. Seven live browser tests covered all
+nine new weights, manual entry, pre-patch offers, companion Viscera, and the
+desktop and mobile source references. The importer passed its five archived
+scenes. The owner deferred icon recognition until a fresh in-game F9 capture.
+
+The initial real-widget check reached **Verify your request**. After 60 seconds
+the browser had sent no symbol report. The owner approved publication of this
+0.10.6 package with the live-widget test deferred. Receipt, token replay and
+withdrawal through the live widget remain unverified. Production uses managed
+Turnstile verification.
+
+### Previous Fate Collector 0.10.4 exception (historical)
 
 On 18 November the owner requested production publication without in-game tests.
 PR #69 covers archive, local recovery, planning, journal portability, lazy
@@ -491,7 +514,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.4 deployment record](#pinned-fate-collector-0104-exception) records the
+[0.10.6 deployment record](#pinned-fate-collector-0106-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
