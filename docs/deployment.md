@@ -155,13 +155,33 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.1 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.2 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate advisor 0.10.1 exception
+### Pinned Fate advisor 0.10.2 exception
+
+On 18 November the owner authorized promotion of the matching T2 Currency combo
+update after CI and staging. For this package the owner explicitly deferred
+in-game validation, the full manual staging checklist and a real Turnstile
+interaction. Production Turnstile verification stays enabled.
+
+- Source revision `42058309d2e2eb9cf5d491f1d8c00a33b1011055`
+- Package ID `86d8c7186d48b0df69f41d4fac5a99ec6db3dc64f7406255ffd7d0c76b89e94d`
+- Staging run [44346808731](https://github.com/Alkwer/fate-collector/actions/runs/44346808731)
+- Downloadable helper SHA-256 `1355173e4729d70084e7a79e870c7b56d23990816c4cde68aef1f80d32503126`
+
+The staging workflow passed full CI and live API smoke. All 120 manifest
+checksums verified. The published application and 141-file helper matched
+the immutable package. Five live browser checks covered Conjurer collection and
+invocation, the Malformation choice, and the Malformation and Belfry overlay
+headers. With a suggested Bloodthirsty tier the overlay showed the 5-point
+Stacked Decks route. With T2 confirmed it showed 9 points for another T2
+Bloodthirsty. The packaged Windows renderer displayed this condition in compact mode.
+
+### Previous Fate advisor 0.10.1 release (historical)
 
 On 18 November the owner authorized production publication of the two-line
 Windows overlay header after CI and staging verification. The owner deferred
@@ -431,7 +451,7 @@ that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. For the November 18 release, the owner
 deferred this interaction under the
-[pinned Fate advisor 0.10.1 exception](#pinned-fate-advisor-0101-exception).
+[pinned Fate advisor 0.10.2 exception](#pinned-fate-advisor-0102-exception).
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
