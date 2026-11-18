@@ -155,13 +155,31 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.0 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.1 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate advisor 0.10.0 exception
+### Pinned Fate advisor 0.10.1 exception
+
+On 18 November the owner authorized production publication of the two-line
+Windows overlay header after CI and staging verification. The owner deferred
+in-game F9/HDR and native recognition checks, the full manual staging checklist
+and a real Turnstile interaction for this package. Production Turnstile stays enabled.
+
+- Source revision `151b9081b12e507cb47a570d9047ae8419bd5514`
+- Package ID `6839e181340632950bc1b549678d1f1eb5abe56fa28caad3e96ec760e9e7edb5`
+- Staging run [44318878022](https://github.com/Alkwer/fate-collector/actions/runs/44318878022)
+- Downloadable helper SHA-256 `da66cc1bb7f720e0ebd510258264df4a0d586e65fb1244807f2e2202f03e45d5`
+
+The staging run passed application, vision, Windows helper and live API checks.
+All 120 artifact checksums verified. The live application entry point and the
+141-file Windows helper matched the manifest. Browser replays of Malformation
+and Belfry verified the immediate choice or tie and the conditional icon and
+points. The native layout test covers both conditions at 100%, 150% and 200%.
+
+### Previous Fate advisor 0.10.0 release (historical)
 
 On 18 November the owner authorized production publication of the Fate advisor
 and 62 Trade weights together. The exception covers in-game F9/HDR capture and
@@ -413,7 +431,7 @@ that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. For the November 18 release, the owner
 deferred this interaction under the
-[pinned Fate advisor 0.10.0 exception](#pinned-fate-advisor-0100-exception).
+[pinned Fate advisor 0.10.1 exception](#pinned-fate-advisor-0101-exception).
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
