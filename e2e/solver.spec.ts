@@ -220,6 +220,48 @@ test('weights, build exclusions, persistence, invocation and undo work together'
   expect(errors).toEqual([])
 })
 
+test('Conjurer changes from a conditional choice to a completed Currency set', async ({ page }, testInfo) => {
+  const label = 'Additional Valuable Currency Items'
+  const icon = reward(label, 1, { kind: 'combo', threshold: 3 })
+  await page.goto('/')
+  await load(page, [
+    fate('Conjurer', [icon, reward('Rare Belts with an Elemental Modifier', 1)]),
+    fate('Rot', [reward('Additional Currency Items', 1)]),
+  ])
+  await expect(page.getByRole('heading', { name: 'Recommended: Rot', exact: true })).toBeVisible()
+  await expect(page.getByText('9 pts with another T2 Conjurer', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add Conjurer to collected' }).click()
+  await load(page, [fate('Conjurer', [reward('Gloves', 1)]), fate('Dryad', [icon])], false)
+  await expect(page.getByRole('heading', { name: 'Recommended: Conjurer', exact: true })).toBeVisible()
+  await selectRewardGoal(page, 'combo:additional valuable currency items')
+  await closePanels(page)
+  await expect(page.getByRole('heading', { name: 'Recommended: Conjurer', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add Conjurer to collected' }).click()
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  const best = page.locator('.advisor-plans article[data-best]')
+  await expect(best.locator('.plan-result')).toContainText('3/3')
+  await expect(best).toContainText('3/3 segments in the invocation preview · 1 full set')
+
+  await page.getByRole('button', { name: 'Choose a Fate', exact: true }).click()
+  await load(page, [fate('Conjurer', [reward('Rare Wands with a Mana Modifier', 1), icon])], false)
+  await openPanel(page, '.reward-settings')
+  await page.getByLabel('Compare multiple rewards', { exact: true }).check()
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Add Conjurer to collected' }).click()
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
+  await expect(best).toContainText('6/3 segments in the invocation preview · 2 full sets')
+  for (const width of [1440, 820, 390]) {
+    await page.setViewportSize({ width, height: 950 })
+    await best.getByRole('button', { name: 'Reward breakdown', exact: true }).click()
+    const breakdown = page.getByRole('dialog', { name: 'Reward breakdown' })
+    await expect(breakdown).toContainText('6/3 icons · active · scored once')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await breakdown.screenshot({ path: testInfo.outputPath(`currency-duplicate-${width}.png`) })
+    await closePanels(page)
+  }
+})
+
 test('merge breakdown preserves unknown combo results and removes exactly the invoked inputs', async ({ page }) => {
   await page.goto('/')
   await load(page, [fate('Rot', [reward('Currency', 10), reward('Exceptional Gem', 2, { kind: 'combo', threshold: 3 })])])

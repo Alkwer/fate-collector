@@ -1,5 +1,14 @@
 # Fate Collector releases
 
+## 0.10.2 — 18 November 2026
+
+- Merging two same-name Tier 2 Fates can complete a recognized Currency combo
+  from the retained card. With three copies, the first and third contribute
+  rewards. The plan preview shows the resulting Currency sets and the solver
+  scores each distinct Currency combo once.
+- The advisor and the in-game overlay show when collecting a matching Tier 2
+  Fate would make a different choice win.
+
 ## 0.10.1 — 18 November 2026
 
 - The weighted overlay shows the best choice or a tie on current points,

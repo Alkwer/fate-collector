@@ -45,7 +45,7 @@ export function RewardStrip({ rewards, suggested = false, compact = false }: { r
 }
 
 export function InvocationSequence({ plan, cards, collected }: {
-  plan: Pick<InvocationPlan, 'cardIds' | 'merges' | 'triples'>; cards: FateCard[]; collected: FateCard[]
+  plan: Pick<InvocationPlan, 'cardIds' | 'merges' | 'triples' | 'duplicateCurrency'>; cards: FateCard[]; collected: FateCard[]
 }) {
   const source = (id: string) => {
     const collectedIndex = collected.findIndex(card => card.id === id)
@@ -84,6 +84,9 @@ export function InvocationSequence({ plan, cards, collected }: {
       </div>
     })}
     {!!plan.triples?.length && <div className="merge-diagram"><div className="merge-explanation"><strong>First and third regular rewards ×3</strong><span>Second rewards discarded · all three inputs used</span></div></div>}
+    {plan.duplicateCurrency?.map(({ label, count, threshold }) => <p className="hint" key={label}>
+      {label} · {count}/{threshold} segments in the invocation preview · {Math.floor(count / threshold)} full {count < 2 * threshold ? 'set' : 'sets'}
+    </p>)}
     <div className="invoke-final-step"><AppIcon name="check" /><strong>Then Confirm in game</strong></div>
   </div>
 }

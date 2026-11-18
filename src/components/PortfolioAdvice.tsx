@@ -1,6 +1,6 @@
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
 import { lazy, Suspense, useMemo, useRef } from 'react'
-import { recommendPortfolio, solveInvocation, unweightedRewards, visceraFactors, type SolverPlan, type SolverProfile } from '../../shared/solver'
+import { completionCondition, recommendPortfolio, solveInvocation, unweightedRewards, visceraFactors, type SolverPlan, type SolverProfile } from '../../shared/solver'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
 import { OfferPreview } from './OfferPreview'
@@ -20,7 +20,7 @@ export function PortfolioPlan({ plan, cards, collected }: { plan: SolverPlan; ca
     {plan.rewards.some(reward => reward.uncertain || reward.count === null) && <p className="hint reward-uncertainty">Unresolved reward outcomes · check breakdown</p>}
     <DetailPanel className="plan-notes" title="Reward breakdown"><dl className="reward-breakdown" aria-label="Reward breakdown">{plan.rewards.map((reward, i) => <div key={`${reward.kind}:${reward.label}:${i}`}>
       <dt><RewardSymbol label={reward.label} identified={reward.kind !== 'unknown'} />{reward.label || 'Unidentified reward'} <span className="muted">{reward.kind}</span></dt>
-      <dd><span>{reward.count === null ? 'Unresolved outcome' : reward.kind === 'combo' ? `${reward.count}/${reward.threshold ?? '?'} icons · ${reward.activated ? 'active once' : 'not activated'}` : `${reward.count} icon units`}{reward.uncertain ? ' · incomplete evidence' : ''}</span><span>{number(reward.weight)} weight → <strong>{number(reward.points)} points</strong></span></dd>
+      <dd><span>{reward.count === null ? 'Unresolved outcome' : reward.kind === 'combo' ? `${reward.count}/${reward.threshold ?? '?'} icons · ${reward.activated ? 'active · scored once' : 'not activated'}` : `${reward.count} icon units`}{reward.uncertain ? ' · incomplete evidence' : ''}</span><span>{number(reward.weight)} weight → <strong>{number(reward.points)} points</strong></span></dd>
     </div>)}</dl></DetailPanel>
     {plan.warnings.length > 0 && <DetailPanel className="plan-notes" title="Plan limitations"><ul className="advisor-warnings">{plan.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
   </div>
@@ -61,7 +61,7 @@ export function PortfolioAdvice(props: Props) {
           : mode === 'offer' ? <><h3>{status === 'provisional' ? 'Provisional preference: ' : selectedIds.length > 1 ? 'Equal matches: ' : 'Recommended: '}{selectedIds.map(id => named(offer.cards.find(card => card.id === id))).join(' / ')}</h3>{status === 'provisional' && <p><AppIcon name="warning" />Missing data or unresolved mechanics may change this ranking.</p>}{selectedIds.length > 1 && <p>No single winner.</p>}</>
           : <h3>{farming ? 'Viscera farming options' : status === 'provisional' ? 'Provisional portfolio plan' : 'Suggested portfolio plan'}</h3>}
         {farming && <p>More Fates and duplicates improve the chance of boss Viscera. Exact odds and the trade-off between these factors are unknown. Check the boss and your build before invoking.</p>}
-        {conditional && <p>{named(offer.cards.find(card => card.id === conditional.cardId))} can take the lead with more matching icons. Compare the conditional totals below. Future offers are unknown.</p>}
+        {conditional && <p>{named(offer.cards.find(card => card.id === conditional.cardId))} could take the lead with a later Fate. See the condition below.</p>}
       </div>
       {farming && <Suspense fallback={<p role="status">Loading Viscera sources…</p>}><VisceraTarget
         offer={offerReady ? offer : null} collected={collected} filters={{ ...profile, excludedCardIds }}
@@ -85,8 +85,8 @@ export function PortfolioAdvice(props: Props) {
         {candidate && !alreadyCollected && (farming ? <GainMark gain={candidate.gain} label="priority points" provisional={status === 'provisional'} /> : <div className="offer-score">
           <div className="candidate-gain"><strong>{candidate.plan ? number(candidate.plan.score) : '?'}</strong><span>{status === 'provisional' ? 'Known plan points now' : 'Plan points now'}{status === 'provisional' && <small>Total unresolved</small>}
             {!!collected.length && candidate.gain !== null && <small>{signed(candidate.gain)} vs collection</small>}</span></div>
-          {candidate.opportunities?.map(option => <div className="combo-opportunity" key={option.label}><RewardSymbol label={option.label} />
-            <span><strong>{number(option.points)} pts</strong> with {option.icons} more {option.label} {option.icons === 1 ? 'icon on a new Fate' : 'icons on separate new Fates'}</span></div>)}
+          {candidate.opportunities?.map(option => <div className="combo-opportunity" key={JSON.stringify([option.label, option.duplicateName])}><RewardSymbol label={option.label} />
+            <span><strong>{number(option.points)} pts</strong> with {completionCondition(option)}</span></div>)}
         </div>)}
         <button className={featured?.id === card.id ? 'primary-choice collect-fate' : 'collect-fate'} aria-label={`Add ${named(card)} to collected`} disabled={alreadyCollected || excluded.has(card.id) || collected.length >= MAX_COLLECTED_FATES} onClick={() => props.onCollect(card)}><AppIcon name="plus" />Collect Fate</button>
         {candidate?.plan && <DetailPanel className="candidate-plan" title="All rewards & invocation order" triggerLabel="Preview plan"><PortfolioPlan plan={candidate.plan} cards={cards} collected={collected} /></DetailPanel>}
