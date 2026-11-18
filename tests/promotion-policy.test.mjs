@@ -19,6 +19,7 @@ test('hotfix deferral requires explicit acceptance and never attests unperformed
 })
 
 test('superseded package exceptions cannot promote prior releases', () => {
+  expect(() => assertHotfixUpdateRelease(hotfix, { revision: '0443214e5e27d6aa4ccb3c0d3f6c1cc66554d7d1', releaseId: 'def6417d5d31efb3f604e5b6ca629bde2fa0fb6923c5b05154c755697b8d3558' })).toThrow('approved Fate hotfix package')
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: '42058309d2e2eb9cf5d491f1d8c00a33b1011055', releaseId: '86d8c7186d48b0df69f41d4fac5a99ec6db3dc64f7406255ffd7d0c76b89e94d' })).toThrow('approved Fate hotfix package')
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: '151b9081b12e507cb47a570d9047ae8419bd5514', releaseId: '6839e181340632950bc1b549678d1f1eb5abe56fa28caad3e96ec760e9e7edb5' })).toThrow('approved Fate hotfix package')
   expect(() => assertHotfixUpdateRelease(hotfix, { revision: 'd7816181ff3a4ad828003b8dcbcf01db1a23abb8', releaseId: '74f433691820114b314f5b617a1432950793bf285f087adc34f7cc6dfc907bc5' })).toThrow('approved Fate hotfix package')
