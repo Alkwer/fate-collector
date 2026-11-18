@@ -298,6 +298,6 @@ The pending offer is hidden until a choice is made according to the GGG FAQ; a
 future-offer forecast cannot be inferred from the current capture. Confirming map
 identity, visual review and the chosen/invoked cards remains a deliberate user step:
 the app does not observe or control those game actions. The
-[deployment record](deployment.md#pinned-fate-advisor-0101-exception) identifies
-the 0.10.1 package covered by the owner's deferral of in-game checks. Native
+[deployment record](deployment.md#pinned-fate-advisor-0102-exception) identifies
+the 0.10.2 package covered by the owner's deferral of in-game checks. Native
 recognition accuracy still requires validation against game captures.
