@@ -1,6 +1,24 @@
 import { test, expect } from '@playwright/test'
 import { closePanels, openPanel } from './ui'
 
+test('loads manual Fate portraits only when the picker opens and preserves focus', async ({ page }) => {
+  const artRequests: string[] = []
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.startsWith('/game-art/')) artRequests.push(request.url())
+  })
+  await page.goto('/')
+  await expect(page.locator('.manual-fate-options img')).toHaveCount(0)
+  expect(artRequests).toEqual([])
+  const trigger = page.getByRole('button', { name: 'Add Fate manually', exact: true })
+  await trigger.click()
+  const picker = page.getByRole('dialog', { name: 'Add Fate manually', exact: true })
+  await expect(picker.getByRole('heading', { name: 'Add Fate manually', exact: true })).toBeFocused()
+  await expect(picker.getByRole('button', { name: 'Choose Wildfire', exact: true })).toBeVisible()
+  await expect.poll(() => artRequests.length).toBeGreaterThan(0)
+  await page.keyboard.press('Escape')
+  await expect(trigger).toBeFocused()
+})
+
 test('adds map tooltip variants and keeps unrecorded effects unknown', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Add Fate manually', exact: true }).click()

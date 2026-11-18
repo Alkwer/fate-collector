@@ -1,5 +1,5 @@
 import type { CaptureUpload, FateCard } from './schema'
-import { newCard } from './offers'
+import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 
 export const PARSER_VERSION = 'live-names-6'
@@ -54,7 +54,7 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
     return { cards: [], message: 'No positioned OCR is available. The screenshot is preserved; add cards only if you want to review it now.' }
   }
   const region = findOfferedRegion(capture)
-  if (!region) return { cards: [], message: 'The offered-card area could not be established. Include the Fates heading and Confirm button in the capture, or add cards manually.' }
+  if (!region) return { cards: [], message: 'The offered-card area could not be established. Move the pointer away from the cards so tooltips clear the Fates heading, then capture both the heading and Confirm button. You can also add cards manually.' }
   const offerLines = region.lines, row = region.headers
   const candidates = new Set(offeredCardHeaders(row))
   const first = offerLines[0]

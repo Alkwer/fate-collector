@@ -52,6 +52,34 @@ test('a website in another WebView remains a normal website', async ({ page, con
   await expect(page.getByRole('complementary', { name: 'Local advisor' })).toHaveCount(0)
 })
 
+test('local advisor help points to calibration and the helper’s offline diagnostic ZIP', async ({ page, context }, info) => {
+  await installHost(context)
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Guide', exact: true }).click()
+  const guide = page.getByRole('article')
+  await expect(guide.getByRole('heading', { name: 'Calibrate the Fate panel' })).toBeVisible()
+  await expect(guide).toContainText('Open local advisor')
+  await expect(guide.getByRole('button', { name: 'Open local review' })).toHaveCount(0)
+  await guide.getByRole('button', { name: 'Show framing diagram' }).click()
+  await expect(guide.getByRole('heading', { name: 'Frame the Fate panel' })).toBeFocused()
+  await page.getByRole('button', { name: 'Local backups' }).click()
+  await expect(guide.getByRole('button', { name: /Back up fights and challenges/ })).toBeVisible()
+  await expect(guide.getByRole('button', { name: /Share reviewed corrections/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Troubleshooting' }).click()
+  await guide.getByRole('button', { name: 'Open diagnostics' }).click()
+  await expect(page.getByRole('heading', { name: 'Report a problem.', exact: true })).toBeFocused()
+  const report = page.locator('.diagnostics-panel')
+  await expect(report).toContainText('Report a problem')
+  await expect(report).toContainText('Generate report')
+  await expect(report).toContainText('Save ZIP')
+  await expect(report.getByRole('button')).toHaveCount(0)
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 800 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: info.outputPath(`desktop-diagnostics-${width}.png`), fullPage: true })
+  }
+})
+
 test('local advisor connects without a picker, records choices and restores its collection after restart', async ({ page, context }) => {
   test.setTimeout(60_000)
   await installHost(context)

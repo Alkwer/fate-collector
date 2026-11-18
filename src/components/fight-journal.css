@@ -6,6 +6,11 @@
 .fight-journal .detail-body > label { margin-top: 12px; }
 .fight-journal .detail-body, .league-challenge .detail-body { overflow-wrap: anywhere; }
 .league-challenge-action > p { margin-top: 8px; }
+.fight-backup-panel { margin-top: 20px; }
+.fight-backup, .fight-backup-preview { display: grid; gap: 12px; }
+.fight-backup-preview { padding-top: 16px; border-top: 1px solid var(--border); }
+.fight-backup-preview button { justify-self: start; }
+.fight-backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 @media (max-width: 520px) {
   .fight-form-pair { grid-template-columns: minmax(0, 1fr); }

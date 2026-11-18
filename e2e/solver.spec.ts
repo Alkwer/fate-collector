@@ -32,6 +32,19 @@ function errorsOn(page: Page) {
   return errors
 }
 
+test('manual planning area survives a conflicting bound offer and can return to automatic context', async ({ page }) => {
+  await page.goto('/')
+  await load(page, [fate('Alchemist', [reward('Gold', 1)])])
+  await openPanel(page, '.collection-editor')
+  await page.getByRole('combobox', { name: 'Planning area', exact: true }).selectOption('campaign')
+  await load(page, [fate('Butcher', [reward('Gold', 1)])], false, 'map')
+  await openPanel(page, '.collection-editor')
+  const setting = page.getByRole('combobox', { name: 'Planning area', exact: true })
+  await expect(setting).toHaveValue('campaign')
+  await setting.selectOption('auto')
+  await expect(setting).toHaveValue('auto')
+})
+
 for (const width of [1440, 820, 390]) {
   test(`campaign invocation uses two slots and merges a Tier 1 pair at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 })

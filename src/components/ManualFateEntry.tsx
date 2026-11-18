@@ -25,6 +25,7 @@ export function ManualFateEntry({ panelRef, offerId, cardCount, nextOffer, busy,
   const [card, setCard] = useState(newCard)
   const [query, setQuery] = useState('')
   const [choosing, setChoosing] = useState(true)
+  const [hasOpened, setHasOpened] = useState(false)
   const [message, setMessage] = useState('')
   const search = useRef<HTMLInputElement>(null)
   const nameInput = useRef<HTMLInputElement>(null)
@@ -49,7 +50,7 @@ export function ManualFateEntry({ panelRef, offerId, cardCount, nextOffer, busy,
     else onDone()
   }
 
-  return <DetailPanel ref={panelRef} trigger={false} className="manual-fate-entry" title="Add Fate manually"
+  return <DetailPanel ref={panelRef} trigger={false} className="manual-fate-entry" title="Add Fate manually" onOpenChange={open => { if (open) setHasOpened(true) }}
     footer={<>
       {!choosing && <button type="submit" form={formId} name="another" disabled={busy || limitReached || !valid}>Add & enter another</button>}
       {choosing ? <button type="button" onClick={onDone}>Back to offer</button>
@@ -60,7 +61,7 @@ export function ManualFateEntry({ panelRef, offerId, cardCount, nextOffer, busy,
       : 'Enter the choices shown in game. No helper or screenshot needed.'}</p>
     {message && <p className="manual-entry-status" role="status">{message}</p>}
     {limitReached && <p className="field-error" role="alert">This offer has 30 cards. Remove a card in Edit offer, or start a new offer from More actions.</p>}
-    {choosing ? <div className="manual-fate-picker">
+    {hasOpened && (choosing ? <div className="manual-fate-picker">
       <label>Find a Fate<input ref={search} type="search" maxLength={160} value={query} placeholder="Search by name" onChange={event => setQuery(event.target.value)} /></label>
       <div className="manual-fate-options" aria-label="Fate names">
         {matches.map(name => <button key={name} type="button" aria-label={`Choose ${name}`} disabled={busy || limitReached} onClick={() => choose(name)}>
@@ -87,6 +88,6 @@ export function ManualFateEntry({ panelRef, offerId, cardCount, nextOffer, busy,
       <ManualRewards rewards={card.rewards} definitions={definitions} onChange={rewards => setCard({ ...card, rewards })} />
       <p className="hint">You can add modifiers and correct details later in Edit offer.</p>
       {!valid && card.name.trim() && <p className="field-error" role="alert">Use whole numbers from 1 to 100. Tier and combo threshold can be left blank if unknown.</p>}
-    </form>}
+    </form>)}
   </DetailPanel>
 }

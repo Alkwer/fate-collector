@@ -1,5 +1,18 @@
 # Fate Collector releases
 
+## 0.10.4 — 18 November 2026
+
+- Offer deletion checks for pending edits and newer saved revisions. Invalid
+  drafts can be exported privately for manual recovery, and local storage
+  reconnects when the browser closes its database connection.
+- Reimporting the original capture reconnects card crops for new data-only
+  backups. Older cards without a reliable match retain the full screenshot.
+- A manual campaign or map limit survives subsequent offers. Choose **Use
+  offer context** to resume automatic selection.
+- Export and restore the fight journal and league challenge progress with a
+  preview of conflicts. The helper shows local instructions and diagnostics,
+  and the Fate picker loads portraits when needed.
+
 ## 0.10.3 — 18 November 2026
 
 - Campaign plans use two inputs and map plans use three. Matching Tier 1 Fates

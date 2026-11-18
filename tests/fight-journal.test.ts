@@ -3,7 +3,8 @@ import { newCard, newReward } from '../shared/offers'
 import { startMapWorkspace, newAdvisorWorkspace, loadAdvisorWorkspace, saveAdvisorWorkspace } from '../src/lib/advisor-workspace'
 import { challengeAdvice } from '../src/lib/challenge-advice'
 import {
-  fightOutcomeSchema, journalStorageKey, loadFightJournal, putFightEntry, removeFightEntry, updateFightJournal, type FightEntry,
+  createFightJournalBackup, fightOutcomeSchema, journalStorageKey, loadFightJournal, planFightJournalImport, putFightEntry,
+  readFightJournalBackup, removeFightEntry, updateFightJournal, type FightEntry, type FightJournal,
 } from '../src/lib/fight-journal'
 import { omenMaps, profitObjectives } from '../src/lib/league-challenges'
 
@@ -24,6 +25,48 @@ function fight(): FightEntry {
     },
   }
 }
+
+function jsonFile(value: unknown) {
+  return new Blob([JSON.stringify(value)], { type: 'application/json' })
+}
+
+test('round-trips fight outcomes, the selected goal and confirmed progress', async () => {
+  const journal: FightJournal = {
+    entries: [fight()], goal: { kind: 'profit', objective: 'maps' }, progress: { 'profit:maps': 8, 'omen:Sanctuary': 1 },
+  }
+  const backup = createFightJournalBackup(journal)
+  expect(backup).toMatchObject({ kind: 'fate-collector.fight-journal', schemaVersion: 1 })
+  expect(await readFightJournalBackup(jsonFile(backup))).toEqual(journal)
+  await expect(readFightJournalBackup(jsonFile({ ...backup, schemaVersion: 2 }))).rejects.toThrow('version is unsupported')
+  for (const changes of [
+    { entries: [journal.entries[0], journal.entries[0]] },
+    { progress: { 'profit:maps': 31 } },
+    { progress: { 'omen:Sanctuary': 2 } },
+    { progress: { 'profit:unknown': 1 } },
+    { goal: { kind: 'omen', map: 'Wrong map' } },
+  ]) {
+    await expect(readFightJournalBackup(jsonFile({ ...backup, journal: { ...journal, ...changes } }))).rejects.toThrow('valid fight journal backup')
+  }
+})
+
+test('plans an additive import and keeps local outcomes, progress corrections and goals on conflict', () => {
+  const same = fight()
+  const different = fight()
+  const added = fight()
+  const local: FightJournal = {
+    entries: [same, different], goal: { kind: 'profit', objective: 'maps' }, progress: { 'profit:maps': 0, 'profit:gem': 3 },
+  }
+  const backup: FightJournal = {
+    entries: [same, added, { ...different, outcome: { ...different.outcome, boss: 'Imported boss' } }],
+    goal: { kind: 'omen', map: 'Sanctuary' },
+    progress: { 'profit:maps': 10, 'profit:gem': 3, 'omen:Sanctuary': 1 },
+  }
+  const plan = planFightJournalImport(local, backup)
+  expect(plan).toMatchObject({ fightsAdded: 1, progressAdded: 1, goalAdded: false, fightConflicts: 1, progressConflicts: 1, goalConflict: true })
+  expect(plan.journal).toEqual({ ...local, entries: [same, different, added], progress: { ...local.progress, 'omen:Sanctuary': 1 } })
+  expect(planFightJournalImport(plan.journal, backup)).toMatchObject({ fightsAdded: 0, progressAdded: 0, goalAdded: false })
+  expect(local.entries).toHaveLength(2)
+})
 
 test('replaces a saved outcome for the same invocation and preserves manual progress after undo', () => {
   const storage = memory()

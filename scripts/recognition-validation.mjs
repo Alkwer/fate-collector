@@ -146,7 +146,7 @@ async function openBrowser() {
 
 function recognize(page, input, cards) {
   return page.evaluate(async ({ input, cards }) => {
-    const [{ importJson }, { findOfferedRegion, knownFateName, PARSER_VERSION }, { VISUAL_VERSION }] = await Promise.all([
+    const [{ importJson }, { findOfferedRegion, offeredCardHeaders, knownFateName, PARSER_VERSION }, { VISUAL_VERSION }] = await Promise.all([
       import('/src/lib/imports.ts'), import('/shared/recognition.ts'), import('/shared/visual-recognition.ts'),
     ])
     if (cards.some(card => (card.name && knownFateName(card.name) !== card.name) || (card.observedName && knownFateName(card.observedName)))) {
@@ -154,8 +154,8 @@ function recognize(page, input, cards) {
     }
     const { entries: [{ offer, evidence }] } = await importJson(input, true)
     const capture = JSON.parse(input.replace(/^\uFEFF/, ''))
-    const headers = findOfferedRegion(capture)?.headers.filter(header => knownFateName(header.text)) ?? []
-    const locationsAvailable = headers.length === offer.cards.length && offer.cards.every((card, index) => knownFateName(headers[index].text) === card.name)
+    const headers = offeredCardHeaders(findOfferedRegion(capture)?.headers ?? [])
+    const locationsAvailable = headers.length === offer.cards.length && offer.cards.every((card, index) => (knownFateName(headers[index].text) ?? '') === card.name)
     return {
       parserVersion: PARSER_VERSION, visualVersion: VISUAL_VERSION,
       imagePreserved: evidence.imageDataUrl === `data:image/png;base64,${capture.image.dataBase64}`,

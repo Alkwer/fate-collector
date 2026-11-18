@@ -17,20 +17,24 @@ function ChallengeProgress({ goal, control }: { goal: NonNullable<LeagueGoal>; c
   const key = goal.kind === 'profit' ? `profit:${goal.objective}` : `omen:${goal.map}`
   const target = objective?.target ?? 1
   const saved = progress[key] ?? 0
-  const [count, setCount] = useState(String(saved))
-  const [updated, setUpdated] = useState(false)
+  const [draft, setDraft] = useState({ saved, count: String(saved), updated: false })
+  const count = draft.saved === saved ? draft.count : String(saved)
+  const updated = draft.saved === saved && draft.updated
+  function setCount(count: string) { setDraft({ saved, count, updated: false }) }
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const next = Number(count)
     if (!count.trim() || !Number.isInteger(next) || next < 0 || next > target) return
-    setUpdated(control.update(journal => ({ ...journal, progress: { ...journal.progress, [key]: next } })))
+    if (control.update(journal => ({ ...journal, progress: { ...journal.progress, [key]: next } }))) {
+      setDraft({ saved: next, count: String(next), updated: true })
+    }
   }
 
   return <form className="league-goal-form" onSubmit={save}>
     {target > 1
-      ? <label>Progress shown in game (out of {target})<input type="number" min={0} max={target} required value={count} onChange={event => { setCount(event.target.value); setUpdated(false) }} /></label>
-      : <label className="checkbox-row"><input type="checkbox" checked={count === '1'} onChange={event => { setCount(event.target.checked ? '1' : '0'); setUpdated(false) }} />Marked complete in game</label>}
+      ? <label>Progress shown in game (out of {target})<input type="number" min={0} max={target} required value={count} onChange={event => setCount(event.target.value)} /></label>
+      : <label className="checkbox-row"><input type="checkbox" checked={count === '1'} onChange={event => setCount(event.target.checked ? '1' : '0')} />Marked complete in game</label>}
     <button type="submit" className="outline-button">Save confirmed progress</button>
     {updated && <p className="hint" role="status">Challenge progress saved locally.</p>}
   </form>

@@ -33,19 +33,33 @@ export class OfferDeletedError extends OfferRevisionConflictError {
   }
 }
 const DB_NAME = 'fate-collector'
-let connection: Promise<IDBDatabase> | undefined
+const connections = new WeakMap<IDBFactory, Promise<IDBDatabase>>()
 function db(): Promise<IDBDatabase> {
-  if (!connection) connection = new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 3)
+  const factory = indexedDB
+  const cached = connections.get(factory)
+  if (cached) return cached
+  const connection = new Promise<IDBDatabase>((resolve, reject) => {
+    const forget = () => { if (connections.get(factory) === connection) connections.delete(factory) }
+    const request = factory.open(DB_NAME, 3)
     request.onupgradeneeded = () => {
       for (const [name, keyPath] of [['offers', 'offer.id'], ['evidence', 'id'], ['captureReceipts', 'id'], ['settings', 'id'], ['deletedOffers', 'id']]) {
         if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath })
       }
     }
-    request.onsuccess = () => { request.result.onversionchange = () => { request.result.close(); connection = undefined }; resolve(request.result) }
-    request.onerror = () => { connection = undefined; reject(new Error('Browser storage could not be opened. Export your draft before closing this page.')) }
-    request.onblocked = () => { connection = undefined; reject(new Error('Close other Fate Collector tabs and retry.')) }
+    let blocked = false
+    request.onsuccess = () => {
+      const database = request.result
+      database.onversionchange = () => { forget(); database.close() }
+      database.onclose = forget
+      // An unblocked request still opens a connection even after it rejected.
+      if (blocked) database.close()
+      else resolve(database)
+    }
+    request.onerror = () => { forget(); reject(new Error('Browser storage could not be opened. Export your draft before closing this page.')) }
+    request.onblocked = () => { blocked = true; forget(); reject(new Error('Close other Fate Collector tabs and retry.')) }
   })
+  connections.set(factory, connection)
+  void connection.catch(() => { if (connections.get(factory) === connection) connections.delete(factory) })
   return connection
 }
 function value<T>(request: IDBRequest<T>): Promise<T> {

@@ -1,13 +1,13 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { newOffer } from '../shared/offers'
+import { newCard, newOffer } from '../shared/offers'
 import { exportSchema, type Archive, type Evidence } from '../shared/schema'
 import { combineBackupParts } from '../shared/backups'
 import { createBackupParts, importFiles, importJson, recoverBackup } from '../src/lib/imports'
 import {
   deleteOffer, getOffer, handledCaptureIds, hasCaptureReceipt, importOffers, isolateUnreadableOffer,
   listDraftRecovery, listOffers, readEvidence, readOfferArchive, readOfferHistory, readOfferRecovery,
-  receiveCapture, removeDraftRecovery, repairEvidence, saveOffer, writeDraftRecovery, readDraftRecovery, deleteOffers, replaceImportedOffer,
+  receiveCapture, removeDraftRecovery, repairEvidence, restoreEvidence, saveOffer, writeDraftRecovery, readDraftRecovery, deleteOffers, replaceImportedOffer,
 } from '../src/lib/storage'
 import { CaptureReader, compareCaptures, type CaptureDirectory } from '../src/lib/capture-sync'
 
@@ -96,6 +96,49 @@ test('bulk deletion aborts all writes when any selected revision has changed', a
   await deleteOffers([first, updated])
   expect(await listOffers()).toEqual([])
 })
+
+for (const restore of ['manual import', 'folder sync'] as const) {
+  test(`${restore} restores only the original card regions after a data-only backup`, async () => {
+    vi.stubGlobal('createImageBitmap', async () => ({ width: 1000, height: 600, close() {} }))
+    const captureId = crypto.randomUUID()
+    const line = (text: string, x: number, y: number) => ({ text, x, y, width: 100, height: 15 })
+    const capture = JSON.stringify({ kind: 'fate-collector.capture', schemaVersion: 1, captureId, capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.3.4',
+      image: { width: 1000, height: 600, mimeType: 'image/png', dataBase64: 'AQ==' },
+      ocr: { status: 'ok', language: 'en-US', text: '', lines: [line('Fates', 450, 10), line('Torchbearer', 200, 100), line('Torchbearer', 700, 100), line('CONFIRM', 450, 500)] } })
+    const { offer, evidence } = (await importJson(capture)).entries[0]
+    const [left, right] = offer.cards
+    const [leftRegion, rightRegion] = evidence!.cardRegions!
+    expect(left.id).not.toBe(right.id)
+    expect([leftRegion.cardId, rightRegion.cardId]).toEqual([left.id, right.id])
+    expect(leftRegion.x).toBeLessThan(rightRegion.x)
+
+    // Duplicate names and a removed card replaced manually at the same position
+    // cannot be used to infer which region a card belongs to.
+    const manual = { ...newCard(), name: left.name }
+    const corrected = (await saveOffer({ ...offer, cards: [{ ...right, name: 'Corrected name' }, manual], selectedCardId: right.id }, evidence)).offer
+    const builder = createBackupParts(false)
+    await readOfferArchive(false, entry => builder.add(entry))
+    const dataOnly = (await importJson(await builder.finish()[0].blob.text())).entries
+    expect(dataOnly).toEqual([{ offer: corrected, evidence: null }])
+    const recreate = async (archived = corrected) => {
+      await deleteOffer(captureId)
+      await importOffers([{ offer: archived, evidence: null }])
+      const imported = (await importJson(capture)).entries[0]
+      if (restore === 'manual import') expect(await restoreEvidence(captureId, imported.evidence!)).toBe(true)
+      else expect((await receiveCapture(imported.offer, imported.evidence!)).status).toBe('restored')
+      expect((await getOffer(captureId))?.offer).toEqual(archived)
+      return (await readEvidence(captureId, true)).evidence!
+    }
+    const restored = await recreate(dataOnly[0].offer)
+    expect(restored.cardRegions?.find(region => region.cardId === right.id)).toEqual(rightRegion)
+    expect(restored.cardRegions?.find(region => region.cardId === manual.id)).toBeUndefined()
+
+    const legacy = { ...corrected, cards: offer.cards.map(card => ({ ...card, id: crypto.randomUUID() })), selectedCardId: null }
+    const legacyEvidence = await recreate(legacy)
+    expect(legacyEvidence.imageDataUrl).toBe(evidence!.imageDataUrl)
+    expect(legacyEvidence.cardRegions?.some(region => legacy.cards.some(card => card.id === region.cardId))).toBe(false)
+  })
+}
 
 test('explicit imported corrections preserve the previous original and reject stale comparisons', async () => {
   const local = (await saveOffer({ ...newOffer(), notes: 'Keep this original' }, null)).offer

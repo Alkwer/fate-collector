@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { isDesktop } from '../lib/desktop'
 import { AppIcon } from './AppIcon'
 import '../usage-guide.css'
 
@@ -13,6 +14,7 @@ const topicTitles = {
   frame: 'Frame the Fate panel',
   manual: 'Import or enter an offer',
   backup: 'Back up your local journal',
+  fights: 'Back up fights and challenges',
   upload: 'Upload new captures from the helper',
   symbols: 'Report a reward symbol',
   corrections: 'Share reviewed corrections',
@@ -51,10 +53,14 @@ function CalibrationDiagram() {
 export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
   onConnect: () => void; onMap: () => void; onSaved: () => void; onDiagnostics: () => void
 }) {
+  const desktop = isDesktop()
   const [location, setLocation] = useState<{ section: GuideSection; topic: GuideTopic | null }>({ section: 'start', topic: null })
   const focusTarget = useRef<string | null>(null)
   const { section, topic } = location
-  const sectionTitle = sections.find(([id]) => id === section)![1]
+  function sectionLabel(id: GuideSection) {
+    return desktop && id === 'data' ? 'Local backups' : sections.find(([value]) => id === value)![1]
+  }
+  const sectionTitle = sectionLabel(section)
   useEffect(() => {
     document.querySelector<HTMLElement>('.page-heading h1')?.focus()
     window.scrollTo(0, 0)
@@ -78,13 +84,29 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
   return <div className="usage-guide">
     <nav className="guide-contents" aria-label="Guide sections">
       <strong>Guide topics</strong>
-      {sections.map(([id, label]) => <button key={id} type="button" aria-current={section === id ? 'page' : undefined} aria-controls="guide-content" onClick={() => navigate(id)}>{label}</button>)}
+      {sections.map(([id]) => <button key={id} type="button" aria-current={section === id ? 'page' : undefined} aria-controls="guide-content" onClick={() => navigate(id)}>{sectionLabel(id)}</button>)}
     </nav>
     <article id="guide-content" className="guide-article" aria-labelledby="guide-title">
       {topic && <button className="text-button guide-back" onClick={() => navigate(section, null, topic)}>Back to {sectionTitle}</button>}
-      <h2 id="guide-title" tabIndex={-1}>{topic ? topicTitles[topic] : sectionTitle}</h2>
+      <h2 id="guide-title" tabIndex={-1}>{topic === 'missing' && desktop ? 'The capture does not appear in the local advisor' : topic ? topicTitles[topic] : sectionTitle}</h2>
 
-      {!topic && section === 'start' && <>
+      {!topic && section === 'start' && (desktop ? <>
+        <p className="guide-intro">The local advisor connects to the helper automatically. Calibrate the Fate panel once to capture offers while you play.</p>
+        <ol className="guide-steps">
+          <li><h3>Calibrate the Fate panel</h3>
+            <p>Open an offer in windowed or borderless PoE. Keep the game in front and the whole panel on one monitor. Point to the upper-left corner and press <kbd>F6</kbd>, then the lower-right corner and <kbd>F7</kbd>. Press <kbd>F8</kbd> to check that the frame includes the heading, every card and Confirm.</p>
+            {topicLink('frame', undefined, 'Show framing diagram')}
+          </li>
+          <li><h3>Capture and check your first offer</h3>
+            <p>Move tooltips away from the cards and press <kbd>F9</kbd> once in game. In Current area, compare the captured names, tiers and rewards with the image. Use <strong>Edit details</strong> for corrections and leave unidentified rewards unknown.</p>
+            <button onClick={onMap}>Open current area</button>
+          </li>
+          <li><h3>Keep advice running while you play</h3>
+            <p>Click <strong>Run in background</strong> or close the advisor window. Use <strong>Open local advisor</strong> in the helper tray near the Windows clock to return. Use <strong>Auto-detect Fate cards</strong> in the tray to toggle automatic capture.</p>
+          </li>
+        </ol>
+        <div className="guide-next"><button className="text-button" onClick={() => navigate('use')}>Next: choose and invoke</button></div>
+      </> : <>
         <p className="guide-intro">Set up once, then capture each new offer with <kbd>F9</kbd>. You need Windows 10/11 and desktop Chrome or Edge for folder import. No cloud key is needed.</p>
         <ol className="guide-steps">
           <li><h3>Install and start the helper</h3>
@@ -106,7 +128,7 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
         </ol>
         <div className="guide-next"><p>Once your first capture appears and you have checked it, setup is complete.</p><button className="text-button" onClick={() => navigate('use')}>Next: choose and invoke</button></div>
         <button className="text-button" onClick={() => navigate('use', 'manual')}>Other browsers or manual entry</button>
-      </>}
+      </>)}
 
       {!topic && section === 'use' && <>
         <p className="guide-intro">Check each capture, then use it for the area you are playing.</p>
@@ -114,19 +136,22 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
           <li><h3>Review and assign the offer</h3><p>Compare names, tiers and rewards with the source image. Use <strong>Edit details</strong> for corrections and review status; leave unidentified rewards unknown. Click <strong>Start area with this offer</strong>, or <strong>Use this offer in current area</strong> for an existing map.</p></li>
           <li><h3>Choose a Fate</h3><p>Set <strong>Reward priorities</strong> and check the advice and modifiers. Make your choice in game, then click <strong>Collect Fate</strong> on that same card here.</p></li>
           <li><h3>Plan invocation</h3><p>Open <strong>Plan invocation</strong>. Follow the pictured order and confirm in game. Only then click <strong>Done in game</strong> to update the local collection. <strong>Undo</strong> restores the last collection change.</p></li>
-          <li><h3>Move to the next area</h3><p>Use <strong>More actions → New area</strong>. This clears area planning; saved offers stay in the journal. After reopening a session, use <strong>Continue this area</strong> only for the same instance. Folder access may need <strong>Resume local review</strong>.</p></li>
+          <li><h3>Move to the next area</h3><p>Use <strong>More actions → New area</strong>. This clears area planning; saved offers stay in the journal. After reopening a session, use <strong>Continue this area</strong> only for the same instance.{!desktop && <> Folder access may need <strong>Resume local review</strong>.</>}</p></li>
         </ol>
         <p className="guide-note">The helper does not play for you. <strong>Provisional</strong> advice uses incomplete or unverified information; review the highlighted cards before relying on it.</p>
         <div className="guide-actions"><button onClick={onMap}>Go to current area</button>{topicLink('manual')}</div>
       </>}
 
       {!topic && section === 'data' && <>
-        <p className="guide-intro">Keep a backup of your evidence and corrections. Sharing is optional and separate from local use.</p>
+        <p className="guide-intro">{desktop ? 'Keep local backups of your offers, fight outcomes and challenge progress.' : 'Keep a backup of your evidence and corrections. Sharing is optional and separate from local use.'}</p>
         <ul className="guide-topics">
           <li>{topicLink('backup', 'Export your offers, screenshots and OCR.')}</li>
-          <li>{topicLink('upload', 'Send new OCR text and metadata with separate consent.')}</li>
-          <li>{topicLink('symbols', 'Share symbol and tooltip images for catalog review.')}</li>
-          <li>{topicLink('corrections', 'Share reviewed offers from the website.')}</li>
+          <li>{topicLink('fights', 'Export or restore fight outcomes and confirmed challenge progress.')}</li>
+          {!desktop && <>
+            <li>{topicLink('upload', 'Send new OCR text and metadata with separate consent.')}</li>
+            <li>{topicLink('symbols', 'Share symbol and tooltip images for catalog review.')}</li>
+            <li>{topicLink('corrections', 'Share reviewed offers from the website.')}</li>
+          </>}
         </ul>
       </>}
 
@@ -134,7 +159,7 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
         <p className="guide-intro">Choose the problem you are seeing.</p>
         <ul className="guide-topics">
           <li>{topicLink('capture', 'Check the helper, game window and capture frame.')}</li>
-          <li>{topicLink('missing', 'Check saved files and local folder access.')}</li>
+          <li>{desktop ? topicLink('missing', 'Check saved files and the local advisor connection.', 'The capture does not appear in the local advisor') : topicLink('missing', 'Check saved files and local folder access.')}</li>
           <li>{topicLink('recognition', 'Check the image and text recognition.')}</li>
           <li>{topicLink('storage', 'Back up the journal and make space.')}</li>
         </ul>
@@ -147,17 +172,22 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
         <p>The helper remembers the frame between sessions. After a resolution change, check it with <kbd>F8</kbd>. Repeat <kbd>F6</kbd>/<kbd>F7</kbd> after changing the aspect ratio, UI scale or panel position. <kbd>F10</kbd> clears the frame and cancels an active capture.</p>
       </>}
       {topic === 'manual' && <>
-        <h3>Import without a folder connection</h3>
+        <h3>{desktop ? 'Import a saved capture' : 'Import without a folder connection'}</h3>
         <p>After <kbd>F9</kbd>, switch to <strong>Current area</strong> and paste with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or use <strong>Import capture</strong> to open a helper JSON file. Choose <strong>Save offer</strong> or <strong>Confirm and save</strong> when shown.</p>
-        <p>A plain screenshot is kept as evidence but does not run text recognition in the browser.</p>
+        <p>A plain screenshot is kept as evidence but does not run text recognition in the {desktop ? 'advisor' : 'browser'}.</p>
         <h3>Enter a Fate without the helper</h3>
         <p>Use <strong>Add Fate manually</strong> in Current area. Select a name or portrait, then add the tiers and rewards you know. A portrait identifies the Fate; it does not supply its reward mechanics.</p>
         <div className="guide-actions"><button onClick={onMap}>Go to current area</button></div>
       </>}
       {topic === 'backup' && <>
-        <p>Browser storage can be cleared. A full backup keeps the available evidence and corrections.</p>
+        <p>{desktop ? 'A full backup keeps the available evidence and corrections from this advisor profile.' : 'Browser storage can be cleared. A full backup keeps the available evidence and corrections.'}</p>
         <ol><li>Open <strong>Saved offers → Import, export & recovery</strong>.</li><li>Select <strong>Data, screenshots & OCR</strong>, then <strong>Export all offers</strong>.</li><li>Download every part.</li></ol>
         <button onClick={onSaved}>Open saved offers</button>
+      </>}
+      {topic === 'fights' && <>
+        <p>Open <strong>Fight journal → Back up or restore</strong> in Current area and choose <strong>Export fight journal</strong>. The JSON includes saved fight outcomes, your selected league goal and confirmed challenge progress.</p>
+        <p>Use <strong>Choose fight journal backup</strong> to preview an import. Import adds missing fights and progress while keeping existing local values if they differ.</p>
+        <button onClick={onMap}>Open current area</button>
       </>}
       {topic === 'upload' && <>
         <p>Optional uploads send OCR text and capture metadata. Screenshots stay local.</p>
@@ -185,17 +215,20 @@ export function UsageGuide({ onConnect, onMap, onSaved, onDiagnostics }: {
         <p>A second <kbd>F9</kbd> press creates another capture. <kbd>F10</kbd> clears the frame and cancels an active capture.</p>
         <p className="hint">Recognition across live Fate scenes, HDR displays and UI scales is still being validated. Check your first capture against the game.</p>
       </>}
-      {topic === 'missing' && <>
+      {topic === 'missing' && (desktop ? <>
+        <ol><li>In the helper tray, choose <strong>Open capture folder</strong> to check for the saved JSON.</li><li>Choose <strong>Open local advisor</strong> in the tray and check its connection status. If the advisor has stopped, restart the helper.</li><li>Use <strong>Import capture</strong> in Current area to open the saved JSON manually.</li></ol>
+        <div className="guide-actions"><button onClick={onMap}>Open current area</button></div>
+      </> : <>
         <ol><li>Check the helper’s <code>captures</code> folder for a saved file.</li><li>Use desktop Chrome or Edge on HTTPS or localhost. Keep the page open and use <strong>Resume local review</strong> if folder permission is needed.</li><li>If the folder moved, disconnect and select it again. You can also import the helper JSON file manually in Current area.</li></ol>
         <div className="guide-actions"><button onClick={onConnect}>Open local review</button><button onClick={onMap}>Open current area</button></div>
-      </>}
+      </>)}
       {topic === 'recognition' && <>
         <ol><li>Keep the complete panel in the frame and move tooltips out of the way.</li><li>Compare the image with the result. Use <strong>Edit details</strong> for corrections and leave unidentified rewards unknown.</li><li>If text recognition is unavailable, install the relevant Windows OCR language feature. The helper uses built-in Windows PowerShell 5.1 and an installed OCR language.</li></ol>
         <p>A saved image can still be reviewed manually.</p>
         <div className="guide-actions"><button onClick={onDiagnostics}>Open diagnostics</button></div>
       </>}
       {topic === 'storage' && <>
-        <p>Export a full backup from <strong>Saved offers → Import, export & recovery</strong>, remove older offers, then click <strong>Resume local review</strong>. New helper files remain on disk.</p>
+        <p>Export a full backup from <strong>Saved offers → Import, export & recovery</strong>, remove older offers, then {desktop ? <>open Current area and choose <strong>Local review needs attention → Resume local review</strong></> : <>click <strong>Resume local review</strong></>}. New helper files remain on disk.</p>
         <div className="guide-actions"><button onClick={onSaved}>Open saved offers</button></div>
       </>}
     </article>

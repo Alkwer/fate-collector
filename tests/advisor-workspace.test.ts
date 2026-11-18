@@ -83,12 +83,33 @@ test('campaign capacity survives unknown offers and reload, and resets for a new
   expect(workspaceInvocationLimit(startMapWorkspace(current), campaign)).toBe(3)
 })
 
+test('manual area survives conflicting offers, corrections and reload until cleared or reset', () => {
+  const storage = memory()
+  const offer = { id: crypto.randomUUID(), areaCategory: 'map' as const }
+  const area = startMapWorkspace(newAdvisorWorkspace())
+  const bound = bindOfferToMap({ ...area, planningAreaOverride: 'campaign' }, offer.id, offer.areaCategory)
+  expect(saveAdvisorWorkspace(storage, bound)).toBeNull()
+  const restored = loadAdvisorWorkspace(storage).workspace
+  expect(workspaceInvocationLimit(restored, offer)).toBe(2)
+  expect(workspaceInvocationLimit({ ...restored, planningAreaOverride: null }, offer)).toBe(3)
+  expect(startMapWorkspace(restored).planningAreaOverride).toBeNull()
+
+  const previous = JSON.parse(storage.getItem(key)!)
+  delete previous.planningAreaOverride
+  previous.collection.areaCategory = 'campaign'
+  storage.setItem(key, JSON.stringify(previous))
+  const upgraded = loadAdvisorWorkspace(storage).workspace
+  const next = bindOfferToMap(upgraded, crypto.randomUUID(), 'map')
+  expect(workspaceInvocationLimit(next, offer)).toBe(2)
+})
+
 test('migrates legacy cards with unknown map start time, preserves the goal and never revives them after reset', () => {
   const legacy = newAdvisorWorkspace()
   const card = newCard()
   const offerId = crypto.randomUUID()
   legacy.collection.cards = [card]
   legacy.collection.notes = 'Map notes'
+  legacy.collection.areaCategory = 'campaign'
   legacy.sources = { [card.id]: offerId, [crypto.randomUUID()]: crypto.randomUUID() }
   legacy.goal = { kind: 'combo', label: 'Exceptional Gem' }
   legacy.mode = 'invoke'
@@ -98,7 +119,7 @@ test('migrates legacy cards with unknown map start time, preserves the goal and 
   const migrated = loadAdvisorWorkspace(storage)
   expect(migrated).toMatchObject({
     restored: true, error: null,
-    workspace: { map: { id: expect.any(String), startedAt: null }, collection: legacy.collection, sources: { [card.id]: offerId }, offerIds: [offerId], goal: legacy.goal, mode: legacy.mode },
+    workspace: { map: { id: expect.any(String), startedAt: null }, planningAreaOverride: 'campaign', collection: legacy.collection, sources: { [card.id]: offerId }, offerIds: [offerId], goal: legacy.goal, mode: legacy.mode },
   })
   expect(loadAdvisorWorkspace(storage)).toEqual(migrated)
   const reset = startMapWorkspace(migrated.workspace)

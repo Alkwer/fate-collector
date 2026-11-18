@@ -54,6 +54,15 @@ test('distinguishes unknown-name abstention, wrong names and unsafe matches in a
   ]))
 })
 
+test('a captured unknown slot is an abstention only when it contains no recognition claims', () => {
+  const labels = [label(10, { name: null, observedName: 'Uncatalogued', tier: null, visualIds: null })]
+  const empty = suggestion(10, { name: '', tier: null, visualIds: [] })
+  expect(measure(labels, [empty]).metrics).toMatchObject({ unknownNameAbstentions: 1, names: { unexpected: 0 } })
+  expect(measure(labels, [{ ...empty, tier: 2, visualIds: ['gold-ring'] }]).metrics).toMatchObject({
+    unknownNameAbstentions: 0, tiers: { unexpected: 1 }, motifs: { unexpected: 1 },
+  })
+})
+
 test('the independent gate requires every profile, positive denominators and successful measurements', () => {
   const rows = completeRows()
   expect(summarize('holdout', rows).status).toBe('PASS')

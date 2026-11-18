@@ -11,12 +11,27 @@ export { verifyImage } from './evidence'
 
 export interface Imported { mode: 'draft' | 'restore'; entries: { offer: Offer; evidence: Evidence | null }[]; message: string }
 const newerFormatMessage = 'This file uses a format this website does not support. Save or export open drafts, then refresh Fate Collector and update the helper if needed. Keep the original file; nothing was imported.'
+export const privateDraftKind = 'fate-collector.draft-recovery'
+
+// A stable ID connects the same physical card to its region after restoring a
+// data-only backup. Bind it to the original OCR anchor, never to an edited name
+// or to the card's position in the saved offer.
+async function capturedCardId(captureId: string, anchor: string): Promise<string> {
+  const input = new TextEncoder().encode(`fate-collector.card-region.v1:${captureId}:${anchor}`)
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', input), 0, 16)
+  bytes[6] = (bytes[6] & 0x0f) | 0x80 // UUID version 8, RFC 9562 variant.
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 export async function importJson(text: string, captureOnly = false): Promise<Imported> {
   const bytes = new TextEncoder().encode(text).byteLength
   if (bytes > MAX_ARCHIVE_BYTES) throw new Error('Backup exceeds 32 MiB. Import each exported part separately.')
   let body: unknown
   try { body = JSON.parse(text.replace(/^\uFEFF/, '')) } catch { throw new Error('This is not a valid JSON file.') }
   const kind = typeof body === 'object' && body !== null && 'kind' in body ? body.kind : null
+  if (kind === privateDraftKind && !captureOnly) throw new Error('This private draft contains working data for manual recovery. Open it in a text editor and copy your edits back into the offer.')
   if (typeof kind === 'string' && kind.startsWith('fate-collector.') && body && typeof body === 'object' && 'schemaVersion' in body && body.schemaVersion !== 1) throw new Error(newerFormatMessage)
   if (bytes > MAX_IMPORT_BYTES && kind !== 'fate-collector.export') throw new Error('Import exceeds 12 MiB. Use a tighter screenshot crop.')
   if (captureOnly && kind !== 'fate-collector.capture') throw new Error('Auto-import accepts helper captures only.')
@@ -32,15 +47,24 @@ export async function importJson(text: string, captureOnly = false): Promise<Imp
     const region = findOfferedRegion(parsed.data)
     if (region) {
       const headers = offeredCardHeaders(region.headers)
-      if (headers.length === entry.offer.cards.length) entry.evidence.cardRegions = headers.map((header, index) => {
-        const center = header.x + header.width / 2
-        const position = region.headers.indexOf(header)
-        const previous = region.headers[position - 1], next = region.headers[position + 1]
-        const left = previous ? (previous.x + previous.width / 2 + center) / 2 : Math.max(0, header.x - header.width / 2)
-        const right = next ? (next.x + next.width / 2 + center) / 2 : Math.min(parsed.data.image.width, header.x + header.width * 1.5)
-        return { cardId: entry.offer.cards[index].id, x: left / parsed.data.image.width, y: header.y / parsed.data.image.height,
-          width: (right - left) / parsed.data.image.width, height: (region.bottom - header.y) / parsed.data.image.height }
-      })
+      if (headers.length === entry.offer.cards.length) {
+        const anchors = headers.map(({ text, x, y, width, height }) => JSON.stringify([text, x, y, width, height]))
+        const regions = await Promise.all(headers.map(async (header, index) => {
+          const anchor = anchors[index]
+          if (anchors.indexOf(anchor) !== anchors.lastIndexOf(anchor)) return null
+          const center = header.x + header.width / 2
+          const position = region.headers.indexOf(header)
+          const previous = region.headers[position - 1], next = region.headers[position + 1]
+          const left = previous ? (previous.x + previous.width / 2 + center) / 2 : Math.max(0, header.x - header.width / 2)
+          const right = next ? (next.x + next.width / 2 + center) / 2 : Math.min(parsed.data.image.width, header.x + header.width * 1.5)
+          if (right <= left) return null
+          const cardId = await capturedCardId(parsed.data.captureId, anchor)
+          return { cardId, x: left / parsed.data.image.width, y: header.y / parsed.data.image.height,
+            width: (right - left) / parsed.data.image.width, height: (region.bottom - header.y) / parsed.data.image.height }
+        }))
+        entry.offer.cards = entry.offer.cards.map((card, index) => regions[index] ? { ...card, id: regions[index].cardId } : card)
+        entry.evidence.cardRegions = regions.filter(region => region !== null)
+      }
     }
     if (visual) entry.evidence.visualRecognition = { version: visual.version, status: visual.status, warnings: visual.warnings }
     const suggested = entry.offer.cards.some(card => card.visualReview)

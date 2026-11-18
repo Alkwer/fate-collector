@@ -14,6 +14,10 @@ The collection, priorities and journal persist under
 `%LOCALAPPDATA%\FateCollector\desktop`. On restart, confirm that you are still in
 the same area before using the restored collection. Website data is separate.
 Export and import offer backups to move records; there is no automatic cloud sync.
+Use **Current area → Fight journal → Back up or restore** to move saved fight
+outcomes, the selected league challenge goal and confirmed challenge progress.
+The import preview shows additions and conflicts. Imports keep different values
+already saved locally. Keep the original JSON if it contains conflicting values.
 If WebView2 Runtime is missing, install it from
 [Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/).
 For development, run `npm run prepare:helper` before launching the helper from a checkout.

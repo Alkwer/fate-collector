@@ -123,6 +123,16 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     excludedCardIds={workspace.excludedCardIds} confirmedOmenMap={workspace.confirmedOmenMap}
     onConfirmOmenMap={map => { if (mapReady) onChange({ ...workspace, confirmedOmenMap: map }) }} />
   const fightJournal = <FightJournal control={outcomes} latest={workspace.lastInvocation} />
+  const collectedEditor = <>
+    <label>Planning area<select value={workspace.planningAreaOverride ?? 'auto'} onChange={event => {
+      const category = event.target.value
+      onChange({ ...workspace, planningAreaOverride: category === 'campaign' || category === 'map' ? category : null })
+    }}>
+      <option value="auto">Use offer context</option><option value="campaign">Campaign (2 slots)</option><option value="map">Map (3 slots)</option>
+    </select></label>
+    <OfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview}
+      onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} />
+  </>
   const manualAction = <div className="manual-entry-action"><button className={empty ? 'primary-button' : 'outline-button'} onClick={onAddManual}><AppIcon name="plus" />Add Fate manually</button><p>{empty ? 'Choose by name or picture. No helper needed.' : alreadyCollected ? 'Enter your next offer.' : 'Add the choices shown in game.'}</p></div>
   if (empty) return <div className={`capture-start ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
     <div className="capture-intro"><h2 id="advisor-heading" tabIndex={-1}>Bring your next offer into focus.</h2><p>Add your Fates or import a capture. Compare rewards and choose.</p></div>
@@ -132,7 +142,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     <DetailPanel className="reward-settings" autoOpen={!!solverControl.error} title="Reward priorities"><SolverControls control={solverControl} availableGoals={goals} /></DetailPanel>
     {challenges}
     {fightJournal}
-    {mapReady && <DetailPanel className="collection-editor" title="Edit collected cards" onOpenChange={setManualEntry}><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></DetailPanel>}
+    {mapReady && <DetailPanel className="collection-editor" title="Edit collected cards" onOpenChange={setManualEntry}>{collectedEditor}</DetailPanel>}
   </div>
   return <div className={`collector-grid map-layout ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
       <section className="panel advisor-main" aria-labelledby="advisor-heading">
@@ -212,7 +222,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           </div>
           <button disabled={!mapReady} className="text-button remove-collected" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}><AppIcon name="close" /></button>
         </li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
-        {mapReady && <DetailPanel ref={collectionEditor} className="collection-editor" title={<>Edit collected cards</>}><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview} onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></DetailPanel>}
+        {mapReady && <DetailPanel ref={collectionEditor} className="collection-editor" title={<>Edit collected cards</>}>{collectedEditor}</DetailPanel>}
         {mapReady && !!collection.cards.length && mode === 'offer' && !alreadyCollected && <button className="outline-button" onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan this collection</button>}
       </aside></div>
     </div>
