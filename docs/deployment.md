@@ -155,13 +155,36 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.3 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.4 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate advisor 0.10.3 exception
+### Pinned Fate Collector 0.10.4 exception
+
+On 18 November the owner requested production publication without in-game tests.
+PR #69 covers archive, local recovery, planning, journal portability, lazy
+portraits and offline helper instructions.
+
+- Source revision `ec01c8c97e9d1d41bbd80e944815982e1c8d884b`
+- Package ID `a2551dc39ff30b81eb8eb6d34bc77ebcbca7110df2420884c42ce78e3efbea05`
+- Staging run [44372882030](https://github.com/Alkwer/fate-collector/actions/runs/44372882030)
+- Downloadable helper SHA-256 `4c3b3868b649a65ad94d1d3cf0b0c6574f12b075d9fc11b66ce8a2f6c9f4e2c2`
+
+The complete CI and synthetic staging API checks passed. All 120 manifest
+checksums verified. The live entry point, its JS and CSS and the 141-file helper
+ZIP matched the package. Eight additional browser cases on live staging passed,
+including recovery, journal import, area selection and portrait loading.
+The archived importer replay passed on the source revision. The independent
+native F9 holdout and the gameplay parts of the manual checklist remain deferred.
+
+The first synthetic real-widget attempt remained at **Verify your request** for
+60 seconds. No request to the report endpoint was sent. The owner explicitly
+deferred the real-widget check for 0.10.4 and requested production publication
+with managed Turnstile verification enabled.
+
+### Previous Fate advisor 0.10.3 exception (historical)
 
 On 18 November the owner approved publication of the campaign, duplicate Fate,
 build danger and last-offer fixes with in-game checks deferred. This promotion
@@ -467,9 +490,9 @@ Successful submission, retry, consent, quotas and withdrawal run against the rea
 local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
-check replay rejection and withdraw it. For the November 18 release, the owner
-deferred this interaction under the
-[pinned Fate advisor 0.10.3 exception](#pinned-fate-advisor-0103-exception).
+check replay rejection and withdraw it. The
+[0.10.4 deployment record](#pinned-fate-collector-0104-exception) records the
+outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
