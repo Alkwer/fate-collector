@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       staging_run_id:
-        description: Successful staging run for this main commit, or pinned run 44298821576 for hotfix-20261116
+        description: Successful staging run for this main commit, or pinned run 44318878022 for hotfix-20261116
         required: true
         type: string
       validation_mode:
-        description: Full native validation, expired prelaunch mode, or the pinned Fate advisor 0.10.0 exception
+        description: Full native validation, expired prelaunch mode, or the pinned Fate advisor 0.10.1 exception
         required: true
         default: native-holdout
         type: choice
@@ -16,7 +16,7 @@ on:
           - prelaunch
           - hotfix-20261116
       hotfix_update_acknowledged:
-        description: For the pinned 0.10.0 release only, I accept deferred in-game, manual staging and real-widget checks
+        description: For the pinned 0.10.1 release only, I accept deferred in-game, manual staging and real-widget checks
         required: true
         default: false
         type: boolean
@@ -73,7 +73,7 @@ jobs:
               throw new Error('Choose a successful staging workflow for this exact main commit.');
             }
             if (mode === 'hotfix-20261116') {
-              await core.summary.addHeading('Pinned Fate advisor 0.10.0 release')
+              await core.summary.addHeading('Pinned Fate advisor 0.10.1 release')
                 .addRaw(`For this release, in-game validation is deferred, not passed. The owner also deferred the full manual staging checklist and real Turnstile interaction. Production Turnstile verification remains enabled. Only source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId} is eligible. Full CI and live synthetic staging checks passed. The following steps recheck the package and staging deployment.\n`)
                 .write();
               return;

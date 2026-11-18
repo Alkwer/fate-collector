@@ -1,11 +1,11 @@
 // Temporary exception approved before live Fate encounters are available.
 export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
-// The owner approved deferred manual checks for this tested 0.10.0 package.
+// The owner approved deferred manual checks for this tested 0.10.1 package.
 export const HOTFIX_UPDATE_RELEASE = Object.freeze({
-  revision: 'd7816181ff3a4ad828003b8dcbcf01db1a23abb8',
-  releaseId: '74f433691820114b314f5b617a1432950793bf285f087adc34f7cc6dfc907bc5',
-  stagingRunId: '44298821576',
+  revision: '151b9081b12e507cb47a570d9047ae8419bd5514',
+  releaseId: '6839e181340632950bc1b549678d1f1eb5abe56fa28caad3e96ec760e9e7edb5',
+  stagingRunId: '44318878022',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
