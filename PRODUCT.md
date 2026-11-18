@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.10.4 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.10.6 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.
@@ -72,8 +72,8 @@ must not require filling every field or interpreting every unknown icon.
 - Optional build-danger actions (Allow / Warn / Exclude) apply to both solvers and
   overlay advice. Full Tier 1–2 screenshot effects and Tier 3 PoEDB effects are labelled as source references,
   not captured evidence. These filters do not assess overall encounter safety.
-- Boss Viscera farming is a separate planning objective. It compares input count
-  and supported duplicate presence, retaining incomparable alternatives without
+- Boss Viscera farming is a separate planning objective. It compares guaranteed Viscera from
+  supported extra bosses, input count and supported duplicate presence, retaining incomparable alternatives without
   inventing drop probabilities. Reward weights show the reward trade-off.
 - **Report symbol** is an independent, opt-in image-research flow with preview,
   source references, durable local retries and withdrawal. Normal capture/offer

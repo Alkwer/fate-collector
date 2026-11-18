@@ -1,8 +1,9 @@
 // Display grouping only. Families never pool icons, thresholds or solver keys.
 export function rewardFamily(label: string): string {
   const value = label.toLowerCase()
-  if (value.includes('currency')) return 'Currency'
+  if (value.includes('currency') || ['additional divine orbs', 'mirror shard', 'fracturing orb', "hinekora's lock"].includes(value)) return 'Currency'
   if (value.includes('rarity')) return 'Item rarity'
+  if (value === 'amulets with a gem modifier') return 'Equipment'
   if (value.includes('gem')) return 'Gems'
   if (value.includes('viscera')) return 'Viscera'
   if (value.includes('thread')) return 'Threads'

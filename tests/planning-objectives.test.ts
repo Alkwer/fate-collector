@@ -91,7 +91,7 @@ test('Viscera uses unweighted cards and more inputs while reward mode prefers fe
   expect(solveInvocation(cards, profile).plans[0].cardIds).toEqual(['a'])
   const result = solveInvocation(cards, { ...farming, goals: [] })
   expect(result.status).toBe('provisional')
-  expect(visceraFactors(result.plans[0])).toEqual({ inputs: 3, duplicate: false })
+  expect(visceraFactors(result.plans[0])).toEqual({ inputs: 3, duplicate: false, companion: false })
   expect(result.plans[0].score).toBe(0)
 })
 
@@ -116,11 +116,58 @@ test('Viscera prefers a Tier 1 duplicate pair in campaign and can add a third in
   const offered = [fate('copy', [regular()], { name: 'Rotted', tier: 1 })]
   const campaign = recommendPortfolio(offered, collected, farming, [], true, 2)
   expect(campaign.recommendedCardIds).toEqual(['copy'])
-  expect(visceraFactors(campaign.baseline!)).toEqual({ inputs: 2, duplicate: false })
-  expect(visceraFactors(campaign.candidates[0].plan!)).toEqual({ inputs: 2, duplicate: true })
+  expect(visceraFactors(campaign.baseline!)).toEqual({ inputs: 2, duplicate: false, companion: false })
+  expect(visceraFactors(campaign.candidates[0].plan!)).toEqual({ inputs: 2, duplicate: true, companion: false })
   expect(campaign.candidates[0].plan?.merges[0].outputTier).toBe(2)
-  expect(visceraFactors(solveInvocation([...collected, ...offered], farming, [], 2).plans[0])).toEqual({ inputs: 2, duplicate: true })
-  expect(visceraFactors(solveInvocation([...collected, ...offered], farming, [], 3).plans[0])).toEqual({ inputs: 3, duplicate: true })
+  expect(visceraFactors(solveInvocation([...collected, ...offered], farming, [], 2).plans[0])).toEqual({ inputs: 2, duplicate: true, companion: false })
+  expect(visceraFactors(solveInvocation([...collected, ...offered], farming, [], 3).plans[0])).toEqual({ inputs: 3, duplicate: true, companion: false })
+})
+
+test('Viscera prefers a confirmed companion over more icon points with identical main boss factors', () => {
+  const regularFate = fate('reward', [regular(10)])
+  const pestilent = fate('pestilent', [], { name: 'Pestilent' })
+  const sadist = fate('sadist', [regular(2)], { name: 'Sadist' })
+  const offered = [regularFate, pestilent, sadist]
+  expect(recommendPortfolio(offered, [], farming)).toMatchObject({
+    recommendedCardIds: [sadist.id],
+    candidates: [{ plan: { score: 10 } }, { plan: { score: 0, companionViscera: true } }, { plan: { score: 2, companionViscera: true } }],
+  })
+  expect(recommendPortfolio(offered, [], profile).recommendedCardIds).toEqual([regularFate.id])
+  expect(recommendPortfolio(offered, [], farming, [sadist.id]).recommendedCardIds).toEqual([pestilent.id])
+  expect(recommendPortfolio(offered, [], { ...farming, risks: { extraBoss: 'exclude' } }).recommendedCardIds).toEqual([regularFate.id])
+  const warned = recommendPortfolio(offered, [], { ...farming, risks: { extraBoss: 'warn' } })
+  expect(warned).toMatchObject({ recommendedCardIds: [sadist.id], warnings: expect.arrayContaining(['Additional boss (Tier 2 screenshot description).']) })
+  expect(warned.warnings).toContainEqual(expect.stringMatching(/target item is never guaranteed/))
+})
+
+test('a supported pair uses its effective tier and applies additional boss exclusions to the merge', () => {
+  const savage = fate('savage-first', [regular()], { name: 'Savage' })
+  const copy = fate('savage-second', [regular()], { name: 'Savage' })
+  const ordinary = fate('ordinary', [regular(10)])
+  const advice = recommendPortfolio([ordinary, copy], [savage], farming, [], false, 2)
+  expect(advice).toMatchObject({ recommendedCardIds: [copy.id], candidates: [{ plan: { score: 11 } }, { plan: { score: 3, companionViscera: true } }] })
+  expect(solveInvocation([savage, copy], farming).plans[0]).toMatchObject({ merges: [{ outputTier: 3 }], companionViscera: true })
+  const blocked = solveInvocation([savage, copy], { ...farming, risks: { extraBoss: 'exclude' } })
+  expect(blocked.excluded).toEqual([])
+  expect(blocked.plans.every(plan => !plan.companionViscera && plan.cardIds.length === 1)).toBe(true)
+  expect(blocked.warnings).toContainEqual(expect.stringMatching(/Merged plan excluded: Additional boss/))
+
+  const t1 = [savage, copy].map(card => ({ ...card, tier: 1 }))
+  expect(visceraFactors(solveInvocation(t1, farming).plans[0]).companion).toBe(false)
+  expect(visceraFactors(solveInvocation(t1.map(card => ({ ...card, name: 'Pestilent' })), farming).plans[0]).companion).toBe(true)
+})
+
+test('the Viscera planner preserves distinct advantages and does not infer suggested or triple output tiers', () => {
+  const cards = ['first', 'second', 'third'].map(id => fate(id, [regular()], { name: 'Savage' }))
+  const plans = solveInvocation(cards, farming).plans
+  expect(visceraFactors(plans[0])).toEqual({ inputs: 2, duplicate: true, companion: true })
+  const triple = plans.find(plan => plan.triples?.length)!
+  expect(visceraFactors(triple)).toEqual({ inputs: 3, duplicate: true, companion: false })
+  expect(triple.warnings).toContainEqual(expect.stringMatching(/output tier is unresolved/))
+
+  const suggested = fate('suggested', [regular()], { name: 'Savage', tier: 3, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } })
+  expect(solveInvocation([suggested], farming)).toMatchObject({ warnings: expect.arrayContaining([expect.stringMatching(/Check the Fate tier/)]), plans: [{ cardIds: ['suggested'] }] })
+  expect(visceraFactors(solveInvocation([suggested], farming).plans[0]).companion).toBe(false)
 })
 
 test('legacy profiles preserve preferences; new objective and risks round-trip with validation', () => {

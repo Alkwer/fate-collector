@@ -1,7 +1,8 @@
 import type { Reward } from './schema'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
+import { chaseRewards, PATCH_3300C_SOURCE, patchEquipmentRewards, replacedEquipmentLabels } from './patch-3300c-rewards'
 
-export const REWARD_CATALOG_VERSION = 'rewards-v5-tooltips-20261117'
+export const REWARD_CATALOG_VERSION = 'rewards-v7-3.30.0c'
 export const VALUABLE_CURRENCY_LABEL = 'Additional Valuable Currency Items'
 
 export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
@@ -10,8 +11,7 @@ export type CatalogReward = CatalogDetails & (
   { kind: 'combo'; threshold: number } | { kind: 'regular' | 'unknown'; threshold: null }
 )
 
-// Tooltip meanings are independent of the visual matcher. In particular, the
-// matcher crops do not reliably distinguish regular/combo borders for every motif.
+// Tooltip definitions also cover variants whose icons or frames cannot be distinguished.
 const prereleaseRewards = [
   { id: 'item-rarity', label: 'Item Rarity', kind: 'combo', threshold: 3,
     description: 'Greatly increases the empowered boss’s Item Rarity. Requires three matching combo icons.',
@@ -54,10 +54,17 @@ const sessionRewards = [
 
 export const REWARD_CATALOG: CatalogReward[] = [
   ...prereleaseRewards.map(entry => ({ ...entry, sourceLabel: 'GGG prerelease reference' })),
-  ...observedRewards,
+  ...observedRewards.filter(entry => !replacedEquipmentLabels.has(entry.label)),
   ...sessionRewards.map(entry => ({ ...entry, source: 'https://poedb.tw/us/Fates',
     sourceLabel: 'PoEDB wording · tooltip checked in game on 17 Nov 2026' })),
+  { id: 'extremely-increased-item-rarity', label: 'Extremely Increased Item Rarity', kind: 'combo', threshold: 3,
+    description: 'Empowered Monster has extremely increased Item Rarity. To claim this reward, invoke three copies of it.',
+    source: 'https://poedb.tw/us/Fates', sourceLabel: 'PoEDB wording · Black Frost tooltip checked on 18 Nov 2026' },
+  ...patchEquipmentRewards.map(entry => ({ ...entry, source: PATCH_3300C_SOURCE, sourceLabel: 'GGG 3.30.0c equipment change' })),
+  ...chaseRewards.map(entry => ({ ...entry, kind: 'unknown' as const, threshold: null,
+    source: PATCH_3300C_SOURCE, sourceLabel: 'GGG 3.30.0c high-tier map rewards' })),
 ]
+export const recordedRewardReferences = [...REWARD_CATALOG, ...observedRewards.filter(entry => replacedEquipmentLabels.has(entry.label))]
 export const REWARD_SHORTCUTS = REWARD_CATALOG.filter(entry => prereleaseRewards.some(original => original.id === entry.id))
 export const KNOWN_COMBOS = REWARD_CATALOG.filter(entry => entry.kind === 'combo')
 
@@ -66,7 +73,7 @@ export function catalogFields(entry: CatalogReward): Pick<Reward, 'label' | 'kin
 }
 
 export function selectedCatalogReward(reward: Reward): CatalogReward | undefined {
-  return REWARD_CATALOG.find(entry => reward.label === entry.label && reward.kind === entry.kind
+  return recordedRewardReferences.find(entry => reward.label === entry.label && reward.kind === entry.kind
     && reward.threshold === entry.threshold && reward.identified === (entry.kind !== 'unknown'))
 }
 

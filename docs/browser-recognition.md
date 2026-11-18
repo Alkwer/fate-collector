@@ -69,7 +69,9 @@ tier-specific Fate effects, two of them short descriptions only. The expanded
 catalog does not introduce visual matches or assign rewards by Fate name.
 Five further tooltip variants were checked in the Malformation offer on 17 November,
 including the three-copy Valuable Currency combo.
-Fresh card review versions include `rewards-v5-tooltips-20261117`; saved records are
+The 18 November Black Frost tooltip confirms the three-copy Extremely Increased Item Rarity combo.
+The 3.30.0c panel and larger icons await validation on a fresh F9 capture.
+Fresh card review versions include `rewards-v7-3.30.0c`; saved records are
 not backfilled. Parser `live-names-6` and Helper 0.5.1 carry the expanded dictionary.
 The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
 It is read-only and does not supply new visual matches, combo thresholds or kinds.

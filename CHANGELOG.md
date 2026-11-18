@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## 0.10.6 — 18 November 2026
+
+- Added the five high-tier Fate reward examples and four equipment modifier replacements from PoE 3.30.0c. Trade / mapping includes editable points for these rewards once their kind and any combo requirement are checked.
+- The Viscera planner and overlay account for guaranteed drops from supported extra bosses. Historical offers retain their original equipment labels.
+
 ## 0.10.4 — 18 November 2026
 
 - Offer deletion checks for pending edits and newer saved revisions. Invalid

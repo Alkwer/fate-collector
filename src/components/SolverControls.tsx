@@ -4,6 +4,7 @@ import { applyTradeStarter, MAX_PROFILE_BYTES, parseSolverSettings, serializeSol
 import { rewardFamily } from '../../shared/reward-families'
 import { MAX_REWARD_PRIORITIES } from '../../shared/solver'
 import { RISK_CATEGORIES, type FateRiskSettings } from '../../shared/fate-risk'
+import { VISCERA_COMPANION_PATCH_URL } from '../../shared/viscera'
 import type { useSolverSettings } from '../lib/useSolverSettings'
 import { SolverProfiles } from './SolverProfiles'
 
@@ -76,7 +77,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   return <section className="solver-settings" aria-label="Solver settings">
     <SolverProfiles control={control} beforeSwitch={beforeSwitch} />
     <label>Planning objective<select value={settings.profile.objective ?? 'rewards'} onChange={event => update({ ...settings, profile: { ...settings.profile, objective: event.target.value as 'rewards' | 'viscera' } })}><option value="rewards">Reward priorities</option><option value="viscera">Farm boss Viscera</option></select></label>
-    {settings.profile.objective === 'viscera' && <p className="hint">Compare Fate count and duplicates while respecting your build filters. Exact drop chances are unknown; a duplicate pair and three different Fates are shown as alternatives. Confirm that the boss can drop the Viscera you want. <a href="https://www.pathofexile.com/forum/view-thread/4013527/page/1" target="_blank" rel="noreferrer">GGG FAQ</a></p>}
+    {settings.profile.objective === 'viscera' && <p className="hint">Compare guaranteed companion drops, Fate count and duplicates with your build filters. Each companion drops its own Viscera. Which boss spawns is random, and main boss drop chances are unknown. <a href={VISCERA_COMPANION_PATCH_URL} target="_blank" rel="noreferrer">GGG 3.30.0c</a> · <a href="https://www.pathofexile.com/forum/view-thread/4013527/page/1" target="_blank" rel="noreferrer">GGG FAQ</a></p>}
     <label className="checkbox-row"><input type="checkbox" checked={settings.mode === 'portfolio' || settings.profile.objective === 'viscera'} disabled={settings.profile.objective === 'viscera'} onChange={event => { update({ ...settings, mode: event.target.checked ? 'portfolio' : 'single' }) }} />Compare multiple rewards</label>
     {settings.mode === 'portfolio' && settings.profile.objective !== 'viscera' && <p className="hint">Compare active rewards across two campaign slots or three map slots.</p>}
     <section className="solver-profile">

@@ -42,14 +42,13 @@ test('Hydra and Chimera source names follow their world-area records', () => {
   expect(resolveVisceraArea({ area: 'Pit of the Hydra' })).toBeUndefined()
 })
 
-test('companion references require a named and reviewed Tier 3 Fate and apply planning filters', () => {
+test('companion references require a supported tier and apply planning filters', () => {
   const card = { ...newCard(), name: 'Savage', tier: 3 }
-  expect(visceraCompanion(card, {})).toBeUndefined()
-  expect(visceraCompanion({ ...card, name: 'Other' }, {}, true)).toBeUndefined()
-  expect(visceraCompanion({ ...card, tier: 2 }, {}, true)).toBeUndefined()
-  expect(visceraCompanion({ ...card, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }, {}, true)).toBeUndefined()
-  expect(visceraCompanion(card, { risks: { extraBoss: 'exclude' } }, true)).toMatchObject({
-    name: 'Savage', excluded: true, reasons: ['Additional boss (Tier 3 source reference, PoEDB).'],
+  expect(visceraCompanion({ ...card, name: 'Other' }, {})).toBeUndefined()
+  expect(visceraCompanion({ ...card, tier: 2 }, {})).toBeUndefined()
+  expect(visceraCompanion({ ...card, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }, {})).toBeUndefined()
+  expect(visceraCompanion(card, { risks: { extraBoss: 'exclude' } })).toMatchObject({
+    name: 'Savage', tier: 3, excluded: true, reasons: ['Additional boss (Tier 3 source reference, PoEDB).'],
   })
   for (const name of ['Pestilent', 'Sadist']) {
     const reviewed = { ...card, name, visualReview: { version: 'test', tierReviewed: true, rewardsReviewed: false } }
@@ -57,5 +56,6 @@ test('companion references require a named and reviewed Tier 3 Fate and apply pl
       name, excluded: false, warnings: ['Additional boss (Tier 3 source reference, PoEDB).'],
     })
     expect(visceraCompanion(reviewed, { excludedCardIds: [card.id] })?.excluded).toBe(true)
+    expect(visceraCompanion({ ...reviewed, tier: 2 }, {})).toMatchObject({ name, tier: 2, excluded: false })
   }
 })

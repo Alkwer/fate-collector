@@ -4,6 +4,7 @@ import { newCard, newReward } from '../../shared/offers'
 import { KNOWN_FATE_NAMES } from '../../shared/recognition'
 import { VISUAL_LABELS } from '../../shared/visual-suggestions'
 import { catalogFields, REWARD_CATALOG, selectedCatalogReward } from '../../shared/reward-catalog'
+import { replacedEquipmentLabels } from '../../shared/patch-3300c-rewards'
 import rewardIcons from '../../shared/reward-icons.json'
 import { cardNeedsReview } from '../lib/card-review'
 import { CardEvidence } from './CardEvidence'
@@ -116,7 +117,9 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
               const personal = solverControl?.settings.definitions.find(item => `personal:${item.id}` === event.target.value)
               if (entry) updateReward(reward.id, { ...catalogFields(entry), tooltipConfirmed: entry.kind !== 'unknown' })
               else if (personal) updateReward(reward.id, { label: personal.label, kind: personal.kind, threshold: personal.threshold, identified: true, tooltipConfirmed: false })
-            }}><option value="" disabled>Choose a matching tooltip</option>{REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : entry.kind === 'regular' ? 'Regular' : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
+            }}><option value="" disabled>Choose a matching tooltip</option>
+              {entry && replacedEquipmentLabels.has(entry.label) && <option value={entry.id} disabled>{entry.label} · before 3.30.0c</option>}
+              {REWARD_CATALOG.map(entry => <option key={entry.id} value={entry.id}>{entry.label} · {entry.kind === 'combo' ? `Combo (${entry.threshold})` : entry.kind === 'regular' ? 'Regular' : 'Kind unknown'}</option>)}{solverControl?.settings.definitions.map(row => <option key={row.id} value={`personal:${row.id}`}>{row.label} · personal {row.kind}{row.threshold !== null ? ` (${row.threshold})` : ''}</option>)}</select></label>
             {entry && <p className="reward-label catalog-reference hint">
               {icon && <img src={`data:image/png;base64,${icon.pngBase64}`} alt={`${entry.label} reference icon`} width={34} height={36} />}
               <span>{entry.description} <a href={entry.source} target="_blank" rel="noreferrer">{entry.sourceLabel}</a>. Check the complete tooltip in your game.</span>

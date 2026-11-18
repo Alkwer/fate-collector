@@ -1,6 +1,6 @@
 import { assessPlanningCard, type PlanningFilters } from './planning-filters'
-import { getPoedbFate } from './poedb-catalog'
 import type { FateCard, Offer } from './schema'
+import { visceraCompanionName } from './viscera'
 import catalog from './viscera-catalog.json' with { type: 'json' }
 
 export const VISCERA_SOURCE_URL = 'https://poedb.tw/us/Viscera'
@@ -11,7 +11,6 @@ export type VisceraTarget = { id: string; name: string; sources: readonly Viscer
 
 export const VISCERA_TARGETS: readonly VisceraTarget[] = catalog.targets
 const areas: readonly VisceraArea[] = catalog.areas
-const companionNames = new Set(['Savage', 'Pestilent', 'Sadist'])
 
 export function getVisceraTarget(id: string | null) {
   return VISCERA_TARGETS.find(target => target.id === id)
@@ -38,9 +37,9 @@ export function isVisceraSourceHere(source: VisceraSource, area: VisceraArea | u
   return !!area && source.area === area.name && source.act === area.act
 }
 
-export function visceraCompanion(card: FateCard, filters: PlanningFilters, offerReviewed = false) {
-  if (card.tier !== 3 || !(card.visualReview?.tierReviewed ?? offerReviewed)) return undefined
-  const reference = getPoedbFate(card.name, card.tier)
-  if (!reference || !companionNames.has(reference.name)) return undefined
-  return { name: reference.name, ...assessPlanningCard(card, filters) }
+export function visceraCompanion(card: FateCard, filters: PlanningFilters) {
+  if (card.tier === null || card.visualReview?.tierReviewed === false) return undefined
+  const name = visceraCompanionName(card.name, card.tier)
+  if (!name) return undefined
+  return { name, tier: card.tier, ...assessPlanningCard(card, filters) }
 }

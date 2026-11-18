@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "version": "catalog-evidence-2026-11-18",
   "checkedAt": "2026-11-18",
-  "gameVersion": "3.30 Covens League",
+  "gameVersion": "3.30.0c Covens League",
   "completeness": "partial",
   "names": {
     "version": "fate-names-v4",
@@ -24,7 +24,7 @@
     "rewardsInferredFromName": false
   },
   "rewards": {
-    "version": "rewards-v5-tooltips-20261117",
+    "version": "rewards-v7-3.30.0c",
     "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-15.md",
     "newSemanticsConfirmed": [
       "additional-currency-items",
@@ -85,12 +85,20 @@
       "rare-bows-with-a-critical-modifier",
       "additional-valuable-currency-items",
       "greatly-increased-item-rarity",
-      "rare-body-armours-with-a-life-modifier"
+      "rare-body-armours-with-a-life-modifier",
+      "extremely-increased-item-rarity"
     ],
     "sessionReport": "docs/trade-starter.md#malformation-on-17-november-2026",
-    "status": "54 screenshot variants from 13–15 November, plus four regular variants and one three-copy combo from the 17 November Malformation offer. Three confirmed prerelease variants are catalogued separately. Explicit tooltip selection only. Shared orange feathers require exact tooltip confirmation before scoring."
+    "blackFrostTooltip": "docs/trade-starter.md#black-frost-on-18-november-2026",
+    "status": "Historical tooltip transcriptions, including Black Frost, retain their observed kinds and thresholds. Official 3.30.0c equipment replacements and five chase outcomes are available for manual entry. New reward icons await current F9 evidence."
   },
   "freshSources": [
+    {
+      "url": "https://www.pathofexile.com/forum/view-thread/4017172",
+      "owner": "GGG",
+      "checkedAt": "2026-11-18",
+      "result": "3.30.0c lists five high-tier chase examples, replaces four equipment modifiers and guarantees associated Viscera from extra bosses spawned by Savage, Pestilent and Sadist. Chase kinds, thresholds, exact area levels and icon matches await evidence."
+    },
     {
       "url": "https://poedb.tw/us/Fates",
       "owner": "PoEDB community data",

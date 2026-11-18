@@ -19,8 +19,23 @@ records verify the [Lair of the Hydra](https://poedb.tw/us/Lair_of_the_Hydra) an
 the [Pit of the Chimera](https://poedb.tw/us/Pit_of_the_Chimera). Bloodied Arm
 retains PoEDB’s tentative boss attribution and unknown area.
 
-Reviewed Tier 3 Savage, Pestilent and Sadist are identified using their
-[PoEDB Fate effects](https://poedb.tw/us/Fates). The companion inherits the
-other invoked Fates and may drop its own Viscera. The application does not
-assign the selected item to the companion pool. The active build’s planning
-filters and exclusions apply to these cards.
+Since [3.30.0c](https://www.pathofexile.com/forum/view-thread/4017172), a boss
+spawned by Savage, Pestilent or Sadist always drops its own Viscera when killed.
+The companion comes from a random pool of campaign bosses without Atlas
+equivalents. The selected target and its listed area sources do not determine
+which boss spawns or guarantee that it drops the selected item.
+
+The planner counts the companion drop for the confirmed Tier 2 Pestilent and
+Sadist and Tier 3 Savage, Pestilent and Sadist. The Tier 2 evidence comes from
+the [screenshot catalog](../research/SCREENSHOT_CATALOG_2026-11-15.md), and the
+Tier 3 effects come from [PoEDB](https://poedb.tw/us/Fates). The planner checks
+the effective tier of a supported pair merge. Suggested or unknown tiers and
+the unresolved output of a three-copy invocation get no guaranteed drop credit.
+Build danger settings, modifier filters and card exclusions still apply.
+
+Choose a Fate, Plan invocation and the overlay consider the companion drop
+alongside the main boss’s Fate count and duplicate benefits. Options with
+different advantages can remain available. Companion options appear first in
+invocation advice, and reward priorities break ties when the Viscera factors
+match. The planner reports the reward trade-off in priority points and assigns
+no target odds or extra credit for multiple companion Fates.

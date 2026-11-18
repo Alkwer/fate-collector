@@ -72,7 +72,7 @@ test('screenshot tooltip matches retain recorded modifier precedence', () => {
   expect(assessFateRisk(tempest, { curses: 'warn' }).warnings).toEqual(['Curses (recorded modifier).'])
 })
 
-test('unconfirmed tiers, other tiers and short-only tooltips do not supply risk evidence', () => {
+test('unconfirmed tiers and unmatched tiers do not supply risk evidence', () => {
   const sanguine = { ...newCard(), name: 'Sanguine', modifiers: ['   '] }
   const unreviewed = { ...sanguine, tier: 1, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }
   for (const card of [sanguine, { ...sanguine, tier: 2 }, unreviewed, { ...unreviewed, tier: 3 }]) {
@@ -86,10 +86,15 @@ test('unconfirmed tiers, other tiers and short-only tooltips do not supply risk 
   expect(assessFateRisk({ ...unreviewed, modifiers: ['Deals Physical Damage over time'] }, { physicalDot: 'exclude' }).excluded).toBe(true)
 
   const sadist = { ...newCard(), name: 'Sadist', tier: 2 }
-  expect(assessFateRisk(sadist, { extraBoss: 'exclude' })).toEqual({
+  expect(assessFateRisk(sadist, { physicalDot: 'exclude' })).toEqual({
     excluded: false,
     reasons: [],
     warnings: [expect.stringContaining('Build risk is unverified')],
+  })
+  expect(assessFateRisk(sadist, { extraBoss: 'exclude' })).toEqual({
+    excluded: true,
+    reasons: ['Additional boss (Tier 2 screenshot description).'],
+    warnings: [],
   })
 })
 

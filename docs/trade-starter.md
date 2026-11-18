@@ -5,13 +5,18 @@ starter. Existing saved profiles keep their mode and weights.
 
 ## Trade / mapping
 
-All 62 confirmed reward variants have a starting weight. One point is the baseline for ordinary equipment with an unknown base and affix rolls. Quality gems and rare maps start at two. The larger weights favour exceptional gems, explicit Viscera and valuable currency sets.
+Every confirmed reward variant has a starting weight. The table also gives starting weights for the 3.30.0c additions. One point is the baseline for a confirmed reward without a specific weight. Quality gems and rare maps start at two. The larger weights favour named chase currency, exceptional gems, explicit Viscera and valuable currency sets.
 
 | Reward | Kind | Points |
 | --- | --- | ---: |
+| Hinekora's Lock | Regular or combo | 30 |
+| Mirror Shard | Regular or combo | 25 |
+| Additional Divine Orbs | Regular or combo | 12 |
 | Exceptional Gem | Combo | 10 |
+| Fracturing Orb | Regular or combo | 8 |
 | Viscera Item | Combo | 8 |
 | Additional Valuable Currency Items | Combo | 6 |
+| Amulets with a Gem Modifier | Regular or combo | 5 |
 | Valuable Unique Jewellery Item | Combo | 5 |
 | Additional Currency Items | Combo | 4 |
 | Additional Gems, Some with Maximum Quality | Combo | 4 |
@@ -36,6 +41,7 @@ All 62 confirmed reward variants have a starting weight. One point is the baseli
 | Unique Jewellery Item | Regular | 2 |
 | Unique Weapon | Regular | 2 |
 | Additional Threads | Regular | 1 |
+| Extremely Increased Item Rarity | Combo | 1 |
 | Gold | Regular | 1 |
 | Increased Item Rarity | Regular | 1 |
 | Rare Amulets with an Attribute Modifier | Regular | 1 |
@@ -45,7 +51,7 @@ All 62 confirmed reward variants have a starting weight. One point is the baseli
 | Rare Axes with a Physical Modifier | Regular | 1 |
 | Rare Belts with an Elemental Modifier | Regular | 1 |
 | Rare Body Armours with a Life Modifier | Regular | 1 |
-| Rare Body Armours without Life Modifiers | Regular | 1 |
+| Rare Body Armours with a Defence Modifier | Regular | 1 |
 | Rare Boots with a Resistance Modifier | Regular | 1 |
 | Rare Bows with a Critical Modifier | Regular | 1 |
 | Rare Claws with a Critical Modifier | Regular | 1 |
@@ -53,8 +59,10 @@ All 62 confirmed reward variants have a starting weight. One point is the baseli
 | Rare Daggers with a Critical Modifier | Regular | 1 |
 | Rare Gloves with a Defence Modifier | Regular | 1 |
 | Rare Gloves with an Attack Modifier | Regular | 1 |
+| Rare Gloves with a Life Modifier | Regular or combo | 1 |
 | Rare Helmets with a Defence Modifier | Regular | 1 |
 | Rare Helmets with a Drop Modifier | Regular | 1 |
+| Rare Helmets with a Life Modifier | Regular or combo | 1 |
 | Rare Jewellery Items | Regular | 1 |
 | Rare Maces with a Physical Modifier | Regular | 1 |
 | Rare Melee Weapons | Regular | 1 |
@@ -63,7 +71,7 @@ All 62 confirmed reward variants have a starting weight. One point is the baseli
 | Rare Rune Daggers without Attack Modifiers | Regular | 1 |
 | Rare Shields with a Life Modifier | Regular | 1 |
 | Rare Shields with a Resistance Modifier | Regular | 1 |
-| Rare Shields without Life Modifiers | Regular | 1 |
+| Rare Shields with a Defence Modifier | Regular | 1 |
 | Rare Swords with a Speed Modifier | Regular | 1 |
 | Rare Swords without Physical Modifiers | Regular | 1 |
 | Rare Wands with a Mana Modifier | Regular | 1 |
@@ -77,6 +85,10 @@ A regular reward scores per confirmed icon; a combo scores once when completed.
 Similar rewards remain separate: family headings do not combine their counters.
 Shared orange-feather icons need exact tooltip confirmation before scoring.
 
+Patch 3.30.0c replaces the recorded regular Body Armour and Shield variants with Defence modifiers. Those variants and the new Life variants for Gloves and Helmets start at one point. Each “Regular or combo” row gives both kinds the same editable starting weight. Use the in-game tooltip to verify the reward label and kind and enter any required combo copies. Unknown kinds and unresolved combos add zero active points. Existing profiles and archived offers retain their recorded labels. [GGG 3.30.0c patch notes](https://www.pathofexile.com/forum/view-thread/4017172)
+
+Hinekora's Lock and Mirror Shard take the highest slots to favour those named chase rewards. Additional Divine Orbs sit above general valuable currency, Fracturing Orb shares the Viscera weight, and amulets with a Gem modifier sit alongside valuable unique jewellery. Adjust the weights in **Reward priorities** to reflect what your build or league needs.
+
 Open **Reward priorities → Starter priorities** to choose:
 
 - **Trade / mapping**: the priorities above.
@@ -87,7 +99,7 @@ Open **Reward priorities → Starter priorities** to choose:
   it does not estimate boss drop chances or infer bonuses from duplicates.
 
 **Planning objective → Farm boss Viscera** is separate from the Viscera reward
-starter. It compares invocation input count and supported duplicate presence,
+starter. It compares guaranteed companion Viscera, invocation input count and supported duplicate presence,
 even with no positive reward weights. Incomparable factors remain alternatives;
 no numerical drop odds are assigned. Priorities measure the reward trade-off,
 and all build filters still apply. Switching objectives preserves the saved
@@ -95,7 +107,7 @@ single/combined reward mode and restores it on returning to reward priorities.
 
 **Replace priorities** shows the current and replacement counts, then replaces
 all priorities while preserving filters and personal templates. **Use trade
-starter** instead updates or adds only the confirmed trade rewards, keeping other goals.
+starter** updates or adds the trade starter priorities and keeps other goals.
 If that would exceed 128 priorities, remove enough goals first.
 
 **Unweighted rewards** beside advice lists identified, eligible reward types with
@@ -123,3 +135,13 @@ The Covens exchange showed about 2 Chaos Orbs per Stacked Deck on 17 November. T
 Ordered Fate was listed around 1 Chaos Orb in the Covens armour snapshot. Its named combo therefore sits in the modest two-point group. Listing prices vary with rolls. [Covens armour listings](https://www.lolumen.com/poe/economy?cat=armour&game=poe1&league=Covens&sort=listings)
 
 Players report favouring Exceptional Gems, Viscera and completed currency sets in maps. Reports on rarity alone describe inconsistent returns. These observations inform the order of the weights. They provide no measured chance for a future offer to complete a set. [Mapping discussion](https://www.reddit.com/r/pathofexile/comments/1xxh3ar/how_fates_actually_work_twins_sets_and_whats/) · [Rarity reports](https://www.reddit.com/r/pathofexile/comments/1xxtpp9/rarity_from_fate_card_rewards_seems_to_do_nothing/)
+
+## Black Frost on 18 November 2026
+
+The screenshot shows one gold ring on Black Frost. Its tooltip reads:
+
+> Empowered Monster has extremely increased Item Rarity
+>
+> To claim this reward, invoke three copies of it
+
+Screenshot SHA-256: `7fbd670a86477442e4286c48cac19d4b31d4d6b6a78fed6b9a7b028bc4788836`.
