@@ -283,6 +283,7 @@ explanations and collection lifecycle. The following still need live evidence:
 The pending offer is hidden until a choice is made according to the GGG FAQ; a
 future-offer forecast cannot be inferred from the current capture. Confirming map
 identity, visual review and the chosen/invoked cards remains a deliberate user step:
-the app does not observe or control those game actions. The owner waived in-game
-checks for the 16 November hotfix update only. Automated validation and staging
-checks remain required; this does not establish native recognition accuracy.
+the app does not observe or control those game actions. The
+[deployment record](deployment.md#pinned-fate-advisor-0100-exception) identifies
+the 0.10.0 package covered by the owner's deferral of in-game checks. Native
+recognition accuracy still requires validation against game captures.
