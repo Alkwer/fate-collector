@@ -5,6 +5,7 @@ import { bindOfferToMap, newAdvisorWorkspace, startMapWorkspace } from '../src/l
 import { newSolverSettings } from '../src/lib/solver-settings'
 import { overlayStateSchema, type OverlayCommand, type OverlayState } from '../shared/overlay'
 import { OverlayChannel } from '../src/lib/overlay-channel'
+import { activeProfitGoal, profitObjectives } from '../src/lib/league-challenges'
 
 function inputs(): OverlayInputs {
   const offer = newOffer()
@@ -16,6 +17,30 @@ function inputs(): OverlayInputs {
 }
 
 describe('overlay advice uses the existing recommendation engines', () => {
+  it('uses the confirmed campaign capacity for offer scores', () => {
+    const input = inputs()
+    input.workspace.collection.cards = ['Dryad', 'Blood Moon'].map(name => ({
+      ...input.offer.cards[0], id: crypto.randomUUID(), name,
+    }))
+    input.offer.areaCategory = 'map'
+    expect(overlayAdvice(input).title).toContain('4 pts')
+    input.offer.areaCategory = 'campaign'
+    expect(overlayAdvice(input).title).toContain('3 pts')
+  })
+  it('puts the active challenge tooltip first and withdraws it when the offer or goal is no longer eligible', () => {
+    const input = inputs()
+    input.offer.cards[1].rewards.push({ ...newReward(), visualId: 'orange-feathers' })
+    const goal = { kind: 'profit', objective: 'ordered-fate' } as const
+    input.leagueGoal = activeProfitGoal({ goal, progress: {} })
+    expect(overlayAdvice(input).detail.split('\n')[0]).toMatch(/^Hover #2.*Ordered Fate/)
+    input.workspace.excludedCardIds = [input.offer.cards[1].id]
+    expect(overlayAdvice(input).detail).not.toMatch(/^Hover/)
+    input.workspace.excludedCardIds = []
+    input.leagueGoal = activeProfitGoal({ goal, progress: { 'profit:ordered-fate': 1 } })
+    expect(overlayAdvice(input).detail).not.toMatch(/^Hover/)
+    const complete = Object.fromEntries(profitObjectives.slice(0, 10).map(row => [`profit:${row.id}`, row.target]))
+    expect(activeProfitGoal({ goal, progress: complete })).toBeNull()
+  })
   it('distinguishes a future Tempest duplicate from a Currency set available now', () => {
     const input = inputs()
     const goal = { kind: 'combo', label: 'Additional Valuable Currency Items', weight: 6 } as const

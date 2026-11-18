@@ -50,10 +50,32 @@ test('reference risk supplements recorded modifiers and identifies its source an
   expect(assessFateRisk(golemancer, { bleeding: 'warn' }).warnings).toEqual(['Bleeding (Tier 3 source reference, PoEDB).'])
 })
 
-test('unknown and unreviewed tiers do not use references but recorded hazards still apply', () => {
+test.each([
+  ['Sanguine', 1, 'physicalDot', 'Physical damage over time'],
+  ['Wildfire', 1, 'fireDot', 'Fire damage over time'],
+  ['Houndmaster', 1, 'brittleCrit', 'Brittle and critical strikes'],
+  ['Conjurer', 2, 'chaos', 'Chaos damage and poison'],
+  ['Rotted', 1, 'chaos', 'Chaos damage and poison'],
+  ['Blood Moon', 1, 'bleeding', 'Bleeding'],
+  ['Tempest', 2, 'curses', 'Curses'],
+  ['Dryad', 2, 'bossRecovery', 'Boss life recovery'],
+  ['Pestilent', 2, 'extraBoss', 'Additional boss'],
+] as const)('matches %s Tier %i screenshot effects for %s', (name, tier, category, label) => {
+  const card = { ...newCard(), name, tier }
+  const message = `${label} (Tier ${tier} screenshot tooltip reference).`
+  expect(assessFateRisk(card, { [category]: 'exclude' })).toEqual({ excluded: true, reasons: [message], warnings: [] })
+  expect(assessFateRisk(card, { [category]: 'warn' })).toEqual({ excluded: false, reasons: [], warnings: [message] })
+})
+
+test('screenshot tooltip matches retain recorded modifier precedence', () => {
+  const tempest = { ...newCard(), name: 'Tempest', tier: 2, modifiers: ['Empowered Monster inflicts Conductivity on Hit'] }
+  expect(assessFateRisk(tempest, { curses: 'warn' }).warnings).toEqual(['Curses (recorded modifier).'])
+})
+
+test('unconfirmed tiers, other tiers and short-only tooltips do not supply risk evidence', () => {
   const sanguine = { ...newCard(), name: 'Sanguine', modifiers: ['   '] }
-  const unreviewed = { ...sanguine, tier: 3, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }
-  for (const card of [sanguine, { ...sanguine, tier: 1 }, { ...sanguine, tier: 2 }, unreviewed]) {
+  const unreviewed = { ...sanguine, tier: 1, visualReview: { version: 'test', tierReviewed: false, rewardsReviewed: true } }
+  for (const card of [sanguine, { ...sanguine, tier: 2 }, unreviewed, { ...unreviewed, tier: 3 }]) {
     expect(assessFateRisk(card, { physicalDot: 'exclude' })).toMatchObject({
       excluded: false,
       reasons: [],
@@ -62,6 +84,20 @@ test('unknown and unreviewed tiers do not use references but recorded hazards st
   }
   expect(assessFateRisk(unreviewed, { physicalDot: 'exclude' }, 3).excluded).toBe(false)
   expect(assessFateRisk({ ...unreviewed, modifiers: ['Deals Physical Damage over time'] }, { physicalDot: 'exclude' }).excluded).toBe(true)
+
+  const sadist = { ...newCard(), name: 'Sadist', tier: 2 }
+  expect(assessFateRisk(sadist, { extraBoss: 'exclude' })).toEqual({
+    excluded: false,
+    reasons: [],
+    warnings: [expect.stringContaining('Build risk is unverified')],
+  })
+})
+
+test('lower-tier physical hits, fire hits and cursed broomsticks do not trigger unrelated filters', () => {
+  const filters = { physicalDot: 'exclude', fireDot: 'exclude', curses: 'exclude' } as const
+  for (const [name, tier] of [['Butcher', 2], ['Torchbearer', 1], ['Rot', 1]] as const) {
+    expect(assessFateRisk({ ...newCard(), name, tier }, filters)).toEqual({ excluded: false, reasons: [], warnings: [] })
+  }
 })
 
 test('a caller can assess Tier 3 effects for a confirmed Tier 2 merge', () => {
@@ -73,6 +109,21 @@ test('a caller can assess Tier 3 effects for a confirmed Tier 2 merge', () => {
     reasons: ['Additional boss (Tier 3 source reference, PoEDB).'],
     warnings: [],
   })
+})
+
+test('a merge uses Tier 3 risk references and understands the Rot alias', () => {
+  const rot = { ...newCard(), name: 'Rot', tier: 2 }
+  const settings = { chaos: 'warn' } as const
+  expect(assessFateRisk(rot, settings, 3).warnings).toEqual(['Chaos damage and poison (Tier 3 source reference, PoEDB).'])
+  const unknownMerge = { ...newCard(), name: 'Unknown', tier: 2, modifiers: ['Poison on Hit'] }
+  expect(assessFateRisk(unknownMerge, settings, 3).warnings).toEqual([
+    expect.stringContaining('Merged Fate risk is unverified'), 'Chaos damage and poison (recorded modifier).',
+  ])
+})
+
+test('a missing Tier 2 merge reference identifies the correct uncertainty', () => {
+  const card = { ...newCard(), name: 'Unknown', tier: 1 }
+  expect(assessFateRisk(card, { chaos: 'warn' }, 2).warnings).toEqual([expect.stringMatching(/Its Tier 2 effects/)])
 })
 test('matches explicit T3 fire damage over time, Brittle and critical bonuses', () => {
   const filter = { fireDot: 'exclude', brittleCrit: 'warn' } as const

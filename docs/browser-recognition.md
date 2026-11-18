@@ -17,7 +17,8 @@ The frozen Python code, bank and historical reports remain unchanged.
 The dictionary contains 26 names, including Black Frost, Blood Moon,
 Golemancer, Murderous, Rot, Pestilent and Sadist from campaign and map screenshots
 through 14 November 2026, plus Rotted and Savage from PoEDB on 16 November.
-Rot and Rotted remain distinct pending evidence. [Versioned catalog provenance](../shared/catalog-metadata.json)
+OCR preserves both spellings of the Rot card, whose expanded tooltip is headed Rotted.
+Planning and effect lookups accept either name. [Versioned catalog provenance](../shared/catalog-metadata.json)
 records the source/date and explicitly unresolved semantics. This expands name
 recognition only; it does not associate rewards with those names or establish
 native accuracy. Standard [production promotion](recognition-validation.md#required-promotion-artifact)

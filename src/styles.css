@@ -137,6 +137,7 @@ td { border-bottom: 1px solid var(--border); }
   .backup-controls { width: 100%; }
 }
 .checkbox-row { display: flex; flex-direction: row; align-items: center; gap: 10px; font-weight: 400; }
+.last-offer-control { width: fit-content; min-height: 44px; cursor: pointer; }
 .danger { color: var(--danger); }
 .remove-card { font-size: 13px; margin-top: 12px; }
 .review-controls { margin-top: 20px; }

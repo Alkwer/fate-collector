@@ -1,4 +1,4 @@
-import { getPoedbFate } from './poedb-catalog.ts'
+import { getPoedbFate, getScreenshotFate } from './poedb-catalog.ts'
 import type { FateCard } from './schema.ts'
 import { z } from './validation.ts'
 
@@ -46,24 +46,27 @@ export function assessFateRisk(card: FateCard, settings: FateRiskSettings, effec
   if (active.length === 0) return { excluded: false, reasons, warnings }
 
   const modifiers = card.modifiers.map(line => line.normalize().trim().replace(/\s+/g, ' ')).filter(Boolean)
-  const reference = card.tier !== null && card.visualReview?.tierReviewed !== false
-    ? getPoedbFate(card.name, effectiveTier)
+  const tierReviewed = card.tier !== null && card.visualReview?.tierReviewed !== false
+  const poedb = tierReviewed && effectiveTier === 3 ? getPoedbFate(card.name, effectiveTier) : undefined
+  const screenshot = tierReviewed && (effectiveTier === 1 || effectiveTier === 2)
+    ? getScreenshotFate(card.name)?.variants.find(variant => variant.tier === effectiveTier && variant.completeness === 'full')
     : undefined
-  const referenceText = reference ? [...reference.description.split('\n'), ...reference.effects] : []
+  const referenceText = poedb ? [...poedb.description.split('\n'), ...poedb.effects] : screenshot?.lines
+  const referenceSource = poedb ? 'Tier 3 source reference, PoEDB' : `Tier ${effectiveTier} screenshot tooltip reference`
 
-  if (effectiveTier !== card.tier && !reference) {
-    warnings.push('Merged Fate risk is unverified. Its Tier 3 effects have no matching source reference; recorded input modifiers do not establish the upgraded effects.')
-  } else if (modifiers.length === 0 && !reference) {
-    warnings.push('Build risk is unverified. This Fate has no recorded modifiers or matching Tier 3 source reference.')
+  if (effectiveTier !== card.tier && !referenceText) {
+    warnings.push(`Merged Fate risk is unverified. Its Tier ${effectiveTier} effects have no matching source reference; recorded input modifiers do not establish the upgraded effects.`)
+  } else if (modifiers.length === 0 && !referenceText) {
+    warnings.push('Build risk is unverified. No recorded modifiers or matching full source reference are available.')
   }
 
   for (const { id, label } of active) {
     const pattern = modifierPatterns[id]
     const recorded = modifiers.some(modifier => pattern.test(modifier))
-    const fromReference = !recorded && referenceText.some(line => pattern.test(line))
+    const fromReference = !recorded && referenceText?.some(line => pattern.test(line))
     if (!recorded && !fromReference) continue
 
-    const message = recorded ? `${label} (recorded modifier).` : `${label} (Tier 3 source reference, PoEDB).`
+    const message = `${label} (${recorded ? 'recorded modifier' : referenceSource}).`
     const messages = settings[id] === 'exclude' ? reasons : warnings
     messages.push(message)
   }

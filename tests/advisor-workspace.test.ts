@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { newCard, newReward } from '../shared/offers'
 import { bindOfferToMap, loadAdvisorWorkspace, newAdvisorWorkspace, offerBelongsToMap, saveAdvisorWorkspace,
-  startMapWorkspace, type AdvisorWorkspace } from '../src/lib/advisor-workspace'
+  startMapWorkspace, workspaceInvocationLimit, type AdvisorWorkspace } from '../src/lib/advisor-workspace'
 
 const key = 'fate-collector.advisor-area.v2'
 const legacyKey = 'fate-collector.advisor-area.v1'
@@ -19,6 +19,7 @@ test('restores the map, goal and explicitly associated offer', () => {
   const storage = memory()
   const offerId = crypto.randomUUID()
   const workspace = bindOfferToMap(startMapWorkspace(newAdvisorWorkspace()), offerId)
+  workspace.lastOfferId = offerId
   workspace.collection.cards = [{ ...newCard(), name: 'Torchbearer', rewards: [newReward()] }]
   workspace.sources[workspace.collection.cards[0].id] = offerId
   workspace.goal = { kind: 'combo', label: 'Exceptional Gem' }
@@ -66,6 +67,20 @@ test('starts a new map with its own identity, empty collection and explicitly as
   expect(offerBelongsToMap(first, secondOffer)).toBe(false)
   expect(offerBelongsToMap(second, firstOffer)).toBe(false)
   expect(offerBelongsToMap(second, secondOffer)).toBe(true)
+})
+
+test('campaign capacity survives unknown offers and reload, and resets for a new area', () => {
+  const storage = memory()
+  const campaign = { id: crypto.randomUUID(), areaCategory: 'campaign' as const }
+  const nextOffer = { id: crypto.randomUUID() }
+  const map = startMapWorkspace(newAdvisorWorkspace())
+  expect(workspaceInvocationLimit(map, campaign)).toBe(3)
+  const olderWorkspace = bindOfferToMap(map, campaign.id)
+  expect(workspaceInvocationLimit(olderWorkspace, campaign)).toBe(2)
+  const current = bindOfferToMap(bindOfferToMap(map, campaign.id, 'campaign'), nextOffer.id)
+  expect(saveAdvisorWorkspace(storage, current)).toBeNull()
+  expect(workspaceInvocationLimit(loadAdvisorWorkspace(storage).workspace, nextOffer)).toBe(2)
+  expect(workspaceInvocationLimit(startMapWorkspace(current), campaign)).toBe(3)
 })
 
 test('migrates legacy cards with unknown map start time, preserves the goal and never revives them after reset', () => {

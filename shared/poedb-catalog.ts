@@ -1,5 +1,7 @@
 import { z } from './validation.ts'
+import { normalizeFateName } from './fate-names.ts'
 import sourceCatalog from './poedb-catalog.json' with { type: 'json' }
+import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
 const date = z.iso.date()
 const identifier = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -61,8 +63,13 @@ function normalizeText(value: string): string {
 }
 
 export function getPoedbFate(name: string, tier: number | null) {
-  const key = normalizeText(name)
-  return POEDB_CATALOG.fates.find(entry => entry.tier === tier && normalizeText(entry.name) === key)
+  const key = normalizeFateName(name)
+  return POEDB_CATALOG.fates.find(entry => entry.tier === tier && normalizeFateName(entry.name) === key)
+}
+
+export function getScreenshotFate(name: string) {
+  const key = normalizeFateName(name)
+  return screenshots.fates.find(entry => normalizeFateName(entry.name) === key)
 }
 
 export function getPoedbRewardReferences(query = '') {

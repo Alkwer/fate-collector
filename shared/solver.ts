@@ -1,9 +1,10 @@
 import { z } from './validation.ts'
+import { normalizeFateName } from './fate-names'
 import {
   advisorInputProblem, MAX_COLLECTED_FATES, MAX_INVOCATION_INPUTS, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
   normalizeRewardLabel, TRIPLED_REGULAR_MULTIPLIER, UNKNOWN_FATE_NAME, UNRESOLVED_COMBO_MERGE,
   UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, supportsDuplicateCombo, visitInvocationOrders,
-  type AdvisorGoal, type InvocationPlan, type PlanResult, type Recommendation,
+  type AdvisorGoal, type InvocationLimit, type InvocationPlan, type PlanResult, type Recommendation,
 } from './advisor'
 import { KNOWN_COMBOS } from './reward-catalog'
 import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
@@ -97,10 +98,10 @@ export function completionCondition(option: ComboOpportunity): string {
 
 // Each future input is a distinct, eligible Fate with one matching icon.
 // Its other rewards are unspecified and contribute no points in this comparison.
-function completionScores(plans: SolverPlan[]) {
+function completionScores(plans: SolverPlan[], limit: InvocationLimit) {
   const scores = new Map<string, ComboOpportunity>()
   for (const plan of plans) {
-    const slots = MAX_INVOCATION_INPUTS - plan.cardIds.length
+    const slots = limit - plan.cardIds.length
     if (!slots) continue
     for (const reward of plan.rewards) {
       if (reward.kind !== 'combo' || !reward.weight || !reward.count || !reward.threshold || reward.activated || reward.uncertain) continue
@@ -108,7 +109,7 @@ function completionScores(plans: SolverPlan[]) {
       if (needed > slots) continue
       // Competing plans may use just one of two later icons and keep an
       // existing input in the other slot.
-      for (let icons = needed; icons < MAX_INVOCATION_INPUTS && icons < reward.threshold; icons++) {
+      for (let icons = needed; icons < limit && icons < reward.threshold; icons++) {
         const key = JSON.stringify([normalizeRewardLabel(reward.label), icons])
         const points = roundPoints(plan.score + reward.weight)
         if (points > (scores.get(key)?.points ?? 0)) scores.set(key, { label: reward.label, icons, points })
@@ -173,7 +174,7 @@ function prepareCards(cards: FateCard[], profile: SolverProfile, excludedIds: Se
     }
 
     const warnings: Warning[] = assessment.warnings.map(message => ({ message, affectsRanking: true }))
-    const name = normalizeRewardLabel(card.name)
+    const name = normalizeFateName(card.name)
     if (!name) warnings.push({ message: UNKNOWN_FATE_NAME, affectsRanking: true })
     const rewards: ObservedReward[] = card.rewards.map(reward => {
       const kind = isRewardIdentified(reward) && normalizeRewardLabel(reward.label) ? reward.kind : 'unknown'
@@ -239,7 +240,11 @@ function comparePlans(a: SolverPlan, b: SolverPlan): number {
   return b.score - a.score || b.progress - a.progress || a.cardIds.length - b.cardIds.length
 }
 
-function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresholds: Map<string, ComboThreshold>, required?: PreparedCard, profile?: SolverProfile) {
+function comparePayablePlans(a: SolverPlan, b: SolverPlan): number {
+  return b.score - a.score || a.cardIds.length - b.cardIds.length
+}
+
+function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresholds: Map<string, ComboThreshold>, required: PreparedCard | undefined, profile: SolverProfile, limit: InvocationLimit, compare = comparePlans) {
   const plans: SolverPlan[] = []
   const warnings = new Map<string, boolean>()
   for (const card of required ? [...pool, required] : pool) {
@@ -247,7 +252,7 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
   }
 
   function addPlan(active: PreparedCard[], pair?: [PreparedCard, PreparedCard], triple?: [PreparedCard, PreparedCard, PreparedCard]) {
-    const mergeRisk = pair ? assessPlanningMerge(pair[0].original, profile ?? {}) : null
+    const mergeRisk = pair ? assessPlanningMerge(pair[0].original, profile) : null
     if (mergeRisk?.excluded) {
       for (const reason of mergeRisk.reasons) recordWarning(warnings, { message: `Merged plan excluded: ${reason}`, affectsRanking: false })
       return
@@ -261,7 +266,7 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     const selected = [...(triple ?? pair ?? []), ...active]
     const discarded = triple?.[1] ?? pair?.[1]
     const planWarnings = new Map<string, boolean>()
-    if (triple && (profile?.avoidModifiers.length || Object.values(profile?.risks ?? {}).some(action => action !== 'allow'))) recordWarning(planWarnings, { message: UNRESOLVED_TRIPLE_RISK, affectsRanking: true })
+    if (triple && (profile.avoidModifiers.length || Object.values(profile.risks ?? {}).some(action => action !== 'allow'))) recordWarning(planWarnings, { message: UNRESOLVED_TRIPLE_RISK, affectsRanking: true })
     for (const message of mergeRisk?.warnings ?? []) recordWarning(planWarnings, { message, affectsRanking: true })
     const totals = new Map<string, ObservedReward>()
     const scaledCombos = new Set<string>()
@@ -307,7 +312,7 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     for (const [message, affectsRanking] of planWarnings) recordWarning(warnings, { message, affectsRanking })
     plans.push({
       cardIds: selected.map(card => card.id), score: roundPoints(score), progress: roundPoints(progress), rewards,
-      merges: pair ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: 3 }] : [],
+      merges: pair && mergeRisk?.outputTier ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: mergeRisk.outputTier }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       retained: retained.map(({ card, multiplier }) => ({ cardId: card.id, multiplier })),
       ...(duplicateCurrency.length ? { duplicateCurrency } : {}),
@@ -316,8 +321,8 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
     })
   }
 
-  visitInvocationOrders(pool, required, addPlan, message => recordWarning(warnings, { message, affectsRanking: true }))
-  return { plans: plans.sort(comparePlans), warnings }
+  visitInvocationOrders(pool, required, addPlan, message => recordWarning(warnings, { message, affectsRanking: true }), limit)
+  return { plans: plans.sort(compare), warnings }
 }
 
 function initialize(profile: SolverProfile, excludedCardIds: string[], problem: string | null) {
@@ -362,18 +367,18 @@ function displayVisceraPlans(plans: SolverPlan[]) {
   return [...representatives, ...plans.filter(plan => !representatives.includes(plan))].slice(0, MAX_DISPLAYED_PLANS)
 }
 
-export function solveInvocation(cards: FateCard[], profile: SolverProfile, excludedCardIds: string[] = []): SolverInvocation {
+export function solveInvocation(cards: FateCard[], profile: SolverProfile, excludedCardIds: string[] = [], limit: InvocationLimit = MAX_INVOCATION_INPUTS): SolverInvocation {
   const input = initialize(profile, excludedCardIds, solverInputProblem(cards, MAX_COLLECTED_FATES, 'collected'))
   if (input.problem !== undefined) {
     return { status: 'insufficient', warnings: [input.problem], excluded: [], plans: [], tiedBestPlanCount: 0 }
   }
   const excluded: SolverResult['excluded'] = []
   const pool = prepareCards(cards, input.profile, input.excludedIds, excluded)
-  const { plans, warnings } = searchPlans(pool, input.weights, comboThresholds(pool, input.weights), undefined, input.profile)
+  const { plans, warnings } = searchPlans(pool, input.weights, comboThresholds(pool, input.weights), undefined, input.profile, limit)
   // Keep neutral inputs in the search: they can enable a useful duplicate merge.
   // Only the final, positive-outcome plans are recommendations to consume cards.
   const farming = input.profile.objective === 'viscera'
-  const rewardPlans = plans.filter(plan => plan.score > 0).sort((a, b) => b.score - a.score || a.cardIds.length - b.cardIds.length)
+  const rewardPlans = plans.filter(plan => plan.score > 0).sort(comparePayablePlans)
   const useful = farming ? visceraFrontier(plans) : rewardPlans
   if (farming) warnings.set(VISCERA_WARNING, true)
   const best = useful[0]
@@ -385,7 +390,7 @@ export function solveInvocation(cards: FateCard[], profile: SolverProfile, exclu
     tiedBestPlanCount: best ? useful.filter(plan => farming || (plan.score === best.score && plan.cardIds.length === best.cardIds.length)).length : 0 }
 }
 
-export function recommendPortfolio(offered: FateCard[], collected: FateCard[], profile: SolverProfile, excludedCardIds: string[] = []): SolverPortfolio {
+export function recommendPortfolio(offered: FateCard[], collected: FateCard[], profile: SolverProfile, excludedCardIds: string[] = [], lastOffer = false, limit: InvocationLimit = MAX_INVOCATION_INPUTS): SolverPortfolio {
   const input = initialize(profile, excludedCardIds, solverInputProblem(offered, MAX_OFFERED_FATES, 'offered')
     ?? solverInputProblem(collected, MAX_COLLECTED_FATES, 'collected'))
   if (input.problem !== undefined) {
@@ -398,12 +403,15 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   const pool = prepareCards(collected, input.profile, input.excludedIds, excluded)
   const eligible = prepareCards(newOffers, input.profile, input.excludedIds, excluded)
   const thresholds = comboThresholds([...pool, ...eligible], input.weights)
-  const initial = searchPlans(pool, input.weights, thresholds, undefined, input.profile)
+  const finalRewards = lastOffer && input.profile.objective !== 'viscera'
+  const projectFuture = !lastOffer && input.profile.objective !== 'viscera'
+  const planOrder = finalRewards ? comparePayablePlans : comparePlans
+  const initial = searchPlans(pool, input.weights, thresholds, undefined, input.profile, limit, planOrder)
   const baseline = initial.plans[0] ?? null
   const warnings = initial.warnings
   const projections = new Map<string, ReturnType<typeof completionScores>>()
   const futureDuplicates = new Map<string, PreparedCard>()
-  if (input.profile.objective !== 'viscera') for (const card of [...pool, ...eligible]) {
+  if (projectFuture) for (const card of [...pool, ...eligible]) {
     if (futureDuplicates.has(card.name) || !card.tierReviewed || !card.rewards.some(reward =>
       reward.kind === 'combo' && (input.weights.get(reward.key) ?? 0) > 0
       && supportsDuplicateCombo(card.original, reward.label, thresholds.get(reward.key)?.threshold ?? null))) continue
@@ -414,7 +422,7 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   }
   const duplicateOutlook = (cards: PreparedCard[], future: PreparedCard) => {
     if (!cards.some(card => card.name === future.name)) return { points: 0 }
-    const projected = searchPlans(cards, input.weights, thresholds, future, input.profile).plans
+    const projected = searchPlans(cards, input.weights, thresholds, future, input.profile, limit).plans
     const points = projected[0]?.score ?? 0
     for (const plan of projected) {
       if (plan.score < points) break
@@ -429,10 +437,10 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   const duplicateScores = new Map<string, ReturnType<typeof projectDuplicates>>()
   const duplicateBaseline = projectDuplicates(pool)
   const candidates: SolverCandidate[] = eligible.map(card => {
-    const result = searchPlans(pool, input.weights, thresholds, card, input.profile)
+    const result = searchPlans(pool, input.weights, thresholds, card, input.profile, limit, planOrder)
     for (const [message, affectsRanking] of result.warnings) recordWarning(warnings, { message, affectsRanking })
     const plan = result.plans[0] ?? null
-    if (input.profile.objective !== 'viscera') projections.set(card.id, completionScores(result.plans))
+    if (projectFuture) projections.set(card.id, completionScores(result.plans, limit))
     if (futureDuplicates.size) duplicateScores.set(card.id, projectDuplicates([...pool, card]))
     return { cardId: card.id, plan,
       gain: plan ? roundPoints(plan.score - (baseline?.score ?? 0)) : null,
@@ -442,7 +450,7 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   if (input.profile.objective === 'viscera') {
     const baselinePlans = visceraFrontier(initial.plans)
     const byCandidate = eligible.map(card => {
-      const result = searchPlans(pool, input.weights, thresholds, card, input.profile)
+      const result = searchPlans(pool, input.weights, thresholds, card, input.profile, limit)
       return { cardId: card.id, plans: visceraFrontier(result.plans) }
     })
     const frontier = visceraFrontier([...initial.plans, ...byCandidate.flatMap(candidate => candidate.plans)])
@@ -459,10 +467,12 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
           progressGain: plan ? roundPoints(plan.progress - (farmBaseline?.progress ?? 0)) : null }
       }) }
   }
-  candidates.sort((a, b) => a.plan && b.plan ? comparePlans(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
-  const baselineCompletions = completionScores(initial.plans)
+  // On the last offer, equally valuable choices tie even if their best plans use different inputs.
+  const compareChoices = finalRewards ? (a: SolverPlan, b: SolverPlan) => b.score - a.score : comparePlans
+  candidates.sort((a, b) => a.plan && b.plan ? compareChoices(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
+  const baselineCompletions = projectFuture ? completionScores(initial.plans, limit) : new Map<string, ComboOpportunity>()
   const bestNow = Math.max(baseline?.score ?? 0, candidates[0]?.plan?.score ?? 0)
-  for (const candidate of candidates) {
+  for (const candidate of projectFuture ? candidates : []) {
     const others = candidates.filter(other => other !== candidate)
     const bestOther = Math.max(baseline?.score ?? 0, ...others.map(other => other.plan?.score ?? 0))
     if (!candidate.plan || candidate.plan.score > bestOther) continue
@@ -487,9 +497,9 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   }
   const best = candidates[0]
   const bestPlan = best?.plan
-  const measuredImprovement = (best?.gain ?? 0) > 0 || (best?.gain === 0 && (best.progressGain ?? 0) > 0)
+  const measuredImprovement = (best?.gain ?? 0) > 0 || (!lastOffer && best?.gain === 0 && (best.progressGain ?? 0) > 0)
   const recommendedCardIds = bestPlan && measuredImprovement
-    ? candidates.filter(({ plan }) => plan && comparePlans(plan, bestPlan) === 0).map(({ cardId }) => cardId)
+    ? candidates.filter(({ plan }) => plan && compareChoices(plan, bestPlan) === 0).map(({ cardId }) => cardId)
     : []
   const provisional = [...warnings.values()].some(Boolean)
   const status = !bestPlan ? 'insufficient' : provisional ? 'provisional' : 'ready'

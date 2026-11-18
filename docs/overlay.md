@@ -37,14 +37,24 @@ a closed advisor's connection expires after 12 seconds.
 
 ## Reading the choice
 
+At the final cauldron, use **Mark as last offer** (Ctrl+Alt+Enter) after
+confirming the area. The same shortcut restores the usual comparison while
+**Allow later offers** is visible. The setting also appears in the advisor
+window and applies only to the current offer.
+
+When a tooltip could change the choice or reveal a reward for an active
+Promised Profits goal, the overlay tells you which card and icon to hover.
+Check the wording and combo requirement in game. The hint leaves the original
+reward and its score untouched.
+
 With weighted rewards, **Now** shows the highest current plan score. Choices
 with equal current points tie even when one is closer to a combo. **Known
 pts** means unchecked rewards or mechanics could change the comparison.
-The next line shows which Fate could take the lead, its current and potential
+When later offers are possible, the forecast shows which Fate could take the lead, its current and potential
 points, and the matching icon needed on a future Fate. If two icons are
 needed, they come from separate new Fates. The overlay favors the fewest
-missing icons, then the highest resulting score. Both lines stay visible
-when the panel switches to compact mode.
+missing icons, then the highest resulting score. In compact mode, a suggested
+tooltip takes priority over the forecast.
 
 ## Automatic detection
 
@@ -81,7 +91,7 @@ new-area action rearms detection, without guessing which area an offer belongs t
 | --- | --- |
 | F9 | Manually capture or refresh an offer; immediately clear prior advice |
 | F10 | Clear calibration and pause automatic detection; F6/F7 resumes |
-| Ctrl+Alt+Enter | Confirm the displayed area action, or cancel new-area reset |
+| Ctrl+Alt+Enter | Confirm the displayed area action, cancel a new-area reset, or mark or clear the current offer as the last in this area |
 | Ctrl+Alt+1–9 | Record the intended Fate while its offer is visible; choose it in game |
 | Ctrl+Alt+N | Request a new area, then confirm with a second press |
 | Ctrl+Alt+Z | Undo the latest collection/area change |

@@ -3,6 +3,12 @@ import { assessFateRisk, type FateRiskSettings } from './fate-risk'
 
 export type PlanningFilters = { risks?: FateRiskSettings; avoidModifiers?: string[]; excludedCardIds?: string[] }
 
+export function mergeOutputTier(inputTier: number | null): 2 | 3 | null {
+  if (inputTier === 1) return 2
+  if (inputTier === 2) return 3
+  return null
+}
+
 export function assessPlanningCard(card: FateCard, filters: PlanningFilters) {
   const risk = assessFateRisk(card, filters.risks ?? {})
   const reasons = [...risk.reasons]
@@ -16,5 +22,6 @@ export function assessPlanningCard(card: FateCard, filters: PlanningFilters) {
 }
 
 export function assessPlanningMerge(card: FateCard, filters: PlanningFilters) {
-  return assessFateRisk(card, filters.risks ?? {}, 3)
+  const outputTier = mergeOutputTier(card.tier)
+  return { ...assessFateRisk(card, filters.risks ?? {}, outputTier ?? card.tier), outputTier }
 }

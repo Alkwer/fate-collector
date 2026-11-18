@@ -1,5 +1,17 @@
 # Fate Collector releases
 
+## 0.10.3 — 18 November 2026
+
+- Campaign plans use two inputs and map plans use three. Matching Tier 1 Fates
+  merge into Tier 2 and triple the first card’s regular rewards.
+- Promised Profits includes Doedre’s Tongue under both its named objective and Unique Item.
+- Mark the current offer as the last one in the area to compare active rewards.
+  The overlay also supports this choice with Ctrl+Alt+Enter when prompted.
+- Build dangers use full Tier 1 and Tier 2 tooltip references for checked tiers.
+  Rot and Rotted share effect references and count as the same Fate in plans.
+- The overlay points to a reward tooltip when checking it could change the pick
+  or help identify a reward for the active Promised Profits goal.
+
 ## 0.10.2 — 18 November 2026
 
 - Merging two same-name Tier 2 Fates can complete a recognized Currency combo

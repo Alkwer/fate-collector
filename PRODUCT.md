@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.10.2 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.10.3 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.
@@ -44,6 +44,8 @@ must not require filling every field or interpreting every unknown icon.
 - Connected captures and corrections save automatically. Manual imports retain
   the appropriate explicit save action. New automatic observations remain
   unreviewed until the player checks them.
+- Campaign areas allow two invocation inputs and maps allow three. Reviewed same-name
+  T1 and T2 pairs upgrade one tier and triple the first card’s regular rewards.
 - The current-map workspace separates **Choose a Fate** and **Plan invocation**.
   Reward priorities, exclusions and reusable profiles support the solver.
   The saved-offer archive and current-map collection are distinct; moving
@@ -63,8 +65,12 @@ must not require filling every field or interpreting every unknown icon.
 - Invocation advice requires an active weighted reward; incomplete combos remain
   collection progress. Players can separately record a different invocation already
   performed in game, with undo.
+- A player can mark the current offer as the last one in the area. The reward
+  comparison then uses active rewards and ties equally valuable choices.
+- The overlay can identify a tooltip to check for a decision or an active
+  Promised Profits objective. The player verifies it in game.
 - Optional build-danger actions (Allow / Warn / Exclude) apply to both solvers and
-  overlay advice. Matching Tier 3 PoEDB effects are labelled as source references,
+  overlay advice. Full Tier 1–2 screenshot effects and Tier 3 PoEDB effects are labelled as source references,
   not captured evidence. These filters do not assess overall encounter safety.
 - Boss Viscera farming is a separate planning objective. It compares input count
   and supported duplicate presence, retaining incomparable alternatives without

@@ -1,7 +1,7 @@
 # Fate advisor
 
 The **Current area** screen combines the current offer, next-Fate recommendation,
-collected cards and the order of up to three invocation inputs. Ordinary Fates
+collected cards and the order of two campaign inputs or up to three map inputs. Ordinary Fates
 can only be invoked in the instance where they were collected.
 Everything runs locally, without an API, market prices or changes to observation
 schemas. The rule baseline combines the [prerelease research](../research/FATE_ADVISOR_RESEARCH_2026-11-07.md)
@@ -93,8 +93,13 @@ weight 1 and Armour weight 3 give 7 points to a plan with 1 Currency and 2 Armou
 icons. These are configurable preferences or user estimates in a consistent unit,
 not measured item quantities, market prices, expected value or profit.
 
-The search evaluates all supported subsets of up to three inputs, both confirmed
-T2 duplicate orders, all three choices of discarded middle card in a supported
+A confirmed campaign offer sets a two-input limit for the area. Maps use three.
+If the area type is unknown, the planner allows up to three inputs. Choose
+**Edit collected cards → Planning area** to set the limit manually. The area
+setting carries over to subsequent offers and resets when a new area starts.
+
+The search evaluates the supported subsets within that limit, both orders of a
+matching T1 or T2 pair, all three choices of discarded middle card in a supported
 three-copy invocation, and every eligible offered card against the collected-only
 baseline. While collecting, it ranks total points, then weighted capped combo
 progress, then fewer inputs. Invocation ranks active points, then fewer inputs;
@@ -110,7 +115,7 @@ In reward-priority mode, if no plan establishes positive points, invocation advi
 abstains and offers no recommended completion action. Partial combos instead show
 **Progress while collecting**. The single-goal engine likewise requires an active
 combo with a known threshold. **Record a different invocation** separately records
-up to three inputs actually used in game, even when no recommendation is available;
+the inputs actually used in game within the area limit, even when no recommendation is available;
 collection undo restores exactly those inputs. Neutral cards can still enable
 useful merges during the search, but zero-result reward plans are not suggested.
 
@@ -124,9 +129,14 @@ For a reviewed T2 Fate carrying an identified Currency combo, the advisor also
 checks a future eligible T2 copy of that same Fate. It compares
 every option and the collection under that same condition, credits no rewards
 from the future card, and shows the condition only for a strict lead.
-The overlay shows the nearest such condition. Unknown, conflicting or
+When later offers are possible, the overlay can show the nearest such condition. Unknown, conflicting or
 duplicate-scaled counters cannot establish a conditional total. These scenarios
 do not predict future offers or affect the current recommendation.
+
+Select **Last offer in this area** while choosing at the final cauldron.
+Both reward modes compare what each offered Fate can activate with the current
+collection. Equal improvements tie and incomplete combos add no value to the choice.
+The setting belongs to this offer. A different offer starts with the usual outlook.
 
 Selecting an unknown reward in the editor opens the offline icon comparisons.
 Select the matching PoEDB image, inspect the alternative wordings and optionally
@@ -142,8 +152,10 @@ planning, including overlay choice advice.
 
 **Build dangers** adds Allow / Warn / Exclude for physical damage over time, chaos
 and poison, bleeding, curses, boss life recovery and additional bosses. The matcher
-uses explicit recorded effects and the versioned PoEDB reference for a known,
-reviewed Tier 3 Fate. Supported T2 merges check the resulting Tier 3 reference.
+uses recorded effects first. For a checked tier, it can also match a full Tier 1
+or Tier 2 screenshot tooltip or the corrected Tier 3 PoEDB reference. Rot and
+Rotted refer to the same Fate in risk checks and duplicate planning. The original
+card name stays in the offer. Supported T2 merges check the resulting Tier 3 reference.
 Source matches are labelled and never overwrite recorded modifiers. Missing effects
 and unknown triple output effects remain unverified. Matching dangers appear beside
 the plan or offer. Allow disables that category's filter; it does not establish a
@@ -223,8 +235,8 @@ tooltip meanings without waiting for an application release.
   Sacrament (2). A conflicting explicit threshold leaves activation unresolved.
   A threshold reached once is not assumed to pay multiple times.
 - The search considers subsets of up to three input cards, including both orders
-  of a supported duplicate pair. Two identical named T2 cards merge to T3: regular
-  rewards of the first ×3; the second card's rewards are discarded. Two inputs are
+  of a supported duplicate pair. Two matching T1 cards merge to T2 and two matching T2 cards merge to T3. Regular
+  rewards of the first card are tripled and the second card's rewards are discarded. Two inputs are
   still consumed. At equal active reward output, fewer invocation inputs are preferred.
 - Next-card recommendations require improved target progress over the best plan
   available from the collection alone. A neutral reward can still help when the
@@ -244,7 +256,7 @@ tooltip meanings without waiting for an application release.
   sets. The four ShareX frames are `Awakened_PoE_Trade_7hP14yA4JG` (inputs),
   `ciFsUz5sGd` (1/3), `k5WyUVJYZ7` (3/3) and `Fn6Xloj4OP` (two full sets).
   The captures end before Confirm, so repeated payouts are unverified.
-- Other duplicate combos, mixed tiers, and pairs outside T2 remain unresolved.
+- T1 duplicate combo scaling, other duplicate combos, mixed tiers, and pairs starting at T3 remain unresolved.
   A generic Currency icon or a conflicting threshold cannot establish this combo.
 - Hotfix 2 removed Crowkeeper T3 Culling Strike, reduced Crowkeeper/Wildfire damage
   and fixed Viscera from some Fate-spawned bosses. Historical source text remains
@@ -287,7 +299,7 @@ explanations and collection lifecycle. The following still need live evidence:
 - Native Fate captures for recognition precision/recall, full reward-row coverage,
   tooltip mappings, HDR and UI-scale/resolution calibration. Synthetic tests and
   prerelease screenshots do not certify those properties.
-- Rules for mixed tiers, pairs outside T2, combo behavior after duplicate invocation,
+- Rules for mixed tiers, pairs starting at T3, combo behavior after duplicate invocation,
   and whether merges alter the usable input-slot limit. Unsupported combinations
   remain explicit unknowns until those rules are established.
 - Actual reward distributions, quantity/rarity effects, Viscera probabilities and

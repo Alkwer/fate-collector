@@ -122,6 +122,17 @@ function Test-AdviceHeader {
         $images.Add($fallback)
         Assert-That (!$shortcutsFit -and (Get-ImageRegion $fallback $header) -cne (Get-ImageRegion $unknown $header)) 'Compact advice did not render the text outlook fallback.'
 
+        $advice.title = 'Check rewards before choosing'
+        $advice.detail = "Hover #2's orange feathers icon for Ordered Fate (Promised Profits).`n$context"
+        Write-Record 'state.json' $advice
+        $headerSession.Poll($now)
+        $hover = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 720, $iconPath, [ref]$shortcutsFit)
+        $images.Add($hover)
+        $compactHover = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, $iconPath, [ref]$shortcutsFit)
+        $images.Add($compactHover)
+        Assert-That (!$shortcutsFit -and (Get-ImageRegion $hover $header) -ceq (Get-ImageRegion $compactHover $header)) 'The compact panel displaced the tooltip prompt.'
+        $compactHover.Save((Join-Path $results 'overlay-tooltip-compact.png'), [Drawing.Imaging.ImageFormat]::Png)
+
         foreach ($map in @(
             @{ title = 'Now: #4 Gravewalker'; alternative = 'Bloodthirsty'; points = 1; icon = 'Many Additional Stacked Decks' }
             @{ title = 'Now: tie'; alternative = 'Dryad'; points = 0; icon = 'Valuable Unique Jewellery Item' }

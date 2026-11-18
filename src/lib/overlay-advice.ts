@@ -3,13 +3,16 @@ import { completionCondition, recommendPortfolio, unweightedRewards, type Solver
 import type { Offer } from '../../shared/schema'
 import type { OverlayCapture, OverlayView } from '../../shared/overlay'
 import { cardReviewReasons } from './card-review'
-import { offerBelongsToMap, type AdvisorWorkspace } from './advisor-workspace'
+import { offerBelongsToMap, workspaceInvocationLimit, type AdvisorWorkspace } from './advisor-workspace'
 import { selectedRewardGoal, type SolverSettings } from './solver-settings'
+import { tooltipAdvice } from './tooltip-advice'
+import type { LeagueGoal } from './league-challenges'
 
 export interface OverlayInputs {
   offer: Offer; workspace: AdvisorWorkspace; settings: SolverSettings
   capture: OverlayCapture | null; needsMapConfirmation: boolean
   blocked: boolean; canUndo: boolean; confirmNewArea: boolean
+  leagueGoal?: LeagueGoal
 }
 const shorten = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1)}…` : text
 const number = (value: number) => new Intl.NumberFormat('en', { maximumSignificantDigits: 4 }).format(value)
@@ -68,14 +71,22 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   if (collected) return { ...view, status: 'collected', title: chosen ? shorten(`Recorded: ${chosen.name || 'Unnamed Fate'}`, 240) : 'Choice already used', detail: `${workspace.collection.cards.length}/${MAX_COLLECTED_FATES} Fates collected. Open the next offer for automatic detection, or use F9. Invocation planning is available in Fate Collector.` }
   if (offer.cards.length > 9) return { ...view, status: 'check', title: 'Review this offer in Fate Collector', detail: 'More than nine cards were recognized. Check which cards belong to the offered row before recording a choice.' }
   const farming = settings.profile.objective === 'viscera'
+  const limit = workspaceInvocationLimit(workspace, offer)
+  const lastOffer = workspace.lastOfferId === offer.id
+  if (!farming) view.actions.push(lastOffer
+    ? { id: 'more-offers', label: 'Allow later offers', slot: 10 }
+    : { id: 'last-offer', label: 'Mark as last offer', slot: 10 })
   const goal = selectedRewardGoal(settings, workspace.goal)
-  const portfolio = settings.mode === 'portfolio' || farming ? recommendPortfolio(offer.cards, workspace.collection.cards, settings.profile, workspace.excludedCardIds) : null
-  const single = settings.mode === 'single' && !farming && goal ? recommendFates(offer.cards, workspace.collection.cards, goal, { ...settings.profile, excludedCardIds: workspace.excludedCardIds }) : null
+  const portfolio = settings.mode === 'portfolio' || farming ? recommendPortfolio(offer.cards, workspace.collection.cards, settings.profile, workspace.excludedCardIds, lastOffer, limit) : null
+  const single = settings.mode === 'single' && !farming && goal ? recommendFates(offer.cards, workspace.collection.cards, goal, { ...settings.profile, excludedCardIds: workspace.excludedCardIds }, lastOffer, limit) : null
   const result = portfolio ?? single
   const excluded = new Map(result?.excluded?.map(item => [item.cardId, item.reasons.join(' · ')]))
   const recommended = result?.recommendedCardIds ?? []
   const hasGoal = farming || (portfolio ? settings.profile.goals.some(goal => goal.weight > 0) : !!goal)
   const header = portfolio && !farming && hasGoal ? weightedHeader(portfolio, offer.cards) : null
+  const tooltip = tooltipAdvice({ offered: offer.cards, collected: workspace.collection.cards, profile: settings.profile,
+    excludedCardIds: workspace.excludedCardIds, lastOffer, limit, leagueGoal: input.leagueGoal,
+    ranking: portfolio ? { mode: 'portfolio', result: portfolio } : single && goal ? { mode: 'single', goal, result: single } : null })
   const reviews = [...offer.cards, ...workspace.collection.cards].flatMap(card => {
     const reasons = cardReviewReasons(card)
     return reasons.length ? [`${card.name || 'Unnamed Fate'}: ${reasons.join(', ')}`] : []
@@ -112,6 +123,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   ].filter(Boolean).join(' ')
   // Keep the two header lines readable to protocol v1 clients. New helpers
   // draw the first detail line above the review notes in both panel sizes.
-  if (header) view.detail = header.second + '\n' + view.detail
+  const outlook = lastOffer && !farming ? 'Last offer. Only active rewards count.' : header?.second
+  if (tooltip || outlook) view.detail = [tooltip, outlook, view.detail].filter(Boolean).join('\n')
   return { ...view, title: shorten(view.title, 240), detail: shorten(view.detail, 1200) }
 }

@@ -68,6 +68,9 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   function addCard() { const card = newCard(); onChange({ cards: [...offer.cards, card] }); setSelectedId(card.id) }
   return <section className="panel editor-panel" aria-labelledby={`${instanceId}-heading`}>
     <div className="section-heading"><h2 id={`${instanceId}-heading`}>{collecting ? 'Collected card details' : 'Correct cards'}</h2><button className="text-button" onClick={addCard} disabled={offer.cards.length >= (collecting ? 12 : 30)}>Add card</button></div>
+    {collecting && <label>Planning area<select value={offer.areaCategory === 'campaign' || offer.areaCategory === 'map' ? offer.areaCategory : 'unknown'} onChange={event => onChange({ areaCategory: event.target.value as Offer['areaCategory'] })}>
+      <option value="unknown">Use offer context (up to 3 slots)</option><option value="campaign">Campaign (2 slots)</option><option value="map">Map (3 slots)</option>
+    </select></label>}
     {!offer.cards.length ? <div className="empty-offer"><span className="empty-number">01</span><h3>{collecting ? 'Enter a collected Fate.' : 'Start with a capture.'}</h3><p>{collecting ? 'Copy the name, tier and visible rewards from a card you already collected.' : 'A helper capture fills known card names and descriptions. You can save unreadable evidence now and review it later.'}</p><button className="text-button" onClick={addCard}>Or add a card manually</button></div> : <>
       <div className="table-scroll"><table className="cards-table"><thead><tr><th>Name</th><th>Tier</th><th>Rewards</th>{showChoice && <th>Recorded choice</th>}</tr></thead><tbody>{offer.cards.map((card, index) => <tr key={card.id} className={card.id === selected?.id ? 'selected' : ''}>
         <td><button className="card-name" onClick={() => selectCard(card.id)} aria-pressed={card.id === selected?.id}>{card.name || `Unnamed card ${index + 1}`}</button></td>

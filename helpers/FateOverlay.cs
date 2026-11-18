@@ -589,7 +589,8 @@ namespace FateCollector
 
         int Pixels(int logical) { return (int)Math.Round(logical * scale); }
 
-        bool HasDecisionHeader { get { return displayed.Title.StartsWith("Now: ", StringComparison.Ordinal); } }
+        bool HasDecisionHeader { get { return displayed.Title.StartsWith("Now: ", StringComparison.Ordinal)
+            || (displayed.Detail ?? "").StartsWith("Hover ", StringComparison.Ordinal); } }
 
         int PanelWidth(int workWidth)
         {

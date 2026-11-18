@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "catalog-evidence-2026-11-17",
-  "checkedAt": "2026-11-17",
+  "version": "catalog-evidence-2026-11-18",
+  "checkedAt": "2026-11-18",
   "gameVersion": "3.30 Covens League",
   "completeness": "partial",
   "names": {
@@ -19,7 +19,7 @@
     ],
     "evidence": "shared/screenshot-catalog.json",
     "source": "research/SCREENSHOT_CATALOG_2026-11-14.md",
-    "method": "24 manually transcribed screenshot names plus Rotted and Savage from the 16 November PoEDB snapshot. Rot and Rotted are not aliases. Source IDs and SHA-256 recorded; not an independent native recognition holdout.",
+    "method": "24 manually transcribed screenshot names plus Rotted and Savage from the 16 November PoEDB snapshot. The Rot card opens a tooltip headed Rotted (archive/12, /14, /22 and /27). Recognition preserves both spellings. Planning and effect lookups treat them as the same Fate. Source IDs and SHA-256 identify the catalog evidence. Independent native recognition validation uses a separate holdout.",
     "externalEvidence": "shared/poedb-catalog.json",
     "rewardsInferredFromName": false
   },

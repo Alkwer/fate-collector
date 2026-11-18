@@ -35,6 +35,7 @@ import { LazySymbolReports } from './components/LazySymbolReports'
 import { ImportConflicts, offerDifferences, type ImportConflict } from './components/ImportConflicts'
 import { useOverlayConnection } from './lib/useOverlayConnection'
 import { overlayAdvice, type OverlayInputs } from './lib/overlay-advice'
+import { activeProfitGoal } from './lib/league-challenges'
 import { OverlayConnection } from './components/OverlayConnection'
 import type { OverlayView } from '../shared/overlay'
 import { hideDesktop, isDesktop } from './lib/desktop'
@@ -119,6 +120,7 @@ export default function App() {
     snapshot: capture => {
       const input: OverlayInputs = {
         offer: mapEditor.draft, workspace: advisor.workspace, settings: solver.settings, capture,
+        leagueGoal: activeProfitGoal(advisor.outcomes.journal),
         needsMapConfirmation: advisor.needsMapConfirmation, canUndo: advisor.canUndo,
         blocked: busy || mapEditor.dirty || mapEditor.autoSaving || !mapEditor.savedLocally || sync.status !== 'active'
           || !!detailsPanel.current?.isOpen() || !!manualPanel.current?.isOpen(),
@@ -150,8 +152,12 @@ export default function App() {
       }
       if (capture?.phase !== 'saved' || capture.captureId !== mapEditor.draft.captureId || advisor.needsMapConfirmation) return
       if (action === 'use-offer') {
-        if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft.id, true)
-        else advisor.startMap(mapEditor.draft.id)
+        if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft, true)
+        else advisor.startMap(mapEditor.draft)
+        return
+      }
+      if (action === 'last-offer' || action === 'more-offers') {
+        advisor.changeWorkspace({ ...advisor.workspace, lastOfferId: action === 'last-offer' ? mapEditor.draft.id : null })
         return
       }
       if (action.startsWith('collect:')) {
@@ -283,8 +289,8 @@ export default function App() {
   }
   function useCurrentOffer() {
     if (advisor.needsMapConfirmation) return
-    if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft.id)
-    else advisor.startMap(mapEditor.draft.id)
+    if (advisor.workspace.map) advisor.bindOffer(mapEditor.draft)
+    else advisor.startMap(mapEditor.draft)
   }
   const manualStartsNextOffer = advisor.workspace.usedOfferIds.includes(mapEditor.draft.id)
     || advisor.workspace.collection.cards.some(card => advisor.workspace.sources[card.id] === mapEditor.draft.id || mapEditor.draft.cards.some(offered => offered.id === card.id))
@@ -298,8 +304,8 @@ export default function App() {
     else mapEditor.change(patch)
     advisor.changeWorkspace({ ...advisor.workspace, mode: 'offer' })
     if (fresh && !advisor.needsMapConfirmation) {
-      if (advisor.workspace.map) advisor.bindOffer(target.id)
-      else advisor.startMap(target.id)
+      if (advisor.workspace.map) advisor.bindOffer(target)
+      else advisor.startMap(target)
     }
     setNotice(null)
     return true
@@ -307,8 +313,8 @@ export default function App() {
   function useArchivedOffer() {
     if (archiveEditor.dirty || advisor.needsMapConfirmation || !mapEditor.canReplace()) return
     mapEditor.loadDraft(archiveEditor.draft, archiveEditor.evidence)
-    if (advisor.workspace.map) advisor.bindOffer(archiveEditor.draft.id)
-    else advisor.startMap(archiveEditor.draft.id)
+    if (advisor.workspace.map) advisor.bindOffer(archiveEditor.draft)
+    else advisor.startMap(archiveEditor.draft)
     setTab('collector'); setNotice(null)
   }
   useEffect(() => { setEditing(false) }, [tab, draft.id])
@@ -397,7 +403,12 @@ export default function App() {
         </div></>}
         <DetailPanel trigger={false} ref={detailsPanel} onOpenChange={setEditing} className="advanced-panel" key={`${tab}:${draft.id}`} title="Edit details" footer={<>{editing && saveBar}<button onClick={returnToAdvice}>{tab === 'collector' ? 'Back to advice' : 'Done'}</button></>}><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
           <OfferEditor solverControl={solver} offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
-          <CaptureDetails offer={draft} evidence={evidence} onChange={change} />
+          <CaptureDetails offer={draft} evidence={evidence} onChange={patch => {
+            change(patch)
+            if (tab === 'collector' && patch.areaCategory && advisor.workspace.offerIds.includes(draft.id)) {
+              advisor.changeWorkspace({ ...advisor.workspace, collection: { ...advisor.workspace.collection, areaCategory: patch.areaCategory } })
+            }
+          }} />
         </div></DetailPanel>
         {!editing && saveBar}
       </> : tab === 'guide' ? <UsageGuide onConnect={() => connectionPanel.current?.show()} onMap={() => leaveGuide('collector')} onSaved={() => leaveGuide('saved')} onDiagnostics={() => leaveGuide('diagnostics')} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onDeleteMany={removeMany} onExport={(includeEvidence, ids) => void exportAll(includeEvidence, ids)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}

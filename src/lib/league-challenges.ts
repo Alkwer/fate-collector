@@ -7,7 +7,7 @@ export const OVERPOWERING_OMENS_SOURCE = 'https://poedb.tw/us/Overpowering_Omens
 // Covens of Umbra (3.30) challenge objectives. Reward labels here refer to
 // tooltip-backed catalog entries and are independent of the visual motifs.
 export const profitObjectives = [
-  { id: 'unique', label: 'Unique Item', target: 30, rewards: ['Unique Armour', 'Unique Flask', 'Unique Jewellery Item', 'Unique Weapon', 'Unique Jewel', 'Valuable Unique Jewellery Item', "Dreadmaidens' Sacrament", 'Hide of the Vendigo', 'Corpse Rose', 'Ordered Fate'] },
+  { id: 'unique', label: 'Unique Item', target: 30, rewards: ['Unique Armour', 'Unique Flask', 'Unique Jewellery Item', 'Unique Weapon', 'Unique Jewel', 'Valuable Unique Jewellery Item', "Dreadmaidens' Sacrament", 'Hide of the Vendigo', 'Corpse Rose', 'Ordered Fate', "Doedre's Tongue"] },
   { id: 'gem', label: 'Gem', target: 30, rewards: ['Exceptional Gem', 'Gem with Quality', 'Additional Gems with Quality', 'Additional Gems, Some with Maximum Quality'] },
   { id: 'rarity', label: 'Increased Item Rarity', target: 30, rewards: ['Item Rarity', 'Increased Item Rarity', 'Highly Increased Item Rarity', 'Greatly Increased Item Rarity', 'Massively Increased Item Rarity'] },
   { id: 'currency', label: 'Currency Items', target: 30, rewards: ['Additional Currency Items', 'Additional Valuable Currency Items'] },
@@ -38,6 +38,13 @@ export const leagueGoalSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('omen'), map: z.enum(omenMaps) }).strict(),
 ]).nullable()
 export type LeagueGoal = z.infer<typeof leagueGoalSchema>
+
+export function activeProfitGoal(journal: { goal: LeagueGoal; progress: Record<string, number> } | null) {
+  if (journal?.goal?.kind !== 'profit') return null
+  const { goal, progress } = journal
+  const completed = profitObjectives.filter(row => (progress[`profit:${row.id}`] ?? 0) >= row.target)
+  return completed.length >= 10 || completed.some(row => row.id === goal.objective) ? null : goal
+}
 
 export function profitRewardLabels(id: string) {
   return new Set(profitObjectives.find(row => row.id === id)?.rewards.map(normalizeRewardLabel))

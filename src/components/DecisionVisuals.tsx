@@ -1,5 +1,5 @@
 import type { FateCard, Reward } from '../../shared/schema'
-import type { InvocationPlan } from '../../shared/advisor'
+import type { InvocationLimit, InvocationPlan } from '../../shared/advisor'
 import { useState } from 'react'
 import { fateArt, rewardArt } from '../lib/game-art'
 import { AppIcon } from './AppIcon'
@@ -44,7 +44,8 @@ export function RewardStrip({ rewards, suggested = false, compact = false }: { r
   </div>
 }
 
-export function InvocationSequence({ plan, cards, collected }: {
+export function InvocationSequence({ plan, cards, collected, limit }: {
+  limit: InvocationLimit
   plan: Pick<InvocationPlan, 'cardIds' | 'merges' | 'triples' | 'duplicateCurrency'>; cards: FateCard[]; collected: FateCard[]
 }) {
   const source = (id: string) => {
@@ -53,7 +54,7 @@ export function InvocationSequence({ plan, cards, collected }: {
     return collectedIndex >= 0 ? `collected #${collectedIndex + 1}` : `offer #${offeredIndex + 1}`
   }
   return <div className="invocation-diagram">
-    <div className="sequence-heading"><strong>Select in this order</strong><span>{plan.cardIds.length} / 3 inputs</span></div>
+    <div className="sequence-heading"><strong>Select in this order</strong><span>{plan.cardIds.length} / {limit} inputs</span></div>
     <ol className="invocation-order" data-input-count={plan.cardIds.length}>{plan.cardIds.map((id, index) => {
       const card = cards.find(item => item.id === id)
       const merged = plan.merges.some(merge => merge.firstId === id || merge.consumedId === id)
@@ -71,16 +72,17 @@ export function InvocationSequence({ plan, cards, collected }: {
     })}</ol>
     {plan.merges.map(merge => {
       const first = cards.find(card => card.id === merge.firstId), second = cards.find(card => card.id === merge.consumedId)
+      const inputTier = merge.outputTier - 1
       return <div className="merge-diagram" key={merge.firstId}>
-        <div className="merge-equation" aria-label={`${named(first)}: Tier 2 plus Tier 2 becomes Tier 3`}>
-          <figure><FateArtwork name={named(first)} /><figcaption><TierMark tier={2} /><span>Step {plan.cardIds.indexOf(merge.firstId) + 1}</span></figcaption></figure>
+        <div className="merge-equation" aria-label={`${named(first)}: Tier ${inputTier} plus Tier ${inputTier} becomes Tier ${merge.outputTier}`}>
+          <figure><FateArtwork name={named(first)} /><figcaption><TierMark tier={inputTier} /><span>Step {plan.cardIds.indexOf(merge.firstId) + 1}</span></figcaption></figure>
           <AppIcon name="plus" />
-          <figure><FateArtwork name={named(second)} /><figcaption><TierMark tier={2} /><span>Step {plan.cardIds.indexOf(merge.consumedId) + 1}</span></figcaption></figure>
+          <figure><FateArtwork name={named(second)} /><figcaption><TierMark tier={inputTier} /><span>Step {plan.cardIds.indexOf(merge.consumedId) + 1}</span></figcaption></figure>
           <AppIcon name="arrow" />
-          <figure className="merge-output"><FateArtwork name={named(first)} /><figcaption><TierMark tier={3} /></figcaption></figure>
+          <figure className="merge-output"><FateArtwork name={named(first)} /><figcaption><TierMark tier={merge.outputTier} /></figcaption></figure>
         </div>
         <div className="merge-explanation"><strong>First regular rewards ×3</strong><span>Second rewards discarded</span></div>
-        <p className="sr-only">{named(first)} ({source(merge.firstId)}): T2 + T2 → T3. {named(second)} ({source(merge.consumedId)}) is consumed. Both input slots are used.</p>
+        <p className="sr-only">{named(first)} ({source(merge.firstId)}): T{inputTier} + T{inputTier} → T{merge.outputTier}. {named(second)} ({source(merge.consumedId)}) is consumed. Both input slots are used.</p>
       </div>
     })}
     {!!plan.triples?.length && <div className="merge-diagram"><div className="merge-explanation"><strong>First and third regular rewards ×3</strong><span>Second rewards discarded · all three inputs used</span></div></div>}
