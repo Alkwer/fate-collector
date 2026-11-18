@@ -1,6 +1,7 @@
 import { z } from '../../shared/validation'
 import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
 import { solverProfileSchema } from '../../shared/solver'
+import { REWARD_CATALOG } from '../../shared/reward-catalog'
 
 export const rewardDefinitionSchema = z.object({
   id: z.string().uuid(), label: z.string().trim().min(1).max(160),
@@ -28,22 +29,40 @@ export function selectedRewardGoal(settings: SolverSettings, legacyGoal: Advisor
 }
 
 type Priority = SolverSettings['profile']['goals'][number]
-const TRADE_STARTER_PRIORITIES: readonly Priority[] = [
-  { kind: 'combo', label: 'Exceptional Gem', weight: 10 },
-  { kind: 'combo', label: 'Item Rarity', weight: 4 },
-  { kind: 'combo', label: "Dreadmaidens' Sacrament", weight: 2 },
-  { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
-  { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
-  { kind: 'regular', label: 'Increased Item Rarity', weight: 1 },
-  { kind: 'regular', label: 'Highly Increased Item Rarity', weight: 2 },
-  { kind: 'combo', label: 'Massively Increased Item Rarity', weight: 4 },
-  { kind: 'regular', label: 'Additional Stacked Decks', weight: 2 },
-  { kind: 'combo', label: 'Many Additional Stacked Decks', weight: 4 },
-  { kind: 'regular', label: 'Additional Threads', weight: 1 },
-  { kind: 'combo', label: 'Many Additional Threads', weight: 2 },
-]
+// One point is the baseline for a confirmed reward, including ordinary rare gear
+// whose base, affix tiers and sale price are unknown. IDs distinguish same-label variants.
+const tradeWeights: Readonly<Record<string, number>> = {
+  'exceptional-gem': 10,
+  'observed-viscera-item': 8,
+  'additional-valuable-currency-items': 6,
+  'observed-valuable-unique-jewellery-item': 5,
+  'item-rarity': 4,
+  'observed-massively-increased-item-rarity': 4,
+  'observed-additional-currency-items-combo': 4,
+  'observed-many-additional-stacked-decks': 4,
+  'observed-additional-gems-some-with-maximum-quality': 4,
+  'greatly-increased-item-rarity': 3,
+  'observed-additional-currency-items': 3,
+  'observed-highly-increased-item-rarity': 2,
+  'observed-additional-stacked-decks': 2,
+  'observed-many-additional-threads': 2,
+  'observed-hoards-of-gold': 2,
+  'observed-gem-with-quality': 2,
+  'additional-gems-with-quality': 2,
+  'observed-rare-map': 2,
+  'observed-rare-boots-with-a-speed-modifier': 2,
+  'observed-unique-armour': 2,
+  'observed-unique-flask': 2,
+  'observed-unique-jewellery-item': 2,
+  'observed-unique-weapon': 2,
+  'dreadmaidens-sacrament': 2,
+  'observed-doedres-tongue': 2,
+  'observed-ordered-fate': 2,
+}
+const TRADE_STARTER_PRIORITIES: Priority[] = REWARD_CATALOG.flatMap(entry =>
+  entry.kind === 'unknown' ? [] : [{ kind: entry.kind, label: entry.label, weight: tradeWeights[entry.id] ?? 1 }])
 export const STARTER_PROFILES = {
-  trade: { label: 'Trade / mapping', description: 'Currency, rarity, gems, stacked decks and threads.', priorities: TRADE_STARTER_PRIORITIES },
+  trade: { label: 'Trade / mapping', description: 'Weights for every tooltip-confirmed reward, including equipment and completed combos.', priorities: TRADE_STARTER_PRIORITIES },
   campaign: { label: 'Campaign / SSF', description: 'Currency, quality gems, equipment and early progression.', priorities: [
     { kind: 'regular', label: 'Additional Currency Items', weight: 3 },
     { kind: 'combo', label: 'Additional Currency Items', weight: 4 },

@@ -1,5 +1,5 @@
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
-import { useMemo, useRef } from 'react'
+import { lazy, Suspense, useMemo, useRef } from 'react'
 import { recommendPortfolio, solveInvocation, unweightedRewards, visceraFactors, type SolverPlan, type SolverProfile } from '../../shared/solver'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
@@ -7,6 +7,7 @@ import { OfferPreview } from './OfferPreview'
 import { GainMark, InvocationSequence, RewardSymbol } from './DecisionVisuals'
 import { AppIcon } from './AppIcon'
 import { BuildWarnings } from './BuildWarnings'
+const VisceraTarget = lazy(async () => ({ default: (await import('./VisceraTarget')).VisceraTarget }))
 
 const number = (value: number) => new Intl.NumberFormat('en', { maximumSignificantDigits: 6 }).format(value)
 const named = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
@@ -46,6 +47,7 @@ export function PortfolioAdvice(props: Props) {
   const unweighted = result ? unweightedRewards((mode === 'offer' ? cards : collected).filter(card => !excluded.has(card.id)), profile) : []
   const status = result?.status ?? 'insufficient'
   const farming = profile.objective === 'viscera'
+  const conditional = !alreadyCollected && portfolio?.candidates.find(candidate => candidate.opportunities?.length)
   const outcomeState = mode === 'offer' && alreadyCollected ? 'complete' : status === 'ready' ? 'ready' : status === 'provisional' ? 'provisional' : 'neutral'
   return <>
     {result && <>
@@ -59,7 +61,11 @@ export function PortfolioAdvice(props: Props) {
           : mode === 'offer' ? <><h3>{status === 'provisional' ? 'Provisional preference: ' : selectedIds.length > 1 ? 'Equal matches: ' : 'Recommended: '}{selectedIds.map(id => named(offer.cards.find(card => card.id === id))).join(' / ')}</h3>{status === 'provisional' && <p><AppIcon name="warning" />Missing data or unresolved mechanics may change this ranking.</p>}{selectedIds.length > 1 && <p>No single winner.</p>}</>
           : <h3>{farming ? 'Viscera farming options' : status === 'provisional' ? 'Provisional portfolio plan' : 'Suggested portfolio plan'}</h3>}
         {farming && <p>More Fates and duplicates improve the chance of boss Viscera. Exact odds and the trade-off between these factors are unknown. Check the boss and your build before invoking.</p>}
+        {conditional && <p>{named(offer.cards.find(card => card.id === conditional.cardId))} can take the lead with more matching icons. Compare the conditional totals below. Future offers are unknown.</p>}
       </div>
+      {farming && <Suspense fallback={<p role="status">Loading Viscera sources…</p>}><VisceraTarget
+        offer={offerReady ? offer : null} collected={collected} filters={{ ...profile, excludedCardIds }}
+        offerReady={offerReady && mode === 'offer' && !alreadyCollected} /></Suspense>}
       {!!unweighted.length && <DetailPanel ref={unweightedPanel} className="unweighted-rewards" title={`${unweighted.length} reward ${unweighted.length === 1 ? 'type has' : 'types have'} weight 0`} triggerLabel={`Unweighted rewards (${unweighted.length})`}>
         <p>These identified rewards add no priority points. Their value is not assumed to be zero; your profile does not currently prioritize them.</p>
         <ul>{unweighted.map(reward => <li key={`${reward.kind}:${reward.label}`}>{reward.label} · {reward.kind}</li>)}</ul>
@@ -76,7 +82,12 @@ export function PortfolioAdvice(props: Props) {
         {excluded.has(card.id) && <p className="exclusion-reason">Excluded: {excluded.get(card.id)!.join(' · ')}</p>}
         <BuildWarnings cards={[card]} filters={profile} />
         {farming && candidate?.plan && <p>{visceraFactors(candidate.plan).inputs} input Fates · {visceraFactors(candidate.plan).duplicate ? 'duplicate included' : 'no duplicate'}</p>}
-        {candidate && !alreadyCollected && <><GainMark gain={candidate.gain} label="priority points" provisional={status === 'provisional'} /><small>{signed(candidate.progressGain ?? 0)} combo progress</small></>}
+        {candidate && !alreadyCollected && (farming ? <GainMark gain={candidate.gain} label="priority points" provisional={status === 'provisional'} /> : <div className="offer-score">
+          <div className="candidate-gain"><strong>{candidate.plan ? number(candidate.plan.score) : '?'}</strong><span>{status === 'provisional' ? 'Known plan points now' : 'Plan points now'}{status === 'provisional' && <small>Total unresolved</small>}
+            {!!collected.length && candidate.gain !== null && <small>{signed(candidate.gain)} vs collection</small>}</span></div>
+          {candidate.opportunities?.map(option => <div className="combo-opportunity" key={option.label}><RewardSymbol label={option.label} />
+            <span><strong>{number(option.points)} pts</strong> with {option.icons} more {option.label} {option.icons === 1 ? 'icon on a new Fate' : 'icons on separate new Fates'}</span></div>)}
+        </div>)}
         <button className={featured?.id === card.id ? 'primary-choice collect-fate' : 'collect-fate'} aria-label={`Add ${named(card)} to collected`} disabled={alreadyCollected || excluded.has(card.id) || collected.length >= MAX_COLLECTED_FATES} onClick={() => props.onCollect(card)}><AppIcon name="plus" />Collect Fate</button>
         {candidate?.plan && <DetailPanel className="candidate-plan" title="All rewards & invocation order" triggerLabel="Preview plan"><PortfolioPlan plan={candidate.plan} cards={cards} collected={collected} /></DetailPanel>}
       </div>

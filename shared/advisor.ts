@@ -39,7 +39,7 @@ export type Recommendation = {
   excluded?: { cardId: string; reasons: string[] }[]
 }
 
-const MAX_INVOCATION_INPUTS = 3
+export const MAX_INVOCATION_INPUTS = 3
 const COMBAT_WARNING = 'Combat difficulty remains unassessed. Build filters flag only selected effects.'
 const NO_PROGRESS = 'No positive result could be established for this goal.'
 export const UNKNOWN_FATE_NAME = 'A Fate name is missing, so possible duplicate interactions are unresolved.'

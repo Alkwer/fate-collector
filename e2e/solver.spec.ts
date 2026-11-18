@@ -103,6 +103,30 @@ test('Viscera distinguishes no better known factors from missing reward data', a
   await expect(page.getByRole('button', { name: 'Add Rot to collected', exact: true })).toBeEnabled()
 })
 
+test('trade weights rank the four tooltip-reviewed Malformation Fates with an empty collection', async ({ page }) => {
+  await page.goto('/')
+  await load(page, [
+    fate('Rot', [reward('Gold', 1), reward('Rare Helmets with a Drop Modifier', 1)]),
+    fate('Alchemist', [reward('Additional Gems with Quality', 1)]),
+    fate('Bloodthirsty', [reward('Rare Bows with a Critical Modifier', 1),
+      reward('Additional Valuable Currency Items', 1, { kind: 'combo', threshold: 3 }),
+      reward('Many Additional Stacked Decks', 1, { kind: 'combo', threshold: 2 })]),
+    fate('Gravewalker', [reward('Greatly Increased Item Rarity', 1), reward('Rare Body Armours with a Life Modifier', 1)]),
+  ])
+  await expect(page.getByRole('heading', { name: 'Recommended: Gravewalker', exact: true })).toBeVisible()
+  const alternative = page.locator('.advisor-candidates').filter({ has: page.getByRole('button', { name: 'Add Bloodthirsty to collected' }) })
+  await expect(alternative.locator('.candidate-gain')).toContainText('1Plan points now')
+  await expect(alternative).toContainText('5 pts with 1 more Many Additional Stacked Decks icon on a new Fate')
+  await expect(alternative).toContainText('7 pts with 2 more Additional Valuable Currency Items icons on separate new Fates')
+  for (const width of [1440, 820, 390]) {
+    await page.setViewportSize({ width, height: 950 })
+    await alternative.scrollIntoViewIfNeeded()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: join(tmpdir(), `fate-conditional-offer-${width}.png`) })
+  }
+  await expect(page.getByRole('button', { name: /Unweighted rewards/ })).toHaveCount(0)
+})
+
 test('trade starter defaults are visible and the action updates only its priorities', async ({ page }) => {
   await page.goto('/')
   await openPanel(page, '.reward-settings')
@@ -116,6 +140,8 @@ test('trade starter defaults are visible and the action updates only its priorit
   await expect(rarity).toHaveValue('4')
   await expect(sacrament).toHaveValue('2')
   await expect(currency).toHaveValue('3')
+  await expect(page.getByLabel('Additional Valuable Currency Items combo weight', { exact: true })).toHaveValue('6')
+  await expect(page.getByLabel('Greatly Increased Item Rarity regular weight', { exact: true })).toHaveValue('3')
 
   await compare.uncheck()
   await gem.fill('25')
@@ -123,7 +149,7 @@ test('trade starter defaults are visible and the action updates only its priorit
   await page.getByRole('combobox', { name: 'Add reward', exact: true }).selectOption('custom')
   await page.getByLabel('Reward name', { exact: true }).fill('Armour')
   await page.getByRole('button', { name: 'Add priority', exact: true }).click()
-  await page.getByLabel('Armour regular weight').fill('8')
+  await page.getByLabel('Armour regular weight', { exact: true }).fill('8')
   await page.getByLabel('Avoid modifiers containing').fill('reflect')
   await page.getByRole('button', { name: 'Apply modifier filters', exact: true }).click()
 
@@ -139,7 +165,7 @@ test('trade starter defaults are visible and the action updates only its priorit
   await expect(rarity).toHaveValue('4')
   await expect(sacrament).toHaveValue('2')
   await expect(currency).toHaveValue('3')
-  await expect(page.getByLabel('Armour regular weight')).toHaveValue('8')
+  await expect(page.getByLabel('Armour regular weight', { exact: true })).toHaveValue('8')
   await expect(page.getByLabel('Avoid modifiers containing')).toHaveValue('reflect')
 })
 

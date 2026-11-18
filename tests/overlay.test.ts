@@ -16,6 +16,12 @@ function inputs(): OverlayInputs {
 }
 
 describe('overlay advice uses the existing recommendation engines', () => {
+  it('puts current points and the nearest winning icon before the review guidance', () => {
+    const input = inputs()
+    input.settings.profile.goals.push({ kind: 'combo', label: 'Decks', weight: 4 })
+    input.offer.cards[0].rewards.push({ ...input.offer.cards[0].rewards[0], id: crypto.randomUUID(), kind: 'combo', label: 'Decks', threshold: 2 })
+    expect(overlayAdvice(input).rows[0].detail).toContain('1 known plan pts now · 5 pts with 1 more Decks icon on a new Fate')
+  })
   it('uses the active profile single goal and respects an explicitly empty goal', () => {
     const input = inputs()
     input.settings.mode = 'single'

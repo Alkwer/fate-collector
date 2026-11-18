@@ -4,6 +4,50 @@ import { closePanels, openPanel } from './ui'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
+test('compare an unknown icon offline and apply only a checked tooltip', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const offer = { ...newOffer(), cards: [{ ...newCard(), name: 'Sadist', rewards: [{ ...newReward(), count: 2 }] }] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'unidentified.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Start area with this offer' }).click()
+  await page.getByRole('button', { name: 'Edit current offer' }).click()
+  await page.getByRole('button', { name: /Review reward 1:/ }).click()
+  const picker = page.locator('.icon-lookup')
+  await picker.getByRole('button', { name: 'Staff', exact: true }).click()
+  await expect(picker.getByRole('status')).toContainText('10 matching')
+  await picker.getByLabel('Words in the tooltip').fill('Speed')
+  await expect(picker.getByRole('status')).toContainText('2 matching')
+  await expect(page.getByLabel('Identified', { exact: true })).not.toBeChecked()
+  await picker.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: join(tmpdir(), 'fate-icon-variants-mobile.png') })
+  await picker.getByRole('button', { name: /Apply checked tooltip · Rare Warstaves with a Speed Modifier/ }).click()
+  await expect(page.getByLabel('Label', { exact: true })).toHaveValue('Rare Warstaves with a Speed Modifier')
+  await expect(page.getByLabel('Count', { exact: true })).toHaveValue('2')
+  await expect(page.getByLabel('Identified', { exact: true })).toBeChecked()
+})
+
+test('target a map Viscera with a reviewed companion and keep its build exclusion visible', async ({ page }) => {
+  await page.goto('/')
+  const offer = { ...newOffer(), reviewed: true, area: 'MapWorldsTribunal', areaCategory: 'map', cards: [
+    { ...newCard(), name: 'Savage', tier: 3, rewards: [{ ...newReward(), label: 'Gold', kind: 'regular', identified: true }] },
+  ] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'crater.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Start area with this offer' }).click()
+  await openPanel(page, '.reward-settings')
+  await page.getByRole('combobox', { name: 'Planning objective', exact: true }).selectOption('viscera')
+  await page.getByRole('combobox', { name: 'Additional boss action', exact: true }).selectOption('exclude')
+  await closePanels(page)
+  await page.getByRole('combobox', { name: 'Viscera target', exact: true }).selectOption('Scorched_Arm')
+  await expect(page.locator('.viscera-target')).toContainText('Listed source in Crater.')
+  await expect(page.locator('.viscera-target')).toContainText('Megaera')
+  await expect(page.locator('.viscera-companions')).toContainText('Excluded by your settings')
+  await expect(page.getByRole('button', { name: 'Add Savage to collected' })).toBeDisabled()
+  await page.locator('.viscera-target').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: join(tmpdir(), 'fate-target-viscera.png') })
+})
+
 for (const width of [1440, 390]) test(`source references, unweighted rewards and explicit presets at ${width}px`, async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -18,6 +62,12 @@ for (const width of [1440, 390]) test(`source references, unweighted rewards and
   await page.getByLabel('Import capture file').setInputFiles({ name: 'reference-check.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
   await closePanels(page)
   await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
+  await expect(page.getByRole('button', { name: /Unweighted rewards/ })).toHaveCount(0)
+  await openPanel(page, '.reward-settings')
+  const flask = page.getByLabel('Unique Flask regular weight', { exact: true })
+  await expect(flask).toHaveValue('2')
+  await flask.fill('0')
+  await closePanels(page)
   await page.getByRole('button', { name: 'Unweighted rewards (1)', exact: true }).click()
   await expect(page.getByRole('dialog').filter({ hasText: '1 reward type has weight 0' })).toContainText('Unique Flask · regular')
   await page.getByRole('button', { name: 'Set reward priorities', exact: true }).click()

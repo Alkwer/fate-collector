@@ -1,0 +1,33 @@
+.viscera-target {
+  border-block: 1px solid var(--border);
+  padding-block: 16px;
+  margin-block: 12px 16px;
+  overflow-wrap: anywhere;
+}
+
+.viscera-target label {
+  max-inline-size: 26rem;
+}
+
+.viscera-area {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.viscera-sources, .viscera-companions ul {
+  padding-inline-start: 20px;
+  margin-block: 6px 0;
+}
+
+.viscera-companions {
+  margin-block-start: 14px;
+}
+
+.viscera-companions h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.viscera-companions li + li {
+  margin-block-start: 6px;
+}

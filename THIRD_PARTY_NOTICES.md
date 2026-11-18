@@ -43,6 +43,10 @@ portraits mirrored by PoEDB have individual source URLs and SHA-256 hashes in
 official patch corrections are recorded in [the catalog report](research/POEDB_CATALOG_2026-11-16.md).
 The project license does not relicense this material.
 
+The offline icon picker uses the 38 original GGG reward images from the same
+PoEDB table. Their filenames and original CDN URLs are recorded in
+[`shared/poedb-catalog.json`](shared/poedb-catalog.json).
+
 ## Dependencies
 
 The Windows helper packages the Microsoft Edge WebView2 SDK version 1.0.3537.50

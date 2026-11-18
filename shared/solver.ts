@@ -1,6 +1,6 @@
 import { z } from './validation.ts'
 import {
-  advisorInputProblem, MAX_COLLECTED_FATES, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
+  advisorInputProblem, MAX_COLLECTED_FATES, MAX_INVOCATION_INPUTS, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
   normalizeRewardLabel, TRIPLED_REGULAR_MULTIPLIER, UNKNOWN_FATE_NAME, UNRESOLVED_COMBO_MERGE,
   UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, visitInvocationOrders,
   type AdvisorGoal, type InvocationPlan, type PlanResult, type Recommendation,
@@ -15,12 +15,13 @@ function rewardKey(kind: SolverReward['kind'], label: string): string {
   return `${kind}:${normalizeRewardLabel(label)}`
 }
 
+export const MAX_REWARD_PRIORITIES = 128
 export const solverProfileSchema = z.object({
   goals: z.array(z.object({
     kind: z.enum(['regular', 'combo']),
     label: z.string().trim().min(1).max(160),
     weight: z.number().finite().min(0).max(1_000_000),
-  }).strict()).max(30),
+  }).strict()).max(MAX_REWARD_PRIORITIES),
   avoidModifiers: z.array(z.string().trim().min(1).max(1000)).max(30),
   risks: riskSettingsSchema.optional(),
   objective: z.enum(['rewards', 'viscera']).optional(),
@@ -82,7 +83,33 @@ export type SolverCandidate = {
   plan: SolverPlan | null
   gain: number | null
   progressGain: number | null
+  opportunities?: ComboOpportunity[]
   warnings: string[]
+}
+
+export type ComboOpportunity = { label: string; icons: number; points: number }
+
+// Each future input is a distinct, eligible Fate with one matching icon.
+// Its other rewards are unspecified and contribute no points in this comparison.
+function completionScores(plans: SolverPlan[]) {
+  const scores = new Map<string, ComboOpportunity>()
+  for (const plan of plans) {
+    const slots = MAX_INVOCATION_INPUTS - plan.cardIds.length
+    if (!slots) continue
+    for (const reward of plan.rewards) {
+      if (reward.kind !== 'combo' || !reward.weight || !reward.count || !reward.threshold || reward.activated || reward.uncertain) continue
+      const needed = reward.threshold - reward.count
+      if (needed > slots) continue
+      // Competing plans may use just one of two later icons and keep an
+      // existing input in the other slot.
+      for (let icons = needed; icons < MAX_INVOCATION_INPUTS && icons < reward.threshold; icons++) {
+        const key = JSON.stringify([normalizeRewardLabel(reward.label), icons])
+        const points = roundPoints(plan.score + reward.weight)
+        if (points > (scores.get(key)?.points ?? 0)) scores.set(key, { label: reward.label, icons, points })
+      }
+    }
+  }
+  return scores
 }
 
 export type SolverPortfolio = SolverResult & {
@@ -361,10 +388,12 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
   const initial = searchPlans(pool, input.weights, thresholds, undefined, input.profile)
   const baseline = initial.plans[0] ?? null
   const warnings = initial.warnings
+  const projections = new Map<string, ReturnType<typeof completionScores>>()
   const candidates: SolverCandidate[] = eligible.map(card => {
     const result = searchPlans(pool, input.weights, thresholds, card, input.profile)
     for (const [message, affectsRanking] of result.warnings) recordWarning(warnings, { message, affectsRanking })
     const plan = result.plans[0] ?? null
+    if (input.profile.objective !== 'viscera') projections.set(card.id, completionScores(result.plans))
     return { cardId: card.id, plan,
       gain: plan ? roundPoints(plan.score - (baseline?.score ?? 0)) : null,
       progressGain: plan ? roundPoints(plan.progress - (baseline?.progress ?? 0)) : null,
@@ -391,6 +420,25 @@ export function recommendPortfolio(offered: FateCard[], collected: FateCard[], p
       }) }
   }
   candidates.sort((a, b) => a.plan && b.plan ? comparePlans(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
+  const baselineCompletions = completionScores(initial.plans)
+  const bestNow = Math.max(baseline?.score ?? 0, candidates[0]?.plan?.score ?? 0)
+  for (const candidate of candidates) {
+    const others = candidates.filter(other => other !== candidate)
+    const bestOther = Math.max(baseline?.score ?? 0, ...others.map(other => other.plan?.score ?? 0))
+    if (!candidate.plan || candidate.plan.score > bestOther) continue
+    const wins = [...(projections.get(candidate.cardId) ?? [])].filter(([key, { points }]) =>
+      points > bestNow && points > (baselineCompletions.get(key)?.points ?? 0)
+      && others.every(other => points > (projections.get(other.cardId)?.get(key)?.points ?? 0)))
+      .map(([, opportunity]) => opportunity)
+      .sort((a, b) => a.icons - b.icons || b.points - a.points || a.label.localeCompare(b.label))
+    const shown = new Set<string>()
+    candidate.opportunities = wins.filter(option => {
+      const label = normalizeRewardLabel(option.label)
+      if (shown.has(label)) return false
+      shown.add(label)
+      return true
+    })
+  }
   const best = candidates[0]
   const bestPlan = best?.plan
   const measuredImprovement = (best?.gain ?? 0) > 0 || (best?.gain === 0 && (best.progressGain ?? 0) > 0)

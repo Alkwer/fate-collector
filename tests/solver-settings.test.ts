@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import { applyTradeStarter, newSolverSettings, parseSolverSettings, readSolverSettings, serializeSolverSettings, SOLVER_SETTINGS_KEY, upsertDefinition, writeSolverSettings, replaceStarterPriorities, STARTER_PROFILES } from '../src/lib/solver-settings'
 import { loadAdvisorWorkspace, newAdvisorWorkspace, startMapWorkspace } from '../src/lib/advisor-workspace'
-import { solveInvocation } from '../shared/solver'
+import { MAX_REWARD_PRIORITIES, solveInvocation } from '../shared/solver'
+import { REWARD_CATALOG } from '../shared/reward-catalog'
 import type { FateCard } from '../shared/schema'
 
 function memory() {
@@ -20,9 +21,12 @@ test('new profiles cover live reward variants without changing an existing saved
     { kind: 'combo', label: 'Additional Currency Items', weight: 4 },
     { kind: 'combo', label: 'Massively Increased Item Rarity', weight: 4 },
   ]), avoidModifiers: [] }, definitions: [] })
-  expect(starter.profile.goals).toHaveLength(12)
-  starter.profile.goals[0].weight = 99
-  expect(newSolverSettings().profile.goals[0].weight).toBe(10)
+  const known = REWARD_CATALOG.filter(entry => entry.kind !== 'unknown')
+  expect(starter.profile.goals.map(({ kind, label }) => [kind, label]).sort())
+    .toEqual(known.map(({ kind, label }) => [kind, label]).sort())
+  expect(starter.profile.goals.every(goal => goal.weight > 0)).toBe(true)
+  starter.profile.goals.find(goal => goal.label === 'Exceptional Gem')!.weight = 99
+  expect(newSolverSettings().profile.goals.find(goal => goal.label === 'Exceptional Gem')?.weight).toBe(10)
   expect(store.getItem(SOLVER_SETTINGS_KEY)).toBeNull()
 
   const previous = { ...newSolverSettings(), mode: 'single' as const, profile: {
@@ -48,27 +52,25 @@ test('applying the starter updates matching weights and keeps unrelated prioriti
     { ...previous.profile.goals[0], weight: 2 },
     { ...previous.profile.goals[1], weight: 4 },
     previous.profile.goals[2],
-    newSolverSettings().profile.goals[0],
-    newSolverSettings().profile.goals[1],
-    newSolverSettings().profile.goals[3],
-    ...newSolverSettings().profile.goals.slice(5),
+    ...newSolverSettings().profile.goals.filter(goal =>
+      !(goal.kind === 'combo' && ["Dreadmaidens' Sacrament", 'Additional Currency Items'].includes(goal.label))),
   ] } })
   expect(previous.profile.goals[0].weight).toBe(15)
   expect(applyTradeStarter(applied!)).toEqual(applied)
 })
 
-test('applying the starter is atomic at the 30-priority limit', () => {
+test('applying the starter is atomic at the profile capacity limit', () => {
   const starter = newSolverSettings()
-  const unrelated = Array.from({ length: 18 }, (_, index) => ({ kind: 'regular' as const, label: `Reward ${index + 1}`, weight: 1 }))
+  const unrelated = Array.from({ length: MAX_REWARD_PRIORITIES - starter.profile.goals.length }, (_, index) => ({ kind: 'regular' as const, label: `Reward ${index + 1}`, weight: 1 }))
   const available = { ...starter, mode: 'single' as const, profile: { ...starter.profile, goals: unrelated } }
   const atLimit = applyTradeStarter(available)
-  expect(atLimit?.profile.goals).toHaveLength(30)
+  expect(atLimit?.profile.goals).toHaveLength(MAX_REWARD_PRIORITIES)
   expect(applyTradeStarter(atLimit!)).toEqual(atLimit)
   const full = { ...available, profile: { ...available.profile, goals: [
     ...unrelated, { kind: 'regular' as const, label: 'Extra reward', weight: 1 },
   ] } }
   expect(applyTradeStarter(full)).toBeNull()
-  expect(full.profile.goals).toHaveLength(19)
+  expect(full.profile.goals).toHaveLength(unrelated.length + 1)
   expect(full.mode).toBe('single')
 })
 

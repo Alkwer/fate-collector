@@ -1,5 +1,18 @@
 # Fate Collector releases
 
+## 0.10.0 — 18 November 2026
+
+- Compare current plan points and the matching icons that would put a different
+  Fate ahead. The overlay shows the nearest qualifying completion.
+- Match reward icons against 38 offline PoEDB images and their tooltip
+  variants. Trade starts with editable priorities for 62 verified variants.
+- Select a target Viscera, check listed sources and companion bosses, and
+  filter fire damage over time or Brittle and critical strikes.
+- Track Promised Profits and Overpowering Omens goals and optionally record
+  the boss, patch, in-game preview and observed loot after an invocation.
+
+Install the complete helper bundle to use the updated offline advisor.
+
 ## 0.9.0 — 17 November 2026
 
 - Keep up to 20 named build profiles. Create, duplicate, rename and switch

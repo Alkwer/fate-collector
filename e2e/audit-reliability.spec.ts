@@ -23,7 +23,7 @@ test('unknown rewards show known gain and unresolved totals', async ({ page }) =
   await page.getByRole('button', { name: 'Load example', exact: true }).click()
   await page.getByRole('button', { name: 'Start area with this offer', exact: true }).click()
   await expect(page.locator('.candidate-gain').first()).toContainText('Total unresolved')
-  await expect(page.locator('.candidate-gain').first()).toContainText('Known gain')
+  await expect(page.locator('.candidate-gain').first()).toContainText(/Known (plan points now|gain)/)
   await expect(page.locator('.candidate-gain').getByText('No gain', { exact: true })).toHaveCount(0)
 })
 

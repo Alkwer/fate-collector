@@ -50,6 +50,11 @@
 .candidate-gain > strong { font: 650 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
 .candidate-gain > span { font-size: 13px; line-height: 1.35; }
 .candidate-gain small { display: block; margin-top: 4px; color: var(--warning); }
+.offer-score { grid-column: 1 / -1; min-width: 0; }
+.offer-score .candidate-gain { margin: 0; }
+.offer-score .candidate-gain small { color: var(--muted); }
+.combo-opportunity { display: flex; align-items: flex-start; gap: 6px; margin: 4px 0 8px; color: var(--text); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.combo-opportunity .reward-symbol, .combo-opportunity .reward-symbol img, .combo-opportunity .reward-symbol svg { width: 24px; height: 24px; flex: 0 0 24px; object-fit: contain; }
 .candidate-gain[data-gain='positive'] { color: var(--success); }
 .candidate-gain[data-gain='negative'], .candidate-gain[data-gain='unknown'] { color: var(--warning); }
 .visual-offer .collect-fate { width: 100%; margin: 0; padding-inline: 12px; }
@@ -144,6 +149,8 @@
   .visual-offer .candidate-plan { grid-column: 1 / -1; margin: 0; }
   .visual-offer .collect-fate { min-width: 120px; }
   .visual-offer .advisor-candidates > .collect-fate { grid-row: 1; grid-column: 1 / -1; margin-top: 0; }
+  .visual-offer .advisor-candidates:has(.offer-score) > .offer-score { grid-row: 1; }
+  .visual-offer .advisor-candidates:has(.offer-score) > .collect-fate { grid-row: 2; }
   .visual-offer .exclusion-control, .visual-offer .exclusion-reason { grid-column: 1 / -1; }
   .reward-strip { padding-block: 12px; }
   .invocation-diagram .invocation-order { gap: 24px; }
