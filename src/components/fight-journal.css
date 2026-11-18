@@ -1,0 +1,12 @@
+.fight-journal-action, .league-challenge-action { margin-block: 12px; }
+.fight-journal-form, .league-goal-form { display: grid; gap: 14px; margin-top: 16px; }
+.fight-journal-form button, .league-goal-form button { justify-self: start; }
+.fight-form-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fight-inputs ol { margin-block: 6px; padding-inline-start: 24px; }
+.fight-journal .detail-body > label { margin-top: 12px; }
+.fight-journal .detail-body, .league-challenge .detail-body { overflow-wrap: anywhere; }
+.league-challenge-action > p { margin-top: 8px; }
+
+@media (max-width: 520px) {
+  .fight-form-pair { grid-template-columns: minmax(0, 1fr); }
+}

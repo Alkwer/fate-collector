@@ -14,6 +14,11 @@ import { AppIcon } from './AppIcon'
 import { BuildWarnings } from './BuildWarnings'
 import { RecordInvocation } from './RecordInvocation'
 import { selectedRewardGoal } from '../lib/solver-settings'
+import { FightJournal } from './FightJournal'
+import { LeagueChallenge } from './LeagueChallenge'
+import type { InvocationAction } from '../lib/fight-journal'
+import type { FightJournalControl } from '../lib/useFightJournal'
+import type { SolverPlan } from '../../shared/solver'
 const goalKey = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.label)}`
 const cardName = (card: FateCard | undefined) => card?.name.trim() || 'Unnamed Fate'
 
@@ -29,7 +34,8 @@ interface Props {
   solverControl: SolverSettingsControl
   offer: Offer
   workspace: AdvisorWorkspace
-  onChange: (workspace: AdvisorWorkspace) => void
+  onChange: (workspace: AdvisorWorkspace, invocation?: InvocationAction) => void
+  outcomes: FightJournalControl
   onEditOffer: (cardId?: string) => void
   onAddManual: () => void
   busy: boolean
@@ -40,7 +46,7 @@ interface Props {
   automatic: boolean
   savedOffers: Offer[]
 }
-export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManual, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers, solverControl }: Props) {
+export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManual, busy, needsMapConfirmation, onUseOffer, source, saved, automatic, savedOffers, solverControl, outcomes }: Props) {
   const { collection, mode, sources } = workspace
   const goal = selectedRewardGoal(solverControl.settings, workspace.goal)
   const portfolioMode = solverControl.settings.mode === 'portfolio' || solverControl.settings.profile.objective === 'viscera'
@@ -80,10 +86,26 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     const corrected = source?.cards.find(item => item.id === card.id)
     return corrected && JSON.stringify(corrected) !== JSON.stringify(card) ? [{ card, corrected }] : []
   })
-  function completeInvocation(plan: { cardIds: string[] }) {
+  function completeInvocation(plan: SolverPlan | InvocationPlan | { cardIds: string[] }) {
     if (!mapReady || busy || !plan.cardIds.length || !plan.cardIds.every(id => collection.cards.some(card => card.id === id))) return
+    const sameArea = [offer, ...savedOffers.filter(record => plan.cardIds.some(id => sources[id] === record.id))]
+      .filter(record => record.origin === 'live' && offerBelongsToMap(workspace, record.id))
+    const knownVersion = sameArea.find(record => record.gameVersion.trim() && !['unknown', '3.30 preview'].includes(record.gameVersion.trim()))
+    const model = 'rewards' in plan ? plan.rewards.map(reward => {
+      if (!reward.label || reward.kind === 'unknown') return 'Unidentified reward'
+      if (reward.count === null || reward.uncertain) return `${reward.label} (unresolved)`
+      return reward.kind === 'combo' ? `${reward.label} (${reward.activated ? 'active' : 'inactive'})` : `${reward.label} (${reward.count} icon units)`
+    }).join(' · ') : 'targetCount' in plan && goal ? `${goal.label} (${plan.targetCount} icon units${goal.kind === 'combo' ? plan.activated ? ', combo active' : ', combo inactive' : ''})` : ''
+    const merge = 'merges' in plan && plan.merges.length ? ' · Tier 2 pair merges into Tier 3' : ''
+    const triple = 'triples' in plan && plan.triples?.length ? ' · Three-copy invocation' : ''
+    const modeledPreview = model || merge || triple ? `Advisor preview · ${model}${merge}${triple}`.slice(0, 1800) : ''
     const usedOfferIds = [...new Set([...workspace.usedOfferIds, ...plan.cardIds.flatMap(id => sources[id] ? [sources[id]] : [])])]
-    onChange({ ...workspace, usedOfferIds, collection: { ...collection, cards: collection.cards.filter(card => !plan.cardIds.includes(card.id)) }, sources: Object.fromEntries(Object.entries(sources).filter(([id]) => !plan.cardIds.includes(id))) })
+    onChange({ ...workspace, usedOfferIds, collection: { ...collection, cards: collection.cards.filter(card => !plan.cardIds.includes(card.id)) }, sources: Object.fromEntries(Object.entries(sources).filter(([id]) => !plan.cardIds.includes(id))) }, {
+      cardIds: plan.cardIds,
+      mapName: sameArea.find(record => record.area.trim())?.area ?? '',
+      gameVersion: knownVersion?.gameVersion ?? '',
+      modeledPreview,
+    })
   }
   function collect(card: FateCard) {
     if (alreadyCollected || collection.cards.length >= MAX_COLLECTED_FATES || busy || !offerReady) return
@@ -94,6 +116,11 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
       ? workspace.excludedCardIds.filter(id => id !== cardId) : [...workspace.excludedCardIds, cardId] })
   }
   const empty = !offer.cards.length && (!collection.cards.length || manualEntry) && !offer.captureId
+  const challenges = <LeagueChallenge control={outcomes} mode={mode} mapReady={mapReady}
+    offered={offerReady && !alreadyCollected ? offer.cards : []} collected={collection.cards} profile={solverControl.settings.profile}
+    excludedCardIds={workspace.excludedCardIds} confirmedOmenMap={workspace.confirmedOmenMap}
+    onConfirmOmenMap={map => { if (mapReady) onChange({ ...workspace, confirmedOmenMap: map }) }} />
+  const fightJournal = <FightJournal control={outcomes} latest={workspace.lastInvocation} />
   const manualAction = <div className="manual-entry-action"><button className={empty ? 'primary-button' : 'outline-button'} onClick={onAddManual}><AppIcon name="plus" />Add Fate manually</button><p>{empty ? 'Choose by name or picture. No helper needed.' : alreadyCollected ? 'Enter your next offer.' : 'Add the choices shown in game.'}</p></div>
   if (empty) return <div className={`capture-start ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
     <div className="capture-intro"><h2 id="advisor-heading" tabIndex={-1}>Bring your next offer into focus.</h2><p>Add your Fates or import a capture. Compare rewards and choose.</p></div>
@@ -101,6 +128,8 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     {source}
     <p className="capture-start-note">Use the Windows helper for local text recognition, or keep a screenshot as evidence.</p>
     <DetailPanel className="reward-settings" autoOpen={!!solverControl.error} title="Reward priorities"><SolverControls control={solverControl} availableGoals={goals} /></DetailPanel>
+    {challenges}
+    {fightJournal}
     {mapReady && <DetailPanel className="collection-editor" title="Edit collected cards" onOpenChange={setManualEntry}><OfferEditor solverControl={solverControl} offer={collection} purpose="collection" onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} /></DetailPanel>}
   </div>
   return <div className={`collector-grid map-layout ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
@@ -119,6 +148,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           </select></label>}
           <SolverControls control={solverControl} availableGoals={goals} />
         </DetailPanel>
+        {mapReady && challenges}
         {mapReady && mode === 'offer' && !offerReady && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>Is this offer from your current area?</strong><p>New imports and folder captures need confirmation before they affect advice.</p><button className="outline-button" onClick={onUseOffer}>Use this offer in current area</button></div>}
         {!workspace.map && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>No active area</strong><p>Start with this offer. Fates can only be used in the instance where you collect them.</p><button className="outline-button" onClick={onUseOffer}>Start area with this offer</button></div>}
         {mapReady && (mode === 'invoke' || offerReady) && <>
@@ -157,6 +187,8 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           {!portfolioMode && !!invocation?.collectingPlans?.length && <div className="combo-progress"><h3>Progress while collecting</h3><p>{goal?.label}: {invocation.collectingPlans[0].targetCount}/{invocation.collectingPlans[0].threshold ?? '?'} icons · not active</p></div>}
           <RecordInvocation cards={collection.cards} onRecord={completeInvocation} />
         </>}
+        {!mapReady && challenges}
+        {fightJournal}
         {!portfolioMode && !!result?.excluded?.length && <DetailPanel title="Excluded by your settings"><ul>{result.excluded.map(row => <li key={row.cardId}>{cardName(allCards.find(card => card.id === row.cardId))}: {row.reasons.join(' · ')}</li>)}</ul></DetailPanel>}
         {nextReview && <section className="advisor-review" aria-label="Data to check"><div className="review-next"><div><strong>{reviewCards.length} {reviewCards.length === 1 ? 'card needs' : 'cards need'} a check</strong><p>{cardName(nextReview.card)}{nextReview.collected ? ' · collected' : ''}: {nextReview.reasons.join(' · ')}</p></div><button onClick={() => reviewCard(nextReview.card.id, nextReview.collected)}>Review {cardName(nextReview.card)}</button></div>{reviewCards.length > 1 && <DetailPanel ref={reviewList} title={<>See the other {reviewCards.length - 1} {reviewCards.length === 2 ? 'card' : 'cards'}</>}><ul>{reviewCards.slice(1).map(({ card, collected, reasons }) => <li key={`${collected}:${card.id}`}><div><strong>{cardName(card)}{collected ? ' · collected' : ''}</strong><span>{reasons.join(' · ')}</span></div><button onClick={() => reviewCard(card.id, collected)}>Review {cardName(card)}</button></li>)}</ul></DetailPanel>}</section>}
         {!portfolioMode && result && result.warnings.length > 0 && <DetailPanel className="advisor-caveats" title="What limits this recommendation" triggerLabel={<><AppIcon name="question" />Why this result?</>}><ul className="advisor-warnings">{result.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}

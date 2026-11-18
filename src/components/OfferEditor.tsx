@@ -9,6 +9,7 @@ import { cardNeedsReview } from '../lib/card-review'
 import { CardEvidence } from './CardEvidence'
 import { FateReference } from './FateReference'
 import { RewardReferences } from './RewardReferences'
+import { RewardIconLookup } from './RewardIconLookup'
 import { upsertDefinition } from '../lib/solver-settings'
 import { normalizeRewardLabel } from '../../shared/advisor'
 import { isRewardIdentified, needsUniqueTooltipCheck } from '../../shared/reward-evidence'
@@ -21,6 +22,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   const showChoice = !collecting && showRecordedChoice
   const [templateNotice, setTemplateNotice] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [lookupId, setLookupId] = useState<string | null>(null)
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
   const rewardFields = useRef(new Map<string, HTMLFieldSetElement>())
   const cardHeading = useRef<HTMLHeadingElement>(null), focusSelection = useRef(false)
@@ -82,7 +84,7 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
         {!!selected.rewards.length && <div className="reward-shortcuts" aria-label="Reward shortcuts">{selected.rewards.map((reward, index) => {
           const motif = reward.visualId && rewardIcons.motifs.find(icon => icon.visualId === reward.visualId)
           const needsReview = !isRewardIdentified(reward) || reward.kind === 'unknown'
-          return <button key={reward.id} className={needsReview ? 'needs-review' : ''} onClick={() => selectReward(reward.id)} aria-label={`Review reward ${index + 1}: ${reward.label || 'unidentified'}`}>
+          return <button key={reward.id} className={needsReview ? 'needs-review' : ''} onClick={() => { setLookupId(needsReview ? reward.id : null); selectReward(reward.id) }} aria-label={`Review reward ${index + 1}: ${reward.label || 'unidentified'}`}>
             {motif && <img src={`data:image/png;base64,${motif.pngBase64}`} width={34} height={36} alt="" />}<span>{index + 1}. {reward.label || 'Unidentified icon'}<small>{needsReview ? 'Needs identification' : 'Check details'}</small></span>
           </button>
         })}</div>}
@@ -106,6 +108,8 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
             const icon = entry && rewardIcons.icons.find(icon => icon.id === entry.id)
             return <fieldset className="reward-editor" key={reward.id} tabIndex={-1} ref={element => { if (element) rewardFields.current.set(reward.id, element); else rewardFields.current.delete(reward.id) }}><legend>Reward {index + 1}</legend>
             {reward.visualId && <p className="reward-label hint">Image suggestion: {VISUAL_LABELS[reward.visualId]}. Check the in-game tooltip for its reward, kind and threshold.</p>}
+            <button type="button" className="text-button reward-label" aria-expanded={lookupId === reward.id} onClick={() => setLookupId(lookupId === reward.id ? null : reward.id)}>{lookupId === reward.id ? 'Hide icon variants' : 'Compare icon variants'}</button>
+            {lookupId === reward.id && <RewardIconLookup reward={reward} ocr={evidence?.ocrStatus === 'ok' ? evidence.ocrText : ''} onApply={fields => { updateReward(reward.id, fields); setLookupId(null); selectReward(reward.id) }} />}
             {needsUniqueTooltipCheck(reward) && <p className="reward-label hint">This icon is shared by several league uniques. An older suggestion may name the wrong item. Select the exact matching tooltip below, or enter its details and confirm the tooltip.</p>}
             <label className="reward-label">Tooltip catalog<select value={entry?.id ?? (personalEntry ? `personal:${personalEntry.id}` : '')} onChange={event => {
               const entry = REWARD_CATALOG.find(item => item.id === event.target.value)

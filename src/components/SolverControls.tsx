@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { normalizeRewardLabel, type AdvisorGoal } from '../../shared/advisor'
 import { applyTradeStarter, MAX_PROFILE_BYTES, parseSolverSettings, serializeSolverSettings, replaceStarterPriorities, STARTER_PROFILES, type StarterProfileId, type SolverSettings } from '../lib/solver-settings'
 import { rewardFamily } from '../../shared/reward-families'
+import { MAX_REWARD_PRIORITIES } from '../../shared/solver'
 import { RISK_CATEGORIES, type FateRiskSettings } from '../../shared/fate-risk'
 import type { useSolverSettings } from '../lib/useSolverSettings'
 import { SolverProfiles } from './SolverProfiles'
@@ -33,7 +34,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       if (!change(next)) { setMessage({ text: 'Profile not changed. Resolve the storage message below and try again.', error: true }); return false }
       setMessage(null); return true
     } catch {
-      setMessage({ text: 'Use up to 30 unique priorities and 30 modifier filters; weights must be 0–1,000,000.', error: true }); return false
+      setMessage({ text: `Use up to ${MAX_REWARD_PRIORITIES} unique priorities and 30 modifier filters. Weights must be 0–1,000,000.`, error: true }); return false
     }
   }
   function addGoal() {
@@ -46,7 +47,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
   function useTradeStarter() {
     const next = applyTradeStarter(settings)
     if (!next) {
-      setMessage({ text: 'The trade starter would exceed 30 priorities. Remove some priorities and try again.', error: true })
+      setMessage({ text: `The trade starter would exceed ${MAX_REWARD_PRIORITIES} priorities. Remove some priorities and try again.`, error: true })
       return
     }
     if (update(next)) {
@@ -85,6 +86,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
       <div className="starter-profile">
         <label>Starter priorities<select value={starterId} onChange={event => setStarterId(event.target.value as StarterProfileId)}>{Object.entries(STARTER_PROFILES).map(([id, entry]) => <option key={id} value={id}>{entry.label}</option>)}</select></label>
         <p className="hint">{starter.description} These are editable preferences, not measured reward values.</p>
+        {starterId === 'trade' && <p className="hint">Item rarity weights reviewed 18 Nov 2026. GGG reported diminishing currency benefits on high-rarity bosses and announced a change to core drops. <a href="https://www.pathofexile.com/forum/view-post/26893640" target="_blank" rel="noreferrer">GGG currency update</a></p>}
         <p id={starterDescription} className="hint">Replace your {settings.profile.goals.length} priorities with {starter.priorities.length} starter priorities. Build filters and personal templates stay unchanged.</p>
         <button className="outline-button" aria-describedby={starterDescription} onClick={() => { if (update(replaceStarterPriorities(settings, starterId))) { setSelected(''); setMessage({ text: `${starter.label} priorities applied.`, error: false }) } }}>Replace priorities</button>
         {starterId === 'trade' && <><p className="hint">To keep other priorities, update only the trade starter’s rewards.</p><button className="text-button" onClick={useTradeStarter}>Use trade starter</button></>}
@@ -94,7 +96,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
         <label>Weight<input aria-label={`${goal.label} ${goal.kind} weight`} type="number" min={0} max={1_000_000} step="any" value={goal.weight} onChange={event => update({ ...settings, profile: { ...settings.profile, goals: settings.profile.goals.map((row, i) => i === index ? { ...row, weight: Number(event.target.value) } : row) } })} /></label>
         <button className="text-button" aria-label={`Remove priority ${goal.label} ${goal.kind}`} onClick={() => update({ ...settings, profile: { ...settings.profile, goals: settings.profile.goals.filter((_, i) => i !== index) } })}>Remove</button>
       </li> : null)}</ul></section>)}
-      <div className="priority-add"><label>Add reward<select value={selected} onChange={event => setSelected(event.target.value)}><option value="">Choose a reward</option>{choices.map(goal => <option key={key(goal)} value={key(goal)}>{goal.label} · {goal.kind}</option>)}<option value="custom">Enter another reward…</option></select></label><button onClick={addGoal} disabled={settings.profile.goals.length >= 30}>Add priority</button></div>
+      <div className="priority-add"><label>Add reward<select value={selected} onChange={event => setSelected(event.target.value)}><option value="">Choose a reward</option>{choices.map(goal => <option key={key(goal)} value={key(goal)}>{goal.label} · {goal.kind}</option>)}<option value="custom">Enter another reward…</option></select></label><button onClick={addGoal} disabled={settings.profile.goals.length >= MAX_REWARD_PRIORITIES}>Add priority</button></div>
       {selected === 'custom' && <div className="priority-add"><label>Reward name<input maxLength={160} value={customLabel} onChange={event => setCustomLabel(event.target.value)} /></label><label>Reward kind<select value={customKind} onChange={event => setCustomKind(event.target.value as 'regular' | 'combo')}><option value="regular">Regular</option><option value="combo">Combo</option></select></label></div>}
       <section className="risk-settings"><h3>Build dangers</h3><p className="hint">Applies to every planning mode. Matches recorded effects and checked Tier 3 source references, including supported merges. Allow means no filter, not a safe encounter. Missing effects remain unverified.</p>
         <ul className="priority-list">{RISK_CATEGORIES.map(risk => <li key={risk.id}><div><strong>{risk.label}</strong><span className="cell-sub">{risk.description}</span></div><label>Action<select aria-label={`${risk.label} action`} value={settings.profile.risks?.[risk.id] ?? 'allow'} onChange={event => update({ ...settings, profile: { ...settings.profile, risks: { ...settings.profile.risks, [risk.id]: event.target.value as FateRiskSettings[typeof risk.id] } } })}><option value="allow">Allow</option><option value="warn">Warn</option><option value="exclude">Exclude</option></select></label></li>)}</ul>

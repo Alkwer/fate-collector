@@ -1,5 +1,6 @@
 import type { Reward } from '../../shared/schema'
 import poedb from '../../public/game-art/poedb/credits.json'
+import { confirmedRewardIcon } from './reward-icon-lookup'
 
 // Display references only. Portraits never supply a card's tier or reward data.
 // Sources and digests live in /game-art/credits.json and /game-art/poedb/credits.json.
@@ -29,5 +30,6 @@ const namedRewards: Record<string, string> = {
 export function rewardArt(label: string, identified = true, visualId?: Reward['visualId']): string | null {
   const key = normalize(label)
   const id = visualId || (identified && Object.hasOwn(namedRewards, key) ? namedRewards[key] : null)
-  return id ? `/game-art/reward-${id}.png` : null
+  if (id) return `/game-art/reward-${id}.png`
+  return identified ? confirmedRewardIcon(label) : null
 }

@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.9.0 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.10.0 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.
@@ -48,7 +48,7 @@ must not require filling every field or interpreting every unknown icon.
   Reward priorities, exclusions and reusable profiles support the solver.
   The saved-offer archive and current-map collection are distinct; moving
   observations between them is an explicit action.
-- New solver profiles include 12 provisional trade priorities. Campaign / SSF
+- New solver profiles include a provisional trade weight for every confirmed reward variant. Campaign / SSF
   and Viscera starters replace priorities only through an explicit action;
   saved profiles are preserved. Points are not profit estimates. Identified
   rewards with no positive weight are visible beside advice.

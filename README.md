@@ -15,8 +15,8 @@ can be closed. Offline captures wait on disk and retry automatically. Only new g
 captures after enabling are sent. Screenshots remain local; OCR and capture metadata
 reach the shared database as unverified observations.
 
-New profiles start with 12 provisional trade priorities covering gems, currency,
-rarity, stacked decks and threads. Campaign / SSF and Viscera starters are also
+New profiles start with a trade weight for every confirmed reward variant.
+Campaign / SSF and Viscera starters are also
 available. Existing saved profiles change only through explicit controls; identified
 rewards without a positive weight are listed beside advice. These are priority
 points, not prices or expected profit. See [starter profiles](docs/trade-starter.md).
@@ -97,7 +97,7 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.9.0 includes a standalone advisor and displays next-Fate advice over
+Helper 0.10.0 includes a standalone advisor and displays next-Fate advice over
 windowed/borderless PoE without an open browser. Extract the complete ZIP,
 run the helper and set reward priorities in its local window. Closing that
 window keeps the advisor running; **Open local advisor** in the tray restores it.

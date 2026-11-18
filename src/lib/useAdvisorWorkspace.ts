@@ -2,10 +2,13 @@ import { useRef, useState } from 'react'
 import { isDesktop } from './desktop'
 import { bindOfferToMap, loadAdvisorWorkspace, newAdvisorWorkspace, saveAdvisorWorkspace, startMapWorkspace,
   type AdvisorWorkspace } from './advisor-workspace'
+import { invocationSnapshotSchema, type InvocationAction } from './fight-journal'
+import { useFightJournal } from './useFightJournal'
 
 const unavailableStorage = 'Browser storage is unavailable. Planning notes will not survive a reload.'
 
 export function useAdvisorWorkspace() {
+  const outcomes = useFightJournal()
   const [state, setState] = useState(() => {
     try {
       const { workspace, restored, error } = loadAdvisorWorkspace(isDesktop() ? window.localStorage : window.sessionStorage)
@@ -33,11 +36,28 @@ export function useAdvisorWorkspace() {
     commit({ workspace, needsMapConfirmation, storageError })
   }
 
-  function changeWorkspace(next: AdvisorWorkspace) {
+  function changeWorkspace(next: AdvisorWorkspace, invocation?: InvocationAction) {
     const { workspace, needsMapConfirmation } = current.current
     if (next.map?.id !== workspace.map?.id || (!workspace.map && next.collection.cards.length)) return
+    let lastInvocation = workspace.lastInvocation
+    if (invocation) {
+      if (!workspace.map || needsMapConfirmation || new Set(invocation.cardIds).size !== invocation.cardIds.length) return
+      const inputs = invocation.cardIds.map(id => workspace.collection.cards.find(card => card.id === id))
+      if (inputs.some(card => !card) || next.collection.cards.some(card => invocation.cardIds.includes(card.id))) return
+      const snapshot = invocationSnapshotSchema.safeParse({
+        id: crypto.randomUUID(),
+        areaId: workspace.map.id,
+        invokedAt: new Date().toISOString(),
+        mapName: invocation.mapName,
+        gameVersion: invocation.gameVersion,
+        modeledPreview: invocation.modeledPreview,
+        inputs: inputs.map(card => ({ name: card?.name || '', tier: card?.visualReview && !card.visualReview.tierReviewed ? null : card?.tier ?? null })),
+      })
+      if (!snapshot.success) return
+      lastInvocation = snapshot.data
+    }
     if (JSON.stringify(next.collection.cards) !== JSON.stringify(workspace.collection.cards)) remember()
-    save({ ...next, map: workspace.map, offerIds: workspace.offerIds }, needsMapConfirmation)
+    save({ ...next, lastInvocation, map: workspace.map, offerIds: workspace.offerIds }, needsMapConfirmation)
   }
 
   function confirmMap() {
@@ -63,8 +83,10 @@ export function useAdvisorWorkspace() {
   function undo() {
     const previous = undoStates.at(-1)
     if (!previous) return
+    const invocation = current.current.workspace.lastInvocation
+    if (invocation && invocation.id !== previous.workspace.lastInvocation?.id && !outcomes.undoInvocation(invocation.id)) return
     setUndoStates(items => items.slice(0, -1))
     save(previous.workspace, previous.needsMapConfirmation || previous.workspace.map?.id !== current.current.workspace.map?.id)
   }
-  return { ...state, changeWorkspace, confirmMap, startMap, bindOffer, undo, canUndo: undoStates.length > 0 }
+  return { ...state, changeWorkspace, confirmMap, startMap, bindOffer, undo, canUndo: undoStates.length > 0, outcomes }
 }

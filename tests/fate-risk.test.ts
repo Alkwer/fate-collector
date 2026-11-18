@@ -74,3 +74,17 @@ test('a caller can assess Tier 3 effects for a confirmed Tier 2 merge', () => {
     warnings: [],
   })
 })
+test('matches explicit T3 fire damage over time, Brittle and critical bonuses', () => {
+  const filter = { fireDot: 'exclude', brittleCrit: 'warn' } as const
+  expect(assessFateRisk({ ...newCard(), name: 'Wildfire', tier: 3 }, filter).excluded).toBe(true)
+  expect(assessFateRisk({ ...newCard(), name: 'Houndmaster', tier: 3 }, filter).warnings).toContain('Brittle and critical strikes (Tier 3 source reference, PoEDB).')
+  expect(assessFateRisk({ ...newCard(), name: 'Other', tier: 2, modifiers: ['Unaffected by Brittle', 'Deals fire damage on hit'] }, filter)).toEqual({ excluded: false, reasons: [], warnings: [] })
+})
+
+test('recognizes a recorded critical multiplier with or without a modifier prefix', () => {
+  for (const modifier of ['+40% to Critical Strike Multiplier', 'Empowered Monster has +40% to Global Critical Strike Multiplier']) {
+    const card = { ...newCard(), tier: 2, modifiers: [modifier] }
+    expect(assessFateRisk(card, { brittleCrit: 'warn' }).warnings).toEqual(['Brittle and critical strikes (recorded modifier).'])
+    expect(assessFateRisk(card, { brittleCrit: 'exclude' }).excluded).toBe(true)
+  }
+})

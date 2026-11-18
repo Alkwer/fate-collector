@@ -1,7 +1,7 @@
 import type { Reward } from './schema'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const REWARD_CATALOG_VERSION = 'rewards-v4-sources-20261116'
+export const REWARD_CATALOG_VERSION = 'rewards-v5-tooltips-20261117'
 
 export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
 type CatalogDetails = { id: string; label: string; description: string; source: string; sourceLabel: string }
@@ -36,9 +36,26 @@ const observedRewards: CatalogReward[] = screenshots.rewards.map(entry => {
   throw new Error(`Invalid screenshot reward: ${entry.id}`)
 })
 
+// Additional variants read from the four-card Malformation offer on 17 November.
+// PoEDB corroborates the wording. The in-game tooltip supplies the combo threshold.
+const sessionRewards = [
+  { id: 'additional-gems-with-quality', label: 'Additional Gems with Quality', kind: 'regular', threshold: null,
+    description: 'Empowered Monster will drop additional Gems with Quality.' },
+  { id: 'rare-bows-with-a-critical-modifier', label: 'Rare Bows with a Critical Modifier', kind: 'regular', threshold: null,
+    description: 'Empowered Monster will drop additional Rare Bows. Bows dropped by Empowered Monster will have a Critical modifier.' },
+  { id: 'additional-valuable-currency-items', label: 'Additional Valuable Currency Items', kind: 'combo', threshold: 3,
+    description: 'Empowered Monster will drop additional Valuable Currency Items. To claim this reward, invoke three copies of it.' },
+  { id: 'greatly-increased-item-rarity', label: 'Greatly Increased Item Rarity', kind: 'regular', threshold: null,
+    description: 'Empowered Monster has greatly increased Item Rarity.' },
+  { id: 'rare-body-armours-with-a-life-modifier', label: 'Rare Body Armours with a Life Modifier', kind: 'regular', threshold: null,
+    description: 'Empowered Monster will drop additional Rare Body Armours. Body Armours dropped by Empowered Monster will have a Life modifier.' },
+] as const
+
 export const REWARD_CATALOG: CatalogReward[] = [
   ...prereleaseRewards.map(entry => ({ ...entry, sourceLabel: 'GGG prerelease reference' })),
   ...observedRewards,
+  ...sessionRewards.map(entry => ({ ...entry, source: 'https://poedb.tw/us/Fates',
+    sourceLabel: 'PoEDB wording · tooltip checked in game on 17 Nov 2026' })),
 ]
 export const REWARD_SHORTCUTS = REWARD_CATALOG.filter(entry => prereleaseRewards.some(original => original.id === entry.id))
 export const KNOWN_COMBOS = REWARD_CATALOG.filter(entry => entry.kind === 'combo')

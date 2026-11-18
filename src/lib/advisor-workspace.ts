@@ -2,6 +2,7 @@ import { z } from '../../shared/validation'
 import { offerSchema } from '../../shared/schema'
 import { newOffer } from '../../shared/offers'
 import { MAX_COLLECTED_FATES } from '../../shared/advisor'
+import { invocationSnapshotSchema, omenMapSchema } from './fight-journal'
 
 const legacyWorkspaceSchema = z.object({
   collection: offerSchema.refine(offer => offer.cards.length <= MAX_COLLECTED_FATES, 'Too many collected Fates.'),
@@ -15,6 +16,8 @@ const workspaceSchema = legacyWorkspaceSchema.extend({
   offerIds: z.array(offerIdSchema).refine(ids => new Set(ids).size === ids.length),
   usedOfferIds: z.array(offerIdSchema).default([]),
   excludedCardIds: z.array(z.string().uuid()).max(1000).default([]),
+  lastInvocation: invocationSnapshotSchema.nullable().default(null),
+  confirmedOmenMap: omenMapSchema.default(null),
 }).refine(workspace => workspace.map !== null || (
   workspace.collection.cards.length === 0 && workspace.offerIds.length === 0 && Object.keys(workspace.sources).length === 0
 )).refine(workspace => Object.entries(workspace.sources).every(([cardId, offerId]) => (
@@ -24,11 +27,11 @@ const workspaceSchema = legacyWorkspaceSchema.extend({
 export type AdvisorWorkspace = z.infer<typeof workspaceSchema>
 
 export function newAdvisorWorkspace(): AdvisorWorkspace {
-  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [] }
+  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [], lastInvocation: null, confirmedOmenMap: null }
 }
 
 export function startMapWorkspace(current: AdvisorWorkspace): AdvisorWorkspace {
-  return { ...newAdvisorWorkspace(), goal: current.goal, map: { id: crypto.randomUUID(), startedAt: new Date().toISOString() } }
+  return { ...newAdvisorWorkspace(), goal: current.goal, lastInvocation: current.lastInvocation, map: { id: crypto.randomUUID(), startedAt: new Date().toISOString() } }
 }
 
 export function offerBelongsToMap(workspace: AdvisorWorkspace, offerId: string): boolean {
@@ -63,7 +66,7 @@ export function loadAdvisorWorkspace(storage: Storage): { workspace: AdvisorWork
     const legacy = legacyWorkspaceSchema.parse(data)
     const sources = collectedSources(legacy)
     const map = legacy.collection.cards.length ? { id: crypto.randomUUID(), startedAt: null } : null
-    const workspace = { ...legacy, sources, map, offerIds: [...new Set(Object.values(sources))], usedOfferIds: [], excludedCardIds: [] }
+    const workspace = { ...newAdvisorWorkspace(), ...legacy, sources, map, offerIds: [...new Set(Object.values(sources))] }
     return { workspace, restored: map !== null, error: saveAdvisorWorkspace(storage, workspace) }
   } catch {
     return { workspace: newAdvisorWorkspace(), restored: false, error: 'The saved area could not be restored. Existing stored notes are unchanged until your next valid planning edit.' }

@@ -47,7 +47,11 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
   view.rows = offer.cards.map((card, index) => {
     const candidate = result?.candidates.find(item => item.cardId === card.id)
     const gain = candidate?.gain
-    const reason = excluded.get(card.id) ? `Excluded: ${excluded.get(card.id)}` : `${gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`} · ${cardReviewReasons(card).join(', ') || 'Check modifiers in game'}`
+    const weighted = !farming && portfolio?.candidates.find(item => item.cardId === card.id)
+    const option = weighted && weighted.opportunities?.[0]
+    const score = weighted && weighted.plan ? `${number(weighted.plan.score)} known plan pts now` : gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`
+    const projection = option ? `${number(option.points)} pts with ${option.icons} more ${option.label} ${option.icons === 1 ? 'icon on a new Fate' : 'icons on separate new Fates'}` : ''
+    const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [score, projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
     if (!excluded.has(card.id) && workspace.collection.cards.length < MAX_COLLECTED_FATES) view.actions.push({ id: `collect:${card.id}`, label: shorten(`Record ${card.name || 'Unnamed Fate'}`, 160), slot: index + 1 })
     return { label: shorten(`${index + 1}. ${card.name || 'Unnamed Fate'}`, 240), detail: shorten(reason, 500), recommended: recommended.includes(card.id) }
   })

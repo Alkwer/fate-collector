@@ -56,3 +56,11 @@ body:has(.advanced-panel > .detail-dialog[open]) .workspace > .action-band { dis
   .workspace > .action-band[data-sticky] .primary-actions { display: block; flex-shrink: 0; }
   body:has(.workspace > .action-band[data-sticky]) .workspace { padding-bottom: 132px; }
 }
+.icon-lookup { min-width: 0; }
+.icon-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: 6px; }
+.icon-picker button, .icon-lookup-heading { display: flex; align-items: center; gap: 8px; text-align: left; }
+.icon-lookup-heading { flex-wrap: wrap; }
+.icon-picker img, .icon-lookup-heading img { object-fit: contain; }
+.icon-variants { padding-inline-start: 1.25rem; }
+.icon-variants li { margin-block: 8px; overflow-wrap: anywhere; }
+.icon-variants small, .icon-variants button { display: block; }

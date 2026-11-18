@@ -30,6 +30,40 @@ boss recovery and companion bosses. This is not a complete build simulator.
 Missing effects remain unverified; unsupported triple output effects are shown
 as unknown when danger filters are active. Allow means that category is unfiltered.
 
+## Unverified hypothesis: later offers complete two-icon combos
+
+Player observation reported on 17 November: after the first part of a two-icon
+combo appears, a later Fate offer in the same instance seems always to contain
+the second part. This is an anecdotal observation without a recorded sample size.
+In the [community mechanics discussion](https://www.reddit.com/r/pathofexile/comments/1xxh3ar/how_fates_actually_work_twins_sets_and_whats/),
+PaladinWiz similarly reports that, after choosing a Fate with a two-icon currency
+combo, the next two or three encounters often offer either a matching reward or
+a duplicate Fate. These are separate outcomes; a duplicate alone does not verify
+that the matching reward appeared or resolve duplicate/combo scaling.
+
+Hypothesis: later offers may favour completing a combo already offered or chosen.
+Neither a guarantee nor a probability is established. It is also unknown whether
+the first part must be selected, rather than merely appear in an offer. The
+[GGG FAQ](https://www.pathofexile.com/forum/view-thread/4013527) confirms that the
+next offer stays hidden until a choice is made, but does not establish this bias.
+
+To investigate, record complete offer sequences within the same instance:
+
+1. Record the patch, exact reward label, icon count and threshold (1/2), Fate name
+   and tier, and whether that card was selected or another offered card was chosen.
+2. Keep every subsequent offer and choice through the final encounter. Count
+   later offers with the exact matching reward separately from duplicate Fates.
+3. Include instances with no matching later reward. Record how many offers
+   remained; distinguish fully observed sequences, no remaining offers and runs
+   stopped before all offers were seen.
+4. Compare selected and unselected first parts, keeping reward families and the
+   number of remaining offers separate. Frequent completion alone does not prove
+   that the selection changes the offer distribution or guarantees completion.
+
+No solver rule or weight changes follow from this hypothesis. If supported by
+evidence, it could inform future-offer estimates when choosing a Fate. Invocation
+planning must still use only actually collected cards and supported active rewards.
+
 ## Evidence still needed for duplicate combos
 
 Collect before/after captures from the current patch, keeping exact reward names,

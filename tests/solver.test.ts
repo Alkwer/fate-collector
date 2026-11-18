@@ -20,6 +20,40 @@ const armour = { kind: 'regular', label: 'Armour', weight: 1 } as const
 const gem = { kind: 'combo', label: 'Exceptional Gem', weight: 8 } as const
 const currencyProfile: SolverProfile = { goals: [currency], avoidModifiers: [] }
 
+describe('conditional offer points', () => {
+  const goals = [currency, { kind: 'combo' as const, label: 'Decks', weight: 4 }]
+  const leader = fate('leader', [reward('Currency', 4)])
+  const partial = fate('partial', [reward('Currency'), combo('Decks', 1, 2)])
+  it('explains a strict lead after the same future icon and keeps current ranking unchanged', () => {
+    const offer = recommendPortfolio([leader, partial], [], { goals, avoidModifiers: [] })
+    expect(offer.recommendedCardIds).toEqual(['leader'])
+    expect(offer.candidates[1]).toMatchObject({ plan: { score: 1 }, opportunities: [{ label: 'Decks', icons: 1, points: 5 }] })
+  })
+  it('rejects a future shared benefit, a tie, conflicting thresholds and excluded offers', () => {
+    const run = (other: FateCard) => recommendPortfolio([other, partial], [], { goals, avoidModifiers: [] })
+    expect(run(fate('other', [reward('Currency', 2), combo('Decks', 1, 2)])).candidates[1].opportunities).toEqual([])
+    expect(run(fate('other', [reward('Currency', 5)])).candidates[1].opportunities).toEqual([])
+    expect(run(fate('other', [reward('Currency', 4), combo('Decks', 1, 3)])).candidates[1].opportunities).toEqual([])
+    expect(recommendPortfolio([leader, partial], [], { goals, avoidModifiers: [] }, ['partial']).candidates).toHaveLength(1)
+  })
+  it('requires a spare invocation input for each future Fate and keeps the old collection as an alternative', () => {
+    const spare = fate('spare', [reward('Currency', 2)])
+    const second = fate('second', [reward('Currency', 2)])
+    const ambitious = fate('ambitious', [reward('Currency'), combo('Decks', 1, 3)])
+    const run = recommendPortfolio([leader, ambitious], [spare, second], { goals, avoidModifiers: [] })
+    expect(run.candidates.find(row => row.cardId === 'ambitious')?.opportunities).toEqual([])
+    expect(recommendPortfolio([partial], [leader, fate('reserve', [reward('Currency', 2), combo('Decks', 1, 2)])], { goals, avoidModifiers: [] }).candidates[0].opportunities ?? []).toEqual([])
+  })
+  it('lets the competing choice ignore a surplus future Fate to retain a higher-scoring input', () => {
+    const alternative = fate('alternative', [reward('Currency', 4), combo('Set', 1, 3)])
+    const choices = [fate('current leader', [reward('Currency', 5)]), alternative, fate('two icons', [combo('Set', 2, 3)])]
+    const offer = recommendPortfolio(choices, [fate('held', [reward('Currency', 5)])], {
+      avoidModifiers: [], goals: [currency, { kind: 'combo', label: 'Set', weight: 7 }],
+    })
+    expect(offer.candidates.find(row => row.cardId === 'alternative')?.opportunities).toEqual([])
+  })
+})
+
 describe('weighted invocation search', () => {
   it('abstains without positive progress, omits neutral alternatives, and keeps useful merge enablers', () => {
     const neutral = fate('neutral', [reward('Armour')], { name: 'Rot' })

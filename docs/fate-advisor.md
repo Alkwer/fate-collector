@@ -76,7 +76,7 @@ and any supported comparison remains provisional where the missing data matters.
 
 ## Combined priorities and reusable profiles
 
-New profiles use the provisional [12-priority trade starter](trade-starter.md).
+New profiles use the provisional [62-priority trade starter](trade-starter.md).
 Campaign / SSF and Viscera starters are available through **Replace priorities**.
 Existing saved profiles retain their mode and weights. **Use trade starter** updates
 only the trade priorities, preserving other goals, filters and personal templates.
@@ -113,6 +113,23 @@ combo with a known threshold. **Record a different invocation** separately recor
 up to three inputs actually used in game, even when no recommendation is available;
 collection undo restores exactly those inputs. Neutral cards can still enable
 useful merges during the search, but zero-result reward plans are not suggested.
+
+During collection, **Plan points now** is the active total for a legal plan
+using that offered card. The signed difference compares it with the collection
+alone. A conditional total shows how a different choice could take the lead
+by completing a specific weighted combo. Each additional icon occupies one
+future input on a distinct eligible Fate. The comparison counts only those
+icons on the future Fates, and gives every alternative the same opportunity.
+The overlay shows the nearest such condition. Unknown, conflicting or
+duplicate-scaled counters cannot establish a conditional total. These scenarios
+do not predict future offers or affect the current recommendation.
+
+Selecting an unknown reward in the editor opens the offline icon comparisons.
+Select the matching PoEDB image, inspect the alternative wordings and optionally
+filter using words from the captured OCR. Applying a catalog entry requires an
+explicit tooltip match including any combo requirement. Source-only definitions
+remain references. In Viscera farming, the [target picker](viscera-targets.md)
+lists possible bosses and areas for the selected item.
 
 Build filters exclude whole cards whose recorded modifiers contain any supplied
 literal phrase (case-insensitive). Individual offered or collected cards can also
