@@ -31,7 +31,7 @@ export const RISK_CATEGORIES = [
 const modifierPatterns: Record<keyof FateRiskSettings, RegExp> = {
   physicalDot: /\bphysical damage over time\b/i,
   fireDot: /\b(?:deals?|dealing) (?:heavy )?fire damage over time\b/i,
-  brittleCrit: /\b(?:(?:inflicts?|inflicting|applies) brittle|(?:\d+% increased (?:global )?critical strike chance)|\+\d+% to (?:global )?critical strike multiplier)\b/i,
+  brittleCrit: /(?:\b(?:inflicts?|inflicting|applies) brittle|\b\d+% increased (?:global )?critical strike chance|\+\d+% to (?:global )?critical strike multiplier)\b/i,
   chaos: /\b(?:chaos damage(?! (?:taken|resistance)\b)|poisons? on hit|(?:inflicts?|inflicting|can) poison|inflicts? withered)\b/i,
   bleeding: /\b(?:(?:inflicts?|inflicting|causes?) bleed(?:ing)?|bleed(?:ing)? on hit|increased bleeding (?:damage|duration))\b/i,
   curses: /\b(?:(?:curses?|cursing) (?:enemies|players)|(?:enemies|players|you) (?:are|is) cursed with|(?:inflicts?|applies) (?:flammability|conductivity|frostbite|vulnerability|despair|elemental weakness|temporal chains|enfeeble|punishment))\b/i,
