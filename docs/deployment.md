@@ -155,13 +155,31 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.2 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.3 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate advisor 0.10.2 exception
+### Pinned Fate advisor 0.10.3 exception
+
+On 18 November the owner approved publication of the campaign, duplicate Fate,
+build danger and last-offer fixes with in-game checks deferred. This promotion
+uses the package verified on staging. Native gameplay, the full manual staging
+checklist and interaction with a real Turnstile widget remain unverified.
+
+- Source revision `0443214e5e27d6aa4ccb3c0d3f6c1cc66554d7d1`
+- Package ID `def6417d5d31efb3f604e5b6ca629bde2fa0fb6923c5b05154c755697b8d3558`
+- Staging run [44361514730](https://github.com/Alkwer/fate-collector/actions/runs/44361514730)
+- Downloadable helper SHA-256 `807d0d15934a87399015f576e13bbeb6ef7c88be35a02f595bf94e862c2251ef`
+
+All 120 manifest checksums passed. The staged application entry point, its
+JavaScript and CSS, and the 141-file helper ZIP matched the release artifact.
+Seven live browser checks covered the two-input campaign limit, six regular
+reward icons from the Alchemist pair, last-offer ties at three screen widths
+and the completed Conjurer Currency set.
+
+### Previous Fate advisor 0.10.2 release (historical)
 
 On 18 November the owner authorized promotion of the matching T2 Currency combo
 update after CI and staging. For this package the owner explicitly deferred
@@ -451,7 +469,7 @@ that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. For the November 18 release, the owner
 deferred this interaction under the
-[pinned Fate advisor 0.10.2 exception](#pinned-fate-advisor-0102-exception).
+[pinned Fate advisor 0.10.3 exception](#pinned-fate-advisor-0103-exception).
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
