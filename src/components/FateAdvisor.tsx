@@ -148,7 +148,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           </select></label>}
           <SolverControls control={solverControl} availableGoals={goals} />
         </DetailPanel>
-        {challenges}
+        {mapReady && challenges}
         {mapReady && mode === 'offer' && !offerReady && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>Is this offer from your current area?</strong><p>New imports and folder captures need confirmation before they affect advice.</p><button className="outline-button" onClick={onUseOffer}>Use this offer in current area</button></div>}
         {!workspace.map && offer.cards.length > 0 && <div className="map-offer-confirmation"><strong>No active area</strong><p>Start with this offer. Fates can only be used in the instance where you collect them.</p><button className="outline-button" onClick={onUseOffer}>Start area with this offer</button></div>}
         {mapReady && (mode === 'invoke' || offerReady) && <>
@@ -187,6 +187,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           {!portfolioMode && !!invocation?.collectingPlans?.length && <div className="combo-progress"><h3>Progress while collecting</h3><p>{goal?.label}: {invocation.collectingPlans[0].targetCount}/{invocation.collectingPlans[0].threshold ?? '?'} icons · not active</p></div>}
           <RecordInvocation cards={collection.cards} onRecord={completeInvocation} />
         </>}
+        {!mapReady && challenges}
         {fightJournal}
         {!portfolioMode && !!result?.excluded?.length && <DetailPanel title="Excluded by your settings"><ul>{result.excluded.map(row => <li key={row.cardId}>{cardName(allCards.find(card => card.id === row.cardId))}: {row.reasons.join(' · ')}</li>)}</ul></DetailPanel>}
         {nextReview && <section className="advisor-review" aria-label="Data to check"><div className="review-next"><div><strong>{reviewCards.length} {reviewCards.length === 1 ? 'card needs' : 'cards need'} a check</strong><p>{cardName(nextReview.card)}{nextReview.collected ? ' · collected' : ''}: {nextReview.reasons.join(' · ')}</p></div><button onClick={() => reviewCard(nextReview.card.id, nextReview.collected)}>Review {cardName(nextReview.card)}</button></div>{reviewCards.length > 1 && <DetailPanel ref={reviewList} title={<>See the other {reviewCards.length - 1} {reviewCards.length === 2 ? 'card' : 'cards'}</>}><ul>{reviewCards.slice(1).map(({ card, collected, reasons }) => <li key={`${collected}:${card.id}`}><div><strong>{cardName(card)}{collected ? ' · collected' : ''}</strong><span>{reasons.join(' · ')}</span></div><button onClick={() => reviewCard(card.id, collected)}>Review {cardName(card)}</button></li>)}</ul></DetailPanel>}</section>}
