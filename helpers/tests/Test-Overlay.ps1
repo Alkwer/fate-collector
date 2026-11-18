@@ -66,7 +66,7 @@ function Get-ImageRegion([Drawing.Bitmap]$Image, [Drawing.Rectangle]$Region) {
 function Test-AdviceHeader {
     $advice = $state.Clone()
     $advice.title = 'Now: 2. Fate of Fortune (+7 priority points)'
-    $outlook = "Bloodthirsty: 1 $([char]0x2192) 5 pts with 1$([char]0x00d7) Many Additional Stacked Decks"
+    $outlook = "Bloodthirsty 1$([char]0x2192)5 pts with 1$([char]0x00d7) Many Additional Stacked Decks"
     $context = 'A missing modifier may change the ranking. Record the Fate you choose in game.'
     $advice.detail = "$outlook`n$context"
     $advice.notice = 'Review the unidentified reward.'
@@ -121,6 +121,29 @@ function Test-AdviceHeader {
         $fallback = [FateCollector.OverlayWindow]::Snapshot($headerSession, 96, 360, 340, $iconPath, [ref]$shortcutsFit)
         $images.Add($fallback)
         Assert-That (!$shortcutsFit -and (Get-ImageRegion $fallback $header) -cne (Get-ImageRegion $unknown $header)) 'Compact advice did not render the text outlook fallback.'
+
+        foreach ($map in @(
+            @{ title = 'Now: #4 Gravewalker'; alternative = 'Bloodthirsty'; points = 1; icon = 'Many Additional Stacked Decks' }
+            @{ title = 'Now: tie'; alternative = 'Dryad'; points = 0; icon = 'Valuable Unique Jewellery Item' }
+        )) {
+            $advice.title = $map.title
+            $condition = "$($map.alternative) $($map.points)$([char]0x2192)5 pts with 1$([char]0x00d7) $($map.icon)"
+            foreach ($dpi in @(96, 144, 192)) {
+                $advice.detail = "$condition`n$context"
+                Write-Record 'state.json' $advice
+                $headerSession.Poll($now)
+                $actual = [FateCollector.OverlayWindow]::Snapshot($headerSession, $dpi, 1920, 720, $iconPath, [ref]$shortcutsFit)
+                $images.Add($actual)
+                $actualFit = $shortcutsFit
+                # The same icon and a short label provide the single-line reference height.
+                $advice.detail = "1$([char]0x00d7) $($map.icon)`n$context"
+                Write-Record 'state.json' $advice
+                $headerSession.Poll($now)
+                $reference = [FateCollector.OverlayWindow]::Snapshot($headerSession, $dpi, 1920, 720, $iconPath, [ref]$shortcutsFit)
+                $images.Add($reference)
+                Assert-That ($actual.Height -eq $reference.Height -and $actualFit -eq $shortcutsFit) "The $($map.alternative) outlook wrapped at $dpi DPI."
+            }
+        }
     } finally {
         foreach ($image in $images) { $image.Dispose() }
         Write-Record 'state.json' $state
