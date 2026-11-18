@@ -41,7 +41,7 @@ function weightedHeader(portfolio: SolverPortfolio, cards: Offer['cards']) {
   const alternatives = choices.flatMap(c => c.option ? [{ ...c.option, name: c.name, now: c.score }] : [])
   const next = alternatives.sort((a, b) => a.icons - b.icons || b.points - a.points)[0]
   let second = portfolio.status === 'provisional' ? 'Review missing data for another option.' : 'No known combo puts another choice ahead.'
-  if (next) second = `${next.name}: ${number(next.now)} → ${number(next.points)} pts with ${next.icons}× ${next.label.replace(/\s+/g, ' ').trim()}`
+  if (next) second = `${next.name} ${number(next.now)}→${number(next.points)} pts with ${next.icons}× ${next.label.replace(/\s+/g, ' ').trim()}`
   return { title, second, winner: !collectionWins && leaders.length === 1 ? leaders[0].id : null }
 }
 

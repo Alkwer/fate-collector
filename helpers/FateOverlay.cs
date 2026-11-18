@@ -544,7 +544,7 @@ namespace FateCollector
             Rectangle work = info.Work.Rectangle;
             if (changed || lastWork != work || panelSize.IsEmpty)
             {
-                int width = Math.Max(1, Math.Min(Pixels(392), work.Width - Pixels(24)));
+                int width = PanelWidth(work.Width);
                 using (var graphics = CreateGraphics())
                     panelSize = new Size(width, PaintPanel(graphics, width, work.Height - Pixels(24), false));
                 lastWork = work;
@@ -588,6 +588,13 @@ namespace FateCollector
         }
 
         int Pixels(int logical) { return (int)Math.Round(logical * scale); }
+
+        bool HasDecisionHeader { get { return displayed.Title.StartsWith("Now: ", StringComparison.Ordinal); } }
+
+        int PanelWidth(int workWidth)
+        {
+            return Math.Max(1, Math.Min(Pixels(HasDecisionHeader ? 440 : 392), workWidth - Pixels(24)));
+        }
 
         static GraphicsPath Rounded(Rectangle bounds, int radius)
         {
@@ -776,7 +783,7 @@ namespace FateCollector
             string outlook = null, detail = view.Detail;
             // Protocol v1 keeps the current choice in the title and uses the
             // first detail line for its conditional outlook.
-            if (view.Title.StartsWith("Now: ", StringComparison.Ordinal))
+            if (HasDecisionHeader)
             {
                 int end = detail.IndexOf('\n');
                 outlook = end < 0 ? detail : detail.Substring(0, end).TrimEnd('\r');
@@ -829,7 +836,7 @@ namespace FateCollector
                 y += Pixels(3);
                 if (outlook != null)
                 {
-                    y += RewardOutlook(graphics, outlook, rowTitle, pad, y, content, paint);
+                    y += RewardOutlook(graphics, outlook, body, pad, y, content, paint);
                     if (!String.IsNullOrWhiteSpace(detail)) y += Pixels(4);
                 }
                 y += TextBlock(graphics, detail, body, Muted, pad, y, content, shortcutsPaused && outlook == null ? 5 : 3, paint);
@@ -942,7 +949,7 @@ namespace FateCollector
                 overlay.displayed = session.View;
                 overlay.displayedFeedback = session.Feedback;
                 overlay.displayedPending = session.PendingId != null;
-                int width = Math.Min(overlay.Pixels(392), workWidth - overlay.Pixels(24));
+                int width = overlay.PanelWidth(workWidth);
                 int height;
                 using (var graphics = overlay.CreateGraphics())
                     height = overlay.PaintPanel(graphics, width, workHeight - overlay.Pixels(24), false);

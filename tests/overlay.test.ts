@@ -35,7 +35,7 @@ describe('overlay advice uses the existing recommendation engines', () => {
     ]
     const view = overlayAdvice(input)
     expect(view.title).toBe('Now: #4 Gravewalker · 4 pts')
-    expect(view.detail.split('\n')[0]).toBe('Bloodthirsty: 1 → 5 pts with 1× Many Additional Stacked Decks')
+    expect(view.detail.split('\n')[0]).toBe('Bloodthirsty 1→5 pts with 1× Many Additional Stacked Decks')
     expect(view.rows.filter(row => row.recommended).map(row => row.label)).toEqual(['4. Gravewalker'])
   })
   it('shows a tie on Belfry and chooses the more valuable of two one-icon completions', () => {
@@ -49,10 +49,10 @@ describe('overlay advice uses the existing recommendation engines', () => {
     ]
     const view = overlayAdvice(input)
     expect(view.title).toBe('Now: tie · 0 known pts')
-    expect(view.detail.split('\n')[0]).toBe('Dryad: 0 → 5 pts with 1× Valuable Unique Jewellery Item')
+    expect(view.detail.split('\n')[0]).toBe('Dryad 0→5 pts with 1× Valuable Unique Jewellery Item')
     expect(view.rows.some(row => row.recommended)).toBe(false)
     input.workspace.excludedCardIds = [input.offer.cards[2].id]
-    expect(overlayAdvice(input).detail.split('\n')[0]).toBe('Avalanche: 0 → 4 pts with 1× Many Additional Stacked Decks')
+    expect(overlayAdvice(input).detail.split('\n')[0]).toBe('Avalanche 0→4 pts with 1× Many Additional Stacked Decks')
     input.offer.cards.forEach(card => { card.rewards = [newReward()] })
     expect(overlayAdvice(input).title).toBe('Check rewards before choosing')
   })
