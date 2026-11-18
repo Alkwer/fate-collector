@@ -179,8 +179,10 @@ desktop and mobile source references. The importer passed its five archived
 scenes. The owner deferred icon recognition until a fresh in-game F9 capture.
 
 The initial real-widget check reached **Verify your request**. After 60 seconds
-the browser had sent no symbol report. The receipt, token replay and withdrawal
-steps require a completed verification.
+the browser had sent no symbol report. The owner approved publication of this
+0.10.6 package with the live-widget test deferred. Receipt, token replay and
+withdrawal through the live widget remain unverified. Production uses managed
+Turnstile verification.
 
 ### Previous Fate Collector 0.10.4 exception (historical)
 
