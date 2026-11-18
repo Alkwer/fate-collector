@@ -155,17 +155,33 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` is the package-specific exception for the owner's requested
-  17 November build profiles 0.9.0 release. The owner explicitly deferred game
-  testing; the prior real-widget deferral is retained for the unchanged verification
-  flow. The mode keeps its existing workflow identifier. Use the pinned staging run below, set
-  `hotfix_update_acknowledged=true`, leave `recognition_run_id` empty and
-  `manual_tests_passed=false`. In-game checks are deferred, not passed. Full CI,
-  Windows helper/browser checks and live synthetic staging smoke remain required.
-  Verify build profile switching, migration, backup/import, recovery, map preservation
-  and the downloadable helper on staging before promotion.
+- `hotfix-20261116` accepts the single 0.10.0 package identified below. Select
+  its staging run, set `hotfix_update_acknowledged=true`, keep
+  `manual_tests_passed=false` and leave `recognition_run_id` empty. The
+  workflow requires full CI, Windows helper/browser checks, package integrity
+  verification and live synthetic staging tests before deployment.
 
-### Pinned build profiles 0.9.0 exception
+### Pinned Fate advisor 0.10.0 exception
+
+On 18 November the owner authorized production publication of the Fate advisor
+and 62 Trade weights together. The exception covers in-game F9/HDR capture and
+native recognition, the full manual staging checklist and real Turnstile
+interaction for this package. The campaign card limit still awaits in-game
+confirmation. Production Turnstile verification stays enabled.
+
+- Source revision `d7816181ff3a4ad828003b8dcbcf01db1a23abb8`
+- Package ID `74f433691820114b314f5b617a1432950793bf285f087adc34f7cc6dfc907bc5`
+- Staging run [44298821576](https://github.com/Alkwer/fate-collector/actions/runs/44298821576)
+- Downloadable helper SHA-256 `0efb28df926791e51b626026c36e4c0e01f4392cc72dd0b9a03fe1bed5fe3b62`
+
+Staging passed application, vision and Windows helper CI, plus the live API
+checks. Five additional browser scenarios on the deployed site verified
+conditional Trade scoring at 390, 820 and 1440 px, reward tooltip selection,
+Viscera targeting, challenge progress and fight outcomes. All 120 artifact
+checksums verified. The live application entry point and the 140-file Windows
+helper matched the manifest.
+
+### Previous build profiles 0.9.0 release (historical)
 
 On 17 November the owner requested production publication without in-game tests.
 PR #58 adds up to 20 named build profiles, legacy migration, full-library backup
@@ -173,7 +189,7 @@ and recovery, and protection against stale tabs and delayed imports. It packages
 the same interface in Windows helper 0.9.0. Capture algorithms, API, migrations
 and upload verification are unchanged.
 
-Only this tested package is eligible for the `hotfix-20261116` mode:
+This release used the previous package-specific exception.
 
 - Source revision: `680cd745ab36211b866bb1ea584d2dbcc88dc159`
 - Package ID: `ac4c865fa34f60c111b6d6683c261125c0e356e8140867efbd909845bdf351a0`
@@ -193,11 +209,7 @@ Codex Review of PR #58 completed without findings.
 In-game testing, native recognition holdout and the full manual checklist remain
 deferred, not passed. The owner's prior real-widget deferral is retained for the
 unchanged verification flow; no new live-widget check is attested. Production
-Turnstile remains enabled. Select the staging run above, set
-`hotfix_update_acknowledged=true`, keep `manual_tests_passed=false` and leave
-`recognition_run_id` empty. Promotion rechecks the pinned main workflow, package
-checksums and live staging, then deploys that artifact without rebuilding it.
-The standard native gate and expired prelaunch deadline are unchanged.
+Turnstile remained enabled at promotion.
 
 Website and helper libraries are separate. When upgrading the helper, close it,
 replace the complete program bundle and retain `captures`, `symbol-reports` and
@@ -399,9 +411,9 @@ Successful submission, retry, consent, quotas and withdrawal run against the rea
 local Worker with a test-only Siteverify transport in the ignored E2E entrypoint;
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
-check replay rejection and withdraw it. The owner's earlier deferral of this check
-is retained for the unchanged verification flow in the
-[pinned build profiles 0.9.0 exception](#pinned-build-profiles-090-exception) above.
+check replay rejection and withdraw it. For the November 18 release, the owner
+deferred this interaction under the
+[pinned Fate advisor 0.10.0 exception](#pinned-fate-advisor-0100-exception).
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
 
