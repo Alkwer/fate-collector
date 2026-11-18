@@ -34,6 +34,42 @@ async function importCapture(page: Page, capture: Capture) {
   await expect(page.locator('.collector-grid')).toHaveAttribute('aria-busy', 'false')
 }
 
+test('the original capture restores the selected card crop after a data-only backup', async ({ page }) => {
+  await page.goto('/')
+  const capture = await pressCapture(page, true)
+  await importCapture(page, capture)
+  await page.getByRole('button', { name: 'Confirm and save', exact: true }).click()
+  await expect(page.getByText('Offer saved on this device.', { exact: false })).toBeVisible()
+  await page.getByRole('button', { name: /Saved offers/ }).click()
+  await openPanel(page, '.archive-tools')
+  await page.getByLabel('Backup contents').selectOption('data')
+  await page.getByRole('button', { name: 'Export all offers', exact: true }).click()
+  const backup = page.getByRole('dialog', { name: 'Download your backup' })
+  const pending = page.waitForEvent('download')
+  await backup.getByRole('link', { name: /fate-collector-data-/ }).click()
+  const download = await pending
+  await backup.getByRole('button', { name: 'Close', exact: true }).click()
+  await closePanels(page)
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(page.getByText('No offers here yet.', { exact: true })).toBeVisible()
+  await page.getByLabel('Import capture file').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: await readFile(await download.path()) })
+  await expect(page.getByRole('heading', { name: 'Archived offer', exact: true })).toBeVisible()
+  await openPanel(page, '.advanced-panel')
+  const editor = page.getByRole('dialog', { name: 'Edit details' })
+  await editor.getByRole('button', { name: 'Torchbearer', exact: true }).click()
+  await expect(editor.getByRole('button', { name: 'Enlarge review screenshot' })).toHaveCount(0)
+
+  await importCapture(page, capture)
+  await expect(page.getByText(/Original screenshot and OCR restored/)).toBeVisible()
+  await openPanel(page, '.advanced-panel')
+  await editor.getByRole('button', { name: 'Torchbearer', exact: true }).click()
+  await editor.getByRole('button', { name: 'Enlarge review screenshot' }).click()
+  await expect(page.getByRole('img', { name: 'Selected card region' })).toBeVisible()
+  await page.getByRole('button', { name: 'Show full capture', exact: true }).click()
+  await expect(page.getByAltText('Enlarged reference capture')).toBeVisible()
+})
+
 for (const cropped of [false, true]) {
   test(`real press pixels pass through import and advisor with ${cropped ? 'calibrated crop' : 'full frame'} coordinates`, async ({ page }) => {
     const errors: string[] = []

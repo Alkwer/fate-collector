@@ -28,7 +28,8 @@ const atHeader = ([x, y, width, height], header) => {
   return middleX >= x && middleX < x + width && middleY >= y && middleY < y + height
 }
 
-export function measure(labels, suggestions) {
+export function measure(labels, rows) {
+  const suggestions = rows.filter(row => row.name || row.tier !== null || row.visualIds.length > 0)
   const metrics = tally()
   const issues = []
   const matched = new Set()

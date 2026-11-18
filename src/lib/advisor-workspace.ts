@@ -19,17 +19,24 @@ const workspaceSchema = legacyWorkspaceSchema.extend({
   lastInvocation: invocationSnapshotSchema.nullable().default(null),
   confirmedOmenMap: omenMapSchema.default(null),
   lastOfferId: offerIdSchema.nullable().default(null),
+  planningAreaOverride: z.enum(['campaign', 'map']).nullable().optional(),
 }).refine(workspace => workspace.lastOfferId === null || workspace.offerIds.includes(workspace.lastOfferId))
   .refine(workspace => workspace.map !== null || (
   workspace.collection.cards.length === 0 && workspace.offerIds.length === 0 && Object.keys(workspace.sources).length === 0
 )).refine(workspace => Object.entries(workspace.sources).every(([cardId, offerId]) => (
   workspace.collection.cards.some(card => card.id === cardId) && workspace.offerIds.includes(offerId)
-)))
+))).transform(workspace => ({
+  ...workspace,
+  // Older areas stored manual and inferred choices in the same field. Preserve a
+  // known limit until the player explicitly selects automatic context again.
+  planningAreaOverride: workspace.planningAreaOverride !== undefined ? workspace.planningAreaOverride
+    : workspace.collection.areaCategory === 'campaign' || workspace.collection.areaCategory === 'map' ? workspace.collection.areaCategory : null,
+}))
 
 export type AdvisorWorkspace = z.infer<typeof workspaceSchema>
 
 export function newAdvisorWorkspace(): AdvisorWorkspace {
-  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [], lastInvocation: null, confirmedOmenMap: null, lastOfferId: null }
+  return { collection: newOffer(), sources: {}, goal: null, mode: 'offer', map: null, offerIds: [], usedOfferIds: [], excludedCardIds: [], lastInvocation: null, confirmedOmenMap: null, lastOfferId: null, planningAreaOverride: null }
 }
 
 export function startMapWorkspace(current: AdvisorWorkspace): AdvisorWorkspace {
@@ -41,6 +48,7 @@ export function offerBelongsToMap(workspace: AdvisorWorkspace, offerId: string):
 }
 
 export function workspaceInvocationLimit(workspace: AdvisorWorkspace, offer: Pick<AdvisorWorkspace['collection'], 'id' | 'areaCategory'>) {
+  if (workspace.planningAreaOverride) return invocationLimit(workspace.planningAreaOverride)
   const area = workspace.collection.areaCategory
   const boundCategory = offerBelongsToMap(workspace, offer.id) ? offer.areaCategory : undefined
   return invocationLimit(area === 'campaign' || area === 'map' ? area : boundCategory)
@@ -75,7 +83,7 @@ export function loadAdvisorWorkspace(storage: Storage): { workspace: AdvisorWork
     const legacy = legacyWorkspaceSchema.parse(data)
     const sources = collectedSources(legacy)
     const map = legacy.collection.cards.length ? { id: crypto.randomUUID(), startedAt: null } : null
-    const workspace = { ...newAdvisorWorkspace(), ...legacy, sources, map, offerIds: [...new Set(Object.values(sources))] }
+    const workspace = workspaceSchema.parse({ ...newAdvisorWorkspace(), ...legacy, planningAreaOverride: undefined, sources, map, offerIds: [...new Set(Object.values(sources))] })
     return { workspace, restored: map !== null, error: saveAdvisorWorkspace(storage, workspace) }
   } catch {
     return { workspace: newAdvisorWorkspace(), restored: false, error: 'The saved area could not be restored. Existing stored notes are unchanged until your next valid planning edit.' }

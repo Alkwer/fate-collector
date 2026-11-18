@@ -8,7 +8,8 @@ import { OfferEditor } from './components/OfferEditor'
 import { ManualFateEntry } from './components/ManualFateEntry'
 import { OfferPreview } from './components/OfferPreview'
 import { SavedOffers } from './components/SavedOffers'
-import { importFiles, recoverBackup, importJson, downloadArchive, type Imported } from './lib/imports'
+import { importFiles, recoverBackup, importJson, downloadArchive, privateDraftKind, type Imported } from './lib/imports'
+import { downloadJson } from './lib/download'
 import * as storage from './lib/storage'
 import { collectionInfo, collectionStatus, submitOffer } from './lib/api'
 import { useCaptureSync } from './lib/useCaptureSync'
@@ -252,20 +253,24 @@ export default function App() {
       if (source.status === 'damaged') setDamagedEvidenceCount(count => Math.max(count, 1))
     } catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
   }
-  async function remove(id: string) {
-    if (!window.confirm('Delete this local offer and its evidence? This does not delete a previously shared observation.')) return
-    setBusy(true)
-    try { await storage.deleteOffer(id); await refresh(); if (id === draft.id) loadDraft(newOffer(), null); announce('Local offer deleted.') }
-    catch (error) { announce(errorText(error), true) } finally { setBusy(false) }
-  }
-  async function removeMany(offers: Offer[]): Promise<boolean> {
-    if (!window.confirm(`Delete ${offers.length} selected local offers and their evidence? Verify your downloaded backup first. Shared observations stay unchanged.`)) return false
+  async function removeSelected(offers: Offer[], grouped: boolean): Promise<boolean> {
+    const ids = new Set(offers.map(offer => offer.id))
+    const editors = [mapEditor, archiveEditor]
+    if (editors.some(item => item.hasPendingEdits(ids))) {
+      announce('Save your changes before deleting this offer.', true)
+      return false
+    }
+    const confirmation = grouped
+      ? `Delete ${offers.length} selected local offers and their evidence? Verify your downloaded backup first. Shared observations stay unchanged.`
+      : 'Delete this offer and its evidence from this device?'
+    if (!window.confirm(confirmation)) return false
     setBusy(true)
     try {
       await storage.deleteOffers(offers.map(offer => ({ id: offer.id, revision: offer.revision })))
+      for (const item of editors) item.clearDeletedDraft(ids)
       await refresh()
-      for (const item of [mapEditor, archiveEditor]) if (offers.some(offer => offer.id === item.draft.id) && !item.dirty) item.loadDraft(newOffer(), null)
-      announce(`${offers.length} local offers deleted.`); return true
+      announce(grouped ? `${offers.length} local offers deleted.` : 'Local offer deleted.')
+      return true
     } catch (error) { announce(errorText(error), true); return false } finally { setBusy(false) }
   }
   async function share(offer: Offer) {
@@ -280,6 +285,12 @@ export default function App() {
     const parsed = offerSchema.safeParse(draft)
     if (!parsed.success) { announce(formatValidationError(parsed.error), true); return }
     try { downloadArchive([{ offer: parsed.data, evidence }]) } catch (error) { announce(errorText(error), true) }
+  }
+  function exportPrivateDraft() {
+    try {
+      downloadJson({ kind: privateDraftKind, schemaVersion: 1, exportedAt: new Date().toISOString(), offer: draft }, `fate-private-draft-${draft.id}.json`)
+      announce('Private draft downloaded. Open the file in a text editor to recover your fields manually.')
+    } catch (error) { announce(errorText(error), true) }
   }
   function startMap() {
     if (!mapEditor.canReplace()) return
@@ -318,7 +329,7 @@ export default function App() {
     setTab('collector'); setNotice(null)
   }
   useEffect(() => { setEditing(false) }, [tab, draft.id])
-  const saveBar = <OfferSaveBar editor={editor} clearNotice={() => setNotice(null)} />
+  const saveBar = <OfferSaveBar editor={editor} clearNotice={() => setNotice(null)} onExportPrivateDraft={exportPrivateDraft} />
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
     {environment === 'staging' && <div className="environment-banner" role="status"><strong>STAGING</strong> Test collection. Uploads go to the test database.</div>}
@@ -335,7 +346,7 @@ export default function App() {
     </div></header>
     <div className="main-area">
     <main id="main" className="workspace" tabIndex={-1}>
-      <div className="page-heading"><div><h1 tabIndex={-1}>{tab === 'guide' ? 'Helper & website guide' : tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current area'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'guide' ? 'From your first capture to your next Fate.' : tab === 'review' ? 'Review this observation separately from your current area.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? 'Inspect a report before deciding to send it.' : 'Your next Fate, with the evidence to choose.'}</p>}</div>
+      <div className="page-heading"><div><h1 tabIndex={-1}>{tab === 'guide' ? (desktop ? 'Local advisor guide' : 'Helper & website guide') : tab === 'review' ? 'Archived offer' : tab === 'saved' ? 'Your observation journal.' : tab === 'diagnostics' ? 'Report a problem.' : 'Your current area'}</h1>{(tab !== 'collector' || (!draft.cards.length && !advisor.workspace.collection.cards.length)) && <p>{tab === 'guide' ? 'From your first capture to your next Fate.' : tab === 'review' ? 'Review this observation separately from your current area.' : tab === 'saved' ? 'Your captures, ready to revisit.' : tab === 'diagnostics' ? (desktop ? 'Generate and save an offline report from the helper tray.' : 'Inspect a report before deciding to send it.') : 'Your next Fate, with the evidence to choose.'}</p>}</div>
         <div className="page-heading-actions">
         {!desktop && <a className="helper-download" href="/downloads/fate-collector-helper.zip" download><AppIcon name="download" /><span>Download Windows helper</span></a>}
         <DetailPanel ref={moreActions} className="more-actions" title="More actions"><div className="action-menu">
@@ -344,7 +355,7 @@ export default function App() {
             <div className="action-menu-items">
               <button onClick={() => { closeActions(); editCurrentOffer() }}>Edit details</button>
               {canConfirm && <button disabled={busy || autoSaving || (savedLocally && !dirty)} onClick={() => { closeActions(); void save('later') }}>Save for later</button>}
-              <button disabled={busy} onClick={() => { closeActions(); exportCurrent() }}>Export JSON</button>
+              <button disabled={busy} onClick={() => { closeActions(); if (editor.validDraft) exportCurrent(); else exportPrivateDraft() }}>{editor.validDraft ? 'Export JSON' : 'Download private draft'}</button>
               {!desktop && <button disabled={busy} onClick={() => { closeActions(); symbolReportsPanel.current?.showNew() }}>Report symbol</button>}
             </div>
           </section>}
@@ -411,7 +422,7 @@ export default function App() {
           }} />
         </div></DetailPanel>
         {!editing && saveBar}
-      </> : tab === 'guide' ? <UsageGuide onConnect={() => connectionPanel.current?.show()} onMap={() => leaveGuide('collector')} onSaved={() => leaveGuide('saved')} onDiagnostics={() => leaveGuide('diagnostics')} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={id => void remove(id)} onDeleteMany={removeMany} onExport={(includeEvidence, ids) => void exportAll(includeEvidence, ids)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
+      </> : tab === 'guide' ? <UsageGuide onConnect={() => connectionPanel.current?.show()} onMap={() => leaveGuide('collector')} onSaved={() => leaveGuide('saved')} onDiagnostics={() => leaveGuide('diagnostics')} /> : tab === 'diagnostics' ? <Diagnostics environment={environment} folderConnection={sync.status} sharing={consentState.error ? 'error' : consentState.active ? 'active' : consentState.records.some(item => item.withdrawnAt && !item.withdrawalConfirmedAt) ? 'withdrawal-pending' : consentState.current ? 'pending' : 'off'} /> : <SavedOffers consentState={consentState} records={records} unreadableOffers={unreadableOffers} damagedEvidenceCount={damagedEvidenceCount} isolatedCount={isolatedCount} missingEvidenceIds={missingEvidenceIds} onImport={() => fileInput.current?.click()} onRecoverBackup={() => recoveryInput.current?.click()} onIsolate={key => { if (window.confirm('Isolate this unreadable record? Its original data is preserved in recovery storage and can be exported.')) void storage.isolateUnreadableOffer(key).then(refresh).catch(error => announce(errorText(error), true)) }} onRecovery={() => void exportRecovery()} busy={busy || mapEditor.autoSaving || archiveEditor.autoSaving} pendingOfferIds={[mapEditor, archiveEditor].filter(item => item.dirty).map(item => item.draft.id)} onOpen={id => void open(id)} onDelete={offer => void removeSelected([offer], false)} onDeleteMany={offers => removeSelected(offers, true)} onExport={(includeEvidence, ids) => void exportAll(includeEvidence, ids)} onShare={offer => void share(offer)} accessKey={accessKey} setAccessKey={setAccessKey} connected={connected} onCheckConnection={() => { void collectionStatus().then(value => { setConnected(value); announce(value ? 'Collection API is configured. Enter your access key to share reviewed offers.' : 'Collection API is not configured. Local collection works normally.') }).catch(() => { setConnected(false); announce('Collection API is unreachable. Local collection works normally.', true) }) }} />}
       </Suspense>
       {importConflicts.length > 0 && <ImportConflicts conflicts={importConflicts} onUpdated={refresh} onClose={() => setImportConflicts([])} />}
       <LazySymbolReports ref={symbolReportsPanel} offer={draft} evidence={evidence} />

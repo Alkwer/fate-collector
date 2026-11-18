@@ -104,7 +104,7 @@ try {
         captureId = $CaptureId.ToString()
         capturedAt = $capturedAt
         source = 'windows-helper'
-        helperVersion = '0.10.3'
+        helperVersion = '0.10.4'
         image = [ordered]@{ mimeType = 'image/png'; width = $Width; height = $Height; dataBase64 = [Convert]::ToBase64String($png) }
         ocr = $ocr
         context = $context

@@ -96,7 +96,9 @@ not measured item quantities, market prices, expected value or profit.
 A confirmed campaign offer sets a two-input limit for the area. Maps use three.
 If the area type is unknown, the planner allows up to three inputs. Choose
 **Edit collected cards → Planning area** to set the limit manually. The area
-setting carries over to subsequent offers and resets when a new area starts.
+setting overrides subsequent offer categories until you select **Use offer
+context** or start a new area. When restoring an area saved before 0.10.4, the
+advisor preserves its last known campaign or map limit.
 
 The search evaluates the supported subsets within that limit, both orders of a
 matching T1 or T2 pair, all three choices of discarded middle card in a supported

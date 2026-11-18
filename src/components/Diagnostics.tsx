@@ -3,9 +3,24 @@ import { useEffect, useState } from 'react'
 import { diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
 import { diagnosticHistoryState, downloadDiagnostic, downloadDiagnosticReceipt, forgetDiagnostic, generateDiagnostic, onDiagnosticChange, retryDiagnosticWithdrawals, sendDiagnostic, withdrawDiagnostic, type DiagnosticRecord } from '../lib/diagnostics'
 import { clearDiagnosticLog } from '../lib/diagnostic-log'
+import { isDesktop } from '../lib/desktop'
 
 interface Props { environment: string; folderConnection: DiagnosticReport['state']['folderConnection']; sharing: DiagnosticReport['state']['sharing'] }
-export function Diagnostics({ environment, folderConnection, sharing }: Props) {
+export function Diagnostics(props: Props) {
+  if (isDesktop()) return <section className="panel diagnostics-panel">
+    <h2>Save a diagnostic ZIP</h2>
+    <p>Use the Windows helper to generate and save a report while offline.</p>
+    <ol>
+      <li>Right-click the Fate Collector icon near the Windows clock. Check <strong>Show hidden icons</strong> if needed.</li>
+      <li>Choose <strong>Report a problem</strong>, then <strong>Generate report</strong>.</li>
+      <li>Review the JSON preview and choose <strong>Save ZIP</strong>.</li>
+    </ol>
+    <p>The ZIP contains software versions, technical states and event codes. It excludes access keys, screenshots, OCR, offers and personal file paths. Saving the ZIP keeps it on this PC.</p>
+  </section>
+  return <WebsiteDiagnostics {...props} />
+}
+
+function WebsiteDiagnostics({ environment, folderConnection, sharing }: Props) {
   const [report, setReport] = useState<DiagnosticReport | null>(null)
   const [records, setRecords] = useState<DiagnosticRecord[]>([])
   const [agreed, setAgreed] = useState(false)

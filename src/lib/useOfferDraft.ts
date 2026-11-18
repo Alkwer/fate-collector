@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatValidationError, offerSchema, type Evidence, type Offer } from '../../shared/schema'
 import { newOffer } from '../../shared/offers'
 import { logDiagnostic } from './diagnostic-log'
@@ -23,6 +23,7 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
   const [autoSaving, setAutoSaving] = useState(false)
   const [failedAutoSave, setFailedAutoSave] = useState<{ session: number; version: number; conflict: boolean } | null>(null)
   const dirtyRef = useRef(false), busyRef = useRef(false)
+  const draftId = useRef(draft.id)
   const draftSession = useRef(0), editVersion = useRef(0)
   const recoveryId = useRef<string>(crypto.randomUUID()), recoveryWrites = useRef(Promise.resolve())
   const recoveredFrom = useRef<string | null>(null)
@@ -39,8 +40,10 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
   const needsConfirmation = canConfirm && !draft.reviewed
   const canSave = !busy && !autoSaving && (!!evidence || draft.cards.length > 0 || dirty) && (!savedLocally || dirty || needsConfirmation)
   const autoSaveFailure = dirty && failedAutoSave?.session === draftSession.current && failedAutoSave.version === editVersion.current ? failedAutoSave : null
+  const validDraft = useMemo(() => !dirty || offerSchema.safeParse(draft).success, [draft, dirty])
 
   function loadDraft(offer: Offer, source: Evidence | null, changed = false) {
+    draftId.current = offer.id
     draftSession.current++; setFailedAutoSave(null)
     setDraft(offer); setEvidence(source); setDirty(changed)
   }
@@ -58,6 +61,10 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
       && (draft.source !== 'windows-helper' || compareCaptures(entry.offer, draft) >= 0)) loadDraft(entry.offer, entry.evidence)
   }
   function canReplace() { return !dirtyRef.current || window.confirm('Replace the unsaved draft? Save or export it first if you want to keep it.') }
+  function hasPendingEdits(ids: ReadonlySet<string>) { return dirtyRef.current && ids.has(draftId.current) }
+  function clearDeletedDraft(ids: ReadonlySet<string>) {
+    if (!dirtyRef.current && ids.has(draftId.current)) loadDraft(newOffer(), null)
+  }
   function recover(record: storage.RecoveryDraft) {
     if (!canReplace()) return false
     recoveredFrom.current = record.id
@@ -71,13 +78,13 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
     // Serialize recovery writes, including the removal after a successful save.
     recoveryWrites.current = recoveryWrites.current.then(async () => {
       if (dirty) {
-        if (!offerSchema.safeParse(draft).success) { setRecoveryError('The current invalid fields cannot be recovered after a crash. Correct them or export your draft before leaving.'); return }
+        if (!validDraft) { setRecoveryError('These edits could not be saved for crash recovery. Correct the invalid fields or download the private draft before leaving.'); return }
         await storage.writeDraftRecovery(id, draft, evidence)
         if (sourceId) { await storage.removeDraftRecovery(sourceId); if (recoveredFrom.current === sourceId) recoveredFrom.current = null }
       } else await storage.removeDraftRecovery(id)
       setRecoveryError(null)
     }).catch(() => setRecoveryError('The draft is still open, but its recovery copy could not be saved. Export it before closing the page.'))
-  }, [draft, evidence, dirty])
+  }, [draft, evidence, dirty, validDraft])
   useEffect(() => {
     // Map/archive editors can hold the same saved offer. Refresh a clean copy
     // after another editor saves it, without rebasing pending or in-flight edits.
@@ -134,6 +141,6 @@ export function useOfferDraft({ records, connected, refresh, announce }: Options
     } catch (error) { logDiagnostic('local-save', 'error'); announce(errorText(error), true) }
     finally { setBusy(false) }
   }
-  return { draft, evidence, dirty, busy, autoSaving, dirtyRef, setBusy, loadDraft, change, receive, canReplace, save,
+  return { draft, evidence, dirty, busy, autoSaving, dirtyRef, setBusy, loadDraft, change, receive, canReplace, save, validDraft, hasPendingEdits, clearDeletedDraft,
     savedLocally, automatic, canConfirm, needsConfirmation, canSave, autoSaveFailure, recoveryError, recover, retryAutoSave: () => setFailedAutoSave(null) }
 }
