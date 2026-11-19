@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { Evidence, FateCard, Offer, Reward } from '../../shared/schema'
 import { newCard, newReward } from '../../shared/offers'
 import { KNOWN_FATE_NAMES } from '../../shared/recognition'
@@ -26,12 +26,19 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
   const [lookupId, setLookupId] = useState<string | null>(null)
   const selected = offer.cards.find(c => c.id === selectedId) ?? offer.cards[0]
   const rewardFields = useRef(new Map<string, HTMLFieldSetElement>())
-  const cardHeading = useRef<HTMLHeadingElement>(null), focusSelection = useRef(false)
+  const cardHeading = useRef<HTMLHeadingElement>(null), focusSelection = useRef<string | null>(null)
   const handledReview = useRef('')
   const pending = offer.cards.filter(cardNeedsReview)
   const selectedIndex = offer.cards.findIndex(card => card.id === selected?.id)
   const next = [...offer.cards.slice(selectedIndex + 1), ...offer.cards.slice(0, selectedIndex)].find(cardNeedsReview)
-  function selectCard(id: string) { focusSelection.current = true; setSelectedId(id) }
+  const selectCard = useCallback((id: string) => {
+    focusSelection.current = id
+    setSelectedId(id)
+    if (selected?.id === id) {
+      cardHeading.current?.focus()
+      focusSelection.current = null
+    }
+  }, [selected?.id])
   function selectReward(id: string) {
     rewardFields.current.get(id)?.focus()
   }
@@ -43,14 +50,12 @@ export function OfferEditor({ offer, onChange, purpose = 'offer', evidence, show
     const requestKey = `${offer.id}:${reviewRequest.cardId}:${reviewRequest.sequence}`
     if (handledReview.current === requestKey) return
     handledReview.current = requestKey
-    if (selected?.id === reviewRequest.cardId) {
-      cardHeading.current?.focus()
-    } else selectCard(reviewRequest.cardId)
-  }, [reviewRequest, offer.id, offer.cards, selected?.id])
+    selectCard(reviewRequest.cardId)
+  }, [reviewRequest, offer.id, offer.cards, selectCard])
   useEffect(() => {
-    if (focusSelection.current) {
+    if (focusSelection.current && focusSelection.current === selected?.id) {
       cardHeading.current?.focus()
-      focusSelection.current = false
+      focusSelection.current = null
     }
   }, [selected?.id])
   function updateCard(patch: Partial<FateCard>) {

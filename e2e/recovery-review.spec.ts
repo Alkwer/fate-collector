@@ -89,7 +89,7 @@ test('full backup downloads and restores images, OCR and revisions; metadata exp
         exported.push(...JSON.parse(bytes.toString()).offers)
         await closePanels(restored)
         await restored.getByLabel('Import capture file').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/json', buffer: bytes })
-        await expect(restored.getByRole('status')).toContainText('Imported')
+        await expect(restored.getByRole('status').filter({ hasText: 'Imported' })).toBeVisible()
       }
       const expected = entries.map(entry => ({ ...entry, evidence: mode === 'full' ? entry.evidence : null }))
       const byId = (a: Archive['offers'][number], b: Archive['offers'][number]) => a.offer.id.localeCompare(b.offer.id)
