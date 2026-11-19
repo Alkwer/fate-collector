@@ -155,13 +155,26 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.7 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.8 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.7 exception
+### Pinned Fate Collector 0.10.8 exception
+
+The owner requested production publication of the calibration frame with in-game testing deferred. The approval applies to the staging artifact below.
+
+- Source revision `da3ee92f6d424c551937c0169d21dcb86ac0d7f3`
+- Package ID `af76b04dc9f81df9a579b1f0ca3c664b255f0fda017907484148f91eb58e2712`
+- Staging run [44597933141](https://github.com/Alkwer/fate-collector/actions/runs/44597933141)
+- Windows helper ZIP SHA-256 `6361e3977f860b6996acee8957b914e1cd2f3bf380426edbf33cff6bd99bd53c`
+
+Full CI and the synthetic staging smoke checks passed. All 132 artifact entries verified. The live application entry point, its referenced assets and the 147-file helper ZIP matched the artifact. The downloaded helper rendered the selection and saved frame in an isolated Windows fixture. The check covered the moving border, capture bounds, click-through and dismissal, with saved-frame geometry at 960×540, 1920×1080 and 3840×2160. Nine live browser checks passed for the guide, calibration diagram, keyboard navigation and accessibility. The in-game F6/F7/F8 flow and native F9 holdout were deferred.
+
+The managed Turnstile dialog opened on staging. No synthetic report reached the submission endpoint within 60 seconds. The owner authorized deferring live submission, receipt, replay rejection and withdrawal if the widget stalled. Production Turnstile verification stays enabled.
+
+### Previous Fate Collector 0.10.7 exception (historical)
 
 The owner requested the reliability update with in-game tests deferred. This exception applies to a single staging artifact.
 
@@ -529,7 +542,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.7 deployment record](#pinned-fate-collector-0107-exception) records the
+[0.10.8 deployment record](#pinned-fate-collector-0108-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
