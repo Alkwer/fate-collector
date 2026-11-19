@@ -89,7 +89,7 @@ catalog does not introduce visual matches or assign rewards by Fate name.
 Five further tooltip variants were checked in the Malformation offer on 17 November,
 including the three-copy Valuable Currency combo.
 The 18 November Black Frost tooltip confirms the three-copy Extremely Increased Item Rarity combo.
-Fresh card review versions include `rewards-v7-3.30.0c`; the enlarged 3.30.0c panel and reward icons still need a new F9 capture for validation. Saved records are
+Fresh card review versions include `rewards-v8-3.30.0d`. Native validation of the enlarged 3.30.0c panel, the 3.30.0d area counter and the new line wrapping still needs a fresh capture. The player marks the last offer manually. Saved records are
 not backfilled. Parser `live-names-6` and Helper 0.5.1 carry the expanded dictionary.
 The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
 It is read-only and does not supply new visual matches, combo thresholds or kinds.

@@ -81,6 +81,13 @@ test('3.30.0c chase entries can be recorded without inferring kind, threshold or
   }
 })
 
+test.each(['Divine Orb', 'Orb of Annulment'])('offers the single %s as a sourced two-copy combo without artwork', label => {
+  const entry = REWARD_CATALOG.find(row => row.label === label)!
+  expect(catalogFields(entry)).toEqual({ label, kind: 'combo', threshold: 2, identified: true })
+  expect(getCurrentRewardReferences(label)).toContainEqual(expect.objectContaining({ id: entry.id, sourceId: 'ggg-3-30-0d' }))
+  expect(confirmedRewardIcon(label)).toBeNull()
+})
+
 test('the current equipment references replace only the affected lines and retain both drop variants', () => {
   for (const [slot, oldMod, mod, kind] of [
     ['Shields', 'Life', 'Defence', 'regular'], ['Body Armours', 'Life', 'Defence', 'regular'],

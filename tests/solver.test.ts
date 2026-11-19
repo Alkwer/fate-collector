@@ -20,6 +20,26 @@ const armour = { kind: 'regular', label: 'Armour', weight: 1 } as const
 const gem = { kind: 'combo', label: 'Exceptional Gem', weight: 8 } as const
 const currencyProfile: SolverProfile = { goals: [currency], avoidModifiers: [] }
 
+it.each(['Divine Orb', 'Orb of Annulment'])('plans the single %s at two copies without changing recorded data', label => {
+  const goal = { kind: 'combo', label, weight: 7 } as const
+  const profile = { goals: [goal], avoidModifiers: [] }
+  const first = fate('first', [combo(label, 1, 3)])
+  const second = fate('second', [combo(label, 1)])
+  const other = fate('other', [combo(label === 'Divine Orb' ? 'Orb of Annulment' : 'Divine Orb', 1)])
+  for (const cards of [[first], [first, other]]) {
+    expect(planInvocation(cards, goal).plans).toEqual([])
+    expect(solveInvocation(cards, profile).plans).toEqual([])
+  }
+  expect(planInvocation([first, second], goal).plans[0]).toMatchObject({ threshold: 2, activated: true })
+  expect(solveInvocation([first, second], profile).plans[0]).toMatchObject({
+    score: 7, rewards: [{ count: 2, threshold: 2, activated: true }],
+  })
+  expect(first.rewards[0].threshold).toBe(3)
+  const conflicting = fate('custom', [combo(label, 2, 4)])
+  expect(planInvocation([conflicting], goal).plans).toEqual([])
+  expect(solveInvocation([conflicting], profile).plans).toEqual([])
+})
+
 describe('last offer in the area', () => {
   const profile = { goals: [currency, gem], avoidModifiers: [] }
   const current = fate('current', [reward('Currency')])

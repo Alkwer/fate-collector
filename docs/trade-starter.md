@@ -7,10 +7,13 @@ starter. Existing saved profiles keep their mode and weights.
 
 Every confirmed reward variant has a starting weight. The table also gives starting weights for the 3.30.0c additions. One point is the baseline for a confirmed reward without a specific weight. Quality gems and rare maps start at two. The larger weights favour named chase currency, exceptional gems, explicit Viscera and valuable currency sets.
 
+The single Divine Orb uses the existing Divine priority. Orb of Annulment uses the one-point baseline. Weights are editable.
+
 | Reward | Kind | Points |
 | --- | --- | ---: |
 | Hinekora's Lock | Regular or combo | 30 |
 | Mirror Shard | Regular or combo | 25 |
+| Divine Orb | Combo (2 copies) | 12 |
 | Additional Divine Orbs | Regular or combo | 12 |
 | Exceptional Gem | Combo | 10 |
 | Fracturing Orb | Regular or combo | 8 |
@@ -44,6 +47,7 @@ Every confirmed reward variant has a starting weight. The table also gives start
 | Extremely Increased Item Rarity | Combo | 1 |
 | Gold | Regular | 1 |
 | Increased Item Rarity | Regular | 1 |
+| Orb of Annulment | Combo (2 copies) | 1 |
 | Rare Amulets with an Attribute Modifier | Regular | 1 |
 | Rare Armour with Dexterity Requirements | Regular | 1 |
 | Rare Armour with Intelligence Requirements | Regular | 1 |
