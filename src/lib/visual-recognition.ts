@@ -1,8 +1,9 @@
 import type { Capture } from '../../shared/schema'
 import type { VisualAnalysis } from '../../shared/visual-recognition'
+import { VISUAL_VERSION } from '../../shared/visual-version'
 
 export function readVisualCapture(capture: Capture): Promise<VisualAnalysis> {
-  const unavailable = (message: string): VisualAnalysis => ({ version: 'browser-v1', status: 'unavailable', cards: [], warnings: [message] })
+  const unavailable = (message: string): VisualAnalysis => ({ version: VISUAL_VERSION, status: 'unavailable', cards: [], warnings: [message] })
   if (typeof Worker === 'undefined') return Promise.resolve(unavailable('Visual recognition is unavailable in this browser.'))
   return new Promise(resolve => {
     let worker: Worker | undefined

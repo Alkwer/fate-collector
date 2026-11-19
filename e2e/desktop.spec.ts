@@ -1,5 +1,7 @@
 import { expect, test, type BrowserContext } from '@playwright/test'
+import { newCard, newOffer, newReward } from '../shared/offers'
 import { action, capture, state } from './overlay-support'
+import { closePanels } from './ui'
 
 async function installHost(context: BrowserContext, identified = true) {
   await context.addInitScript(identified => {
@@ -43,6 +45,33 @@ async function installHost(context: BrowserContext, identified = true) {
     setInterval(() => window.dispatchEvent(new Event('fate-desktop-tick')), 500)
   }, identified)
 }
+
+test('local advisor offers the three-copy Extremely Increased Item Rarity tooltip for a gold ring', async ({ page, context }) => {
+  await installHost(context)
+  await page.goto('/')
+  await expect(page.getByText('Local advisor connected', { exact: true })).toBeVisible()
+  const offer = { ...newOffer(), cards: [{ ...newCard(), name: 'Black Frost', rewards: [
+    { ...newReward(), visualId: 'gold-ring', label: 'Item Rarity' },
+  ] }] }
+  await page.getByLabel('Import capture file').setInputFiles({ name: 'black-frost.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offer)) })
+  await closePanels(page)
+  await page.getByRole('button', { name: 'Start area with this offer' }).click()
+  await page.getByRole('button', { name: 'Edit current offer' }).click()
+  await page.getByRole('button', { name: /Review reward 1:/ }).click()
+  const catalog = page.getByLabel('Tooltip catalog')
+  await expect(page.getByLabel('Identified', { exact: true })).not.toBeChecked()
+  const option = 'Extremely Increased Item Rarity · Combo (3)'
+  await expect(catalog.getByRole('option', { name: option, exact: true })).toHaveCount(1)
+  await page.getByRole('button', { name: 'Apply checked tooltip · Extremely Increased Item Rarity · combo of 3' }).click()
+  await expect(catalog).toHaveValue('extremely-increased-item-rarity')
+  await catalog.selectOption('greatly-increased-item-rarity')
+  await expect(page.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('regular')
+  await catalog.selectOption({ label: option })
+  await expect(page.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('combo')
+  await expect(page.getByLabel('Combo threshold')).toHaveValue('3')
+  await expect(page.getByLabel('Count', { exact: true })).toHaveValue('1')
+  await expect(page.getByLabel('Identified', { exact: true })).toBeChecked()
+})
 
 test('a website in another WebView remains a normal website', async ({ page, context }) => {
   await installHost(context, false)

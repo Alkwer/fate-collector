@@ -1,5 +1,12 @@
 # Fate Collector releases
 
+## 0.10.7 — 19 November 2026
+
+- Isolated damaged local records, made capture ordering deterministic and made duplicate offer IDs visible before restoring backups. Dragging multiple backup parts now imports the complete selection.
+- Retained fight outcome edits when switching fights or closing the journal. The offer editor and archive now load on demand.
+- Website diagnostics report offer database availability and distinguish the Windows helper queue from browser storage.
+- Added frame-based reward identification and independent validation of reward labels, kinds, combo thresholds and unknown answers.
+
 ## 0.10.6 — 18 November 2026
 
 - Added the five high-tier Fate reward examples and four equipment modifier replacements from PoE 3.30.0c. Trade / mapping includes editable points for these rewards once their kind and any combo requirement are checked.

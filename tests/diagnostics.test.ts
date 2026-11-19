@@ -143,14 +143,16 @@ function browserState() {
   clearDiagnosticLog()
   return storage
 }
-test('generated preview and ZIP exclude canaries, raw logs, identities and credentials; event log is bounded', () => {
+test('generated preview and ZIP exclude canaries, raw logs, identities and credentials; event log is bounded', async () => {
   const storage = browserState()
   storage.setItem('fate-collector.consent.observations.active', 'PRIVATE_CONSENT_ID')
   storage.setItem('unrelated', 'PRIVATE_OCR PRIVATE_KEY PRIVATE_PATH')
   storage.setItem('fate-collector.diagnostic-events.v1', JSON.stringify([{ at: new Date().toISOString(), code: 'runtime-error', outcome: 'error', httpStatus: null, message: 'PRIVATE_EXCEPTION' }]))
   logDiagnostic('PRIVATE_CODE', 'error')
   for (let i = 0; i < 120; i++) logDiagnostic('import', 'error')
-  const generated = generateDiagnostic('PRIVATE_ORIGIN', 'off', 'off')
+  const generated = await generateDiagnostic('PRIVATE_ORIGIN', 'off', 'off')
+  expect(generated.state).toMatchObject({ storage: 'available', offerStorage: 'unavailable', queue: 'not-applicable' })
+  expect(diagnosticReportSchema.safeParse({ ...generated, source: 'windows-helper' }).success).toBe(false)
   expect(generated.events.length).toBeLessThanOrEqual(100)
   expect(generated.runtime).toMatchObject({ family: 'chromium', version: '131' })
   expect(JSON.stringify(generated)).not.toContain('PRIVATE_')

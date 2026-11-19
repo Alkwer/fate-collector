@@ -6,7 +6,7 @@ import { combineBackupParts } from '../shared/backups'
 import { createBackupParts, importFiles, importJson, recoverBackup } from '../src/lib/imports'
 import {
   deleteOffer, getOffer, handledCaptureIds, hasCaptureReceipt, importOffers, isolateUnreadableOffer,
-  listDraftRecovery, listOffers, readEvidence, readOfferArchive, readOfferHistory, readOfferRecovery,
+  listDraftRecovery, listOffers, probeOfferStorage, readEvidence, readOfferArchive, readOfferHistory, readOfferRecovery,
   receiveCapture, removeDraftRecovery, repairEvidence, restoreEvidence, saveOffer, writeDraftRecovery, readDraftRecovery, deleteOffers, replaceImportedOffer,
 } from '../src/lib/storage'
 import { CaptureReader, compareCaptures, type CaptureDirectory } from '../src/lib/capture-sync'
@@ -87,6 +87,90 @@ test('unordered folder delivery saves every capture but never presents an older 
   expect(compareCaptures({ ...newOffer(), capturedAt: captures[1].capturedAt, captureContext: { captureMode: 'game', session: { ...session, sequence: 3 } } }, { ...newOffer(), capturedAt: captures[0].capturedAt, captureContext: { captureMode: 'game', session: { ...session, sequence: 2 } } })).toBeGreaterThan(0)
 })
 
+test('a corrupt capture reference does not block folder scanning or replace its original record', async () => {
+  const makeCapture = () => ({
+    kind: 'fate-collector.capture', schemaVersion: 1, captureId: crypto.randomUUID(), capturedAt: new Date().toISOString(), source: 'windows-helper', helperVersion: '0.1.0',
+    image: { width: 2, height: 2, mimeType: 'image/png', dataBase64: 'AQ==' }, ocr: { status: 'unavailable', text: '', lines: [], language: null },
+  })
+  const withReceipt = makeCapture(), withoutReceipt = makeCapture(), healthy = makeCapture()
+  const malformed = [withReceipt, withoutReceipt].map(({ captureId: id }) => ({
+    offer: { ...newOffer(), id, captureId: 42, source: 'windows-helper' },
+    uploadedAt: null, uploadedRevision: null,
+  }))
+  for (const record of malformed) await rawPut('offers', record)
+  const originalEvidence = evidenceFor(withoutReceipt.captureId)
+  await rawPut('evidence', originalEvidence)
+  await rawPut('captureReceipts', { id: withReceipt.captureId })
+  expect(await handledCaptureIds()).toEqual(new Set([withReceipt.captureId]))
+  expect(await hasCaptureReceipt(withReceipt.captureId)).toBe(true)
+  const captures = [withReceipt, withoutReceipt, healthy]
+  const folder = { queryPermission: async () => 'granted', async *values() {
+    for (const capture of captures) yield { kind: 'file', name: `fate-${capture.captureId}.json`, getFile: async () => new File([JSON.stringify(capture)], 'capture.json') }
+  } } as unknown as CaptureDirectory
+  const saved: string[] = []
+  const reader = new CaptureReader()
+  expect(await reader.scan(folder, async entry => { saved.push(entry.offer.id) }, () => false)).toMatchObject({ invalidCount: 0 })
+  expect(saved).toEqual([healthy.captureId])
+  for (const record of malformed) expect(await rawGet('offers', record.offer.id)).toEqual(record)
+  expect((await readOfferRecovery()).records).toHaveLength(2)
+
+  await isolateUnreadableOffer(withoutReceipt.captureId)
+  await reader.scan(folder, async entry => { saved.push(entry.offer.id) }, () => false)
+  expect(saved).toEqual([healthy.captureId])
+  expect(await rawGet('offers', withoutReceipt.captureId)).toBeUndefined()
+  expect((await readOfferRecovery()).isolated).toContainEqual(expect.objectContaining({ value: malformed[1] }))
+  expect((await readOfferRecovery()).evidence).toContainEqual({ key: withoutReceipt.captureId, value: originalEvidence })
+})
+
+test('capture ordering remains chronological across sessions and preserves their sequence after clock rollback', () => {
+  const early = { id: crypto.randomUUID(), startedAt: '2026-11-13T08:00:00Z' }
+  const late = { id: crypto.randomUUID(), startedAt: '2026-11-13T11:00:00Z' }
+  const before = { ...newOffer(), capturedAt: '2026-11-13T07:00:00Z' }
+  const between = { ...newOffer(), capturedAt: '2026-11-13T10:00:00Z' }
+  const after = { ...newOffer(), capturedAt: '2026-11-13T13:00:00Z' }
+  const capture = (session: typeof early, sequence: number, capturedAt: string) => ({
+    ...newOffer(), capturedAt, captureContext: { captureMode: 'game' as const, session: { ...session, sequence } },
+  })
+  const first = capture(early, 1, '2026-11-13T12:00:00Z')
+  const second = capture(early, 2, '2026-11-13T09:00:00Z')
+  const third = capture(late, 1, '2026-11-13T11:05:00Z')
+  const expected = [before, first, second, between, third, after]
+  for (const [index, earlier] of expected.entries()) {
+    expect(compareCaptures(earlier, earlier)).toBe(0)
+    for (const later of expected.slice(index + 1)) {
+      expect(compareCaptures(earlier, later)).toBeLessThan(0)
+      expect(compareCaptures(later, earlier)).toBeGreaterThan(0)
+    }
+  }
+  for (const input of [[second, third, first], [first, third, second], [third, first, second]]) {
+    expect(input.sort(compareCaptures)).toEqual([first, second, third])
+  }
+})
+
+test('storage probe reads in a readwrite transaction and reports a failed transaction', async () => {
+  const saved = await saveOffer(newOffer(), null)
+  expect(await probeOfferStorage()).toBe(true)
+  const original = IDBDatabase.prototype.transaction
+  const spy = vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(function (this: IDBDatabase, ...args) {
+    const transaction = original.apply(this, args)
+    const store = transaction.objectStore('offers')
+    const count = store.count
+    store.count = function (...parameters) {
+      const request = count.apply(this, parameters)
+      request.addEventListener('success', () => transaction.abort())
+      return request
+    }
+    return transaction
+  })
+  try {
+    expect(await probeOfferStorage()).toBe(false)
+    expect(spy).toHaveBeenCalledWith('offers', 'readwrite')
+  } finally {
+    spy.mockRestore()
+  }
+  expect(await getOffer(saved.offer.id)).toEqual(saved)
+})
+
 test('bulk deletion aborts all writes when any selected revision has changed', async () => {
   const first = (await saveOffer(newOffer(), null)).offer, second = (await saveOffer(newOffer(), null)).offer
   const updated = (await saveOffer({ ...second, notes: 'Another tab corrected this' }, null)).offer
@@ -95,6 +179,36 @@ test('bulk deletion aborts all writes when any selected revision has changed', a
   expect(await rawGet('deletedOffers', first.id)).toBeUndefined()
   await deleteOffers([first, updated])
   expect(await listOffers()).toEqual([])
+})
+
+test('bulk deletion ignores unrelated malformed references but requires recovery for a selected damaged offer', async () => {
+  const id = crypto.randomUUID(), evidence = evidenceFor(id)
+  const first = (await saveOffer({ ...newOffer(), captureId: id }, evidence)).offer
+  const second = (await saveOffer(newOffer(), null)).offer
+  const malformed = { offer: { ...newOffer(), captureId: 42 }, uploadedAt: null, uploadedRevision: null }
+  await rawPut('offers', malformed)
+
+  await expect(deleteOffers([first, { id: malformed.offer.id }])).rejects.toThrow('needs recovery')
+  expect(await getOffer(first.id)).toMatchObject({ offer: first })
+  expect(await rawGet('deletedOffers', first.id)).toBeUndefined()
+  expect(await rawGet('captureReceipts', id)).toBeUndefined()
+  expect(await rawGet('evidence', id)).toEqual(evidence)
+
+  await deleteOffers([first, second])
+  expect(await listOffers()).toEqual([])
+  expect(await rawGet('evidence', id)).toBeUndefined()
+  expect(await rawGet('captureReceipts', id)).toEqual({ id })
+  expect(await rawGet('offers', malformed.offer.id)).toEqual(malformed)
+})
+
+test('bulk deletion preserves evidence associated with an unreadable retained offer', async () => {
+  const captureId = crypto.randomUUID(), evidence = evidenceFor(captureId)
+  const saved = await saveOffer({ ...newOffer(), captureId }, evidence)
+  const original = { offer: { ...newOffer(), captureId: captureId.toUpperCase(), revision: 'damaged' }, uploadedAt: null, uploadedRevision: null }
+  await rawPut('offers', original)
+  await deleteOffers([saved.offer])
+  expect(await rawGet('evidence', captureId)).toEqual(evidence)
+  expect((await readOfferRecovery()).evidence).toContainEqual({ key: captureId, value: evidence })
 })
 
 for (const restore of ['manual import', 'folder sync'] as const) {
@@ -287,6 +401,20 @@ test('an evidence collision aborts the whole import including prior offers, evid
   expect(await rawGet('evidence', id)).toEqual(evidence)
 })
 
+test('an import cannot partially restore other offers when saved metadata needs recovery', async () => {
+  const id = crypto.randomUUID(), evidence = evidenceFor(id)
+  const offer = { ...newOffer(), id, captureId: id }
+  const damaged = { offer: { ...offer, captureId: 42 }, uploadedAt: null, uploadedRevision: null }
+  const unrelated = newOffer()
+  await rawPut('offers', damaged)
+  await rawPut('deletedOffers', { id: unrelated.id })
+  await expect(importOffers([{ offer: unrelated, evidence: null }, { offer, evidence }])).rejects.toThrow(`Saved offer ${id} needs recovery`)
+  expect(await rawGet('offers', unrelated.id)).toBeUndefined()
+  expect(await rawGet('deletedOffers', unrelated.id)).toEqual({ id: unrelated.id })
+  expect(await rawGet('offers', id)).toEqual(damaged)
+  expect(await rawGet('evidence', id)).toBeUndefined()
+})
+
 function backupPart(setId: string, part: number, total: number): Archive {
   return exportSchema.parse({ kind: 'fate-collector.export', schemaVersion: 1, backup: { setId, part, total }, offers: [{ offer: newOffer(), evidence: null }] })
 }
@@ -309,6 +437,38 @@ test('missing, duplicated and mixed multipart sets fail before changing storage'
   await expect(importFiles([backupFile(first), backupFile(backupPart(crypto.randomUUID(), 2, 3))])).rejects.toThrow('different backup sets')
   const unrelated = exportSchema.parse({ kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer: newOffer(), evidence: null }] })
   expect(() => combineBackupParts([first, unrelated])).toThrow('unrelated exports')
+  expect(await listOffers()).toEqual([])
+})
+
+test('duplicate offer revisions are rejected before any single, multipart or direct import can write', async () => {
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const original = { offer: { ...newOffer(), id, revision: 1 }, evidence: null }
+  const revision = { ...original, offer: { ...original.offer, id: id.toUpperCase(), revision: 2 } }
+  const unrelated = { offer: newOffer(), evidence: null }
+  const message = `Duplicate offer ID ${id} (revisions 1 and 2)`
+  const setId = crypto.randomUUID(), first = backupPart(setId, 1, 2), second = backupPart(setId, 2, 2)
+  const single = { ...first, backup: undefined, offers: [unrelated, original, revision] }
+  await expect(importFiles([backupFile(single)])).rejects.toThrow(message)
+  await expect(importFiles([backupFile({ ...first, offers: [unrelated, original] }), backupFile({ ...second, offers: [revision] })])).rejects.toThrow(message)
+  await expect(importFiles([backupFile({ ...first, offers: [original, revision] }), backupFile(second)])).rejects.toThrow(message)
+  await expect(importOffers([unrelated, original, revision])).rejects.toThrow(message)
+  await expect(importOffers([original, { ...original, offer: { ...original.offer, notes: 'Different edits at the same revision' } }])).rejects.toThrow(`Duplicate offer ID ${id} (revisions 1 and 1)`)
+  expect(await listOffers()).toEqual([])
+  expect(await rawGet('settings', 'capture-restore-version')).toBeUndefined()
+})
+
+test('explicit backup salvage skips every copy of an ambiguous offer and reports the conflict', async () => {
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  const original = { offer: { ...newOffer(), id }, evidence: null }
+  const duplicate = { ...original, offer: { ...original.offer, id: id.toUpperCase(), revision: 'unreadable' } }
+  const unrelated = { offer: newOffer(), evidence: null }
+  const recover = (offers: unknown[]) => recoverBackup(new File([
+    JSON.stringify({ kind: 'fate-collector.export', schemaVersion: 1, offers }),
+  ], 'ambiguous.json'))
+  const imported = await recover([original, duplicate, unrelated])
+  expect(imported.entries).toEqual([unrelated])
+  expect(imported.message).toContain(`Skipped all 2 records sharing 1 duplicate offer ID(s), including ${id}`)
+  await expect(recover([original, duplicate])).rejects.toThrow(`including ${id}`)
   expect(await listOffers()).toEqual([])
 })
 

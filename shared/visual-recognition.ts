@@ -1,8 +1,10 @@
 import { findOfferedRegion, knownFateName } from './recognition'
 import type { Capture } from './schema'
 import catalog from './visual-templates.json' with { type: 'json' }
+import { readRewardSegments, type RewardSegments } from './reward-segments'
+import { VISUAL_VERSION } from './visual-version'
 
-export const VISUAL_VERSION = 'browser-v1'
+export { VISUAL_VERSION }
 const MAX_PIXELS = 16_777_216
 const MAX_SIDE = 8192
 const MAX_HEADERS = 8
@@ -20,6 +22,7 @@ export interface VisualBox {
 export interface VisualSymbol {
   visualId: string
   box: VisualBox
+  segments?: RewardSegments
   /** RGB similarity and distance from the runner-up class. Neither is a probability. */
   score: number
   margin: number
@@ -382,8 +385,18 @@ export function analyzeVisualCapture(input: Input): VisualAnalysis {
     }
     const area = box(footprint.x, footprint.y, rewardRegion.width, rewardRegion.height)
     card.symbols = search(input, area, rewards, scale, masks).sort((a, b) => a.box.x - b.box.x)
-      .map(({ visualId, box, score, margin }) => ({ visualId, box, score, margin }))
+      .map(({ visualId, box: bounds, score, margin }) => {
+        const middle = center(bounds)
+        // Covers the rim, background samples and bilinear neighbours.
+        const left = Math.floor(middle.x - 16 * scale)
+        const top = Math.floor(middle.y + 8 * scale)
+        const rim = box(left, top, Math.ceil(middle.x + 16 * scale) - left + 1, Math.ceil(middle.y + 21 * scale) - top + 1)
+        const visible = inside(rim, width, region.bottom) && !masks.some(mask => intersection(rim, mask))
+          && fraction(input, rim, 1, () => true) === 1
+        const segments = visible ? readRewardSegments(input, middle.x, middle.y, scale) : undefined
+        return { visualId, box: bounds, score, margin, ...(segments !== undefined && { segments }) }
+      })
   }
-  warnings.add('Only supported motifs and tiers are proposed. Missing evidence leaves the card details unknown.')
+  warnings.add('Only supported motifs, segment patterns and tiers are proposed. Missing evidence leaves the card details unknown.')
   return { version: VISUAL_VERSION, status: 'candidates', cards: anchored.map(entry => entry.card), warnings: [...warnings] }
 }

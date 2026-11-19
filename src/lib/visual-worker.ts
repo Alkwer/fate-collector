@@ -1,4 +1,4 @@
-import { analyzeVisualCapture } from '../../shared/visual-recognition'
+import { analyzeVisualCapture, VISUAL_VERSION } from '../../shared/visual-recognition'
 import type { Capture } from '../../shared/schema'
 
 const worker = globalThis as unknown as {
@@ -21,7 +21,7 @@ worker.onmessage = event => {
         data: context.getImageData(0, 0, bitmap.width, bitmap.height).data,
         ocr: capture.ocr, frameHeight: capture.image.frameHeight }))
     } catch {
-      worker.postMessage({ version: 'browser-v1', status: 'unavailable', cards: [],
+      worker.postMessage({ version: VISUAL_VERSION, status: 'unavailable', cards: [],
         warnings: ['Visual recognition could not read this image. The capture and OCR are preserved.'] })
     } finally { bitmap?.close() }
   })()

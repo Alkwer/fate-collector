@@ -4,7 +4,7 @@ import { extractCards, findOfferedRegion, offeredCardHeaders } from '../../share
 import { applyVisualSuggestions } from '../../shared/visual-suggestions'
 import { readVisualCapture } from './visual-recognition'
 import { verifyImage } from './evidence'
-import { combineBackupParts } from '../../shared/backups'
+import { assertUniqueBackupOffers, combineBackupParts } from '../../shared/backups'
 import { evidenceSchema } from '../../shared/schema'
 import { applyCaptureVersion } from './capture-version'
 export { verifyImage } from './evidence'
@@ -79,6 +79,7 @@ export async function importJson(text: string, captureOnly = false): Promise<Imp
   }
   const parsed = exportSchema.safeParse(body)
   if (!parsed.success) throw new Error(kind === 'fate-collector.export' ? formatValidationError(parsed.error) : 'Unsupported file. Use a Fate Collector capture or export.')
+  assertUniqueBackupOffers(parsed.data.offers)
   for (const entry of parsed.data.offers) if (entry.evidence) await verifyImage(entry.evidence.imageDataUrl)
   const part = parsed.data.backup
   return { mode: 'restore', entries: parsed.data.offers, message: part && part.total > 1
@@ -96,11 +97,10 @@ export async function importFiles(files: File[]): Promise<Imported> {
     try { body = JSON.parse(text.replace(/^\uFEFF/, '')) } catch { throw new Error('This is not a valid JSON file.') }
     const parsed = exportSchema.safeParse(body)
     if (!parsed.success) throw new Error(formatValidationError(parsed.error))
-    // Parse each part once, and validate all image bytes before storage mutation.
-    for (const entry of parsed.data.offers) if (entry.evidence) await verifyImage(entry.evidence.imageDataUrl)
     archives.push(parsed.data)
   }
   const archive = combineBackupParts(archives)
+  for (const entry of archive.offers) if (entry.evidence) await verifyImage(entry.evidence.imageDataUrl)
   return { mode: 'restore', entries: archive.offers, message: `Complete backup set read from ${files.length} files.` }
 }
 
@@ -109,8 +109,19 @@ export async function recoverBackup(file: File): Promise<Imported> {
   const body = JSON.parse((await file.text()).replace(/^\uFEFF/, ''))
   if (body?.kind !== 'fate-collector.export' || body.schemaVersion !== 1 || !Array.isArray(body.offers) || body.offers.length > 250) throw new Error('Choose an offer backup part. Raw recovery exports need manual repair before importing.')
   const entries: Imported['entries'] = []
-  let skipped = 0, omittedEvidence = 0
+  const ids = new Set<string>(), duplicates = new Set<string>()
   for (const raw of body.offers) {
+    if (typeof raw?.offer?.id !== 'string') continue
+    const id = raw.offer.id.toLowerCase()
+    if (ids.has(id)) duplicates.add(id)
+    ids.add(id)
+  }
+  let skipped = 0, omittedEvidence = 0, conflicting = 0
+  for (const raw of body.offers) {
+    if (typeof raw?.offer?.id === 'string' && duplicates.has(raw.offer.id.toLowerCase())) {
+      conflicting++
+      continue
+    }
     const offer = offerSchema.safeParse(raw?.offer)
     if (!offer.success) { skipped++; continue }
     let evidence: Evidence | null = null
@@ -123,8 +134,9 @@ export async function recoverBackup(file: File): Promise<Imported> {
     }
     entries.push({ offer: offer.data, evidence })
   }
-  if (!entries.length) throw new Error('No valid offer data could be recovered. Keep the original file for manual repair.')
-  return { mode: 'restore', entries, message: `Recovered ${entries.length} readable offers; skipped ${skipped} invalid offers and ${omittedEvidence} damaged evidence records. Keep the original file for further recovery.` }
+  const conflicts = conflicting ? ` Skipped all ${conflicting} records sharing ${duplicates.size} duplicate offer ID(s), including ${duplicates.values().next().value}.` : ''
+  if (!entries.length) throw new Error(`No unambiguous offer data could be recovered.${conflicts} Keep the original file for manual repair.`)
+  return { mode: 'restore', entries, message: `Recovered ${entries.length} readable offers. Skipped ${skipped} invalid offers and ${omittedEvidence} damaged evidence records.${conflicts} Keep the original file for further recovery.` }
 }
 export async function importFile(file: File): Promise<Imported> {
   if (file.size > MAX_ARCHIVE_BYTES) throw new Error('File exceeds 32 MiB. Import each exported backup part separately.')

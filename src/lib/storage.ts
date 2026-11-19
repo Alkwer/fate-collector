@@ -1,5 +1,6 @@
 import { z } from '../../shared/validation'
 import { evidenceSchema, offerSchema, type Archive, type Evidence, type Offer } from '../../shared/schema'
+import { duplicateBackupOffer } from '../../shared/backups'
 import { sharingConsent } from './consent'
 import { inspectEvidence, verifyImage } from './evidence'
 import { desktopDirectory, isDesktop } from './desktop'
@@ -89,6 +90,17 @@ async function storedKey(store: IDBObjectStore, id: string): Promise<IDBValidKey
   }
   return matches[0] ?? id.toLowerCase()
 }
+function storedCaptureId(raw: unknown): string | undefined {
+  const captureId = (raw as { offer?: { captureId?: unknown } } | null)?.offer?.captureId
+  return typeof captureId === 'string' ? captureId.toLowerCase() : undefined
+}
+function storedEvidenceReference(raw: unknown): string | undefined {
+  const captureId = storedCaptureId(raw)
+  if (captureId) return captureId
+  const offer = (raw as { offer?: { source?: unknown; id?: unknown } } | null)?.offer
+  // The helper originally gives the offer and capture the same ID.
+  if (offer?.source === 'windows-helper' && typeof offer.id === 'string') return offer.id.toLowerCase()
+}
 async function readStoredEvidence(store: IDBObjectStore, id: string, decode: boolean): ReturnType<typeof inspectEvidence> {
   const matches = await storedKeys(store, id)
   if (matches.length > 1) return { evidence: null, status: 'damaged', warning: 'Conflicting historical screenshots or OCR need recovery. Offer details are still available. Export recovery data, or restore evidence from the original capture.' }
@@ -160,10 +172,7 @@ export async function readOfferRecovery() {
   const { unreadable } = decodeOffers(raw, keys)
   const damagedIndexes = raw.map((_, index) => unreadable.some(record => record.key === keys[index]) ? index : -1).filter(index => index >= 0)
   const recoveryOffers = [...damagedIndexes.map(index => raw[index]), ...isolated.filter(record => record.id.startsWith('recovery-offer:')).map(record => record.value)]
-  const captureIds = new Set(recoveryOffers.flatMap(entry => {
-    const record = entry as { offer?: { captureId?: unknown } } | null
-    return typeof record?.offer?.captureId === 'string' ? [record.offer.captureId.toLowerCase()] : []
-  }))
+  const captureIds = new Set(recoveryOffers.map(storedEvidenceReference))
   const evidenceKeys = await value(evidence.getAllKeys())
   const damagedEvidence: { key: IDBValidKey; value: unknown }[] = []
   for (const key of evidenceKeys) {
@@ -200,8 +209,8 @@ export async function restoreEvidence(offerId: string, evidence: Evidence): Prom
   const transaction = (await db()).transaction(['offers', 'evidence'], 'readwrite')
   const done = complete(transaction)
   const offers = transaction.objectStore('offers')
-  const record = await value(offers.get(await storedKey(offers, offerId))) as SavedOffer | undefined
-  if (!record || record.offer.captureId?.toLowerCase() !== evidence.id) {
+  const record = recordSchema.safeParse(await value(offers.get(await storedKey(offers, offerId))))
+  if (!record.success || record.data.offer.captureId !== evidence.id) {
     transaction.abort(); await done.catch(() => {})
     throw new Error('Evidence does not belong to the saved offer.')
   }
@@ -239,8 +248,9 @@ export async function isolateUnreadableOffer(key: IDBValidKey): Promise<void> {
     transaction.objectStore('settings').put({ id: `recovery-offer:${crypto.randomUUID()}`, key, value: raw })
     store.delete(key)
     if (!duplicate && typeof key === 'string') transaction.objectStore('deletedOffers').put({ id: key.toLowerCase() })
-    const captureId = (raw as { offer?: { captureId?: unknown } })?.offer?.captureId
-    if (typeof captureId === 'string') transaction.objectStore('captureReceipts').put({ id: captureId.toLowerCase() })
+    const captureId = storedCaptureId(raw)
+    if (captureId) transaction.objectStore('captureReceipts').put({ id: captureId })
+    transaction.objectStore('settings').put({ id: 'capture-restore-version', value: crypto.randomUUID() })
   }
   await done; changed()
 }
@@ -275,12 +285,16 @@ export async function saveOffer(draft: Offer, evidence: Evidence | null): Promis
   return record
 }
 export async function importOffers(entries: { offer: Offer; evidence: Evidence | null }[]): Promise<number> {
-  const parsed = entries.map(entry => {
+  const byId = new Map<string, Archive['offers'][number]>()
+  for (const entry of entries) {
     const offer = offerSchema.parse(entry.offer)
     const evidence = entry.evidence ? evidenceSchema.parse(entry.evidence) : null
     if (evidence && evidence.id !== offer.captureId) throw new Error('Evidence does not belong to this offer.')
-    return { offer, evidence }
-  })
+    const previous = byId.get(offer.id), parsed = { offer, evidence }
+    if (previous && JSON.stringify(previous) !== JSON.stringify(parsed)) throw duplicateBackupOffer(offer.id, previous.offer.revision, offer.revision)
+    byId.set(offer.id, parsed)
+  }
+  const parsed = [...byId.values()]
   const database = await db()
   const transaction = database.transaction(['offers', 'evidence', 'deletedOffers', 'settings'], 'readwrite')
   const done = complete(transaction)
@@ -304,8 +318,12 @@ export async function importOffers(entries: { offer: Offer; evidence: Evidence |
   // only missing evidence for the saved capture reference; never replace edits.
   for (const { offer, evidence } of parsed) {
     if (!evidence) continue
-    const saved = await value(store.get(await storedKey(store, offer.id))) as SavedOffer
-    if (saved.offer.captureId?.toLowerCase() === evidence.id) await addMissingEvidence(transaction.objectStore('evidence'), evidence)
+    const saved = recordSchema.safeParse(await value(store.get(await storedKey(store, offer.id))))
+    if (!saved.success) {
+      transaction.abort(); await done.catch(() => {})
+      throw new Error(`Saved offer ${offer.id} needs recovery before importing its evidence. Nothing was imported.`)
+    }
+    if (saved.data.offer.captureId === evidence.id) await addMissingEvidence(transaction.objectStore('evidence'), evidence)
   }
   // Persist invalidation so readers in every tab recheck restored metadata.
   if (parsed.length) transaction.objectStore('settings').put({ id: 'capture-restore-version', value: crypto.randomUUID() })
@@ -339,26 +357,45 @@ export async function deleteOffers(selection: { id: string; revision?: number }[
   const transaction = database.transaction(['offers', 'evidence', 'captureReceipts', 'deletedOffers'], 'readwrite')
   const done = complete(transaction)
   const store = transaction.objectStore('offers')
-  const selected: { id: string; key: IDBValidKey; record?: SavedOffer }[] = []
+  const selected: { id: string; key: IDBValidKey; captureId?: string }[] = []
   for (const { id, revision } of selection) {
     const key = await storedKey(store, id)
-    const record = await value(store.get(key)) as SavedOffer | undefined
-    if (revision !== undefined && record?.offer.revision !== revision) {
+    const raw: unknown = await value(store.get(key))
+    const record = recordSchema.safeParse(raw)
+    if (raw !== undefined && !record.success) {
+      transaction.abort(); await done.catch(() => {})
+      throw new Error(`Offer ${id} needs recovery before it can be removed. Nothing was removed.`)
+    }
+    if (revision !== undefined && (!record.success || record.data.offer.revision !== revision)) {
       transaction.abort(); await done.catch(() => {})
       throw new OfferRevisionConflictError('One selected offer changed or was deleted. Nothing was removed. Refresh the selection and export a new backup.')
     }
-    selected.push({ id, key, record })
+    selected.push({ id, key, captureId: record.data?.offer.captureId ?? undefined })
   }
-  for (const { id, key } of selected) {
-    store.delete(key)
-    transaction.objectStore('deletedOffers').put({ id: id.toLowerCase() })
+
+  // Resolve all evidence references and collisions before queuing any writes.
+  const selectedKeys = new Set(selected.map(({ key }) => key))
+  const [records, keys] = await Promise.all([value(store.getAll()) as Promise<unknown[]>, value(store.getAllKeys())])
+  const retainedCaptures = new Set(records.filter((_, index) => !selectedKeys.has(keys[index])).map(storedEvidenceReference))
+  const captures = new Set(selected.flatMap(({ captureId }) => captureId ? [captureId] : []))
+  const images = transaction.objectStore('evidence'), removedEvidence: IDBValidKey[] = []
+  for (const id of captures) {
+    if (!retainedCaptures.has(id)) removedEvidence.push(await storedKey(images, id))
   }
-  const remaining = await value(store.getAll()) as SavedOffer[]
-  for (const { record } of selected) if (record?.offer.captureId) {
+
+  try {
+    const deleted = transaction.objectStore('deletedOffers'), receipts = transaction.objectStore('captureReceipts')
+    for (const { id, key } of selected) {
+      store.delete(key)
+      deleted.put({ id: id.toLowerCase() })
+    }
     // Retain a receipt so folder sync does not resurrect deliberately deleted captures.
-    transaction.objectStore('captureReceipts').put({ id: record.offer.captureId.toLowerCase() })
-    const images = transaction.objectStore('evidence')
-    if (!remaining.some(r => r.offer?.captureId?.toLowerCase() === record.offer.captureId?.toLowerCase())) images.delete(await storedKey(images, record.offer.captureId))
+    for (const id of captures) receipts.put({ id })
+    for (const key of removedEvidence) images.delete(key)
+  } catch (error) {
+    transaction.abort()
+    await done.catch(() => {})
+    throw error
   }
   await done
   changed()
@@ -387,12 +424,12 @@ export async function hasCaptureReceipt(id: string): Promise<boolean> {
   const transaction = (await db()).transaction(['offers', 'evidence', 'captureReceipts'])
   id = id.toLowerCase()
   const receipts = transaction.objectStore('captureReceipts'), offers = transaction.objectStore('offers'), images = transaction.objectStore('evidence')
-  if (!await value(receipts.get(await storedKey(receipts, id)))) return false
-  const saved = await value(offers.get(await storedKey(offers, id))) as SavedOffer | undefined
+  if (!(await storedKeys(receipts, id)).length) return false
+  const keys = await storedKeys(offers, id)
   // A deleted offer stays deleted. Explicitly restored metadata can recover its
   // missing image when the original helper file is encountered again.
-  if (!saved || saved.offer.captureId?.toLowerCase() !== id) return true
-  return !!await value(images.get(await storedKey(images, id)))
+  if (keys.length !== 1 || storedCaptureId(await value(offers.get(keys[0]))) !== id) return true
+  return (await storedKeys(images, id)).length > 0
 }
 
 export type CaptureDelivery = { status: 'created' | 'restored' | 'unchanged'; offer: Offer | null }
@@ -400,18 +437,24 @@ export async function receiveCapture(offer: Offer, evidence: Evidence): Promise<
   offer = offerSchema.parse({ ...offer, reviewed: false, completeness: 'unverified' })
   evidence = evidenceSchema.parse(evidence)
   if (offer.id !== evidence.id || offer.captureId !== evidence.id || offer.source !== 'windows-helper') throw new Error('Invalid helper capture.')
-  const transaction = (await db()).transaction(['offers', 'evidence', 'captureReceipts'], 'readwrite')
+  const transaction = (await db()).transaction(['offers', 'evidence', 'captureReceipts', 'deletedOffers'], 'readwrite')
   const done = complete(transaction)
   const receipts = transaction.objectStore('captureReceipts')
   const offers = transaction.objectStore('offers')
-  const existing = await value(offers.get(await storedKey(offers, offer.id))) as SavedOffer | undefined
-  if (existing) {
-    const restored = existing.offer.captureId?.toLowerCase() === evidence.id && await addMissingEvidence(transaction.objectStore('evidence'), evidence)
+  const keys = await storedKeys(offers, offer.id)
+  if (keys.length) {
+    const existing = keys.length === 1 ? recordSchema.safeParse(await value(offers.get(keys[0]))) : undefined
+    // A background scan must leave unreadable originals available for recovery.
+    if (!existing?.success) { await done; return { status: 'unchanged', offer: null } }
+    const images = transaction.objectStore('evidence')
+    const restored = existing.data.offer.captureId === evidence.id && !(await storedKeys(images, evidence.id)).length
+    if (restored) images.put(evidence)
     receipts.put({ id: offer.id }); await done
     if (restored) changed()
-    return { status: restored ? 'restored' : 'unchanged', offer: offerSchema.parse(existing.offer) }
+    return { status: restored ? 'restored' : 'unchanged', offer: existing.data.offer }
   }
-  if (await value(receipts.get(await storedKey(receipts, offer.id)))) { await done; return { status: 'unchanged', offer: null } }
+  const deleted = transaction.objectStore('deletedOffers')
+  if ((await storedKeys(receipts, offer.id)).length || (await storedKeys(deleted, offer.id)).length) { await done; return { status: 'unchanged', offer: null } }
   if (await value(offers.count()) >= 250) {
     transaction.abort(); await done.catch(() => {})
     throw new Error('Auto-save paused: 250 offers stored. Export and remove older offers, then resume. New captures remain in the helper folder.')
@@ -460,6 +503,18 @@ export async function storageHealth() {
     canPersist: typeof manager?.persist === 'function' }
 }
 
+export async function probeOfferStorage(): Promise<boolean> {
+  try {
+    const transaction = (await db()).transaction('offers', 'readwrite')
+    const done = complete(transaction)
+    await value(transaction.objectStore('offers').count())
+    await done
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function captureRestoreVersion(): Promise<string> {
   const record = await value((await db()).transaction('settings').objectStore('settings').get('capture-restore-version')) as { value: string } | undefined
   return record?.value ?? ''
@@ -471,12 +526,15 @@ export async function handledCaptureIds(): Promise<Set<string>> {
   // historical file on reconnect. Evidence values (images) are never loaded.
   const [ids, offers, evidenceIds] = await Promise.all([
     value(transaction.objectStore('captureReceipts').getAllKeys()),
-    value(transaction.objectStore('offers').getAll()) as Promise<SavedOffer[]>,
+    value(transaction.objectStore('offers').getAll()) as Promise<unknown[]>,
     value(transaction.objectStore('evidence').getAllKeys()),
   ])
-  const handled = new Set(ids.map(id => String(id).toLowerCase())), evidence = new Set(evidenceIds.map(id => String(id).toLowerCase()))
-  for (const { offer } of offers) {
-    if (offer?.captureId?.toLowerCase() === offer?.id?.toLowerCase() && offer?.id && !evidence.has(offer.id.toLowerCase())) handled.delete(offer.id.toLowerCase())
+  const handled = new Set(ids.flatMap(id => typeof id === 'string' ? [id.toLowerCase()] : []))
+  const evidence = new Set(evidenceIds.flatMap(id => typeof id === 'string' ? [id.toLowerCase()] : []))
+  for (const record of offers) {
+    const id = (record as { offer?: { id?: unknown } } | null)?.offer?.id
+    const captureId = storedCaptureId(record)
+    if (captureId && typeof id === 'string' && captureId === id.toLowerCase() && !evidence.has(captureId)) handled.delete(captureId)
   }
   return handled
 }

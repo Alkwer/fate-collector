@@ -2,6 +2,7 @@ import { z } from '../../shared/validation'
 import { zipSync, strToU8 } from 'fflate'
 import { APP_VERSION, DIAGNOSTIC_VERSION, RETENTION_MS, diagnosticReportSchema, diagnosticSubmissionSchema, diagnosticReceiptSchema, diagnosticWithdrawalSchema, diagnosticText, type DiagnosticReport } from '../../shared/diagnostics'
 import { diagnosticEvents, logDiagnostic } from './diagnostic-log'
+import { probeOfferStorage } from './storage'
 import { readLocalHistory } from './local-history'
 
 const prefix = 'fate-collector.diagnostic-report.'
@@ -52,7 +53,7 @@ export function onDiagnosticChange(listener: () => void) {
   window.addEventListener('storage', listener); window.addEventListener(changed, listener)
   return () => { window.removeEventListener('storage', listener); window.removeEventListener(changed, listener) }
 }
-export function generateDiagnostic(environment: string, folderConnection: DiagnosticReport['state']['folderConnection'], sharing: DiagnosticReport['state']['sharing']): DiagnosticReport {
+export async function generateDiagnostic(environment: string, folderConnection: DiagnosticReport['state']['folderConnection'], sharing: DiagnosticReport['state']['sharing']): Promise<DiagnosticReport> {
   logDiagnostic('diagnostics-generate', 'ok')
   let storage: DiagnosticReport['state']['storage'] = 'unavailable'
   try { const probe = `${prefix}probe`; localStorage.setItem(probe, '1'); localStorage.removeItem(probe); storage = 'available' } catch { /* The report must remain downloadable. */ }
@@ -64,7 +65,7 @@ export function generateDiagnostic(environment: string, folderConnection: Diagno
     kind: 'fate-collector.diagnostics', schemaVersion: 1, id: crypto.randomUUID(), generatedAt: new Date().toISOString(), source: 'website', appVersion: APP_VERSION,
     environment: ['local', 'staging', 'production'].includes(environment) ? environment : 'unknown',
     runtime: { family, version, platform, online: navigator.onLine },
-    state: { storage, folderConnection, sharing, queue: { pending: 0, accepted: 0, rejected: 0, ignored: 0 } },
+    state: { storage, offerStorage: await probeOfferStorage() ? 'available' : 'unavailable', folderConnection, sharing, queue: 'not-applicable' },
     events: diagnosticEvents(),
   })
 }

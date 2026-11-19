@@ -3,8 +3,11 @@ import { closePanels, openPanel } from './ui'
 
 test('loads manual Fate portraits only when the picker opens and preserves focus', async ({ page }) => {
   const artRequests: string[] = []
+  const secondaryModules: string[] = []
   page.on('request', request => {
-    if (new URL(request.url()).pathname.startsWith('/game-art/')) artRequests.push(request.url())
+    const path = new URL(request.url()).pathname
+    if (path.startsWith('/game-art/')) artRequests.push(path)
+    if (/\/(OfferEditor|SavedOffers)-[^/]+\.js$/.test(path)) secondaryModules.push(path)
   })
   await page.goto('/')
   await expect(page.locator('.manual-fate-options img')).toHaveCount(0)
@@ -17,6 +20,10 @@ test('loads manual Fate portraits only when the picker opens and preserves focus
   await expect.poll(() => artRequests.length).toBeGreaterThan(0)
   await page.keyboard.press('Escape')
   await expect(trigger).toBeFocused()
+  expect(secondaryModules).toEqual([])
+  await page.getByRole('button', { name: /Saved offers/i }).first().click()
+  await expect.poll(() => secondaryModules.some(path => path.includes('SavedOffers-'))).toBe(true)
+  expect(secondaryModules.some(path => path.includes('OfferEditor-'))).toBe(false)
 })
 
 test('adds map tooltip variants and keeps unrecorded effects unknown', async ({ page }) => {
