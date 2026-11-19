@@ -155,13 +155,28 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.6 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.7 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.6 exception
+### Pinned Fate Collector 0.10.7 exception
+
+The owner requested the reliability update with in-game tests deferred. This exception applies to a single staging artifact.
+
+- Source revision `00dc723cd71caea8f5b43eaedd601e31cb72374f`
+- Package ID `742d6a189edf1ad329e29139dc4c34e98282673688695e2873a51b7e17f6c399`
+- Staging run [44553467640](https://github.com/Alkwer/fate-collector/actions/runs/44553467640)
+- Windows helper ZIP SHA-256 `f82bd15e4e0e941e0b2d885b3359e81790a441688a9589ce8702a56674797a74`
+
+Full CI and synthetic staging API checks passed. The staging artifact verified all 132 manifest entries. The live entry point, referenced assets and 147-file helper ZIP matched the downloaded artifact. Eight browser checks on staging covered review focus, multipart drop, journal drafts and backup, manual entry, archived image recognition and website diagnostics.
+
+The semantic browser replay exercised three Currency reward variants and abstention. The historical five-scene replay lacks semantic annotations. No fresh native F9 holdout or in-game validation was performed.
+
+Two staging sessions reached the managed Turnstile dialog using synthetic evidence and timed out after five minutes and one minute respectively. On 19 November 2026 the owner explicitly approved production promotion of this 0.10.7 artifact with the live submission, receipt, replay rejection and withdrawal check deferred. Production Turnstile verification stays enabled.
+
+### Previous Fate Collector 0.10.6 exception (historical)
 
 PoE 3.30.0c updates the reward catalog, editable trade priorities, equipment
 modifiers and the Viscera planner for additional bosses.
@@ -514,7 +529,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.6 deployment record](#pinned-fate-collector-0106-exception) records the
+[0.10.7 deployment record](#pinned-fate-collector-0107-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
