@@ -1,11 +1,11 @@
 // Temporary exception approved before live Fate encounters are available.
 export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
-// The owner requested the 3.30.0c update with icon validation on a fresh F9 capture.
+// Package-specific approval and deferred checks are recorded in docs/deployment.md.
 export const HOTFIX_UPDATE_RELEASE = Object.freeze({
-  revision: '8e720915c04e0c2261474a286b77f60a99fd3a8e',
-  releaseId: '51e5475daef1720556a2c5d1d9f486fbf863859d3c6e781df6c298a50008f2e1',
-  stagingRunId: '44408922338',
+  revision: '00dc723cd71caea8f5b43eaedd601e31cb72374f',
+  releaseId: '742d6a189edf1ad329e29139dc4c34e98282673688695e2873a51b7e17f6c399',
+  stagingRunId: '44553467640',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
