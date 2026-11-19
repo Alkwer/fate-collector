@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## 0.10.9 — 19 November 2026
+
+- Select Divine Orb or Orb of Annulment in the tooltip catalog. Both planners complete each single-orb reward at two copies under PoE 3.30.0d.
+- The Abomination map reference identifies Nightmare of the Depraved Trinity as the empowered boss.
+
 ## 0.10.8 — 19 November 2026
 
 - Press F6 to start a gold outline that follows the pointer. Include the Fates

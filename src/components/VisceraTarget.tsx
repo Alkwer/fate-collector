@@ -3,6 +3,7 @@ import type { PlanningFilters } from '../../shared/planning-filters'
 import type { FateCard, Offer } from '../../shared/schema'
 import { VISCERA_SOURCE_URL, VISCERA_TARGETS, getVisceraTarget, isVisceraSourceHere, resolveVisceraArea, visceraCompanion } from '../../shared/viscera-target'
 import { VISCERA_COMPANION_PATCH_URL } from '../../shared/viscera'
+import { PATCH_3300D_SOURCE } from '../../shared/patch-3300d-rewards'
 import './VisceraTarget.css'
 
 const storageKey = 'fate-collector.viscera-target'
@@ -53,6 +54,7 @@ export function VisceraTarget({ offer, collected, filters = {}, offerReady = fal
       </select>
     </label>
     {storageError && <p className="hint" role="status">Target storage is unavailable. Your choice may reset when you reload.</p>}
+    {area?.id === 'MapWorldsAbomination' && <p className="hint">Only Nightmare of the Depraved Trinity receives Fate empowerment in Abomination. It can drop the full range of Fate rewards. <a href={PATCH_3300D_SOURCE} target="_blank" rel="noreferrer">GGG 3.30.0d</a></p>}
     {target && <>
       <p className="viscera-area" role="status">{!area ? 'Current area match unknown.' :
         sourcesHere?.length ? `Listed source in ${area.name}.` : `No listed source in ${area.name}.`}</p>

@@ -35,6 +35,7 @@ const tradeWeights: Readonly<Partial<Record<string, number>>> = {
   'hinekoras-lock': 30,
   'mirror-shard': 25,
   'additional-divine-orbs': 12,
+  'divine-orb': 12,
   'fracturing-orb': 8,
   'amulets-with-a-gem-modifier': 5,
   'rare-body-armours-with-a-defence-modifier': 1,

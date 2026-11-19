@@ -2,8 +2,9 @@ import type { Reward } from './schema'
 import type { RewardSegments } from './reward-segments'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 import { chaseRewards, PATCH_3300C_SOURCE, patchEquipmentRewards, replacedEquipmentLabels } from './patch-3300c-rewards'
+import { singleOrbRewards } from './patch-3300d-rewards'
 
-export const REWARD_CATALOG_VERSION = 'rewards-v7-3.30.0c'
+export const REWARD_CATALOG_VERSION = 'rewards-v8-3.30.0d'
 export const VALUABLE_CURRENCY_LABEL = 'Additional Valuable Currency Items'
 
 export const SCREENSHOT_CATALOG_SOURCE = 'https://github.com/Alkwer/fate-collector/blob/main/research/SCREENSHOT_CATALOG_2026-11-15.md'
@@ -62,6 +63,7 @@ export const REWARD_CATALOG: CatalogReward[] = [
     description: 'Empowered Monster has extremely increased Item Rarity. To claim this reward, invoke three copies of it.',
     source: 'https://poedb.tw/us/Fates', sourceLabel: 'PoEDB wording · Black Frost tooltip checked on 18 Nov 2026' },
   ...patchEquipmentRewards.map(entry => ({ ...entry, source: PATCH_3300C_SOURCE, sourceLabel: 'GGG 3.30.0c equipment change' })),
+  ...singleOrbRewards,
   ...chaseRewards.map(entry => ({ ...entry, kind: 'unknown' as const, threshold: null,
     source: PATCH_3300C_SOURCE, sourceLabel: 'GGG 3.30.0c high-tier map rewards' })),
 ]

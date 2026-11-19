@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "version": "catalog-evidence-2026-11-18",
-  "checkedAt": "2026-11-18",
-  "gameVersion": "3.30.0c Covens League",
+  "version": "catalog-evidence-2026-11-19",
+  "checkedAt": "2026-11-19",
+  "gameVersion": "3.30.0d Covens League",
   "completeness": "partial",
   "names": {
     "version": "fate-names-v4",
@@ -24,7 +24,7 @@
     "rewardsInferredFromName": false
   },
   "rewards": {
-    "version": "rewards-v7-3.30.0c",
+    "version": "rewards-v8-3.30.0d",
     "evidenceReport": "research/SCREENSHOT_CATALOG_2026-11-15.md",
     "newSemanticsConfirmed": [
       "additional-currency-items",
@@ -90,9 +90,15 @@
     ],
     "sessionReport": "docs/trade-starter.md#malformation-on-17-november-2026",
     "blackFrostTooltip": "docs/trade-starter.md#black-frost-on-18-november-2026",
-    "status": "Historical tooltip transcriptions, including Black Frost, retain their observed kinds and thresholds. Official 3.30.0c equipment replacements and five chase outcomes are available for manual entry. Nine previously checked motif and frame combinations can identify a reward. Ambiguous variants and new reward icons require current tooltip evidence."
+    "status": "Historical tooltip transcriptions, including Black Frost, retain their observed kinds and thresholds. Official 3.30.0c equipment replacements and five chase outcomes are available for manual entry. 3.30.0d confirms the two single-orb combos for manual entry. Nine previously checked motif and frame combinations can identify a reward. Ambiguous variants and new reward icons require current tooltip evidence."
   },
   "freshSources": [
+    {
+      "url": "https://www.pathofexile.com/forum/view-thread/4017726",
+      "owner": "GGG",
+      "checkedAt": "2026-11-19",
+      "result": "Single Divine Orb and Orb of Annulment combos require two copies each. Only Nightmare of the Depraved Trinity receives Fate empowerment in Abomination and can drop all empowerment rewards. GGG added an area Fate counter and new line breaks in descriptions. Icon identities and counter OCR await capture evidence."
+    },
     {
       "url": "https://www.pathofexile.com/forum/view-thread/4017172",
       "owner": "GGG",

@@ -61,14 +61,14 @@ test('adds map tooltip variants and keeps unrecorded effects unknown', async ({ 
   ] })
 })
 
-test('records 3.30.0c gear and chase rewards with only the mechanics entered by the player', async ({ page }) => {
+test('records patch rewards with published thresholds and player-checked kinds', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Add Fate manually', exact: true }).click()
   const entry = page.getByRole('dialog', { name: 'Add Fate manually', exact: true })
   await entry.getByRole('button', { name: 'Choose Alchemist' }).click()
   const catalog = entry.getByLabel('All reward tooltips')
   await expect(catalog.locator('option').filter({ hasText: 'Rare Shields without Life Modifiers' })).toHaveCount(0)
-  for (const id of ['rare-shields-with-a-defence-modifier', 'mirror-shard', 'fracturing-orb']) {
+  for (const id of ['rare-shields-with-a-defence-modifier', 'mirror-shard', 'fracturing-orb', 'divine-orb', 'orb-of-annulment']) {
     await catalog.selectOption(id)
     await entry.getByRole('button', { name: 'Add selected reward' }).click()
   }
@@ -84,6 +84,8 @@ test('records 3.30.0c gear and chase rewards with only the mechanics entered by 
     { label: 'Rare Shields with a Defence Modifier', kind: 'regular', identified: true },
     { label: 'Mirror Shard', kind: 'combo', threshold: 2, identified: true },
     { label: 'Fracturing Orb', kind: 'unknown', threshold: null, identified: false },
+    { label: 'Divine Orb', kind: 'combo', threshold: 2, identified: true },
+    { label: 'Orb of Annulment', kind: 'combo', threshold: 2, identified: true },
   ])
 })
 

@@ -6,6 +6,7 @@ import {
   UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, supportsDuplicateCombo, visitInvocationOrders,
   type AdvisorGoal, type InvocationLimit, type InvocationPlan, type PlanResult, type Recommendation,
 } from './advisor'
+import { currentComboThreshold } from './patch-3300d-rewards'
 import { KNOWN_COMBOS } from './reward-catalog'
 import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 import { cardSchema, rewardSchema, type FateCard } from './schema'
@@ -213,7 +214,8 @@ function comboThresholds(cards: PreparedCard[], weights: Map<string, number>): M
       const entry = observed.get(reward.key) ?? { label: reward.label, values: new Set<number>() }
       const known = catalog.get(reward.key)
       if (known !== undefined) entry.values.add(known)
-      if (reward.threshold !== null) entry.values.add(reward.threshold)
+      const threshold = currentComboThreshold(normalizeRewardLabel(reward.label), reward.threshold)
+      if (threshold !== null) entry.values.add(threshold)
       observed.set(reward.key, entry)
     }
   }

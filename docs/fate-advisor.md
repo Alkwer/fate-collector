@@ -11,6 +11,10 @@ records the 17 November FAQ and community review. Advice uses the current rules,
 invocations; it does not simulate historical patches. See the
 [post-launch evidence record](../research/PATCH_NOTES_2026-11-16.md). High-tier rewards, equipment modifier replacements and extra-boss Viscera follow [3.30.0c](https://www.pathofexile.com/forum/view-thread/4017172).
 
+[GGG 3.30.0d](https://www.pathofexile.com/forum/view-thread/4017726) sets the single Divine Orb and Orb of Annulment combos to two matching copies each. Both planners use the current rule for cards recorded with the previous three-copy threshold. Additional Divine Orbs has no published threshold. Identify the reward from its tooltip.
+
+Use the game's area Fate counter to decide when to mark **Last offer in this area**. Additional Item Rarity continues to improve average currency quality even at high inherent rarity. GGG gives no numerical conversion for solver points.
+
 ## Use
 
 The workflow strip follows Capture → Check rewards → Choose a Fate → Invoke.

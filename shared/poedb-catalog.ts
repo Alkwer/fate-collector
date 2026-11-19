@@ -3,6 +3,7 @@ import { normalizeFateName } from './fate-names.ts'
 import sourceCatalog from './poedb-catalog.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 import { chaseRewards, equipmentCorrection } from './patch-3300c-rewards.ts'
+import { singleOrbRewards } from './patch-3300d-rewards.ts'
 
 const date = z.iso.date()
 const identifier = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -80,6 +81,7 @@ const equipmentReferences = POEDB_CATALOG.rewards.map(entry => {
 // Patched text has no verified current icon. Keep the snapshot intact for provenance.
 export const unchangedIconReferences = equipmentReferences.filter(entry => entry.sourceId === 'poedb-fates')
 const currentRewardReferences = [
+  ...singleOrbRewards.map(({ id, label, description }) => ({ id, label, description, minLevel: null, sourceId: 'ggg-3-30-0d' })),
   ...chaseRewards.map(entry => ({ ...entry, minLevel: null, sourceId: 'ggg-3-30-0c' })),
   ...equipmentReferences,
 ]

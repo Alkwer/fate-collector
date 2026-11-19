@@ -111,7 +111,7 @@ namespace FateCollector {
   void Reply(object value) { view.CoreWebView2.PostWebMessageAsJson(json.Serialize(value)); }
   static string Field(Dictionary<string,object> request,string key) { object value; if(!request.TryGetValue(key,out value) || !(value is string)) throw new ArgumentException(); return (string)value; }
   object Operate(string op,Dictionary<string,object> request) {
-   if(op=="ready") return new { helperVersion="0.10.8" };
+   if(op=="ready") return new { helperVersion="0.10.9" };
    if(op=="show") { form.Show(); form.WindowState=FormWindowState.Normal; form.Activate(); return null; }
    if(op=="hide") { form.Hide(); return null; }
    if(op=="list") return List(Field(request,"path"));

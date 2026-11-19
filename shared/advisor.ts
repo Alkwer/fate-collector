@@ -1,5 +1,6 @@
 import { cardSchema, rewardSchema, type FateCard } from './schema'
 import { normalizeFateName } from './fate-names'
+import { currentComboThreshold } from './patch-3300d-rewards'
 import { KNOWN_COMBOS, VALUABLE_CURRENCY_LABEL } from './reward-catalog'
 import { isRewardIdentified, needsUniqueTooltipCheck } from './reward-evidence'
 import { assessPlanningCard, assessPlanningMerge, mergeOutputTier, type PlanningFilters } from './planning-filters'
@@ -219,7 +220,10 @@ function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
       }
       if (reward.kind !== goal.kind || label !== goalLabel) continue
       targetCount += reward.count
-      if (goal.kind === 'combo' && reward.threshold !== null) thresholds.add(reward.threshold)
+      if (goal.kind === 'combo') {
+        const threshold = currentComboThreshold(label, reward.threshold)
+        if (threshold !== null) thresholds.add(threshold)
+      }
     }
     return { original: card, id: card.id, name, tier: card.tier, tierReviewed: card.visualReview?.tierReviewed ?? true, targetCount, warnings: [...warnings] }
   })

@@ -11,7 +11,7 @@ export const profitObjectives = [
   { id: 'unique', label: 'Unique Item', target: 30, rewards: ['Unique Armour', 'Unique Flask', 'Unique Jewellery Item', 'Unique Weapon', 'Unique Jewel', 'Valuable Unique Jewellery Item', "Dreadmaidens' Sacrament", 'Hide of the Vendigo', 'Corpse Rose', 'Ordered Fate', "Doedre's Tongue"] },
   { id: 'gem', label: 'Gem', target: 30, rewards: ['Exceptional Gem', 'Gem with Quality', 'Additional Gems with Quality', 'Additional Gems, Some with Maximum Quality'] },
   { id: 'rarity', label: 'Increased Item Rarity', target: 30, rewards: ['Item Rarity', 'Increased Item Rarity', 'Highly Increased Item Rarity', 'Greatly Increased Item Rarity', 'Massively Increased Item Rarity', 'Extremely Increased Item Rarity'] },
-  { id: 'currency', label: 'Currency Items', target: 30, rewards: ['Additional Currency Items', 'Additional Valuable Currency Items', 'Additional Divine Orbs', 'Mirror Shard', 'Fracturing Orb', "Hinekora's Lock"] },
+  { id: 'currency', label: 'Currency Items', target: 30, rewards: ['Additional Currency Items', 'Additional Valuable Currency Items', 'Additional Divine Orbs', 'Divine Orb', 'Orb of Annulment', 'Mirror Shard', 'Fracturing Orb', "Hinekora's Lock"] },
   { id: 'viscera', label: 'Viscera Item', target: 30, rewards: ['Viscera Item'] },
   { id: 'threads', label: 'Threads', target: 30, rewards: ['Additional Threads', 'Many Additional Threads'] },
   { id: 'decks', label: 'Stacked Decks', target: 30, rewards: ['Additional Stacked Decks', 'Many Additional Stacked Decks'] },
