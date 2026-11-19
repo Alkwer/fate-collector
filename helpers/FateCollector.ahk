@@ -110,11 +110,9 @@ VerifyCalibration(preview := false) {
             && poe.width = previous.width && poe.height = previous.height
             return poe
     }
-    if !savedCalibrationAllowed
-        throw Error("Select the panel again with F6 and F7.")
-    saved := ReadFateCalibration(calibrationFile)
+    saved := savedCalibrationAllowed ? ReadFateCalibration(calibrationFile) : 0
     if !saved
-        throw Error("Press F6 at the upper-left corner of the panel first.")
+        throw Error("Press F6 above the Fates title and to the left of the first card.")
     rect := FateCalibrationRect(saved, poe.width, poe.height, preview)
     calibration := {window: poe, first: rect.first, last: rect.last}
     if captureSession
@@ -123,25 +121,13 @@ VerifyCalibration(preview := false) {
 }
 
 PreviewCalibration() {
-    global calibration, capturing, previewWindows
+    global calibration, capturing
     if capturing
         return
     previousCalibration := calibration
     try {
-        poe := VerifyCalibration(true)
-        if !calibration.last
-            throw Error("Press F7 at the lower-right corner of the panel.")
-        ClearCalibrationPreview()
-        left := poe.left + calibration.first.x, top := poe.top + calibration.first.y
-        width := calibration.last.x - calibration.first.x + 1, height := calibration.last.y - calibration.first.y + 1
-        for edge in [[left, top, width, 2], [left, top + height - 2, width, 2], [left, top, 2, height], [left + width - 2, top, 2, height]] {
-            outline := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 -DPIScale")
-            outline.BackColor := "EBCB73"
-            outline.Show("NA x" edge[1] " y" edge[2] " w" edge[3] " h" edge[4])
-            previewWindows.Push(outline)
-        }
-        SetTimer ClearCalibrationPreview, -2500
-        Notice("Check the panel outline. Press F9 to capture, or F6/F7 to adjust it.")
+        VerifyCalibration(true)
+        ShowCalibrationFrame()
     } catch as err {
         calibration := previousCalibration
         ClearCalibrationPreview()
@@ -149,9 +135,86 @@ PreviewCalibration() {
     }
 }
 
+ShowCalibrationFrame() {
+    global calibration, previewWindows, previewBounds
+    ClearCalibrationPreview()
+    previewBounds := ""
+    ClearNotice()
+    try {
+        Loop 4 {
+            edge := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x08000020 -DPIScale")
+            edge.BackColor := "EBCB73"
+            previewWindows.Push(edge)
+        }
+        caption := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x08000020 -DPIScale")
+        previewWindows.Push(caption)
+        caption.BackColor := "192E37"
+        caption.MarginX := 10
+        caption.MarginY := 6
+        caption.SetFont("s10 cFFFFFF", "Segoe UI")
+        caption.AddText(, "Include the Fates title, all cards, reward icons and Confirm.")
+        caption.AddText("y+2 cEBCB73", calibration.last
+            ? "Saved frame   |   F6 / F7  Adjust     F9  Capture"
+            : "F7   Below Confirm and to the right of the last card")
+        caption.Show("Hide AutoSize")
+        SetTimer PositionCalibrationFrame, 50
+        if calibration.last
+            SetTimer ClearCalibrationPreview, -5000
+        PositionCalibrationFrame()
+    } catch {
+        ClearCalibrationPreview()
+        throw
+    }
+}
+
+PositionCalibrationFrame() {
+    global calibration, previewWindows, previewBounds
+    if !previewWindows.Length
+        return
+    poe := calibration.window
+    if !WinActive("ahk_id " poe.hwnd) {
+        ClearCalibrationPreview()
+        return
+    }
+    try WinGetClientPos &x, &y, &w, &h, "ahk_id " poe.hwnd
+    catch TargetError {
+        ClearCalibrationPreview()
+        return
+    }
+    if w != poe.width || h != poe.height {
+        ClearCalibrationPreview()
+        return
+    }
+    left := x + calibration.first.x, top := y + calibration.first.y
+    if calibration.last {
+        right := x + calibration.last.x, bottom := y + calibration.last.y
+    } else {
+        MouseGetPos &mouseX, &mouseY
+        right := Max(left, Min(mouseX, x + w - 1))
+        bottom := Max(top, Min(mouseY, y + h - 1))
+    }
+    bounds := Format("{},{},{},{}", left, top, right, bottom)
+    if bounds = previewBounds
+        return
+    previewBounds := bounds
+    width := right - left + 1, height := bottom - top + 1
+    stroke := Max(2, Round(h / 540))
+    dx := Min(stroke, width), dy := Min(stroke, height)
+    edges := [[left, top, width, dy], [left, bottom - dy + 1, width, dy],
+        [left, top, dx, height], [right - dx + 1, top, dx, height]]
+    for index, edge in edges
+        previewWindows[index].Show(Format("NA x{} y{} w{} h{}", edge*))
+    caption := previewWindows[5]
+    caption.GetPos(, , &cw, &ch)
+    cx := Max(x, Min(left, x + w - cw))
+    cy := top - ch - 3 >= y ? top - ch - 3 : Min(top + dy + 3, y + h - ch)
+    caption.Show(Format("NA x{} y{}", cx, cy))
+}
+
 ClearCalibrationPreview() {
     global previewWindows
     SetTimer ClearCalibrationPreview, 0
+    SetTimer PositionCalibrationFrame, 0
     for outline in previewWindows
         outline.Destroy()
     previewWindows := []
@@ -171,7 +234,7 @@ CalibrateTopLeft() {
         calibration := {window: poe, first: GetClientPointer(poe), last: 0}
         if captureSession
             captureSession.lastFile := ""
-        Notice("Upper-left corner saved. Move to the lower-right corner and press F7.")
+        ShowCalibrationFrame()
     } catch as err {
         Notice(err.Message)
     }
@@ -186,11 +249,12 @@ CalibrateBottomRight() {
         last := GetClientPointer(poe)
         if last.x <= calibration.first.x || last.y <= calibration.first.y
             throw Error("The F7 corner must be to the right of and below the F6 corner.")
-        calibration.last := last
-        SaveFateCalibration(calibrationFile, calibration)
+        selection := {window: poe, first: calibration.first, last: last}
+        SaveFateCalibration(calibrationFile, selection)
+        calibration := selection
         savedCalibrationAllowed := true
         AutoCaptureReset("watching")
-        Notice("Panel saved. Connected overlay detects offers automatically. F8 previews; F9 captures manually.")
+        ShowCalibrationFrame()
     } catch as err {
         Notice(err.Message)
     }
@@ -214,7 +278,7 @@ CapturePanel() {
         poe := VerifyCalibration()
         gameStarted := PoeProcessStarted(poe.pid)
         if !calibration.last
-            throw Error("Press F7 at the lower-right corner of the panel.")
+            throw Error("Press F7 below Confirm and to the right of the last card.")
         left := calibration.first.x
         top := calibration.first.y
         width := calibration.last.x - left + 1

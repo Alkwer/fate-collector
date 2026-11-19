@@ -320,7 +320,7 @@ AutoCaptureTick() {
             DirCreate autoCapture.directory
             command := '"' WindowsPowerShellPath() '" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -File "'
                 . A_ScriptDir '\Watch-FatePanel.ps1" -Directory "' autoCapture.directory '" -ParentPid '
-                . DllCall("GetCurrentProcessId", "UInt") ' -HelperVersion 0.10.7'
+                . DllCall("GetCurrentProcessId", "UInt") ' -HelperVersion 0.10.8'
             autoCapture.process := CreateFateCaptureProcess(command, A_ScriptDir)
         } else if DllCall("WaitForSingleObject", "Ptr", autoCapture.process, "UInt", 0, "UInt") != 258 {
             AutoCaptureFailure()
