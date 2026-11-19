@@ -15,8 +15,11 @@ borderless mode; exclusive fullscreen is not supported by this version.
 3. Choose **Run in background** or close the window. The advisor keeps running.
    **Open local advisor** in the helper tray opens settings, corrections and
    invocation planning again. Exiting the helper stops the advisor.
-4. In the game, calibrate with F6/F7 if needed. Include the Fates heading, English
-   card names and Confirm button. Keep the offer visible for two matching reads.
+4. In the game, point above **Fates** and to the left of the first card, then
+   press **F6**. Move the pointer until the gold frame encloses the title, all
+   offered cards and their reward icons, and the **Confirm** button. Press **F7**
+   to save the bottom-right corner. **F8** shows the saved frame again. Keep
+   the offer visible for two matching reads.
 5. Confirm the current area with Ctrl+Alt+Enter when prompted. Check the displayed
    names and missing data. Record the Fate you intend to choose with the displayed
    Ctrl+Alt+number while the panel is visible, then select it in game. Undo the

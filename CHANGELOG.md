@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.8 — 19 November 2026
+
+- Press F6 to start a gold outline that follows the pointer. Include the Fates
+  title, all offered cards, reward icons and Confirm, then press F7 to save
+  the frame. Press F8 to see the saved area again.
+
 ## 0.10.7 — 19 November 2026
 
 - Isolated damaged local records, made capture ordering deterministic and made duplicate offer IDs visible before restoring backups. Dragging multiple backup parts now imports the complete selection.
