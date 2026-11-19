@@ -25,7 +25,7 @@ export function applyVisualSuggestions(cards: FateCard[], capture: Capture, resu
     const rewards = candidate.symbols.flatMap(symbol => {
       if (!Object.hasOwn(VISUAL_LABELS, symbol.visualId)) return []
       const visualId = symbol.visualId as NonNullable<Reward['visualId']>
-      return [{ ...newReward(), visualId, label: VISUAL_LABELS[visualId], ...visualRewardFields(visualId) }]
+      return [{ ...newReward(), visualId, label: VISUAL_LABELS[visualId], ...visualRewardFields(visualId, symbol.segments) }]
     })
     if (candidate.tier === null && !rewards.length) return card
     return { ...card, tier: candidate.tier, rewards, visualReview: {

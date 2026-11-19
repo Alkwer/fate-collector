@@ -5,22 +5,34 @@ export const PROFILES = {
   'ultrawide-sdr-default': { clientSize: [3440, 1440], hdrActive: false, uiScale: 'default' },
 }
 export const SCENES = ['offer', 'invoke', 'negative']
-export const MINIMUM_RECALL = { names: 0.95, tiers: 0.9, motifs: 0.9 }
+export const MINIMUM_RECALL = { names: 0.95, tiers: 0.9, motifs: 0.9, rewards: 0.9 }
 // A minimum smoke corpus, not a statistical confidence claim.
-export const COVERAGE_POLICY_VERSION = 'native-holdout-v2'
+export const COVERAGE_POLICY_VERSION = 'native-holdout-v3'
+export const REPORT_SCHEMA_VERSION = 3
 export const MINIMUM_SCENES = { offer: 10, invoke: 3, negative: 5 }
-export const MINIMUM_LABELS = { names: 30, tiers: 20, motifs: 20 }
+export const MINIMUM_LABELS = { names: 30, tiers: 20, motifs: 20, rewards: 8 }
 export const MOTIFS = ['blue-diamond', 'gold-stack', 'gold-grid', 'gold-ring', 'silver-cluster', 'orange-feathers', 'three-gems', 'gold-axe']
+export const REWARD_VARIANT_PATTERN = new RegExp(`^(?:${MOTIFS.join('|')})/(?:regular|combo-(?:[1-9][0-9]?|100))$`)
+const rewardVariant = ({ visualId, kind, threshold }) => `${visualId}/${kind === 'combo' ? `combo-${threshold}` : 'regular'}`
+
 export function labelCoverage(cards) {
   const offered = cards.filter(namesExpected)
   return { names: [...new Set(offered.map(card => card.name))].sort(),
     tiers: [...new Set(offered.flatMap(card => card.tier === null ? [] : [card.tier]))].sort(),
-    motifs: [...new Set(offered.flatMap(card => card.visualIds ?? []))].sort() }
+    motifs: [...new Set(offered.flatMap(card => card.visualIds ?? []))].sort(),
+    rewards: [...new Set(offered.flatMap(card => (card.rewards ?? []).filter(reward => reward.kind !== 'unknown').map(rewardVariant)))].sort() }
 }
 
 const counter = () => ({ expected: 0, correct: 0, omitted: 0, unexpected: 0, abstained: 0 })
-const tally = () => ({ names: counter(), tiers: counter(), motifs: counter(), wrongRows: 0, visibleUnknownNames: 0, unknownNameAbstentions: 0 })
+const tally = () => ({
+  names: counter(), tiers: counter(), motifs: counter(),
+  rewards: { ...counter(), annotatedCards: 0, unannotatedCards: 0, abstentionExpected: 0, abstentionCorrect: 0 },
+  wrongRows: 0, visibleUnknownNames: 0, unknownNameAbstentions: 0,
+})
 const namesExpected = card => card.group === 'offered' && card.name !== null
+const makesClaim = reward => reward.identified || reward.kind !== 'unknown' || reward.threshold !== null
+const sameReward = (expected, actual) => actual.identified && expected.visualId === actual.visualId
+  && expected.label === actual.label && expected.kind === actual.kind && expected.threshold === actual.threshold
 const atHeader = ([x, y, width, height], header) => {
   if (!header) return false
   const middleX = header.x + header.width / 2
@@ -28,11 +40,49 @@ const atHeader = ([x, y, width, height], header) => {
   return middleX >= x && middleX < x + width && middleY >= y && middleY < y + height
 }
 
+function measureRewards(expected, predicted, metrics, issues, detail) {
+  if (expected === undefined) {
+    metrics.unannotatedCards++
+    return
+  }
+  metrics.annotatedCards++
+  const remaining = (expected ?? []).filter(reward => reward.kind !== 'unknown')
+  const abstentions = (expected ?? []).filter(reward => reward.kind === 'unknown')
+  metrics.expected += remaining.length
+  metrics.abstentionExpected += expected === null ? 1 : abstentions.length
+  const unexpected = []
+  for (const actual of predicted) {
+    if (!makesClaim(actual)) {
+      metrics.abstained++
+      continue
+    }
+    const index = remaining.findIndex(reward => sameReward(reward, actual))
+    if (index === -1) {
+      unexpected.push(actual)
+      issues.push({ ...detail, reason: 'unexpected-reward', actual, attributable: expected !== null })
+    } else {
+      remaining.splice(index, 1)
+      metrics.correct++
+    }
+  }
+  metrics.unexpected += unexpected.length
+  if (expected === null) metrics.abstentionCorrect += Number(unexpected.length === 0)
+  else {
+    const unsafeMotifs = unexpected.map(reward => reward.visualId)
+    for (const { visualId } of abstentions) {
+      const index = unsafeMotifs.indexOf(visualId)
+      if (index === -1) metrics.abstentionCorrect++
+      else unsafeMotifs.splice(index, 1)
+    }
+  }
+  if (remaining.length) issues.push({ ...detail, reason: 'omitted-rewards', expected: remaining })
+}
+
 export function measure(labels, rows) {
-  const suggestions = rows.filter(row => row.name || row.tier !== null || row.visualIds.length > 0)
+  const suggestions = rows.filter(row => row.name || row.tier !== null || row.rewards.length > 0)
   const metrics = tally()
   const issues = []
-  const matched = new Set()
+  const matched = new Map()
   for (const suggestion of suggestions) {
     const index = labels.findIndex(label => atHeader(label.headerBox, suggestion.header))
     const label = labels[index]
@@ -44,11 +94,12 @@ export function measure(labels, rows) {
       metrics.names.unexpected++
       metrics.wrongRows += Number(reason === 'wrong-row')
       metrics.tiers.unexpected += Number(suggestion.tier !== null)
-      metrics.motifs.unexpected += suggestion.visualIds.length
-      issues.push({ ...detail, reason, suggestedTier: suggestion.tier, suggestedMotifs: suggestion.visualIds })
+      metrics.motifs.unexpected += suggestion.rewards.length
+      metrics.rewards.unexpected += suggestion.rewards.filter(makesClaim).length
+      issues.push({ ...detail, reason, suggestedTier: suggestion.tier, suggestedMotifs: suggestion.rewards.map(reward => reward.visualId) })
       continue
     }
-    matched.add(index)
+    matched.set(index, suggestion)
     metrics.names.correct++
     if (suggestion.tier === null) metrics.tiers.abstained++
     else if (suggestion.tier === label.tier) metrics.tiers.correct++
@@ -57,8 +108,8 @@ export function measure(labels, rows) {
       issues.push({ ...detail, reason: 'unexpected-tier', expected: label.tier, actual: suggestion.tier })
     }
     const remaining = [...(label.visualIds ?? [])]
-    if (suggestion.visualIds.length === 0) metrics.motifs.abstained++
-    for (const visualId of suggestion.visualIds) {
+    if (suggestion.rewards.length === 0) metrics.motifs.abstained++
+    for (const { visualId } of suggestion.rewards) {
       const found = remaining.indexOf(visualId)
       if (found === -1) {
         metrics.motifs.unexpected++
@@ -81,19 +132,21 @@ export function measure(labels, rows) {
     metrics.names.expected++
     metrics.tiers.expected += Number(label.tier !== null)
     metrics.motifs.expected += label.visualIds?.length ?? 0
+    measureRewards(label.rewards, matched.get(index)?.rewards ?? [], metrics.rewards, issues,
+      { labelIndex: index, header: label.headerBox })
     if (!matched.has(index)) {
       metrics.names.abstained += Number(!suggestedHere)
       issues.push({ labelIndex: index, header: label.headerBox, reason: 'omitted-name', expected: label.name })
     }
   }
-  for (const field of ['names', 'tiers', 'motifs']) metrics[field].omitted = metrics[field].expected - metrics[field].correct
+  for (const field of Object.keys(MINIMUM_RECALL)) metrics[field].omitted = metrics[field].expected - metrics[field].correct
   return { metrics, issues }
 }
 
 function aggregate(rows) {
   const totals = tally()
   for (const { metrics } of rows) {
-    for (const field of ['names', 'tiers', 'motifs']) {
+    for (const field of Object.keys(MINIMUM_RECALL)) {
       for (const key of Object.keys(totals[field])) totals[field][key] += metrics[field][key]
     }
     totals.wrongRows += metrics.wrongRows
@@ -108,6 +161,9 @@ function aggregate(rows) {
 export function summarize(mode, rows, releaseProblems = []) {
   const measured = rows.filter(row => row.outcome === 'measured')
   const summary = aggregate(measured)
+  const { rewards } = summary
+  const rewardEvaluation = rewards.annotatedCards === 0 ? 'NOT_EVALUATED'
+    : rewards.unannotatedCards ? 'PARTIAL' : 'MEASURED'
   const byProfile = {}
   const missingCoverage = []
   const failures = [...releaseProblems, ...rows.filter(row => row.outcome !== 'measured' || row.problems.length)
@@ -116,7 +172,9 @@ export function summarize(mode, rows, releaseProblems = []) {
   for (const field of Object.keys(MINIMUM_RECALL)) {
     if (summary[field].unexpected) failures.push(`unexpected ${field}: ${summary[field].unexpected}`)
   }
+  if (rewards.abstentionCorrect !== rewards.abstentionExpected) failures.push('unsafe semantic reward acceptance')
   if (mode === 'holdout') {
+    if (rewards.unannotatedCards) missingCoverage.push('offer/complete-semantic-reward-annotations')
     for (const profile of Object.keys(PROFILES)) {
       const subset = measured.filter(row => row.profile === profile)
       byProfile[profile] = { measured: subset.length,
@@ -124,11 +182,14 @@ export function summarize(mode, rows, releaseProblems = []) {
       for (const scene of SCENES) {
         if (subset.filter(row => row.scene === scene).length < MINIMUM_SCENES[scene]) missingCoverage.push(`${profile}/${scene}`)
       }
-      const coverage = Object.fromEntries(['names', 'tiers', 'motifs'].map(field => [field,
+      const coverage = Object.fromEntries(Object.keys(MINIMUM_RECALL).map(field => [field,
         [...new Set(subset.flatMap(row => row.labelCoverage?.[field] ?? []))].sort()]))
       byProfile[profile].labelCoverage = coverage
       if (coverage.names.length < 5) missingCoverage.push(`${profile}/five-distinct-names`)
       for (const tier of [2, 3]) if (!coverage.tiers.includes(tier)) missingCoverage.push(`${profile}/tier-${tier}`)
+      for (const variant of ['regular', 'combo-2', 'combo-3']) {
+        if (!coverage.rewards.some(reward => reward.endsWith(`/${variant}`))) missingCoverage.push(`${profile}/reward-${variant}`)
+      }
       for (const [field, minimum] of Object.entries(MINIMUM_RECALL)) {
         if (byProfile[profile][field].expected < MINIMUM_LABELS[field]) missingCoverage.push(`${profile}/${field}-minimum-${MINIMUM_LABELS[field]}`)
         const recall = byProfile[profile].recall[field]
@@ -137,6 +198,11 @@ export function summarize(mode, rows, releaseProblems = []) {
       }
     }
     const offers = measured.filter(row => row.scene === 'offer')
+    const rewardVariants = new Set(offers.flatMap(row => row.labelCoverage?.rewards ?? []))
+    if (!MOTIFS.some(motif => [...rewardVariants].filter(variant => variant.startsWith(`${motif}/`)).length > 1)) {
+      missingCoverage.push('offer/same-motif-different-reward-frames')
+    }
+    if (rewards.abstentionExpected === 0) missingCoverage.push('offer/reward-abstention')
     for (const motif of MOTIFS) if (!offers.some(row => row.labelCoverage?.motifs.includes(motif))) missingCoverage.push(`offer/motif-${motif}`)
     if (!offers.some(row => row.coverage.unknownName)) missingCoverage.push('offer/visible-unknown-name')
     if (!offers.some(row => row.coverage.collectedRow)) missingCoverage.push('offer/visible-known-collected-name')
@@ -144,6 +210,6 @@ export function summarize(mode, rows, releaseProblems = []) {
   } else if (Object.values(summary.recall).some(recall => recall !== null && recall !== 1)) {
     failures.push('regression replay must match every labeled supported suggestion')
   }
-  return { status: missingCoverage.length || failures.length ? 'FAIL' : 'PASS', measuredScenes: measured.length,
+  return { status: missingCoverage.length || failures.length ? 'FAIL' : 'PASS', measuredScenes: measured.length, rewardEvaluation,
     summary, byProfile, missingCoverage, failures }
 }

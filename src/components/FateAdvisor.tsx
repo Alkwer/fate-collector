@@ -3,7 +3,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { getAdvisorGoals, normalizeRewardLabel, planInvocation, recommendFates, MAX_COLLECTED_FATES,
   type AdvisorGoal, type InvocationLimit, type InvocationPlan } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
-import { OfferEditor } from './OfferEditor'
+import { LazyOfferEditor } from './LazyOfferEditor'
 import { OfferPreview } from './OfferPreview'
 import { offerBelongsToMap, workspaceInvocationLimit, type AdvisorWorkspace } from '../lib/advisor-workspace'
 import { cardReviewReasons } from '../lib/card-review'
@@ -131,7 +131,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     }}>
       <option value="auto">Use offer context</option><option value="campaign">Campaign (2 slots)</option><option value="map">Map (3 slots)</option>
     </select></label>
-    <OfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview}
+    <LazyOfferEditor solverControl={solverControl} offer={collection} purpose="collection" reviewRequest={collectionReview}
       onChange={patch => onChange({ ...workspace, collection: { ...collection, ...patch } })} />
   </>
   const manualAction = <div className="manual-entry-action"><button className={empty ? 'primary-button' : 'outline-button'} onClick={onAddManual}><AppIcon name="plus" />Add Fate manually</button><p>{empty ? 'Choose by name or picture. No helper needed.' : alreadyCollected ? 'Enter your next offer.' : 'Add the choices shown in game.'}</p></div>
@@ -143,7 +143,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
     <DetailPanel className="reward-settings" autoOpen={!!solverControl.error} title="Reward priorities"><SolverControls control={solverControl} availableGoals={goals} /></DetailPanel>
     {challenges}
     {fightJournal}
-    {mapReady && <DetailPanel className="collection-editor" title="Edit collected cards" onOpenChange={setManualEntry}>{collectedEditor}</DetailPanel>}
+    {mapReady && <DetailPanel deferContent className="collection-editor" title="Edit collected cards" onOpenChange={setManualEntry}>{collectedEditor}</DetailPanel>}
   </div>
   return <div className={`collector-grid map-layout ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
       <section className="panel advisor-main" aria-labelledby="advisor-heading">
@@ -223,7 +223,7 @@ export function FateAdvisor({ offer, workspace, onChange, onEditOffer, onAddManu
           </div>
           <button disabled={!mapReady} className="text-button remove-collected" aria-label={`Remove collected ${cardName(card)} ${index + 1}`} onClick={() => onChange({ ...workspace, collection: { ...collection, cards: collection.cards.filter(item => item.id !== card.id) } })}><AppIcon name="close" /></button>
         </li>)}</ul> : <p className="advisor-empty">No collected Fates yet.</p>}
-        {mapReady && <DetailPanel ref={collectionEditor} className="collection-editor" title={<>Edit collected cards</>}>{collectedEditor}</DetailPanel>}
+        {mapReady && <DetailPanel deferContent ref={collectionEditor} className="collection-editor" title={<>Edit collected cards</>}>{collectedEditor}</DetailPanel>}
         {mapReady && !!collection.cards.length && mode === 'offer' && !alreadyCollected && <button className="outline-button" onClick={() => onChange({ ...workspace, mode: 'invoke' })}>Plan this collection</button>}
       </aside></div>
     </div>

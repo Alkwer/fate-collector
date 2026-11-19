@@ -16,7 +16,7 @@ test('confirmed backup advances pending local withdrawals without re-requesting 
   const consent = { id: crypto.randomUUID(), scope: 'observations', policyVersion: CONSENT_VERSION,
     acceptedAt: now, text: consentText('observations', location.origin), token: 'a'.repeat(64), recordedAt: now,
     withdrawnAt: now, withdrawalConfirmedAt: null, blocked: true }
-  const diagnostic = { report: generateDiagnostic('local', 'off', 'off'),
+  const diagnostic = { report: await generateDiagnostic('local', 'off', 'off'),
     consent: { version: DIAGNOSTIC_VERSION, text: diagnosticText(location.origin), acceptedAt: now },
     token: 'b'.repeat(64), receipt: null, withdrawnAt: now, withdrawalConfirmedAt: null }
   values.set(`fate-collector.consent.observations.${consent.id}`, JSON.stringify(consent))

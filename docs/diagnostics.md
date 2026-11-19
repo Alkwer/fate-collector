@@ -12,6 +12,8 @@ https://github.com/Alkwer/fate-collector. A confirmed submission returns a rando
 report number; include it when describing the problem to the operator. Sending a
 diagnostic report does not automatically create a public GitHub issue.
 
+Website reports check local settings storage and the offer database independently. The helper queue is marked `not-applicable` on the website. Older reports keep their original fields.
+
 ## Included and excluded information
 
 `shared/diagnostics.ts` defines the strict report schema; the helper reconstructs

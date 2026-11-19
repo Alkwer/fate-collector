@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useId, useImperativeHandle, useRef, type ReactNode, type Ref } from 'react'
+import { useEffect, useEffectEvent, useId, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 
 export interface DetailPanelHandle {
   show: () => void
@@ -8,10 +8,11 @@ export interface DetailPanelHandle {
 }
 
 /** Secondary tasks get a focused workspace, without expanding the map underneath. */
-export function DetailPanel({ title, children, className = '', autoOpen = false, trigger = true, triggerLabel, ref, footer, onOpenChange }: {
-  title: ReactNode; children: ReactNode; className?: string; autoOpen?: boolean
+export function DetailPanel({ title, children, className = '', autoOpen = false, deferContent = false, trigger = true, triggerLabel, ref, footer, onOpenChange }: {
+  title: ReactNode; children: ReactNode; className?: string; autoOpen?: boolean; deferContent?: boolean
   trigger?: boolean; triggerLabel?: ReactNode; ref?: Ref<DetailPanelHandle>; footer?: ReactNode; onOpenChange?: (open: boolean) => void
 }) {
+  const [opened, setOpened] = useState(false)
   const id = useId()
   const dialog = useRef<HTMLDialogElement>(null)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -19,6 +20,7 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
   function show() {
     if (!dialog.current || dialog.current.open) return
     returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (deferContent) setOpened(true)
     dialog.current.showModal()
     onOpenChange?.(true)
     heading.current?.focus()
@@ -39,7 +41,7 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
       if ((!active || active === document.body || event.currentTarget.contains(active)) && returnFocus.current?.isConnected) returnFocus.current.focus()
     }}>
       <div className="detail-heading"><h2 id={`${id}-title`} ref={heading} tabIndex={-1}>{title}</h2><button type="button" onClick={close} aria-label="Close panel">Close</button></div>
-      <div className="detail-body">{children}</div>
+      <div className="detail-body">{(!deferContent || opened) && children}<div className="panel-notice-host" /></div>
       <div className="detail-footer">{footer || <button type="button" className="outline-button" onClick={close}>Done</button>}</div>
     </dialog>
   </div>

@@ -4,7 +4,8 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
-import { COVERAGE_POLICY_VERSION, MOTIFS, PROFILES, SCENES, summarize } from './recognition-validation-metrics.mjs'
+import { COVERAGE_POLICY_VERSION, MINIMUM_RECALL, MOTIFS, PROFILES, REPORT_SCHEMA_VERSION,
+  REWARD_VARIANT_PATTERN, SCENES, summarize } from './recognition-validation-metrics.mjs'
 
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
 const count = z.number().int().min(0).max(100000)
@@ -18,19 +19,21 @@ const row = z.object({
   helperVersion: z.string().min(1), imagePreserved: z.literal(true), ocrPreserved: z.literal(true),
   reviewRequired: z.literal(true), ocrStatus: z.literal('ok'), ocrLines: count.min(1),
   visual: z.object({ status: z.enum(['candidates', 'unsupported', 'not-run']) }),
-  metrics: z.object({ names: metric, tiers: metric, motifs: metric, wrongRows: count,
+  metrics: z.object({ names: metric, tiers: metric, motifs: metric,
+    rewards: metric.extend({ annotatedCards: count, unannotatedCards: count, abstentionExpected: count, abstentionCorrect: count }),
+    wrongRows: count,
     visibleUnknownNames: count, unknownNameAbstentions: count }),
   coverage: z.object({ unknownName: z.boolean(), collectedRow: z.boolean(), tooltip: z.boolean() }),
   labelCoverage: z.object({ names: z.array(z.string().min(1)).max(100), tiers: z.array(z.union([z.literal(2), z.literal(3)])),
-    motifs: z.array(z.enum(MOTIFS)).max(8) }),
+    motifs: z.array(z.enum(MOTIFS)).max(MOTIFS.length), rewards: z.array(z.string().regex(REWARD_VARIANT_PATTERN)) }),
 })
 const reportSchema = z.object({
-  reportSchemaVersion: z.literal(2), coveragePolicyVersion: z.literal(COVERAGE_POLICY_VERSION),
+  reportSchemaVersion: z.literal(REPORT_SCHEMA_VERSION), coveragePolicyVersion: z.literal(COVERAGE_POLICY_VERSION),
   execution: z.literal('local-native-replay'), mode: z.literal('holdout'),
   revision: z.string().regex(/^[a-f0-9]{40}$/), productionFilesModified: z.literal(false),
   manifestSha256: digest, dictionarySha256: digest, templatesSha256: digest,
   release: z.object({ revision: z.string(), releaseId: digest, helperVersion: z.string().min(1) }),
-  browserVersion: z.string().min(1), scenes: z.array(row).min(1).max(500),
+  browserVersion: z.string().regex(/^\d{1,4}(\.\d{1,6}){3}$/), scenes: z.array(row).min(1).max(500),
 })
 const hash = value => createHash('sha256').update(value).digest('hex')
 
@@ -52,14 +55,26 @@ export function verifyRecognitionReport(input, release, expected) {
     if (scene.helperVersion !== expected.helperVersion || scene.provenance.hdrActive !== profile.hdrActive
       || scene.provenance.uiScale !== profile.uiScale || scene.provenance.clientSize.some((side, i) => side !== profile.clientSize[i])) throw new Error('Native profile or helper mismatch.')
     if (scene.metrics.wrongRows || scene.metrics.visibleUnknownNames !== scene.metrics.unknownNameAbstentions) throw new Error('Unsafe row or unknown-name acceptance.')
-    for (const field of ['names', 'tiers', 'motifs']) {
+    for (const field of Object.keys(MINIMUM_RECALL)) {
       const metric = scene.metrics[field]
       if (metric.correct > metric.expected || metric.omitted !== metric.expected - metric.correct || metric.unexpected) throw new Error('Inconsistent or unsafe recognition metrics.')
       if (new Set(scene.labelCoverage[field]).size !== scene.labelCoverage[field].length
         || scene.labelCoverage[field].length > metric.expected) throw new Error('Inconsistent distinct-label coverage.')
     }
+    const { rewards, motifs, names } = scene.metrics
+    if (rewards.annotatedCards + rewards.unannotatedCards !== names.expected
+      || rewards.expected > motifs.expected || rewards.correct + rewards.abstained > motifs.correct
+      || rewards.expected + rewards.abstentionExpected > motifs.expected + rewards.annotatedCards
+      || (!rewards.annotatedCards && (rewards.expected || rewards.abstained || rewards.abstentionExpected))
+      || rewards.abstentionCorrect !== rewards.abstentionExpected
+      || scene.labelCoverage.rewards.some(variant => !scene.labelCoverage.motifs.includes(variant.split('/')[0]))) {
+      throw new Error('Inconsistent or unsafe semantic reward metrics.')
+    }
+    if (scene.visual.status !== 'candidates' && (scene.metrics.tiers.correct || motifs.correct)) {
+      throw new Error('Positive visual suggestions require a candidate result.')
+    }
     if (scene.labelCoverage.names.some(name => !expected.fateNames.includes(name))) throw new Error('Coverage name is outside the frozen dictionary.')
-    if (scene.scene !== 'offer' && ['names', 'tiers', 'motifs'].some(field => scene.metrics[field].expected || scene.metrics[field].correct)) throw new Error('Positive suggestions outside the offered row.')
+    if (scene.scene !== 'offer' && Object.keys(MINIMUM_RECALL).some(field => scene.metrics[field].expected || scene.metrics[field].correct)) throw new Error('Positive suggestions outside the offered row.')
   }
   const verdict = summarize('holdout', report.scenes)
   if (verdict.status !== 'PASS') throw new Error(`Recognition holdout failed: ${[...verdict.failures, ...verdict.missingCoverage].join(', ')}`)

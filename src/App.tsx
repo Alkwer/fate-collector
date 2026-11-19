@@ -4,10 +4,9 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { offerSchema, formatValidationError, type Evidence, type FateCard, type Offer } from '../shared/schema'
 import { newOffer, exampleOffer, guidedExampleOffer, submissionProblem } from '../shared/offers'
 import { SourcePanel, CaptureDetails } from './components/SourcePanel'
-import { OfferEditor } from './components/OfferEditor'
+import { LazyOfferEditor } from './components/LazyOfferEditor'
 import { ManualFateEntry } from './components/ManualFateEntry'
 import { OfferPreview } from './components/OfferPreview'
-import { SavedOffers } from './components/SavedOffers'
 import { importFiles, recoverBackup, importJson, downloadArchive, privateDraftKind, type Imported } from './lib/imports'
 import { downloadJson } from './lib/download'
 import * as storage from './lib/storage'
@@ -29,6 +28,7 @@ import { OfferSaveBar } from './components/OfferSaveBar'
 import { AppIcon } from './components/AppIcon'
 import { useTheme } from './lib/theme'
 import { WorkspaceNotice } from './components/WorkspaceNotice'
+const SavedOffers = lazy(() => import('./components/SavedOffers').then(module => ({ default: module.SavedOffers })))
 const UsageGuide = lazy(() => import('./components/UsageGuide').then(module => ({ default: module.UsageGuide })))
 const Diagnostics = lazy(() => import('./components/Diagnostics').then(module => ({ default: module.Diagnostics })))
 import type { SymbolReportsHandle } from './components/SymbolReports'
@@ -403,17 +403,17 @@ export default function App() {
         </section>}
         {!advisor.workspace.map && !!draft.cards.length && advisor.canUndo && <button disabled={busy} onClick={advisor.undo}>Undo collection change</button>}
         {advisor.storageError && <p className="notice error" role="alert">{advisor.storageError}</p>}
-        <FateAdvisor outcomes={advisor.outcomes} solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} onAddManual={() => manualPanel.current?.show()} source={<SourcePanel compact={!!draft.cards.length || !!advisor.workspace.collection.cards.length} evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />} />
+        <FateAdvisor outcomes={advisor.outcomes} solverControl={solver} savedOffers={records.map(record => record.offer)} offer={draft} workspace={advisor.workspace} onChange={advisor.changeWorkspace} needsMapConfirmation={advisor.needsMapConfirmation} onUseOffer={useCurrentOffer} busy={busy} saved={savedLocally && !dirty} automatic={sync.status === 'active'} onEditOffer={editCurrentOffer} onAddManual={() => manualPanel.current?.show()} source={<SourcePanel compact={!!draft.cards.length || !!advisor.workspace.collection.cards.length} evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFiles={files => void loadFile(files)} />} />
         {sync.status !== 'off' && <button className="connection-status text-button" onClick={() => connectionPanel.current?.show()}>{sync.status === 'active' ? 'Local review connected' : sync.status === 'permission' ? 'Folder access needed' : sync.status === 'error' ? 'Local review needs attention' : 'Local review settings'}</button>}
         {sync.problem && <p className="connection-warning field-error" role="alert">{sync.problem}</p>}
         </> : <>
         <div className="archive-boundary"><p>This archived offer is not used in current-area advice. Only transfer it if it belongs to the instance you are playing now.{archiveEditor.dirty ? ' Save corrections before transferring.' : ''}{advisor.needsMapConfirmation ? ' Confirm your area on the Current area screen first.' : ''}</p><div><button onClick={() => setTab('collector')}>Return to current area</button><button disabled={busy || autoSaving || archiveEditor.dirty || advisor.needsMapConfirmation} onClick={useArchivedOffer}>{advisor.workspace.map ? 'Use this offer in current area' : 'Start area with this offer'}</button></div></div>
         <div className={`collector-grid ${draft.cards.length ? 'has-fates' : ''} ${busy ? 'is-busy' : ''}`} aria-busy={busy} inert={busy}>
-          <SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFile={file => void loadFile(file)} />
+          <SourcePanel evidence={evidence} automatic={sync.status === 'active'} onPick={() => fileInput.current?.click()} onFiles={files => void loadFile(files)} />
           <OfferPreview offer={draft} saved={savedLocally && !dirty} automatic={sync.status === 'active'} />
         </div></>}
-        <DetailPanel trigger={false} ref={detailsPanel} onOpenChange={setEditing} className="advanced-panel" key={`${tab}:${draft.id}`} title="Edit details" footer={<>{editing && saveBar}<button onClick={returnToAdvice}>{tab === 'collector' ? 'Back to advice' : 'Done'}</button></>}><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
-          <OfferEditor solverControl={solver} offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
+        <DetailPanel deferContent trigger={false} ref={detailsPanel} onOpenChange={setEditing} className="advanced-panel" key={`${tab}:${draft.id}`} title="Edit details" footer={<>{editing && saveBar}<button onClick={returnToAdvice}>{tab === 'collector' ? 'Back to advice' : 'Done'}</button></>}><div className={`advanced-grid ${evidence ? 'has-review-evidence' : ''}`} inert={busy}>
+          <LazyOfferEditor solverControl={solver} offer={draft} onChange={change} evidence={evidence} showRecordedChoice={tab === 'review'} reviewRequest={tab === 'collector' ? reviewRequest : null} />
           <CaptureDetails offer={draft} evidence={evidence} onChange={patch => {
             change(patch)
             if (tab === 'collector' && patch.areaCategory && advisor.workspace.offerIds.includes(draft.id)) {

@@ -7,7 +7,7 @@ OCR, so their images are preserved without invented card associations.
 
 ## Implementation and trust boundary
 
-`shared/visual-recognition.ts` is a separate `browser-v1` implementation derived
+`shared/visual-recognition.ts` implements `browser-v2-segments`, derived
 from the prototype's reference crops, geometry and score gates. It is **not** a
 binary port of the frozen Python scanner and its benchmark scores are separate.
 It uses bounded OCR-guided regions, sampled grayscale proposals and bilinear RGB
@@ -57,9 +57,28 @@ A motif match does not by itself establish a reward's kind or threshold. Orange
 feathers are labelled League unique, with unknown kind and threshold. PoEDB shows
 that several league uniques share the icon. A complete matching tooltip selection
 or an explicit tooltip check is required before scoring, including old records
-that labelled this motif Dreadmaidens' Sacrament. Gold ring and
-gold grid receive the names Item Rarity and Additional Currency Items, but keep
-unknown kind, no threshold and `identified: false`. Other motifs remain unknown.
+that labelled this motif Dreadmaidens' Sacrament.
+
+On fresh captures with a reference height of at least 1080 pixels, the matcher
+samples the curved frame below each matched icon. A narrow central gap splits a
+silver arc into two segments. Two side gaps split it into three. A plain frame
+requires a visible continuous bronze edge. Missing pixels, tooltip overlap or an
+uncertain pattern leave the reward available for manual identification.
+
+| Matched icon | Plain frame | Two silver segments | Three silver segments |
+| --- | --- | --- | --- |
+| Gold ring | Check tooltip | Massively Increased Item Rarity | Extremely Increased Item Rarity |
+| Currency (gold grid) | Additional Currency Items | Additional Currency Items | Additional Valuable Currency Items |
+| Gold stack | Gold | Hoards of Gold | Check tooltip |
+| Threads (silver cluster) | Additional Threads | Many Additional Threads | Check tooltip |
+
+Each icon counts as one occurrence. The segment count on an identified combo
+sets its invocation threshold. The reward row remains open for corrections and
+review. A visual identification does not record a tooltip confirmation.
+The plain three-gem icon occurs with multiple quality-gem tooltips. The two-segment
+orange icon occurs with both Ordered Fate and Doedre’s Tongue. Gem, unique and
+equipment icons without a verified one-to-one mapping stay ambiguous.
+
 The editor retains three prerelease combo presets with reference icons and GGG
 sources. Exceptional Gem is manual only; the three-gems motif is not that combo.
 The [screenshot extract](../research/SCREENSHOT_CATALOG_2026-11-15.md) adds 54
@@ -70,8 +89,7 @@ catalog does not introduce visual matches or assign rewards by Fate name.
 Five further tooltip variants were checked in the Malformation offer on 17 November,
 including the three-copy Valuable Currency combo.
 The 18 November Black Frost tooltip confirms the three-copy Extremely Increased Item Rarity combo.
-The 3.30.0c panel and larger icons await validation on a fresh F9 capture.
-Fresh card review versions include `rewards-v7-3.30.0c`; saved records are
+Fresh card review versions include `rewards-v7-3.30.0c`; the enlarged 3.30.0c panel and reward icons still need a new F9 capture for validation. Saved records are
 not backfilled. Parser `live-names-6` and Helper 0.5.1 carry the expanded dictionary.
 The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
 It is read-only and does not supply new visual matches, combo thresholds or kinds.

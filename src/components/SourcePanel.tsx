@@ -6,8 +6,8 @@ import { AREA_CATEGORY_LABELS } from '../../shared/area-context'
 import { AppIcon } from './AppIcon'
 import { isDesktop } from '../lib/desktop'
 
-interface Props { evidence: Evidence | null; automatic?: boolean; compact?: boolean; onPick: () => void; onFile: (file: File) => void }
-export function SourcePanel({ evidence, automatic = false, compact = false, onPick, onFile }: Props) {
+interface Props { evidence: Evidence | null; automatic?: boolean; compact?: boolean; onPick: () => void; onFiles: (files: File[]) => void }
+export function SourcePanel({ evidence, automatic = false, compact = false, onPick, onFiles }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const desktop = isDesktop()
   return <section className={`panel source-panel${compact ? ' compact-source' : ''}`} aria-labelledby="source-heading">
@@ -22,7 +22,9 @@ export function SourcePanel({ evidence, automatic = false, compact = false, onPi
       </DetailPanel>
     </aside>}
     <div className={`dropzone ${evidence ? 'has-image' : ''}`} onDragOver={event => event.preventDefault()} onDrop={event => {
-      event.preventDefault(); const file = event.dataTransfer.files[0]; if (file) onFile(file)
+      event.preventDefault()
+      const files = Array.from(event.dataTransfer.files)
+      if (files.length) onFiles(files)
     }}>
       {evidence ? <>
         <button className="evidence-button" onClick={() => dialog.current?.showModal()} aria-label="Enlarge source screenshot"><img src={evidence.imageDataUrl} alt="Captured Fate offer" /></button>

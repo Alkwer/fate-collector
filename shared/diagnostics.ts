@@ -29,10 +29,12 @@ export const diagnosticReportSchema = z.object({
     storage: z.enum(['available', 'unavailable', 'unknown']),
     folderConnection: z.enum(['off', 'connecting', 'active', 'permission', 'error', 'not-applicable']),
     sharing: z.enum(['off', 'active', 'pending', 'withdrawal-pending', 'error', 'unknown']),
-    queue: z.object({ pending: count, accepted: count, rejected: count, ignored: count }).strict(),
+    offerStorage: z.enum(['available', 'unavailable']).optional(),
+    queue: z.union([z.literal('not-applicable'), z.object({ pending: count, accepted: count, rejected: count, ignored: count }).strict()]),
   }).strict(),
   events: z.array(diagnosticEventSchema).max(100),
-}).strict()
+}).strict().refine(report => report.source === 'website' || (report.state.queue !== 'not-applicable' && report.state.offerStorage === undefined),
+  { message: 'Windows helper reports must include queue counts and omit browser offer storage.' })
 export const diagnosticConsentSchema = z.object({ version: z.string().max(40), text: z.string().max(8000), acceptedAt: date }).strict()
 export const diagnosticSubmissionSchema = z.object({ report: diagnosticReportSchema, consent: diagnosticConsentSchema, token: diagnosticToken }).strict()
 export const diagnosticReceiptSchema = z.object({

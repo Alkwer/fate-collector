@@ -56,3 +56,14 @@ for (const width of [1440, 390]) {
     expect(errors).toEqual([])
   })
 }
+
+test('dropping two backup parts restores both offers', async ({ page }) => {
+  const parts = [newOffer(), newOffer()].map(offer => ({ kind: 'fate-collector.export', schemaVersion: 1, offers: [{ offer, evidence: null }] }))
+  await page.goto('/')
+  await page.locator('.dropzone').evaluate((zone, parts) => {
+    const dataTransfer = new DataTransfer()
+    parts.forEach((part, index) => dataTransfer.items.add(new File([JSON.stringify(part)], 'part-' + index + '.json', { type: 'application/json' })))
+    zone.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer }))
+  }, parts)
+  await expect(page.getByRole('button', { name: /^Saved offers\s*2$/ })).toBeVisible()
+})

@@ -10,8 +10,13 @@ export type CaptureDirectory = FileSystemDirectoryHandle & {
 export type CapturedEntry = { offer: Offer; evidence: Evidence; restored?: boolean; present?: boolean }
 export function compareCaptures(a: Offer, b: Offer): number {
   const left = a.captureContext?.session, right = b.captureContext?.session
-  if (left && right && left.id === right.id && left.sequence !== right.sequence) return left.sequence - right.sequence
-  return Date.parse(a.capturedAt) - Date.parse(b.capturedAt) || a.id.localeCompare(b.id)
+  // Keep each session together even if the clock rolls back during capture.
+  // A legacy capture uses its own timestamp in place of the session start.
+  return Date.parse(left?.startedAt ?? a.capturedAt) - Date.parse(right?.startedAt ?? b.capturedAt)
+    || (left?.id ?? '').localeCompare(right?.id ?? '')
+    || (left?.sequence ?? 0) - (right?.sequence ?? 0)
+    || Date.parse(a.capturedAt) - Date.parse(b.capturedAt)
+    || a.id.localeCompare(b.id)
 }
 export const captureName = /^(?:auto-)?fate-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i
 export function directoryPicker() {

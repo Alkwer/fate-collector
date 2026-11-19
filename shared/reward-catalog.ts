@@ -1,4 +1,5 @@
 import type { Reward } from './schema'
+import type { RewardSegments } from './reward-segments'
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 import { chaseRewards, PATCH_3300C_SOURCE, patchEquipmentRewards, replacedEquipmentLabels } from './patch-3300c-rewards'
 
@@ -77,11 +78,20 @@ export function selectedCatalogReward(reward: Reward): CatalogReward | undefined
     && reward.threshold === entry.threshold && reward.identified === (entry.kind !== 'unknown'))
 }
 
-export function visualRewardFields(visualId: NonNullable<Reward['visualId']>): Partial<Reward> {
+// Only include combinations checked against both the live tooltip and the visible frame.
+// A missing key is ambiguous or unverified. Zero means a positively matched plain frame.
+const framedRewards: Partial<Record<NonNullable<Reward['visualId']>, Partial<Record<RewardSegments, string>>>> = {
+  'gold-ring': { 2: 'observed-massively-increased-item-rarity', 3: 'extremely-increased-item-rarity' },
+  'gold-grid': { 0: 'observed-additional-currency-items', 2: 'observed-additional-currency-items-combo', 3: 'additional-valuable-currency-items' },
+  'gold-stack': { 0: 'observed-gold', 2: 'observed-hoards-of-gold' },
+  'silver-cluster': { 0: 'observed-additional-threads', 2: 'observed-many-additional-threads' },
+}
+
+export function visualRewardFields(visualId: NonNullable<Reward['visualId']>, segments?: RewardSegments): Partial<Reward> {
+  const id = segments === undefined ? undefined : framedRewards[visualId]?.[segments]
+  if (id) return catalogFields(REWARD_CATALOG.find(entry => entry.id === id)!)
   if (visualId === 'orange-feathers') return { label: 'League unique', kind: 'unknown', threshold: null, identified: false, tooltipConfirmed: false }
   if (visualId === 'gold-grid') return catalogFields(REWARD_CATALOG.find(entry => entry.id === 'additional-currency')!)
-  // Item Rarity's combo variant is verified, but a bare ring must not become
-  // combo(3) automatically. Only an explicit tooltip-based selection does that.
   if (visualId === 'gold-ring') return { label: 'Item Rarity', kind: 'unknown', threshold: null, identified: false }
   return {}
 }

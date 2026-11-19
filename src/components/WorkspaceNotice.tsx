@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 export function WorkspaceNotice({ notice, onDismiss }: { notice: { text: string; error: boolean }; onDismiss: () => void }) {
   const [host, setHost] = useState<Element | null>(null)
   useEffect(() => {
-    const sync = () => setHost([...document.querySelectorAll('.detail-dialog[open]')].at(-1)?.querySelector('.detail-body') ?? null)
+    const sync = () => setHost([...document.querySelectorAll('.detail-dialog[open]')].at(-1)?.querySelector(':scope > .detail-body > .panel-notice-host') ?? null)
     sync()
     const observer = new MutationObserver(sync)
     observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open'], childList: true })

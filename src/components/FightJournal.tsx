@@ -2,22 +2,20 @@ import { useRef, useState, type FormEvent } from 'react'
 import { DetailPanel, type DetailPanelHandle } from './DetailPanel'
 import {
   createFightJournalBackup, fightOutcomeSchema, loadFightJournal, planFightJournalImport, putFightEntry, readFightJournalBackup,
-  type FightEntry, type FightJournal as Journal, type FightOutcome, type InvocationSnapshot,
+  type FightEntry, type FightJournal as Journal, type InvocationSnapshot,
 } from '../lib/fight-journal'
 import { downloadJson } from '../lib/download'
-import type { FightJournalControl } from '../lib/useFightJournal'
+import type { EntryDraft, FightJournalControl } from '../lib/useFightJournal'
 import './fight-journal.css'
 
-type EntryDraft = Omit<FightOutcome, 'loot'> & { lootStatus: FightOutcome['loot']['status']; lootItems: string }
-
-function OutcomeForm({ control, invocation, entry, onEdit, onSave }: {
+function OutcomeForm({ control, invocation, entry, onSave }: {
   control: FightJournalControl
   invocation: InvocationSnapshot
   entry?: FightEntry
-  onEdit: () => void
   onSave: () => void
 }) {
-  const [draft, setDraft] = useState<EntryDraft>(() => ({
+  const pending = control.drafts[invocation.id]
+  const draft: EntryDraft = pending?.fields ?? {
     boss: entry?.outcome.boss ?? '',
     bossStatus: entry?.outcome.bossStatus ?? 'unknown',
     mapName: entry?.outcome.mapName ?? invocation.mapName,
@@ -25,10 +23,9 @@ function OutcomeForm({ control, invocation, entry, onEdit, onSave }: {
     gamePreview: entry?.outcome.gamePreview ?? '',
     lootStatus: entry?.outcome.loot.status ?? 'unchecked',
     lootItems: entry?.outcome.loot.status === 'items' ? entry.outcome.loot.items : '',
-  }))
+  }
   function setField<K extends keyof EntryDraft>(key: K, value: EntryDraft[K]) {
-    onEdit()
-    setDraft(previous => ({ ...previous, [key]: value }))
+    control.editDraft(invocation, { ...draft, [key]: value })
   }
 
   function save(event: FormEvent<HTMLFormElement>) {
@@ -38,7 +35,10 @@ function OutcomeForm({ control, invocation, entry, onEdit, onSave }: {
       ...fields,
       loot: lootStatus === 'items' ? { status: lootStatus, items: lootItems } : { status: lootStatus },
     })
-    if (outcome.success && control.update(journal => putFightEntry(journal, { invocation, outcome: outcome.data }))) onSave()
+    if (outcome.success && control.update(journal => putFightEntry(journal, { invocation, outcome: outcome.data }))) {
+      control.discardDraft(invocation.id)
+      onSave()
+    }
   }
 
   return <form className="fight-journal-form" onSubmit={save}>
@@ -61,10 +61,11 @@ function OutcomeForm({ control, invocation, entry, onEdit, onSave }: {
     </select></label>
     {draft.lootStatus === 'items' && <label>Items and quantities<textarea value={draft.lootItems} maxLength={1800} rows={3} required onChange={event => setField('lootItems', event.target.value)} /></label>}
     <button type="submit" className="primary-button" disabled={draft.lootStatus === 'items' && !draft.lootItems.trim()}>Save fight outcome</button>
+    {pending && <button type="button" onClick={() => control.discardDraft(invocation.id)}>Discard edits</button>}
   </form>
 }
 
-function BackupForm({ control, draftId }: { control: FightJournalControl; draftId?: string }) {
+function BackupForm({ control }: { control: FightJournalControl }) {
   const input = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<{ base: Journal; backup: Journal } | null>(null)
   const [reading, setReading] = useState(false)
@@ -73,8 +74,9 @@ function BackupForm({ control, draftId }: { control: FightJournalControl; draftI
   const plan = pending ? planFightJournalImport(pending.base, pending.backup) : null
   const hasChanges = plan && !!(plan.fightsAdded || plan.progressAdded || plan.goalAdded)
   const hasConflicts = plan && !!(plan.fightConflicts || plan.progressConflicts || plan.goalConflict)
-  const overlapsDraft = plan && draftId && !pending?.base.entries.some(row => row.invocation.id === draftId)
-    && pending?.backup.entries.some(row => row.invocation.id.toLowerCase() === draftId.toLowerCase())
+  const overlapsDraft = pending && Object.keys(control.drafts).some(id =>
+    !pending.base.entries.some(row => row.invocation.id.toLowerCase() === id.toLowerCase())
+    && pending.backup.entries.some(row => row.invocation.id.toLowerCase() === id.toLowerCase()))
 
   function exportBackup() {
     setMessage(''); setError('')
@@ -148,35 +150,37 @@ function BackupForm({ control, draftId }: { control: FightJournalControl; draftI
 
 export function FightJournal({ control, latest }: { control: FightJournalControl; latest: InvocationSnapshot | null }) {
   const panel = useRef<DetailPanelHandle>(null)
-  const [selected, setSelected] = useState('')
+  const [selected, setSelected] = useState<{ id: string; latestId?: string } | null>(null)
   const [open, setOpen] = useState(false)
   const [backupOpen, setBackupOpen] = useState(false)
   const [savedId, setSavedId] = useState('')
-  const [draftId, setDraftId] = useState('')
   const entries = control.journal?.entries ?? []
   const unsaved = latest && !entries.some(entry => entry.invocation.id === latest.id) ? latest : null
-  const entry = entries.find(row => row.invocation.id === selected)
-  const invocation = entry?.invocation ?? unsaved ?? entries[0]?.invocation
+  const previousDrafts = Object.values(control.drafts).filter(({ invocation }) =>
+    invocation.id !== unsaved?.id && !entries.some(row => row.invocation.id === invocation.id))
+  const choices = [
+    ...(unsaved ? [{ invocation: unsaved, label: 'Latest invocation · outcome unsaved' }] : []),
+    ...previousDrafts.map(({ invocation }) => ({ invocation, label: (invocation.mapName || invocation.inputs[0].name || 'Unnamed fight') + ' · outcome unsaved' })),
+    ...entries.map(row => ({ invocation: row.invocation, label: new Date(row.invocation.invokedAt).toLocaleString() + ' · ' + (row.outcome.mapName || row.outcome.boss || row.invocation.inputs[0].name || 'Unnamed fight') })),
+  ]
+  const selectedId = selected?.latestId === latest?.id ? selected?.id : undefined
+  const invocation = choices.find(choice => choice.invocation.id === selectedId)?.invocation ?? choices[0]?.invocation
   const savedEntry = entries.find(row => row.invocation.id === invocation?.id)
   return <div className="fight-journal-action">
-    <DetailPanel ref={panel} className="fight-journal" title="Fight journal" triggerLabel={unsaved ? 'Log fight outcome' : 'Fight journal'} onOpenChange={next => {
-      setOpen(next)
-      if (next) setSelected('')
-      else setDraftId('')
-    }}>
+    <DetailPanel ref={panel} className="fight-journal" title="Fight journal" triggerLabel={unsaved ? 'Log fight outcome' : 'Fight journal'} onOpenChange={setOpen}>
       {control.journal && <p className="hint">{invocation ? 'Save what you observed. All encounter details are optional.' : 'After recording an invocation, you can log the boss and loot here.'}</p>}
       {open && control.journal && invocation && <>
-        {entries.length > (unsaved ? 0 : 1) && <label>Fight<select value={invocation.id} onChange={event => { setSelected(event.target.value); setDraftId('') }}>
-          {unsaved && <option value={unsaved.id}>Latest invocation · outcome unsaved</option>}
-          {entries.map(row => <option key={row.invocation.id} value={row.invocation.id}>{new Date(row.invocation.invokedAt).toLocaleString()} · {row.outcome.mapName || row.outcome.boss || row.invocation.inputs[0].name || 'Unnamed fight'}</option>)}
+        {choices.length > 1 && <label>Fight<select value={invocation.id} onChange={event => setSelected({ id: event.target.value, latestId: latest?.id })}>
+          {choices.map(choice => <option key={choice.invocation.id} value={choice.invocation.id}>{choice.label}</option>)}
         </select></label>}
-        <OutcomeForm key={`${invocation.id}:${!!savedEntry}`} control={control} invocation={invocation} entry={savedEntry} onEdit={() => setDraftId(invocation.id)} onSave={() => {
+        <OutcomeForm key={`${invocation.id}:${!!savedEntry}`} control={control} invocation={invocation} entry={savedEntry} onSave={() => {
           setSavedId(invocation.id)
+          setSelected(null)
           panel.current?.close()
         }} />
       </>}
       {open && control.journal && <DetailPanel className="fight-backup-panel" title="Fight journal backup" triggerLabel="Back up or restore" onOpenChange={setBackupOpen}>
-        {backupOpen && <BackupForm control={control} draftId={draftId || undefined} />}
+        {backupOpen && <BackupForm control={control} />}
       </DetailPanel>}
       {open && control.error && <p role="alert" className="field-error">{control.error}</p>}
     </DetailPanel>

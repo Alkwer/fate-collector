@@ -4,7 +4,8 @@ import { readFile, realpath, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
-import { COVERAGE_POLICY_VERSION, labelCoverage, measure, MINIMUM_LABELS, MINIMUM_RECALL, MINIMUM_SCENES, PROFILES, SCENES, summarize } from './recognition-validation-metrics.mjs'
+import { COVERAGE_POLICY_VERSION, labelCoverage, measure, MINIMUM_LABELS, MINIMUM_RECALL, MINIMUM_SCENES,
+  MOTIFS, PROFILES, REPORT_SCHEMA_VERSION, SCENES, summarize } from './recognition-validation-metrics.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const defaultManifest = resolve(root, 'tests/fixtures/recognition-validation-holdout.json')
@@ -15,12 +16,19 @@ const text = z.string().trim().min(1)
 const digest = z.string().regex(/^[0-9a-f]{64}$/)
 const size = z.number().int().positive()
 const cropSchema = z.object({ x: z.number().int().nonnegative(), y: z.number().int().nonnegative(), width: size, height: size }).strict()
-const motif = z.enum(['blue-diamond', 'gold-stack', 'gold-grid', 'gold-ring', 'silver-cluster', 'orange-feathers', 'three-gems', 'gold-axe'])
+const motif = z.enum(MOTIFS)
+const rewardLabel = text.max(160)
+const rewardExpectation = z.discriminatedUnion('kind', [
+  z.object({ visualId: motif, kind: z.literal('regular'), label: rewardLabel, threshold: z.null() }).strict(),
+  z.object({ visualId: motif, kind: z.literal('combo'), label: rewardLabel, threshold: size.max(100) }).strict(),
+  z.object({ visualId: motif, kind: z.literal('unknown') }).strict(),
+])
 const cardSchema = z.object({
   group: z.enum(['offered', 'collected', 'invoked', 'tooltip']),
   headerBox: z.tuple([z.number().nonnegative(), z.number().nonnegative(), z.number().positive(), z.number().positive()]),
   name: text.nullable(), observedName: text.optional(), tier: z.union([z.literal(2), z.literal(3)]).nullable(),
   visualIds: z.array(motif).nullable(),
+  rewards: z.array(rewardExpectation).nullable().optional(),
 }).strict()
 const native = z.object({
   source: z.literal('native-f9'), gameBuild: text, windowsBuild: text, windowMode: text, uiScaleSetting: text,
@@ -31,7 +39,7 @@ const native = z.object({
 }).strict()
 const sampleSchema = z.object({
   sceneId: z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/), profile: z.enum(Object.keys(PROFILES)).optional(), scene: z.enum(SCENES),
-  provenance: z.union([native, z.object({ source: z.enum(['press-replay', 'historical-f9']), description: text }).strict()]),
+  provenance: z.union([native, z.object({ source: z.enum(['press-replay', 'historical-f9', 'fixture-replay']), description: text }).strict()]),
   tooltip: z.boolean(), cards: z.array(cardSchema),
   capture: z.union([
     z.object({ outcome: z.literal('captured'), file: text, bundleSha256: digest, pngSha256: digest, crop: cropSchema.optional() }).strict(),
@@ -39,7 +47,7 @@ const sampleSchema = z.object({
   ]),
 }).strict()
 const manifestSchema = z.object({
-  schemaVersion: z.literal(1), mode: z.enum(['holdout', 'replay']),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]), mode: z.enum(['holdout', 'replay']),
   release: z.object({ revision: z.string().regex(/^[0-9a-f]{40}$/), helperVersion: text, releaseId: digest }).strict().nullable(),
   scenes: z.array(sampleSchema),
 }).strict()
@@ -54,7 +62,7 @@ async function previousImageHashes() {
       Object.values(presentation.cases).map(image => image.sourceSha256)))
 }
 
-function validateScene(sample, mode) {
+function validateScene(sample, mode, schemaVersion) {
   const { scene, cards, tooltip, provenance, profile } = sample
   const expectedGroup = { offer: 'offered', invoke: 'invoked' }[scene]
   if (scene === 'negative' ? cards.length || tooltip : !cards.some(card => card.group === expectedGroup)) throw new Error('Scene annotations do not match its type.')
@@ -68,6 +76,15 @@ function validateScene(sample, mode) {
   for (const card of cards) {
     if ((card.name !== null && card.observedName) || ((card.group !== 'offered' || card.name === null)
       && (card.tier !== null || card.visualIds !== null))) throw new Error('Use tier and motif labels for offered, dictionary-known names only.')
+    if (card.rewards !== undefined) {
+      if (schemaVersion !== 2 || card.group !== 'offered' || card.name === null) {
+        throw new Error('Use semantic reward labels only for dictionary-known offered cards in manifest schema version 2.')
+      }
+      if ((card.rewards === null) !== (card.visualIds === null) || (card.rewards && card.visualIds
+        && [...card.visualIds].sort().join(',') !== card.rewards.map(reward => reward.visualId).sort().join(','))) {
+        throw new Error('Semantic reward labels must account for each manually labeled motif occurrence.')
+      }
+    }
     if (card.group === 'tooltip' && !tooltip) throw new Error('A tooltip label needs tooltip evidence.')
   }
 }
@@ -169,7 +186,8 @@ function recognize(page, input, cards) {
         && (!card.rewards.length || card.visualReview?.rewardsReviewed === false)),
       suggestions: offer.cards.map((card, index) => {
         const line = locationsAvailable ? headers[index] : null
-        return { name: card.name, tier: card.tier, visualIds: card.rewards.map(reward => reward.visualId),
+        return { name: card.name, tier: card.tier,
+          rewards: card.rewards.map(({ visualId, label, kind, threshold, identified }) => ({ visualId, label, kind, threshold, identified })),
           header: line && { x: line.x, y: line.y, width: line.width, height: line.height } }
       }),
     }
@@ -180,7 +198,7 @@ async function main() {
   if (process.argv.length > 3) throw new Error('Usage: node scripts/recognition-validation.mjs [manifest.json]')
   const manifest = await realpath(resolve(process.argv[2] ?? defaultManifest))
   const manifestBytes = await readFile(manifest)
-  const { mode, release, scenes } = manifestSchema.parse(JSON.parse(manifestBytes.toString('utf8').replace(/^\uFEFF/, '')))
+  const { schemaVersion, mode, release, scenes } = manifestSchema.parse(JSON.parse(manifestBytes.toString('utf8').replace(/^\uFEFF/, '')))
   const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
   const revision = git('rev-parse', 'HEAD')
   const productionFilesModified = Boolean(git('status', '--porcelain', '--', 'src', 'shared', 'helpers', 'package.json', 'package-lock.json', 'vite.config.ts'))
@@ -204,7 +222,7 @@ async function main() {
       try {
         if (seen.ids.has(sceneId)) throw new Error('Duplicate scene ID.')
         seen.ids.add(sceneId)
-        validateScene(sample, mode)
+        validateScene(sample, mode, schemaVersion)
         if (provenance.observedBackend && provenance.observedBackend !== expectedBackend) row.problems.push('Observed backend disagrees with the expected auto path.')
         if (capture.outcome === 'refused') {
           row.outcome = 'refused'
@@ -236,7 +254,7 @@ async function main() {
     await browser?.close()
   }
   const verdict = summarize(mode, rows, releaseProblems)
-  console.log(JSON.stringify({ reportSchemaVersion: 2, coveragePolicyVersion: COVERAGE_POLICY_VERSION,
+  console.log(JSON.stringify({ reportSchemaVersion: REPORT_SCHEMA_VERSION, coveragePolicyVersion: COVERAGE_POLICY_VERSION,
     execution: 'local-native-replay', mode, independentReleaseGate: mode === 'holdout' ? verdict.status : 'NOT_EVALUATED',
     manifestSha256: sha256(manifestBytes), revision, productionFilesModified, dictionarySha256, templatesSha256,
     release, browserVersion: browser?.version ?? null, minimumRecallPerProfile: mode === 'holdout' ? MINIMUM_RECALL : null,

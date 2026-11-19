@@ -4,6 +4,7 @@ import { inflateSync } from 'node:zlib'
 import { expect, test } from 'vitest'
 import type { Capture } from '../shared/schema'
 import { analyzeVisualCapture, type VisualBox } from '../shared/visual-recognition'
+import { visualRewardFields } from '../shared/reward-catalog'
 import catalog from '../shared/visual-templates.json'
 import presskitOcr from './fixtures/presskit-ocr.json'
 import presentationOcr from './fixtures/presentation-ocr.json'
@@ -16,6 +17,10 @@ function loadFixture(path: string) {
   // decoder scoped to this fixture format and use Node's existing inflater.
   const png = readFileSync(fixture(path))
   expect(digest(png)).toBe(catalog.sources[path as keyof typeof catalog.sources])
+  return decodeRgbPng(png)
+}
+
+function decodeRgbPng(png: Buffer) {
   expect([...png.subarray(24, 29)]).toEqual([8, 2, 0, 0, 0])
   const width = png.readUInt32BE(16)
   const height = png.readUInt32BE(20)
@@ -51,6 +56,7 @@ function loadFixture(path: string) {
 
 type Image = ReturnType<typeof loadFixture>
 const press = loadFixture('images/press-offer-b.png')
+const frames = decodeRgbPng(readFileSync(new URL('./fixtures/reward-frames.png', import.meta.url)))
 const pressOcr: Capture['ocr'] = {
   ...presskitOcr,
   status: 'ok',
@@ -104,7 +110,7 @@ function scaleImage(image: Image, scale: 0.5 | 2): Image {
 
 test('reads offered cards and motifs on a real press image without assigning the collected Torchbearer', () => {
   const result = analyzeVisualCapture({ ...press, ocr: pressOcr })
-  expect(result.version).toBe('browser-v1')
+  expect(result.version).toBe('browser-v2-segments')
   expect(result.status).toBe('candidates')
   expect(result.cards.map(card => card.name)).toEqual(names)
   expect(result.cards.map(card => card.tier)).toEqual([2, 2, 2, 2])
@@ -190,6 +196,49 @@ function stamp(image: Image, id: string, x: number, y: number, grayscale = false
     return grayscale ? [gray, gray, gray] : [r, g, b]
   })
 }
+
+// Isolate a real 4K reward tile in an offered row with controlled OCR and anchor geometry.
+function frameScene(index: number) {
+  const width = 1000, height = 950
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let i = 3; i < data.length; i += 4) data[i] = 255
+  const image = { width, height, data }
+  paint(image, 290, 150, 320, 60, () => [150, 124, 86])
+  const tile = cropImage(frames, { x: index * 96, y: 0, width: 96, height: 96 })
+  for (let y = 0; y < 96; y++) data.set(tile.data.subarray(y * 384, (y + 1) * 384), ((645 + y) * width + 410) * 4)
+  return { ...image, frameHeight: 2160, ocr: { status: 'ok' as const, language: 'en-US', text: '', lines: [
+    line('Fates', 420, 70, 60, 24), line('Black Frost', 400, 165, 100, 30), line('Confirm', 420, 880, 60, 25),
+  ] } }
+}
+
+const framedCases = [
+  ['gold-ring', 3, 'Extremely Increased Item Rarity'], ['gold-ring', 2, 'Massively Increased Item Rarity'],
+  ['gold-stack', 2, 'Hoards of Gold'], ['gold-grid', 2, 'Additional Currency Items'],
+  ['gold-grid', 3, 'Additional Valuable Currency Items'], ['silver-cluster', 2, 'Many Additional Threads'],
+  ['silver-cluster', 0, 'Additional Threads'], ['gold-stack', 0, 'Gold'], ['gold-grid', 0, 'Additional Currency Items'],
+] as const
+test.each(framedCases.map(([id, segments, label], index) => ({ id, segments, label, index })))(
+  'reads $label from the matched $id frame ($segments segments)', ({ id, segments, label, index }) => {
+    const symbols = analyzeVisualCapture(frameScene(index)).cards[0].symbols
+    expect(symbols).toHaveLength(1)
+    expect(symbols[0]).toMatchObject({ visualId: id, segments })
+    expect(visualRewardFields(id, symbols[0].segments)).toEqual({
+      label, kind: segments ? 'combo' : 'regular', threshold: segments || null, identified: true,
+    })
+  })
+
+test('an obscured or missing rim cannot identify even a recognized motif', () => {
+  for (const fill of [0, 115]) {
+    const input = frameScene(2)
+    paint(input, 424, 717, 72, 20, () => [fill, fill, fill])
+    const [coin] = analyzeVisualCapture(input).cards[0].symbols
+    expect(coin?.visualId).toBe('gold-stack')
+    expect(coin.segments).toBeUndefined()
+  }
+  expect(visualRewardFields('orange-feathers', 2).identified).toBe(false)
+  expect(visualRewardFields('gold-ring', 0).identified).toBe(false)
+  expect(visualRewardFields('three-gems', 2).identified).toBeFalsy()
+})
 
 test('keeps tier and motifs independent for duplicate names, including repeated motifs', () => {
   const input = scene()
