@@ -150,7 +150,7 @@ function BackupForm({ control }: { control: FightJournalControl }) {
 
 export function FightJournal({ control, latest }: { control: FightJournalControl; latest: InvocationSnapshot | null }) {
   const panel = useRef<DetailPanelHandle>(null)
-  const [selected, setSelected] = useState('')
+  const [selected, setSelected] = useState<{ id: string; latestId?: string } | null>(null)
   const [open, setOpen] = useState(false)
   const [backupOpen, setBackupOpen] = useState(false)
   const [savedId, setSavedId] = useState('')
@@ -163,18 +163,19 @@ export function FightJournal({ control, latest }: { control: FightJournalControl
     ...previousDrafts.map(({ invocation }) => ({ invocation, label: (invocation.mapName || invocation.inputs[0].name || 'Unnamed fight') + ' · outcome unsaved' })),
     ...entries.map(row => ({ invocation: row.invocation, label: new Date(row.invocation.invokedAt).toLocaleString() + ' · ' + (row.outcome.mapName || row.outcome.boss || row.invocation.inputs[0].name || 'Unnamed fight') })),
   ]
-  const invocation = choices.find(choice => choice.invocation.id === selected)?.invocation ?? choices[0]?.invocation
+  const selectedId = selected?.latestId === latest?.id ? selected?.id : undefined
+  const invocation = choices.find(choice => choice.invocation.id === selectedId)?.invocation ?? choices[0]?.invocation
   const savedEntry = entries.find(row => row.invocation.id === invocation?.id)
   return <div className="fight-journal-action">
     <DetailPanel ref={panel} className="fight-journal" title="Fight journal" triggerLabel={unsaved ? 'Log fight outcome' : 'Fight journal'} onOpenChange={setOpen}>
       {control.journal && <p className="hint">{invocation ? 'Save what you observed. All encounter details are optional.' : 'After recording an invocation, you can log the boss and loot here.'}</p>}
       {open && control.journal && invocation && <>
-        {choices.length > 1 && <label>Fight<select value={invocation.id} onChange={event => setSelected(event.target.value)}>
+        {choices.length > 1 && <label>Fight<select value={invocation.id} onChange={event => setSelected({ id: event.target.value, latestId: latest?.id })}>
           {choices.map(choice => <option key={choice.invocation.id} value={choice.invocation.id}>{choice.label}</option>)}
         </select></label>}
         <OutcomeForm key={`${invocation.id}:${!!savedEntry}`} control={control} invocation={invocation} entry={savedEntry} onSave={() => {
           setSavedId(invocation.id)
-          setSelected('')
+          setSelected(null)
           panel.current?.close()
         }} />
       </>}

@@ -41,7 +41,7 @@ export function DetailPanel({ title, children, className = '', autoOpen = false,
       if ((!active || active === document.body || event.currentTarget.contains(active)) && returnFocus.current?.isConnected) returnFocus.current.focus()
     }}>
       <div className="detail-heading"><h2 id={`${id}-title`} ref={heading} tabIndex={-1}>{title}</h2><button type="button" onClick={close} aria-label="Close panel">Close</button></div>
-      <div className="detail-body">{(!deferContent || opened) && children}</div>
+      <div className="detail-body">{(!deferContent || opened) && children}<div className="panel-notice-host" /></div>
       <div className="detail-footer">{footer || <button type="button" className="outline-button" onClick={close}>Done</button>}</div>
     </dialog>
   </div>

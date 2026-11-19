@@ -13,7 +13,10 @@ for (const theme of ['mineral', 'trail']) for (const [size, width, height] of [[
       await page.getByRole('button', { name: 'Add Alchemist to collected', exact: true }).click()
       await page.getByRole('button', { name: 'Plan this collection', exact: true }).first().click()
     }
-    if (scene === 'edit') await openPanel(page, '.advanced-panel')
+    if (scene === 'edit') {
+      await openPanel(page, '.advanced-panel')
+      await expect(page.getByRole('dialog', { name: 'Edit details' }).getByRole('heading', { name: 'Correct cards', exact: true })).toBeVisible()
+    }
     if (scene === 'symbols') {
       await openPanel(page, '.more-actions'); await page.getByRole('button', { name: 'Report symbol', exact: true }).click()
       await expect(page.locator('.symbol-reports > .detail-dialog')).toBeVisible()
