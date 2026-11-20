@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-7'
+export const PARSER_VERSION = 'counted-offers-8'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -20,7 +20,7 @@ type OfferRegion = { lines: OcrLine[]; headers: OcrLine[]; bottom: number; colum
 
 function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bottom: number, minimumKnown: number) {
   const pitch = span * .56
-  const band = lines.filter(l => l.y >= top + .13 * span && l.y < top + .29 * span && l.width < pitch * .85)
+  const band = lines.filter(l => l.y >= top + .08 * span && l.y < top + .29 * span && l.width < pitch * .85)
   const matches: OfferRegion[] = []
   for (let count = minimumKnown; count <= 6; count++) {
     const row: OcrLine[] = []
@@ -30,16 +30,22 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       if (atSlot.length !== 1) break
       row.push(atSlot[0])
     }
-    if (row.length !== count || offeredCardHeaders(row).length !== count
-      || row.filter(l => knownFateName(l.text)).length < minimumKnown) continue
+    if (row.length !== count || offeredCardHeaders(row).length !== count) continue
+    const identified = row.filter(header => knownFateName(header.text) || corroboratedName(header.text,
+      columnDescription(lines, header, pitch, bottom)))
+    if (identified.length < minimumKnown) continue
     // A smaller grid embedded in a partial offer must not drop an unknown
     // outer slot. Keep the legacy partial-row path when both controls are visible.
     const hasOuterHeader = band.some(l => {
       if (row.includes(l)) return false
-      if (knownFateName(l.text)) return true
       const offset = (centerX(l) - axis) / pitch
       const slot = offset + (count - 1) / 2
-      return Math.abs(offset) < 2.65 && (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+      if (Math.abs(offset) >= 2.65) return false
+      if (knownFateName(l.text)) return true
+      // Quest names can line up horizontally with an unused slot. An unknown
+      // outer title must also share the row's baseline (including a raised card).
+      return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+        && row.some(header => Math.abs(header.y - l.y) <= pitch * .10)
         && offeredCardHeaders([...row, l]).includes(l)
     })
     if (hasOuterHeader) continue
@@ -123,10 +129,51 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
 // description are present in its own column. Missing or different words stay raw.
 const descriptionWords = (text: string) => text.toLowerCase().replace(/(?<!\d)[.,](?!\d)/g, '').replace(/\s+/g, ' ').trim()
 const shortDescriptions = new Map(screenshots.fates.map(fate => [fate.name, [...new Set(fate.variants.map(v => v.shortDescription))]]))
+const captionVocabulary = new Set([...shortDescriptions.values()].flat().flatMap(s => s ? descriptionWords(s).split(' ') : []))
+// OCR ligatures can turn one glyph into two, e.g. "m" into "rn". Only a
+// short contiguous difference is allowed. Never replace another catalog word.
+function glyphDifference(seen: string, expected: string) {
+  let left = 0, right = 0
+  const limit = Math.min(seen.length, expected.length)
+  while (left < limit && seen[left] === expected[left]) left++
+  while (left + right < limit && seen.at(-1 - right) === expected.at(-1 - right)) right++
+  return Math.max(seen.length, expected.length) - left - right
+}
+
+function matchesPrintedWords(seen: string, expected: string) {
+  const a = seen.split(' '), b = expected.split(' ')
+  if (a.length !== b.length || a.length < 3) return false
+  let exact = 0, differences = 0
+  for (const [i, word] of a.entries()) {
+    if (word === b[i]) { exact++; continue }
+    if (captionVocabulary.has(word) || /\d/.test(word + b[i]) || word.length < 2) return false
+    const difference = glyphDifference(word, b[i])
+    if (difference > (Math.min(word.length, b[i].length) >= 5 ? 2 : 1)) return false
+    differences += difference
+  }
+  return exact >= Math.ceil(a.length / 2) && differences <= Math.min(4, expected.length * .12)
+}
+
+function corroboratedName(header: string, description: string): string | undefined {
+  const seen = normalize(header)
+  if (seen.length < 6 || !description) return
+  const words = descriptionWords(description)
+  const matches = [...shortDescriptions].filter(([name, variants]) => {
+    if (!variants.some(v => v && descriptionWords(v) === words)) return false
+    // A single blurred glyph can look like two letters. Require matching text
+    // on both sides of that small difference and the whole description in this column.
+    return glyphDifference(seen, normalize(name)) <= 2
+  })
+  return matches.length === 1 ? matches[0][0] : undefined
+}
 function reviewedSpelling(name: string, text: string): string {
   const words = descriptionWords(text)
-  return shortDescriptions.get(name)?.find(value => value && (descriptionWords(value) === words
-    || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2)))) ?? text
+  const variants = shortDescriptions.get(name) ?? []
+  const exact = variants.find(value => value && (descriptionWords(value) === words
+    || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2))))
+  if (exact) return exact
+  const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
+  return supported.length === 1 ? supported[0]! : text
 }
 
 export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
@@ -142,28 +189,29 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
   const headerBottom = Math.max(...row.map(m => m.y + m.height))
   const cards = row.flatMap((header, index) => {
     if (!candidates.has(header)) return []
-    const name = byName.get(normalize(header.text))
     const center = header.x + header.width / 2
     const previous = row[index - 1]
     const next = row[index + 1]
     const left = previous ? (previous.x + previous.width / 2 + center) / 2 : 0
     const right = next ? (next.x + next.width / 2 + center) / 2 : capture.image.width
-    const description = offerLines.filter(line => {
+    const description = region.columnPitch ? columnDescription(offerLines, header, region.columnPitch, region.bottom) : offerLines.filter(line => {
       const x = line.x + line.width / 2
-      if (region.columnPitch) {
-        const pitch = region.columnPitch
-        return Math.abs(x - center) < pitch * .43 && line.width < pitch
-          && line.y >= header.y + pitch * .62 && line.y < header.y + pitch * 1.23
-          && /[a-z]/i.test(line.text)
-      }
       return line.y > headerBottom + first.height && x > left && x < right
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
+    const name = knownFateName(header.text) ?? corroboratedName(header.text, description)
     return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000))] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }
   return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }
+}
+
+function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number) {
+  const center = centerX(header)
+  return lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
+    && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text))
+    .sort((a, b) => a.y - b.y || a.x - b.x).map(l => l.text.trim()).join(' ')
 }
 
 // Preserve unknown name slots only alongside a known anchor, with matching text

@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## 0.10.11 — 20 November 2026
+
+- The Windows helper can recover a faint Fates digit or a digit touching the slash in compressed footage.
+- Offer import keeps raised cards and ignores quest labels above the row. The helper rereads unclear names and short descriptions from their card columns, including in 720p captures.
+
 ## 0.10.10 — 20 November 2026
 
 - The Windows helper reads the area counter from the Fates panel and the HUD and keeps its position in the OCR evidence.

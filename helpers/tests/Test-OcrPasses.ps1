@@ -91,22 +91,25 @@ if (-not ('FateOcrImage' -as [type])) {
     Add-Type -Path (Join-Path $helperDirectory 'OcrImage.cs') -ReferencedAssemblies System.Drawing
 }
 
-function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated) {
+function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated,
+        [switch]$FaintDigitStroke, [switch]$TouchingDigit) {
     $image = [Drawing.Bitmap]::new(240, 205)
     $stream = [IO.MemoryStream]::new()
     $graphics = [Drawing.Graphics]::FromImage($image)
+    $faint = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(115, 115, 115))
     try {
         $graphics.Clear([Drawing.Color]::Black)
-        $digitX = 66
+        $digitX = if ($TouchingDigit) { 69 } else { 66 }
         foreach ($digit in $LeftDigit, $RightDigit) {
             for ($row = 0; $row -lt 7; $row++) {
                 for ($col = 0; $col -lt 5; $col++) {
                     if ($digit[$row * 5 + $col] -eq '1') {
-                        $graphics.FillRectangle([Drawing.Brushes]::White, $digitX + 2 * $col, 109 + 2 * $row, 2, 2)
+                        $brush = if ($FaintDigitStroke -and $digitX -eq 66 -and $row -ge 4) { $faint } else { [Drawing.Brushes]::White }
+                        $graphics.FillRectangle($brush, $digitX + 2 * $col, 109 + 2 * $row, 2, 2)
                     }
                 }
             }
-            $digitX += 20
+            $digitX = 86
         }
         for ($row = 0; $row -lt 18; $row++) {
             $offset = if ($VerticalMark) { 0 } else { [int][Math]::Floor((17 - $row) / 5) }
@@ -127,6 +130,7 @@ function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$Ve
         }
         return ,$stream.ToArray()
     } finally {
+        $faint.Dispose()
         $graphics.Dispose()
         $stream.Dispose()
         $image.Dispose()
@@ -172,6 +176,18 @@ if ($isolated.Count -ne 1 -or !$isolated[0].IsIsolatedPlaque -or
 if (([FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -VerticalMark))).Count -ne 0 -or
     ([FateOcrImage]::ReadCounters((New-CounterFixture $four $two))).Count -ne 0) {
     throw 'Reject a vertical stroke in place of the slash and reject current values above capacity.'
+}
+foreach ($png in @(
+        (New-CounterFixture $two $two -FaintDigitStroke -Hud),
+        (New-CounterFixture $two $two -TouchingDigit -Hud))) {
+    $recovered = [FateOcrImage]::ReadCounters($png)
+    if ($recovered.Count -ne 1 -or $recovered[0].Text -cne '2/2' -or !$recovered[0].HasHudCards) {
+        throw 'Recover a faint digit or a digit touching the diagonal slash from the HUD pixels.'
+    }
+}
+if (([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -TouchingDigit -VerticalMark -Hud))).Count -ne 0 -or
+    ([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -FaintDigitStroke -VerticalMark -Hud))).Count -ne 0) {
+    throw 'Reject a vertical mark even when a digit touches it or a digit has faint strokes.'
 }
 $tooManyLines = New-Pass (@($confirm) + @(1..499 | ForEach-Object { New-Line 'other' 10 20 }))
 if (![object]::ReferenceEquals((Merge-FateCounterLines $tooManyLines $null $counters), $tooManyLines)) {

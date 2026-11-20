@@ -73,12 +73,19 @@ public sealed class FateOcrImage
             public readonly Rectangle Bounds;
             public readonly bool[] Ink;
 
-            public Glyph(Rectangle bounds, List<int> points, int imageWidth)
+            public Glyph(Rectangle bounds, List<int> points, Rectangle region)
             {
-                Bounds = bounds;
                 Ink = new bool[bounds.Width * bounds.Height];
                 foreach (int point in points)
-                    Ink[(point / imageWidth - bounds.Top) * bounds.Width + point % imageWidth - bounds.Left] = true;
+                    Ink[(point / region.Width - bounds.Top) * bounds.Width + point % region.Width - bounds.Left] = true;
+                bounds.Offset(region.Location);
+                Bounds = bounds;
+            }
+
+            public Glyph(Rectangle bounds, bool[] ink)
+            {
+                Bounds = bounds;
+                Ink = ink;
             }
         }
 
@@ -93,43 +100,130 @@ public sealed class FateOcrImage
 
         public Counter[] Read()
         {
-            List<Glyph> glyphs = FindGlyphs();
-            glyphs.Sort((a, b) => a.Bounds.Left.CompareTo(b.Bounds.Left));
+            var imageBounds = new Rectangle(0, 0, width, height);
+            List<Glyph> glyphs = FindGlyphs(imageBounds, 130);
             var counters = new List<Counter>();
             for (int i = 0; i < glyphs.Count; i++)
             {
                 Glyph slash = glyphs[i];
                 Rectangle box = slash.Bounds;
-                if (!IsSlash(slash) || !OnDarkPlaque(box)) continue;
-                Glyph left = FindAdjacentDigit(glyphs, i, -1);
-                Glyph right = FindAdjacentDigit(glyphs, i, 1);
-                if (left == null || right == null) continue;
-                int capacity = ReadDigit(right);
-                int current = ReadDigit(left);
-                if (capacity <= 0 || current < 0 || current > capacity) continue;
-                Rectangle bounds = Rectangle.Union(left.Bounds, Rectangle.Union(box, right.Bounds));
-                counters.Add(new Counter(current, capacity, bounds, box.Height, HasHudCards(box), IsIsolatedPlaque(box)));
+                Counter counter;
+                if (IsSlash(slash) && OnDarkPlaque(box))
+                {
+                    counter = ReadCounter(box, FindAdjacentDigit(glyphs, i, box, -1),
+                        FindAdjacentDigit(glyphs, i, box, 1));
+                    if (counter == null)
+                        counter = ReadFaintDigits(box, imageBounds);
+                }
+                else
+                {
+                    Glyph left;
+                    Glyph separatedSlash;
+                    if (!SplitJoinedSlash(slash, out left, out separatedSlash)) continue;
+                    box = separatedSlash.Bounds;
+                    if (!IsSlash(separatedSlash) || left.Bounds.Top <= box.Top ||
+                        !IsAdjacentDigit(left.Bounds, box, -1) || !OnDarkPlaque(box)) continue;
+                    counter = ReadCounter(box, left, FindAdjacentDigit(glyphs, i, box, 1));
+                }
+                if (counter != null) counters.Add(counter);
             }
             return counters.ToArray();
         }
 
-        private List<Glyph> FindGlyphs()
+        private Counter ReadCounter(Rectangle slash, Glyph left, Glyph right)
         {
-            var unvisited = new byte[width * height];
-            bool sawInk = false, sawDark = false;
-            for (int y = 0; y < height; y++)
+            if (left == null || right == null) return null;
+            int current = ReadDigit(left), capacity = ReadDigit(right);
+            if (capacity <= 0 || current < 0 || current > capacity) return null;
+            Rectangle bounds = Rectangle.Union(left.Bounds, Rectangle.Union(slash, right.Bounds));
+            return new Counter(current, capacity, bounds, slash.Height, HasHudCards(slash), IsIsolatedPlaque(slash));
+        }
+
+        private Counter ReadFaintDigits(Rectangle slash, Rectangle imageBounds)
+        {
+            // Video compression can erase part of a digit at the main threshold.
+            // Retry only around a physically verified slash, and keep the same shape checks.
+            var region = Rectangle.Intersect(imageBounds, Rectangle.Inflate(slash, slash.Height, slash.Height / 4));
+            var glyphs = FindGlyphs(region, 110);
+            Counter match = null;
+            for (int i = 0; i < glyphs.Count; i++)
             {
-                Marshal.Copy(IntPtr.Add(scan, y * stride), rowPixels, 0, rowPixels.Length);
-                for (int x = 0; x < width; x++)
+                Glyph glyph = glyphs[i];
+                Rectangle box = glyph.Bounds;
+                if (!box.Contains(slash) || box.Width - slash.Width > 2 || box.Height - slash.Height > 2 ||
+                    !IsSlash(glyph) || !OnDarkPlaque(box)) continue;
+                Counter counter = ReadCounter(box, FindAdjacentDigit(glyphs, i, box, -1),
+                    FindAdjacentDigit(glyphs, i, box, 1));
+                if (counter == null) continue;
+                if (match != null) return null;
+                match = counter;
+            }
+            return match;
+        }
+
+        private static bool SplitJoinedSlash(Glyph joined, out Glyph left, out Glyph slash)
+        {
+            left = slash = null;
+            int w = joined.Bounds.Width, h = joined.Bounds.Height;
+            if (h < MinSlashHeight || w <= h * .43 || w > h * .85) return false;
+            int maxStrokeWidth = Math.Max(2, (int)(h * .19));
+            var remaining = (bool[])joined.Ink.Clone();
+            var stroke = new bool[remaining.Length];
+            int joinedRows = 0;
+            for (int y = 0; y < h; y++)
+            {
+                int row = y * w, x = w - 1;
+                while (x >= 0 && !joined.Ink[row + x]) x--;
+                for (int end = x; x >= 0 && x > end - maxStrokeWidth && joined.Ink[row + x]; x--)
+                {
+                    remaining[row + x] = false;
+                    stroke[row + x] = true;
+                }
+                if (x >= 0 && joined.Ink[row + x]) joinedRows++;
+            }
+            // A touching digit can join the tall slash at its base. Recover only the
+            // right-hand ink, leaving both glyphs subject to the usual shape checks.
+            if (joinedRows == 0 || joinedRows > Math.Max(1, h / 7)) return false;
+            slash = TrimInk(joined.Bounds, stroke);
+            left = TrimInk(joined.Bounds, remaining);
+            return left != null && slash != null;
+        }
+
+        private static Glyph TrimInk(Rectangle bounds, bool[] ink)
+        {
+            int left = bounds.Width, top = bounds.Height, right = 0, bottom = 0;
+            for (int y = 0; y < bounds.Height; y++)
+                for (int x = 0; x < bounds.Width; x++)
+                    if (ink[y * bounds.Width + x])
+                    {
+                        left = Math.Min(left, x); right = Math.Max(right, x + 1);
+                        top = Math.Min(top, y); bottom = Math.Max(bottom, y + 1);
+                    }
+            if (left >= right || top >= bottom) return null;
+            var box = new Rectangle(bounds.X + left, bounds.Y + top, right - left, bottom - top);
+            var tightInk = new bool[box.Width * box.Height];
+            for (int y = 0; y < box.Height; y++)
+                Array.Copy(ink, (y + top) * bounds.Width + left, tightInk, y * box.Width, box.Width);
+            return new Glyph(box, tightInk);
+        }
+
+        private List<Glyph> FindGlyphs(Rectangle region, int minInk)
+        {
+            var unvisited = new byte[region.Width * region.Height];
+            bool sawInk = false, sawDark = false;
+            for (int y = 0; y < region.Height; y++)
+            {
+                Marshal.Copy(IntPtr.Add(scan, (y + region.Top) * stride + region.Left * 3), rowPixels, 0, region.Width * 3);
+                for (int x = 0; x < region.Width; x++)
                 {
                     int offset = x * 3;
                     int b = rowPixels[offset], g = rowPixels[offset + 1], r = rowPixels[offset + 2];
                     int low = Math.Min(r, Math.Min(g, b));
                     int high = Math.Max(r, Math.Max(g, b));
                     if (high < 34) sawDark = true;
-                    if (low >= 130 && high - low < 44)
+                    if (low >= minInk && high - low < 44)
                     {
-                        unvisited[y * width + x] = 1;
+                        unvisited[y * region.Width + x] = 1;
                         sawInk = true;
                     }
                 }
@@ -144,24 +238,25 @@ public sealed class FateOcrImage
                 if (unvisited[index] == 0) continue;
                 points.Clear();
                 Visit(index, unvisited, pending);
-                int left = width, right = 0, top = height, bottom = 0;
+                int left = region.Width, right = 0, top = region.Height, bottom = 0;
                 while (pending.Count > 0)
                 {
-                    int point = pending.Dequeue(), x = point % width, y = point / width;
+                    int point = pending.Dequeue(), x = point % region.Width, y = point / region.Width;
                     left = Math.Min(left, x); right = Math.Max(right, x);
                     top = Math.Min(top, y); bottom = Math.Max(bottom, y);
                     if (right - left < MaxSlashHeight && bottom - top < MaxSlashHeight) points.Add(point);
                     // Four-connected strokes keep adjacent slash and digit corners separate.
                     if (x > 0) Visit(point - 1, unvisited, pending);
-                    if (x + 1 < width) Visit(point + 1, unvisited, pending);
-                    if (y > 0) Visit(point - width, unvisited, pending);
-                    if (y + 1 < height) Visit(point + width, unvisited, pending);
+                    if (x + 1 < region.Width) Visit(point + 1, unvisited, pending);
+                    if (y > 0) Visit(point - region.Width, unvisited, pending);
+                    if (y + 1 < region.Height) Visit(point + region.Width, unvisited, pending);
                 }
                 int glyphWidth = right - left + 1, glyphHeight = bottom - top + 1;
                 if (glyphHeight >= 6 && glyphHeight <= MaxSlashHeight &&
                     glyphWidth >= 2 && glyphWidth < glyphHeight && points.Count >= glyphHeight)
-                    glyphs.Add(new Glyph(Rectangle.FromLTRB(left, top, right + 1, bottom + 1), points, width));
+                    glyphs.Add(new Glyph(Rectangle.FromLTRB(left, top, right + 1, bottom + 1), points, region));
             }
+            glyphs.Sort((a, b) => a.Bounds.Left.CompareTo(b.Bounds.Left));
             return glyphs;
         }
 
@@ -198,21 +293,24 @@ public sealed class FateOcrImage
             return true;
         }
 
-        private static Glyph FindAdjacentDigit(List<Glyph> glyphs, int slashIndex, int direction)
+        private static bool IsAdjacentDigit(Rectangle box, Rectangle slash, int direction)
         {
-            Rectangle slash = glyphs[slashIndex].Bounds;
             double h = slash.Height;
+            int gap = direction < 0 ? slash.Left - box.Right : box.Left - slash.Right;
+            return gap >= -h * .12 && gap <= h * .23 &&
+                box.Height >= h * .50 && box.Height <= h * .87 &&
+                box.Top >= slash.Top && box.Top - slash.Top <= h * .22 &&
+                slash.Bottom - box.Bottom >= h * .06 && slash.Bottom - box.Bottom <= h * .39;
+        }
+
+        private static Glyph FindAdjacentDigit(List<Glyph> glyphs, int slashIndex, Rectangle slash, int direction)
+        {
             Glyph match = null;
             for (int i = slashIndex + direction; i >= 0 && i < glyphs.Count; i += direction)
             {
                 Rectangle box = glyphs[i].Bounds;
-                int gap = direction < 0 ? slash.Left - box.Right : box.Left - slash.Right;
-                if (Math.Abs(box.Left - slash.Left) > h * .95) break;
-                if (gap < -h * .12 || gap > h * .23 ||
-                    box.Height < h * .50 || box.Height > h * .87 ||
-                    box.Top < slash.Top || box.Top - slash.Top > h * .22 ||
-                    slash.Bottom - box.Bottom < h * .06 || slash.Bottom - box.Bottom > h * .39)
-                    continue;
+                if (Math.Abs(box.Left - slash.Left) > slash.Height * .95) break;
+                if (!IsAdjacentDigit(box, slash, direction)) continue;
                 if (match != null) return null;
                 match = glyphs[i];
             }
@@ -319,6 +417,11 @@ public sealed class FateOcrImage
 
     public static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region)
     {
+        return Prepare(png, maxDimension, region, 2.0);
+    }
+
+    public static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale)
+    {
         const int padding = 16;
         int limit = Math.Min(maxDimension, 4096) - padding * 2;
         if (limit < 16) throw new ArgumentOutOfRangeException("maxDimension");
@@ -360,7 +463,7 @@ public sealed class FateOcrImage
                 Marshal.Copy(pixels, 0, data.Scan0, pixels.Length);
             }
             finally { source.UnlockBits(data); }
-            double scale = Math.Min(2.0, (double)limit / Math.Max(source.Width, source.Height));
+            double scale = Math.Min(targetScale, (double)limit / Math.Max(source.Width, source.Height));
             int width = Math.Max(1, (int)Math.Round(source.Width * scale));
             int height = Math.Max(1, (int)Math.Round(source.Height * scale));
             using (var prepared = new Bitmap(width + padding * 2, height + padding * 2, PixelFormat.Format24bppRgb))
