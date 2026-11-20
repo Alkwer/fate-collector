@@ -44,6 +44,15 @@ test('reads only the upper row when tooltip text covers the controller button', 
   expect(read([...coveredButton, line('Invoke Fates', 1780, 85, 280)])).toEqual([])
 })
 
+test('recognizes a split panel button under a tooltip with a verified upper row and owned card', () => {
+  const panel = coveredButton.filter(l => !controllerFooter.includes(l))
+  const fragment = line('CO FIRM', 1829, 1037, 181)
+  expect(read([...panel, fragment]).map(c => c[0])).toEqual(['Torchbearer', 'Sadist', 'Tempest'])
+  expect(read([...panel, { ...fragment, text: 'CO FARM' }])).toEqual([])
+  expect(read([...panel, { ...fragment, y: 940 }])).toEqual([])
+  expect(read([...panel.filter(l => l.text !== 'Black Frost'), fragment])).toEqual([])
+})
+
 const sadistCaption = 'Spawns an additional Boss from Campaign Areas without an Atlas equivalent'
 const coveredNames = [
   line('CONFIRM', 1829, 1037, 181), line('1/4', 1615, 1021, 51, 45),

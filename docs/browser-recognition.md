@@ -97,6 +97,8 @@ Helper 0.10.16 also compares the visible parts of each digit when bright tooltip
 
 When selected cards appear below Confirm, the importer can recover a covered upper row from its aligned captions, the counter and the selected row. A shared caption keeps its position and description with a blank name unless the visible name or the raised card's tooltip identifies it. Tier and reward matching requires a visible nameplate. On a controller, a tooltip over the panel button can be disambiguated using the Fates title, complete upper-row captions, a separate selected row and the controller footer.
 
+Parser `counted-offers-14` also accepts a partially visible Confirm label under a tooltip when its position, the selected row and the offered captions agree. A separate world-space Select a Fate prompt can overlap a nameplate or appear above the panel. A visible name and the complete spelling in its column can confirm a word split by OCR.
+
 On seven public 1080p video frames, the positioned counter improved from 0/7 to 7/7 on both full images and panel/HUD crops. Four offers contained fourteen card appearances. Exact descriptions assigned to the correct card improved from 0/14 to 14/14 on full images and from 3/14 to 14/14 on panel crops. The two HUD scenes and the invocation produced no offered cards. The same frames guided development and verification. This replay covers one UI scale and the displayed counts 0/4 through 4/4. [DatModz recording](https://www.twitch.tv/videos/2934270116?t=0h18m16s) · [Manni2 recording](https://www.twitch.tv/videos/2933677092?t=9h35m01s)
 The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
 It is read-only and does not supply new visual matches, combo thresholds or kinds.

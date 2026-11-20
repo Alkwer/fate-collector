@@ -196,6 +196,31 @@ function Get-FateDimCounterRegion($Lines) {
         [int]($axis - 3 * $unit), [int]($title.y + 32 * $unit))
 }
 
+function Read-FateCounterButton($Counters, $Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
+    $candidates = @($Counters | Where-Object { $_.HasPlaqueTrim -and !$_.IsIsolatedPlaque })
+    if ($candidates.Count -ne 1) { return $null }
+    $counter = $candidates[0]
+    $lines = @($Selected.lines)
+    if ($null -ne $Other) { $lines += @($Other.lines) }
+    if (Test-FatePanelCounter $counter $lines) { return $null }
+
+    # Read the adjacent button at the scale of the verified plaque lettering.
+    $scale = $counter.SlashHeight
+    $centerX = $counter.Bounds.X + $counter.Bounds.Width / 2
+    $centerY = $counter.Bounds.Y + $counter.Bounds.Height / 2
+    $x = [int][Math]::Max(0, [Math]::Floor($centerX + 3.7 * $scale))
+    $y = [int][Math]::Max(0, [Math]::Floor($centerY - .59 * $scale))
+    $right = [int][Math]::Min($ImageWidth, [Math]::Ceiling($centerX + 9.3 * $scale))
+    $bottom = [int][Math]::Min($ImageHeight, [Math]::Ceiling($centerY + .59 * $scale))
+    if ($right -le $x -or $bottom -le $y) { return $null }
+    $region = [Drawing.Rectangle]::FromLTRB($x, $y, $right, $bottom)
+    $prepared = [FateOcrImage]::Prepare($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region)
+    $result = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $x $y
+    $exact = @($result.lines | Where-Object { $_.text -match '^\s*confirm\s*$' })
+    if ($exact.Count -eq 1 -and (Test-FatePanelCounter $counter $exact)) { return $exact[0] }
+    return $null
+}
+
 function Test-FateCounterOverlap($Word, [Drawing.Rectangle]$Bounds) {
     $centerX = $Word.x + $Word.width / 2
     $centerY = $Word.y + $Word.height / 2
@@ -206,9 +231,10 @@ function Test-FateCounterOverlap($Word, [Drawing.Rectangle]$Bounds) {
     return $width * $height -ge .55 * $Word.width * $Word.height
 }
 
-function Merge-FateCounterLines($Selected, $Other, $Counters) {
+function Merge-FateCounterLines($Selected, $Other, $Counters, $CounterButton = $null) {
     $contextLines = @($Selected.lines)
     if ($null -ne $Other) { $contextLines += @($Other.lines) }
+    if ($null -ne $CounterButton) { $contextLines += $CounterButton }
     $panel = @($Counters | Where-Object { !$_.HasHudCards -and (Test-FatePanelCounter $_ $contextLines) })
     $hud = @($Counters | Where-Object HasHudCards)
     $accepted = @()
@@ -307,7 +333,11 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
             try {
                 $region = Get-FateDimCounterRegion $selected.lines
                 $counters = [FateOcrImage]::ReadCounters($Png, $region)
-                $selected = Merge-FateCounterLines $selected $other $counters
+                $button = $null
+                try {
+                    $button = Read-FateCounterButton $counters $selected $other $Png $engine $ImageWidth $ImageHeight
+                } catch { Write-Verbose ("Counter context OCR failed. " + $_.Exception.Message) }
+                $selected = Merge-FateCounterLines $selected $other $counters $button
             } catch { Write-Verbose ("Counter OCR failed. " + $_.Exception.Message) }
             try {
                 $selected = Read-FateCardText $selected $other $Png $engine $ImageWidth $ImageHeight

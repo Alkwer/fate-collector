@@ -264,15 +264,21 @@ if (!(Get-FateDimCounterRegion @($confirm)).IsEmpty -or
     throw 'A dim counter search requires a unique panel heading.'
 }
 function New-FragmentedCounterFixture {
-    param([switch]$HideLeftDigit, [switch]$HideRightDigit, [switch]$DarkGap)
-    $image = [Drawing.Bitmap]::new(200, 110)
+    param([switch]$HideLeftDigit, [switch]$HideRightDigit, [switch]$DarkGap,
+        [switch]$CoverEndpoint, [switch]$HideSlash)
+    $width = if ($CoverEndpoint) { 260 } else { 200 }
+    $image = [Drawing.Bitmap]::new($width, 110)
     $graphics = [Drawing.Graphics]::FromImage($image)
     $ink = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(72, 72, 72))
     $foreground = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(145, 145, 145))
     $stream = [IO.MemoryStream]::new()
     try {
         $graphics.Clear([Drawing.Color]::Black)
-        foreach ($x in 51, 89) {
+        $positions = if ($CoverEndpoint) {
+            $graphics.TranslateTransform(45, 0)
+            47, 86
+        } else { 51, 89 }
+        foreach ($x in $positions) {
             $outline = [Drawing.Point[]]@(
                 [Drawing.Point]::new($x + 12, 33), [Drawing.Point]::new($x + 17, 33),
                 [Drawing.Point]::new($x + 17, 54), [Drawing.Point]::new($x + 23, 54),
@@ -288,17 +294,26 @@ function New-FragmentedCounterFixture {
             $graphics.FillPolygon($ink, $outline)
             $graphics.FillPolygon([Drawing.Brushes]::Black, $hole)
         }
-        for ($y = 0; $y -lt 45; $y++) {
-            $offset = [int][Math]::Floor((44 - $y) * .21)
-            $graphics.FillRectangle($ink, 72 + $offset, 29 + $y, 4, 1)
+        if (!$HideSlash) {
+            for ($y = 0; $y -lt 45; $y++) {
+                $offset = [int][Math]::Floor((44 - $y) * .21)
+                $graphics.FillRectangle($ink, 72 + $offset, 29 + $y, 4, 1)
+            }
         }
-        if ($HideLeftDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 48, 33, 24, 35) }
-        if ($HideRightDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 89, 33, 24, 35) }
-        $graphics.FillRectangle($foreground, 46, 37, 26, 4)
-        $graphics.FillRectangle($foreground, 88, 42, 23, 4)
-        $graphics.FillRectangle($foreground, 73, 33, 3, 27)
-        $gap = if ($DarkGap) { [Drawing.Brushes]::Black } else { $foreground }
-        $graphics.FillRectangle($gap, 72, 54, 11, 6)
+        if ($CoverEndpoint) {
+            if ($HideLeftDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 46, 33, 24, 35) }
+            if ($HideRightDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 85, 33, 25, 35) }
+            if ($DarkGap) { $graphics.FillRectangle([Drawing.Brushes]::Black, 72, 54, 11, 6) }
+            $graphics.FillRectangle($foreground, 51, 27, 50, 15)
+        } else {
+            if ($HideLeftDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 48, 33, 24, 35) }
+            if ($HideRightDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 89, 33, 24, 35) }
+            $graphics.FillRectangle($foreground, 46, 37, 26, 4)
+            $graphics.FillRectangle($foreground, 88, 42, 23, 4)
+            $graphics.FillRectangle($foreground, 73, 33, 3, 27)
+            $gap = if ($DarkGap) { [Drawing.Brushes]::Black } else { $foreground }
+            $graphics.FillRectangle($gap, 72, 54, 11, 6)
+        }
         $image.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
         return ,$stream.ToArray()
     } finally {
@@ -320,6 +335,19 @@ foreach ($control in 'HideLeftDigit', 'HideRightDigit', 'DarkGap') {
     $flags = @{$control = $true}
     if ([FateOcrImage]::ReadCounters((New-FragmentedCounterFixture @flags), $coveredRegion).Count) {
         throw "Insufficient pixel evidence in the fragmented fraction with control $control."
+    }
+}
+
+$endpointRegion = [Drawing.Rectangle]::new(15, 15, 230, 80)
+$read = [FateOcrImage]::ReadCounters((New-FragmentedCounterFixture -CoverEndpoint), $endpointRegion)
+if ($read.Count -ne 1 -or $read[0].Text -cne '4/4' -or $read[0].Bounds.Y -ne 29) {
+    throw 'Read both digits when the overprint covers the upper tip of the diagonal.'
+}
+foreach ($control in 'HideLeftDigit', 'HideRightDigit', 'HideSlash', 'DarkGap') {
+    $flags = @{ CoverEndpoint = $true }
+    $flags[$control] = $true
+    if ([FateOcrImage]::ReadCounters((New-FragmentedCounterFixture @flags), $endpointRegion).Count) {
+        throw "Reject an obscured endpoint with missing pixel evidence in control $control."
     }
 }
 

@@ -53,10 +53,10 @@ function Get-FateCardLines($Lines, $Center, $Pitch, $Top, $Bottom) {
     } | Sort-Object { $_.y }, { $_.x }
 }
 
-function Select-FateCaptionWords($Lines, $Center, $Pitch) {
+function Select-FateCaptionWords($Lines, $Center, $Pitch, $HalfWidth = .40) {
     foreach ($line in $Lines) {
         if (!$line.Contains('words')) { $line; continue }
-        $inside = @($line.words | Where-Object { [Math]::Abs($_.x + $_.width / 2 - $Center) -lt .40 * $Pitch })
+        $inside = @($line.words | Where-Object { [Math]::Abs($_.x + $_.width / 2 - $Center) -lt $HalfWidth * $Pitch })
         if ($inside.Count -eq $line.words.Count) { $line }
         elseif ($inside.Count) { New-PositionedOcrLine $inside ($inside.text -join ' ') }
     }
@@ -141,6 +141,7 @@ function Read-FateOfferButton($Selected, $Other, [byte[]]$Png, $Engine, [int]$Im
 }
 
 function Get-FateHeaderGrid($Band, $Axis, $Pitch, $Dictionary) {
+    $Band = @($Band | Where-Object { ($_.text -replace '[^a-z]', '') -ne 'selectafate' })
     foreach ($slots in @(5, 6)) {
         $cells = @(for ($i = 0; $i -lt $slots; $i++) {
             $center = $Axis + ($i - ($slots - 1) / 2) * $Pitch
@@ -357,6 +358,8 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         }
         $best = Get-FateCaptionScore $words $dictionary[$key]
         $candidate = Get-FateCaptionScore $newWords $dictionary[$key]
+        $inside = @(Select-FateCaptionWords $body $center $pitch)
+        $insideText = ConvertTo-FateDescriptionKey (($inside | ForEach-Object { $_.text }) -join ' ')
         $oldNumbers = Get-FateCaptionNumbers $words
         if ($null -ne $Other -and $candidate -lt 1) {
             $otherBody = @(Select-FateCaptionWords @(Get-FateCardLines $Other.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
@@ -366,9 +369,10 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
                 $newBody = $otherBody; $newWords = $otherWords; $candidate = $otherScore
             }
         }
-        # On small cards the parchment texture and the letter strokes can have
-        # similar brightness. Compare a background-corrected read of this column.
-        if ($pitch -le 220 -and $best -lt 1 -and $candidate -lt 1 -and ($originalKnown -or $confirmedHeader)) {
+        # Compare a background-corrected read on small cards and on uncatalogued
+        # captions where two readings of the column disagree.
+        if (($pitch -le 220 -or (!$dictionary[$key].Count -and $newWords -ne $insideText)) -and
+            $best -lt 1 -and $candidate -lt 1 -and ($originalKnown -or $confirmedHeader)) {
             $captionTop = [int][Math]::Max(0, [Math]::Floor($bodyTop))
             $captionBox = [Drawing.Rectangle]::FromLTRB($left, $captionTop, $right, $bottom)
             $prepared = [FateOcrImage]::PrepareCaption($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $captionBox)
@@ -382,7 +386,7 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
                 (Get-FateCaptionNumbers $newWords) -cne $oldNumbers
             if ($score -ge .75 -and ($score -gt $candidate -or ($score -eq $candidate -and $preservesDigits))) {
                 $newBody = $caption; $newWords = $printed; $candidate = $score
-            } elseif (!$dictionary[$key].Count -and (Test-FateCaptionAgreement $words $newWords $printed)) {
+            } elseif (!$dictionary[$key].Count -and (Test-FateCaptionAgreement $insideText $newWords $printed)) {
                 $candidate = 1
             }
         }
@@ -407,13 +411,19 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $add = @()
         # Do not shorten a longer original description or change visible numbers
         # just to recover a documented wording.
-        $inside = @(Select-FateCaptionWords $body $center $pitch)
-        $insideText = ConvertTo-FateDescriptionKey (($inside | ForEach-Object { $_.text }) -join ' ')
+        # HUD words and small stray glyphs can share a baseline at the edge
+        # of the card. Verify the complete inner text against a separate pass.
+        $innerAgrees = $false
+        if ($dictionary[$key] -contains $newWords) {
+            $inner = @(Select-FateCaptionWords $body $center $pitch .36)
+            $innerText = ConvertTo-FateDescriptionKey (($inner | ForEach-Object { $_.text }) -join ' ')
+            $innerAgrees = $insideText -ceq $newWords -or $innerText -ceq $newWords
+        }
         $originalWords = @($insideText -split ' ' | Where-Object { $_ -ne [string][char]0x2022 })
         $keepsWords = !$words -or $originalWords.Count -le ($newWords -split ' ').Count
         $newNumbers = Get-FateCaptionNumbers $newWords
-        if ($candidate -gt $best -and $newBody.Count -and $keepsWords -and
-            (!$oldNumbers -or $oldNumbers -ceq $newNumbers)) {
+        if ($candidate -gt $best -and $newBody.Count -and
+            ($innerAgrees -or ($keepsWords -and (!$oldNumbers -or $oldNumbers -ceq $newNumbers)))) {
             $remove = $body
             $add = $newBody
         } elseif (!$confirmedHeader -and $dictionary[$key] -notcontains $words) { continue }

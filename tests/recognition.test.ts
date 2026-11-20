@@ -139,6 +139,20 @@ test('reads raised cards and their wrapped text when the counter anchors an unre
   expect(readCounted(countedLines.filter(l => l.text !== 'Fates'))).toEqual([])
   expect(readCounted(countedLines.map(l => l.text === '1/4' ? { ...l, text: '114' } : l))).toEqual([])
 })
+
+test('ignores the world prompt above the panel and in a card name slot', () => {
+  const offer = [...countedLines, line('CONFIRM', 450, 515)]
+  for (const prompt of [line('Select a Fate', 450, 10), line('Select a Fate', 710, 103)]) {
+    expect(readCounted([...offer, prompt])).toEqual(countedCards)
+  }
+  expect(readCounted([...offer, line('Fates', 450, 10)])).toEqual([])
+})
+
+test('joins one split word only when the visible name and full printed caption agree', () => {
+  const change = (text: string) => readCounted(countedLines.map(l => l.text === 'explosive blasts of' ? { ...l, text } : l))
+  expect(change('expl osive blasts of')).toEqual(countedCards)
+  expect(change('expl osive blasts of two')[0][1]).toBe('Creates massive expl osive blasts of two blackfire')
+})
 test('requires a tooltip over the title, Confirm and independent card columns to recover a masked heading', () => {
   const masked = countedLines.filter(l => l.text !== 'Fates').concat(line('CONFIRM', 450, 515))
   expect(readCounted(masked)).toEqual([])
