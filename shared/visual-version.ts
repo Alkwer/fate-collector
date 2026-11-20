@@ -1,1 +1,1 @@
-export const VISUAL_VERSION = 'browser-v2-segments'
+export const VISUAL_VERSION = 'browser-v3-occlusion'

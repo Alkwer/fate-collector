@@ -88,7 +88,7 @@ test.each(['offer-a', 'offer-b', 'offer-a-panel', 'offer-b-panel'] as const)('ma
     ? [['blue-diamond', 'gold-stack'], ['gold-grid', 'blue-diamond'], ['blue-diamond'], ['blue-diamond', 'gold-ring']] : symbols)
 })
 
-function scaleImage(image: Image, scale: 0.5 | 2): Image {
+function scaleImage(image: Image, scale: 0.5 | 1.25 | 2): Image {
   const width = image.width * scale
   const height = image.height * scale
   const data = new Uint8ClampedArray(width * height * 4)
@@ -110,7 +110,7 @@ function scaleImage(image: Image, scale: 0.5 | 2): Image {
 
 test('reads offered cards and motifs on a real press image without assigning the collected Torchbearer', () => {
   const result = analyzeVisualCapture({ ...press, ocr: pressOcr })
-  expect(result.version).toBe('browser-v2-segments')
+  expect(result.version).toBe('browser-v3-occlusion')
   expect(result.status).toBe('candidates')
   expect(result.cards.map(card => card.name)).toEqual(names)
   expect(result.cards.map(card => card.tier)).toEqual([2, 2, 2, 2])
@@ -148,6 +148,64 @@ test.each([0.5, 2] as const)('uses frame scale for press pixels resampled to %sx
   expect(result.cards.map(card => card.name)).toEqual(names)
   expect(result.cards.map(card => card.tier)).toEqual([2, 2, 2, 2])
   expect(result.cards.map(card => card.symbols.map(symbol => symbol.visualId))).toEqual(symbols)
+})
+
+const alchemistPress = loadFixture('images/press-offer-a.png')
+const alchemistOcr = { ...presentationOcr.cases['offer-a'].ocr, status: 'ok' as const }
+
+function pairedRewards(gap: number, behind = 'gold-stack') {
+  const image = { ...alchemistPress, data: alchemistPress.data.slice() }
+  const left = 605, right = 643, y = 677, radius = 16
+  const copyBadge = (source: number, target: number, below: boolean) => {
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        if (Math.hypot(dx, dy) > radius || (below && Math.hypot(target + dx - right, dy) <= radius)) continue
+        const from = ((y + dy) * image.width + source + dx) * 4
+        const to = ((y + dy) * image.width + target + dx) * 4
+        image.data.set(alchemistPress.data.subarray(from, from + 4), to)
+      }
+    }
+  }
+  copyBadge(left - 38, left, false)
+  if (gap) copyBadge(behind === 'gold-stack' ? right : left, right - gap, true)
+  return { ...image, ocr: alchemistOcr }
+}
+
+test.each([
+  { gap: 0, motif: 'gold-stack', expected: [['gold-stack', 631]], foregroundSegments: 2 },
+  { gap: 4, motif: 'gold-stack', expected: [['gold-stack', 631]], foregroundSegments: 2 },
+  { gap: 38, motif: 'gold-stack', expected: [['gold-stack', 593], ['gold-stack', 631]], foregroundSegments: 2 },
+  { gap: 14, motif: 'gold-stack', expected: [['gold-stack', 617], ['gold-stack', 631]], foregroundSegments: undefined },
+  { gap: 14, motif: 'blue-diamond', expected: [['blue-diamond', 617], ['gold-stack', 631]], foregroundSegments: 2 },
+])('uses visible artwork for a $motif $gap pixels behind the front reward', ({ gap, motif, expected, foregroundSegments }) => {
+  const input = pairedRewards(gap, motif)
+  const [card, ...neighbors] = analyzeVisualCapture(input).cards
+  expect(card.name).toBe('Alchemist')
+  expect(card.symbols.map(symbol => [symbol.visualId, symbol.box.x])).toEqual(expected)
+  expect(card.symbols.at(-1)?.segments).toBe(foregroundSegments)
+  if (gap === 14) expect(card.symbols[0].segments).toBeUndefined()
+  const baseline = analyzeVisualCapture({ ...alchemistPress, ocr: alchemistOcr })
+  expect(neighbors).toEqual(baseline.cards.slice(1))
+})
+
+test('uses the measured panel scale when a 1080p frame has larger cards', () => {
+  const source = pairedRewards(38)
+  const crop = { x: 450, y: 304, width: 1020, height: 460 }
+  const panel = scaleImage(cropImage(source, crop), 1.25)
+  const width = 1920, height = 1080, x = 320, y = 165
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let row = 0; row < panel.height; row++) {
+    data.set(panel.data.subarray(row * panel.width * 4, (row + 1) * panel.width * 4), ((y + row) * width + x) * 4)
+  }
+  const ocr = { ...alchemistOcr, lines: alchemistOcr.lines.filter(line => line.y >= crop.y).map(line => ({
+    ...line, x: x + (line.x - crop.x) * 1.25, y: y + (line.y - crop.y) * 1.25,
+    width: line.width * 1.25, height: line.height * 1.25,
+  })) }
+  const result = analyzeVisualCapture({ width, height, data, ocr })
+  expect(result.cards.map(card => [card.name, card.tier, card.symbols.map(symbol => symbol.visualId)])).toEqual([
+    ['Alchemist', 2, ['gold-stack', 'gold-stack']], ['Sanguine', 2, ['gold-grid', 'blue-diamond']],
+    ['Butcher', 2, ['blue-diamond']], ['Gravewalker', 2, ['blue-diamond', 'gold-ring']],
+  ])
 })
 
 test.each(['Fates', 'CONFIRM'])('abstains without the real offer boundary %s', marker => {

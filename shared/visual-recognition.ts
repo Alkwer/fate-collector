@@ -11,6 +11,8 @@ const MAX_HEADERS = 8
 const PROPOSAL_SCORE = 0.72
 const MIN_SCORE = 0.86
 const MIN_MARGIN = 0.07
+// Distance between the calibrated card columns at the original panel size.
+const REFERENCE_COLUMN_PITCH = 226
 
 export interface VisualBox {
   x: number
@@ -52,7 +54,7 @@ interface Input {
 
 type Family = 'tier' | 'reward'
 type Point = { x: number; y: number }
-type Match = VisualSymbol & { tier: VisualCard['tier'] }
+type Match = VisualSymbol & { tier: VisualCard['tier']; occluded?: boolean }
 type PixelArray = Uint8Array | Uint8ClampedArray | Float32Array
 
 const box = (x: number, y: number, width: number, height: number): VisualBox => ({ x, y, width, height })
@@ -65,11 +67,13 @@ const intersection = (a: VisualBox, b: VisualBox) =>
   Math.max(0, Math.min(right(a), right(b)) - Math.max(a.x, b.x))
   * Math.max(0, Math.min(bottom(a), bottom(b)) - Math.max(a.y, b.y))
 
-function measure(pixels: PixelArray) {
+function measure(pixels: PixelArray, visible?: number[]) {
   let total = 0
   let squares = 0
   let saturation = 0
-  for (let i = 0; i < pixels.length; i += 3) {
+  const size = visible ? 3 * visible.length : pixels.length
+  for (let j = 0; j < size; j += 3) {
+    const i = visible ? visible[j / 3] : j
     const r = pixels[i]
     const g = pixels[i + 1]
     const b = pixels[i + 2]
@@ -78,7 +82,7 @@ function measure(pixels: PixelArray) {
     const high = Math.max(r, g, b)
     saturation += (high - Math.min(r, g, b)) / (high + 12.75)
   }
-  return { pixels, mean: total / pixels.length, squares, saturation: saturation * 3 / pixels.length }
+  return { pixels, size, mean: total / size, squares, saturation: saturation * 3 / size }
 }
 
 const references = catalog.templates.map(entry => {
@@ -121,10 +125,15 @@ function comparisonPatch(pixels: PixelArray, stride: number, channels: number, r
   return measure(resample(native, width, 3, box(0, 0, width, height), 24, 24))
 }
 
-function similarity(a: ReturnType<typeof measure>, b: ReturnType<typeof measure>) {
+function similarity(a: ReturnType<typeof measure>, b: ReturnType<typeof measure>, visible?: number[]) {
   let product = 0
-  for (let i = 0; i < a.pixels.length; i++) product += a.pixels[i] * b.pixels[i]
-  const size = a.pixels.length
+  const { size } = a
+  if (visible) {
+    for (const i of visible) product += a.pixels[i] * b.pixels[i]
+      + a.pixels[i + 1] * b.pixels[i + 1] + a.pixels[i + 2] * b.pixels[i + 2]
+  } else {
+    for (let i = 0; i < size; i++) product += a.pixels[i] * b.pixels[i]
+  }
   const denominator = Math.sqrt(Math.max(0, a.squares - size * a.mean ** 2) * Math.max(0, b.squares - size * b.mean ** 2))
   if (denominator < 1e-8) return 0
   const shape = (product - size * a.mean * b.mean) / denominator
@@ -200,12 +209,14 @@ function tooltipMasks(input: Input, scale: number, lines: Capture['ocr']['lines'
   return masks
 }
 
-function classify(input: Input, region: VisualBox, bank: ReturnType<typeof prepare>) {
+function classify(input: Input, region: VisualBox, bank: ReturnType<typeof prepare>, visible?: number[]) {
   const { sampleWidth, sampleHeight, family } = bank[0]
-  const patch = comparisonPatch(input.data, input.width, 4, region, sampleWidth, sampleHeight)
+  const fullPatch = comparisonPatch(input.data, input.width, 4, region, sampleWidth, sampleHeight)
+  const patch = visible ? measure(fullPatch.pixels, visible) : fullPatch
   const choices = new Map<string, { reference: typeof bank[number]; score: number }>()
   for (const reference of bank) {
-    const score = similarity(patch, reference.patch)
+    const referencePatch = visible ? measure(reference.patch.pixels, visible) : reference.patch
+    const score = similarity(patch, referencePatch, visible)
     if (score > (choices.get(reference.visualId)?.score ?? -Infinity)) choices.set(reference.visualId, { reference, score })
   }
   const [first, second] = [...choices.values()].sort((a, b) => b.score - a.score)
@@ -215,6 +226,37 @@ function classify(input: Input, region: VisualBox, bank: ReturnType<typeof prepa
     && patch.saturation < Math.max(0.08, reference.saturation * 0.5)
   const match: Match = { visualId: reference.visualId, tier: reference.tier, box: region, score, margin }
   return { match, accepted: score >= MIN_SCORE && margin >= MIN_MARGIN && !colourMissing }
+}
+
+function occludedReward(input: Input, foreground: Match, side: number, area: VisualBox,
+  bank: ReturnType<typeof prepare>, allowed: (patch: VisualBox) => boolean): Match | undefined {
+  const { width, height } = foreground.box
+  const radius = width * 2 / 3 + 1
+  const alignment = Math.ceil(height / 12)
+  let best: Match | undefined
+  for (let spacing = Math.ceil(width * 0.54); spacing <= width; spacing++) {
+    for (let dy = -alignment; dy <= alignment; dy++) {
+      const region = box(foreground.box.x + side * spacing, foreground.box.y + dy, width, height)
+      if (region.x < area.x || region.x > right(area) || region.y < area.y || region.y > bottom(area) || !allowed(region)) continue
+      const visible: number[] = []
+      for (let y = 0; y < 24; y++) {
+        for (let x = 0; x < 24; x++) {
+          const dx = side * spacing + ((x + 0.5) / 24 - 0.5) * width
+          const offsetY = dy + ((y + 0.5) / 24 - 0.5) * height
+          if (dx * dx + offsetY * offsetY <= radius * radius) continue
+          visible.push((y * 24 + x) * 3)
+        }
+      }
+      // Compare the side of the motif outside the foreground badge. Require
+      // substantial remaining artwork and the same RGB and runner-up thresholds.
+      if (visible.length < 24 * 24 * 0.4) continue
+      const candidate = classify(input, region, bank, visible)
+      if (candidate.accepted && candidate.match.score > (best?.score ?? MIN_SCORE)) {
+        best = { ...candidate.match, occluded: true }
+      }
+    }
+  }
+  return best
 }
 
 function search(input: Input, area: VisualBox, bank: ReturnType<typeof prepare>, scale: number, masks: VisualBox[]): Match[] {
@@ -297,6 +339,22 @@ function search(input: Input, area: VisualBox, bank: ReturnType<typeof prepare>,
     if (matches.some(other => other.visualId !== match.visualId && overlaps(other, match))) continue
     distinct.push(match)
   }
+  if (family === 'reward') {
+    const recovered: Match[] = []
+    for (const foreground of distinct) {
+      for (const side of [-1, 1]) {
+        if (distinct.some(other => other !== foreground
+          && side * (other.box.x - foreground.box.x) > 0 && side * (other.box.x - foreground.box.x) <= 1.4 * width
+          && Math.abs(other.box.y - foreground.box.y) <= height / 4)) continue
+        const match = occludedReward(input, foreground, side, area, bank, allowed)
+        if (match && !distinct.some(other => other !== foreground && overlaps(other, match))) recovered.push(match)
+      }
+    }
+    for (const match of recovered.sort((a, b) => b.score - a.score)) {
+      if (recovered.some(other => other.visualId !== match.visualId && overlaps(other, match))) continue
+      if (!distinct.some(other => other.occluded && overlaps(other, match))) distinct.push(match)
+    }
+  }
   return distinct
 }
 
@@ -316,10 +374,15 @@ export function analyzeVisualCapture(input: Input): VisualAnalysis {
   if (!Number.isInteger(frameHeight) || frameHeight < height || frameHeight < 540 || frameHeight > 2160) {
     return stop('unsupported', 'The screenshot scale is outside the supported range.')
   }
-  const scale = frameHeight / 1080
   const lines = ocr.lines.filter(line => line.width > 0 && line.height > 0 && inside(line, width, height))
   const region = findOfferedRegion({ image: { width, height }, ocr: { ...ocr, lines } })
   if (!region) return stop('unsupported', 'The offered-card area could not be established.')
+  const frameScale = frameHeight / 1080
+  const panelScale = region.columnPitch ? region.columnPitch / REFERENCE_COLUMN_PITCH : frameScale
+  // Keep the calibrated frame scale when the measured controls differ only by
+  // OCR rounding, and keep template searches bounded for abnormal geometry.
+  const scale = panelScale >= 0.5 && panelScale <= 2.5 && Math.abs(panelScale / frameScale - 1) > 0.025
+    ? panelScale : frameScale
   const headers = region.headers.flatMap(line => {
     // A name inferred from the caption does not locate the visible nameplate
     // accurately enough to assign a tier or reward symbol.
@@ -388,13 +451,13 @@ export function analyzeVisualCapture(input: Input): VisualAnalysis {
     }
     const area = box(footprint.x, footprint.y, rewardRegion.width, rewardRegion.height)
     card.symbols = search(input, area, rewards, scale, masks).sort((a, b) => a.box.x - b.box.x)
-      .map(({ visualId, box: bounds, score, margin }) => {
+      .map(({ visualId, box: bounds, score, margin, occluded }) => {
         const middle = center(bounds)
         // Covers the rim, background samples and bilinear neighbours.
         const left = Math.floor(middle.x - 16 * scale)
         const top = Math.floor(middle.y + 8 * scale)
         const rim = box(left, top, Math.ceil(middle.x + 16 * scale) - left + 1, Math.ceil(middle.y + 21 * scale) - top + 1)
-        const visible = inside(rim, width, region.bottom) && !masks.some(mask => intersection(rim, mask))
+        const visible = !occluded && inside(rim, width, region.bottom) && !masks.some(mask => intersection(rim, mask))
           && fraction(input, rim, 1, () => true) === 1
         const segments = visible ? readRewardSegments(input, middle.x, middle.y, scale) : undefined
         return { visualId, box: bounds, score, margin, ...(segments !== undefined && { segments }) }
