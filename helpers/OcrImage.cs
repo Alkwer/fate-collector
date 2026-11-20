@@ -422,6 +422,59 @@ public sealed class FateOcrImage
 
     public static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale)
     {
+        return Prepare(png, maxDimension, region, targetScale, Ink.Original);
+    }
+
+    // Card captions use pale lettering on mottled parchment. Estimate the local
+    // background and invert the remaining strokes for the small-text OCR pass.
+    public static FateOcrImage PrepareCaption(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 3.0, Ink.Light);
+    }
+
+    public static FateOcrImage PrepareNameplate(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 4.0, Ink.Dark);
+    }
+
+    public static FateOcrImage PrepareCaptionLine(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 3.0, Ink.LightLine);
+    }
+
+    private enum Ink { Original, Light, Dark, LightLine }
+
+    private static void SubtractBackground(byte[] pixels, int stride, int width, int height, Ink ink)
+    {
+        int pitch = width + 1;
+        int[] sums = new int[pitch * (height + 1)];
+        int radius = Math.Max(2, (int)Math.Round(width * .03));
+        for (int y = 0; y < height; y++)
+        {
+            int row = 0;
+            for (int x = 0; x < width; x++)
+            {
+                row += pixels[y * stride + 3 * x];
+                sums[(y + 1) * pitch + x + 1] = sums[y * pitch + x + 1] + row;
+            }
+        }
+        for (int y = 0; y < height; y++)
+        {
+            int top = Math.Max(0, y - radius), bottom = Math.Min(height, y + radius + 1);
+            for (int x = 0; x < width; x++)
+            {
+                int left = Math.Max(0, x - radius), right = Math.Min(width, x + radius + 1);
+                int sum = sums[bottom * pitch + right] - sums[top * pitch + right]
+                    - sums[bottom * pitch + left] + sums[top * pitch + left];
+                int i = y * stride + 3 * x;
+                int contrast = pixels[i] - sum / ((right - left) * (bottom - top));
+                pixels[i] = (byte)Math.Max(0, ink == Ink.Dark ? -contrast : contrast);
+            }
+        }
+    }
+
+    private static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale, Ink ink)
+    {
         const int padding = 16;
         int limit = Math.Min(maxDimension, 4096) - padding * 2;
         if (limit < 16) throw new ArgumentOutOfRangeException("maxDimension");
@@ -439,25 +492,35 @@ public sealed class FateOcrImage
                 var pixels = new byte[stride * source.Height];
                 Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
                 var histogram = new int[256];
+                bool localBackground = ink == Ink.Light || ink == Ink.Dark;
                 for (int y = 0; y < source.Height; y++)
                     for (int x = 0; x < source.Width; x++)
                     {
                         int offset = y * stride + x * 3;
                         byte value = (byte)((pixels[offset] * 114 + pixels[offset + 1] * 587 + pixels[offset + 2] * 299) / 1000);
                         pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
-                        histogram[value]++;
+                        if (!localBackground) histogram[value]++;
                     }
+                if (localBackground)
+                {
+                    SubtractBackground(pixels, stride, source.Width, source.Height, ink);
+                    for (int y = 0; y < source.Height; y++)
+                        for (int x = 0; x < source.Width; x++)
+                            histogram[pixels[y * stride + 3 * x]]++;
+                }
                 int count = source.Width * source.Height, low = 0, high = 255, seen = 0;
-                while (low < 255 && seen + histogram[low] <= count * 0.02) seen += histogram[low++];
+                double lowerQuantile = ink == Ink.LightLine ? .35 : .02;
+                while (low < 255 && seen + histogram[low] <= count * lowerQuantile) seen += histogram[low++];
                 seen = 0;
                 while (high > 0 && seen + histogram[high] <= count * 0.02) seen += histogram[high--];
                 // Uniform images stay uniform: do not manufacture contrast or text.
-                if (high > low)
+                if (high > low || ink != Ink.Original)
                     for (int y = 0; y < source.Height; y++)
                         for (int x = 0; x < source.Width; x++)
                         {
                             int offset = y * stride + x * 3;
-                            byte value = (byte)Math.Max(0, Math.Min(255, (pixels[offset] - low) * 255 / (high - low)));
+                            int stretched = Math.Max(0, Math.Min(255, (pixels[offset] - low) * 255 / Math.Max(1, high - low)));
+                            byte value = (byte)(ink == Ink.Original ? stretched : 255 - stretched);
                             pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
                         }
                 Marshal.Copy(pixels, 0, data.Scan0, pixels.Length);
@@ -471,7 +534,7 @@ public sealed class FateOcrImage
             {
                 using (var graphics = Graphics.FromImage(prepared))
                 {
-                    graphics.Clear(source.GetPixel(0, 0));
+                    graphics.Clear(ink == Ink.LightLine ? Color.White : source.GetPixel(0, 0));
                     graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     using (var attributes = new ImageAttributes())
                     {

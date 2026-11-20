@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-8'
+export const PARSER_VERSION = 'counted-offers-10'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -30,9 +30,14 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       if (atSlot.length !== 1) break
       row.push(atSlot[0])
     }
-    if (row.length !== count || offeredCardHeaders(row).length !== count) continue
-    const identified = row.filter(header => knownFateName(header.text) || corroboratedName(header.text,
-      columnDescription(lines, header, pitch, bottom)))
+    if (row.length !== count) continue
+    const headers = row.map(header => {
+      if (knownFateName(header.text)) return header
+      const name = corroboratedName(header.text, columnDescription(lines, header, pitch, bottom))
+      return name ? { ...header, text: name } : header
+    })
+    if (offeredCardHeaders(headers).length !== count) continue
+    const identified = headers.filter(header => knownFateName(header.text))
     if (identified.length < minimumKnown) continue
     // A smaller grid embedded in a partial offer must not drop an unknown
     // outer slot. Keep the legacy partial-row path when both controls are visible.
@@ -42,14 +47,22 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       const slot = offset + (count - 1) / 2
       if (Math.abs(offset) >= 2.65) return false
       if (knownFateName(l.text)) return true
+      // A wrapped quest objective can end in a capitalized place name on
+      // the header baseline. Its preceding line shares the left margin
+      // and extends beyond the width of a card.
+      const wrapsSidebarText = lines.some(previous => previous.width > pitch
+        && Math.abs(previous.x - l.x) <= l.height * .45
+        && previous.y < l.y && Math.abs(l.y - previous.y - previous.height) <= l.height * .45
+        && previous.text.trim().split(/\s+/).length >= 3)
+      if (wrapsSidebarText && !columnDescription(lines, l, pitch, bottom)) return false
       // Quest names can line up horizontally with an unused slot. An unknown
       // outer title must also share the row's baseline (including a raised card).
       return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
         && row.some(header => Math.abs(header.y - l.y) <= pitch * .10)
-        && offeredCardHeaders([...row, l]).includes(l)
+        && offeredCardHeaders([...headers, l]).includes(l)
     })
     if (hasOuterHeader) continue
-    matches.push({ headers: row, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
+    matches.push({ headers, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
   }
   return matches
 }
@@ -80,8 +93,13 @@ function countedOffer(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]
     const top = level - span
     // A tooltip may mask the title. Require visible tooltip text across that
     // position and a complete, centered row of at least three named slots.
-    if (!title && !lines.some(l => l.y >= top - .08 * span && l.y <= top + .09 * span
-      && l.x < axis && l.x + l.width > axis && l.width > span * .56)) continue
+    if (!title) {
+      const atTitle = lines.filter(l => l.y >= top - .08 * span && l.y <= top + .09 * span)
+      const fragment = atTitle.some(l => /^(fa|fat|fate|ates|tes|es)$/i.test(l.text.trim())
+        && Math.abs(centerX(l) - axis) < .08 * span && l.width < .15 * span)
+      const margin = fragment ? .12 * span : 0
+      if (!atTitle.some(l => l.x < axis + margin && l.x + l.width > axis - margin && l.width > span * .56)) continue
+    }
     matches.push(...panelRows(lines, axis, top, span, button?.y ?? counter.y, title ? 2 : 3))
   }
   return matches.length === 1 ? matches[0] : null
@@ -162,18 +180,46 @@ function corroboratedName(header: string, description: string): string | undefin
     if (!variants.some(v => v && descriptionWords(v) === words)) return false
     // A single blurred glyph can look like two letters. Require matching text
     // on both sides of that small difference and the whole description in this column.
-    return glyphDifference(seen, normalize(name)) <= 2
+    const target = normalize(name)
+    if (glyphDifference(seen, target) <= 2) return true
+    // Longer names can have a dropped letter and a separate misread glyph.
+    // Both pieces still have to match the independently read whole caption.
+    if (seen.length < 8 || target.length < 8 || seen[0] !== target[0] || seen.at(-1) !== target.at(-1)) return false
+    const [shorter, longer] = seen.length < target.length ? [seen, target] : [target, seen]
+    if (longer.length !== shorter.length + 1) return false
+    for (let i = 1; i < longer.length - 1; i++) {
+      if (glyphDifference(shorter, longer.slice(0, i) + longer.slice(i + 1)) <= 1) return true
+    }
+    return false
   })
   return matches.length === 1 ? matches[0][0] : undefined
 }
-function reviewedSpelling(name: string, text: string): string {
+function reviewedSpelling(name: string, text: string, header: OcrLine, lines: OcrLine[]): string {
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
   const exact = variants.find(value => value && (descriptionWords(value) === words
     || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2))))
   if (exact) return exact
   const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
-  return supported.length === 1 ? supported[0]! : text
+  if (supported.length === 1) return supported[0]!
+  // A pointer can cover the crossbar of "of". Correct a digit-like token
+  // only when the named tooltip independently prints the surrounding phrase
+  // and every other word of the card's own caption agrees.
+  const tokens = words.split(' ')
+  const i = tokens.indexOf('01')
+  if (i <= 0 || i >= tokens.length - 1) return text
+  const phrase = [tokens[i - 1], 'of', tokens[i + 1]].join(' ')
+  tokens[i] = 'of'
+  const corrected = tokens.join(' ')
+  const variant = variants.find(value => value && descriptionWords(value) === corrected)
+  if (!variant) return text
+  const titles = lines.filter(l => l.y < header.y - 2 * header.height && knownFateName(l.text) === name)
+  if (titles.length !== 1) return text
+  const title = titles[0]
+  const repeated = lines.some(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
+    && l.y + l.height < header.y && Math.abs(l.x - title.x) < title.height
+    && (' ' + descriptionWords(l.text) + ' ').includes(' ' + phrase + ' '))
+  return repeated ? variant : text
 }
 
 export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
@@ -201,7 +247,7 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
     const name = knownFateName(header.text) ?? corroboratedName(header.text, description)
-    return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000))] : [] }]
+    return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000), header, capture.ocr.lines)] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }
   return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }
