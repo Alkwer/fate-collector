@@ -155,13 +155,28 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.9 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.10 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.9 exception
+### Pinned Fate Collector 0.10.10 exception
+
+The owner requested publication of the counter and card-description OCR update with in-game testing deferred. The exception covers this staging artifact.
+
+- Source revision `3cf3f2cc6912a75285ddf78b49a983168d066d60`
+- Package ID `91a89dd800fb50e32852e25834a0a96be848496d4bb08fb280e568f7dd148405`
+- Staging run [44645153363](https://github.com/Alkwer/fate-collector/actions/runs/44645153363)
+- Windows helper ZIP SHA-256 `126dea8d77ac8137330f9cfa072d7f47235c1e814ccebcd1394edfdf4f0fdbfb`
+
+Full CI and live synthetic staging checks passed. All 132 manifest entries verified. The deployed page, its entry assets and the 147-file helper ZIP matched the staging artifact. The downloaded Windows helper was replayed against the same seven public 1080p video frames, seven panel/HUD crops and seven counter crops used for 0.10.9. The seven frames matched the recorded SHA-256 hashes.
+
+The full-frame and panel/HUD counter results both improved from 0/7 to 7/7. Isolated counter crops improved from 3/7 to 7/7. Exact short descriptions assigned to their correct card improved from 0/14 to 14/14 on the full frames and from 3/14 to 14/14 on the panel crops. The staging browser imported all fourteen full/panel captures locally and preserved these associations. Both HUD scenes and the invocation produced zero offered cards. The native F9 holdout, live gameplay, different physical UI scales and HDR remain unverified.
+
+The real managed Turnstile dialog opened on staging and waited for human verification. No synthetic report reached the submission endpoint. The owner authorized deferring the real submission, receipt, replay and withdrawal for 0.10.10 if the widget stalled. Production verification remains enabled.
+
+### Previous Fate Collector 0.10.9 exception (historical)
 
 The owner approved publishing the 3.30.0d reward update with in-game testing deferred. This approval applies to the following staging artifact.
 
@@ -555,7 +570,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.9 deployment record](#pinned-fate-collector-0109-exception) records the
+[0.10.10 deployment record](#pinned-fate-collector-01010-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
