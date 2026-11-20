@@ -1,6 +1,6 @@
 # Fate Collector releases
 
-## 0.10.15 — Unreleased
+## 0.10.15 — 20 November 2026
 
 - The Windows helper can recover dim Fates counters beneath a translucent tooltip when both digits and the diagonal slash are still visible.
 
