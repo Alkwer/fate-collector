@@ -155,13 +155,30 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.12 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.13 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.12 exception
+### Pinned Fate Collector 0.10.13 exception
+
+The owner requested release of the offer reader, reward recognition and Valuable Currency preview with gameplay deferred. This approval covers the following staging artifact.
+
+- Source revision `e7465e89bb93429cba0948cd14e1c8e844061ce7`
+- Package ID `4a7d89e7a1b2af3240ba9761bbca1faf20664c4836a792d44695bf282c5d5a1a`
+- Staging run [44783929145](https://github.com/Alkwer/fate-collector/actions/runs/44783929145)
+- Helper ZIP SHA-256 `53ee27fceb185cc3fac7d6b2e282b444d4cac88a65d8a46e58041e7ccdd463f3`
+
+Full CI and live synthetic staging checks passed. The public staging assets and helper ZIP matched the release artifact. Windows OCR processed 52 full frames using the downloaded helper. Each export preserved the source pixels and returned the same raw OCR as 0.10.12. All 52 local imports through the staging UI displayed the expected parser output, including partial readings.
+
+On the original 42 full frames, complete offers stayed at 17/20 at 1080p and increased from 1/2 to 2/2 at 1440p and from 2/8 to 7/8 at 2160p. Counters matched on 25/25, 5/6 and 9/10 visible readings respectively. Ten additional frames yielded seven complete offers and three correctly empty imports. One 4K name in the original set remained ambiguous. Recordings do not establish physical UI scale or HDR.
+
+The public 1080p Alchemist frame yielded both gold stacks. With controlled partial overlap, the staging browser showed two gold stacks with unknown reward kinds. In the single-stack control it showed one Hoards of Gold suggestion with a threshold of two. An independent full-resolution recording of the overlap itself is still missing. The staging advisor scored two complete Valuable Currency sets for three matching T2 copies, with both recommendation modes exercised. Actual boss payout remains unverified. A browser test exposed a local overlay disconnect during file replacement. The repaired flow passed three consecutive Chromium trials and full CI.
+
+The real managed Turnstile dialog opened on staging and waited for human verification. The owner approved deferring the live submission, receipt, token reuse check and withdrawal for this package. Production Turnstile verification remains enabled.
+
+### Previous Fate Collector 0.10.12 exception (historical)
 
 The owner requested production publication with gameplay deferred after an improvement on previously unseen recordings and retention of all prior correct results. This exception covers the following staging artifact.
 
@@ -602,7 +619,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.12 deployment record](#pinned-fate-collector-01012-exception) records the
+[0.10.13 deployment record](#pinned-fate-collector-01013-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
