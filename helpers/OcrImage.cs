@@ -34,6 +34,11 @@ public sealed class FateOcrImage
 
     public static Counter[] ReadCounters(byte[] png)
     {
+        return ReadCounters(png, Rectangle.Empty);
+    }
+
+    public static Counter[] ReadCounters(byte[] png, Rectangle panelRegion)
+    {
         using (var input = new MemoryStream(png, false))
         using (var original = new Bitmap(input))
         using (var source = new Bitmap(original.Width, original.Height, PixelFormat.Format24bppRgb))
@@ -43,7 +48,7 @@ public sealed class FateOcrImage
             var data = source.LockBits(region, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
             try
             {
-                return new CounterImage(source.Width, source.Height, data).Read();
+                return new CounterImage(source.Width, source.Height, data).Read(panelRegion);
             }
             finally { source.UnlockBits(data); }
         }
@@ -98,7 +103,7 @@ public sealed class FateOcrImage
             rowPixels = new byte[width * 3];
         }
 
-        public Counter[] Read()
+        public Counter[] Read(Rectangle panelRegion)
         {
             var imageBounds = new Rectangle(0, 0, width, height);
             List<Glyph> glyphs = FindGlyphs(imageBounds, 130);
@@ -110,8 +115,7 @@ public sealed class FateOcrImage
                 Counter counter;
                 if (IsSlash(slash) && OnDarkPlaque(box))
                 {
-                    counter = ReadCounter(box, FindAdjacentDigit(glyphs, i, box, -1),
-                        FindAdjacentDigit(glyphs, i, box, 1));
+                    counter = ReadAtSlash(glyphs, i, box);
                     if (counter == null)
                         counter = ReadFaintDigits(box, imageBounds);
                 }
@@ -127,16 +131,102 @@ public sealed class FateOcrImage
                 }
                 if (counter != null) counters.Add(counter);
             }
+            panelRegion.Intersect(imageBounds);
+            if (panelRegion.Width > 0 && panelRegion.Height > 0 &&
+                !counters.Exists(c => panelRegion.Contains(c.Bounds)))
+            {
+                // A translucent tooltip leaves the plaque lettering dimmer than its own text.
+                // Accept only one fraction read at the same position in both contrast bands.
+                Counter dim = ReadDimPanel(panelRegion, 32, 102);
+                if (dim != null)
+                {
+                    Counter check = ReadDimPanel(panelRegion, 44, 94);
+                    // Thresholding may move an edge by a pixel. Both readings must cover the same glyphs.
+                    Rectangle shared = check == null ? Rectangle.Empty : Rectangle.Intersect(check.Bounds, dim.Bounds);
+                    if (check != null && check.Text == dim.Text && shared.Width * shared.Height >= .8 *
+                        Math.Max(dim.Bounds.Width * dim.Bounds.Height, check.Bounds.Width * check.Bounds.Height))
+                        counters.Add(dim);
+                }
+            }
             return counters.ToArray();
         }
 
-        private Counter ReadCounter(Rectangle slash, Glyph left, Glyph right)
+        private Counter ReadDimPanel(Rectangle region, int minInk, int maxInk)
+        {
+            var glyphs = FindGlyphs(region, minInk, maxInk);
+            Counter match = null;
+            for (int i = 0; i < glyphs.Count; i++)
+            {
+                Glyph top = glyphs[i];
+                if (top.Bounds.Height < MinSlashHeight || top.Bounds.Width > .43 * top.Bounds.Height) continue;
+                Counter candidate = null;
+                if (IsSlash(top) && OnDarkPlaque(top.Bounds))
+                    candidate = ReadAtSlash(glyphs, i, top.Bounds, true);
+                if (candidate == null) candidate = ReadBehindForeground(glyphs, i);
+                if (candidate == null) continue;
+                if (match != null) return null;
+                match = candidate;
+            }
+            return match;
+        }
+
+        private Counter ReadAtSlash(List<Glyph> glyphs, int index, Rectangle slash, bool panelOnly = false)
+        {
+            return ReadCounter(slash, FindAdjacentDigit(glyphs, index, slash, -1),
+                FindAdjacentDigit(glyphs, index, slash, 1), panelOnly);
+        }
+
+        private Counter ReadBehindForeground(List<Glyph> glyphs, int index)
+        {
+            // The brighter foreground can cut the diagonal into two strokes.
+            // Require both tips, foreground ink across the gap and dark plaque on either side.
+            Glyph top = glyphs[index];
+            Counter match = null;
+            for (int j = index - 1; j >= 0; j--)
+            {
+                Rectangle lower = glyphs[j].Bounds;
+                if (top.Bounds.Left - lower.Left > MaxSlashHeight * .35) break;
+                int gap = lower.Top - top.Bounds.Bottom;
+                Rectangle both = Rectangle.Union(top.Bounds, lower);
+                if (gap <= 0 || gap > both.Height * .22 || both.Height > MaxSlashHeight ||
+                    lower.Height < both.Height * .16 || lower.Height > top.Bounds.Height ||
+                    !IsSlash(JoinStrokes(top, glyphs[j], both), IsForegroundInk)) continue;
+                if (!(Sample(both, -1.8, -.37, -.8, -.20, IsDark) >= .85 &&
+                      Sample(both, .8, -.37, 1.8, -.20, IsDark) >= .85)) continue;
+                Counter candidate = ReadAtSlash(glyphs, index, both, true);
+                if (candidate == null) continue;
+                if (match != null) return null;
+                match = candidate;
+            }
+            return match;
+        }
+
+        private static Glyph JoinStrokes(Glyph top, Glyph bottom, Rectangle bounds)
+        {
+            var ink = new bool[bounds.Width * bounds.Height];
+            foreach (Glyph part in new[] { top, bottom })
+                for (int y = 0; y < part.Bounds.Height; y++)
+                    Array.Copy(part.Ink, y * part.Bounds.Width, ink,
+                        (part.Bounds.Top - bounds.Top + y) * bounds.Width + part.Bounds.Left - bounds.Left, part.Bounds.Width);
+            return new Glyph(bounds, ink);
+        }
+
+        private bool IsForegroundInk(int x, int y)
+        {
+            Marshal.Copy(IntPtr.Add(scan, y * stride + x * 3), rowPixels, 0, 3);
+            return Math.Min(rowPixels[0], Math.Min(rowPixels[1], rowPixels[2])) >= 103;
+        }
+
+        private static bool IsDark(int r, int g, int b) { return Math.Max(r, Math.Max(g, b)) < 34; }
+
+        private Counter ReadCounter(Rectangle slash, Glyph left, Glyph right, bool panelOnly = false)
         {
             if (left == null || right == null) return null;
             int current = ReadDigit(left), capacity = ReadDigit(right);
             if (capacity <= 0 || current < 0 || current > capacity) return null;
             Rectangle bounds = Rectangle.Union(left.Bounds, Rectangle.Union(slash, right.Bounds));
-            return new Counter(current, capacity, bounds, slash.Height, HasHudCards(slash), IsIsolatedPlaque(slash));
+            return new Counter(current, capacity, bounds, slash.Height,
+                !panelOnly && HasHudCards(slash), !panelOnly && IsIsolatedPlaque(slash));
         }
 
         private Counter ReadFaintDigits(Rectangle slash, Rectangle imageBounds)
@@ -152,8 +242,7 @@ public sealed class FateOcrImage
                 Rectangle box = glyph.Bounds;
                 if (!box.Contains(slash) || box.Width - slash.Width > 2 || box.Height - slash.Height > 2 ||
                     !IsSlash(glyph) || !OnDarkPlaque(box)) continue;
-                Counter counter = ReadCounter(box, FindAdjacentDigit(glyphs, i, box, -1),
-                    FindAdjacentDigit(glyphs, i, box, 1));
+                Counter counter = ReadAtSlash(glyphs, i, box);
                 if (counter == null) continue;
                 if (match != null) return null;
                 match = counter;
@@ -207,7 +296,7 @@ public sealed class FateOcrImage
             return new Glyph(box, tightInk);
         }
 
-        private List<Glyph> FindGlyphs(Rectangle region, int minInk)
+        private List<Glyph> FindGlyphs(Rectangle region, int minInk, int maxInk = 255)
         {
             var unvisited = new byte[region.Width * region.Height];
             bool sawInk = false, sawDark = false;
@@ -221,7 +310,7 @@ public sealed class FateOcrImage
                     int low = Math.Min(r, Math.Min(g, b));
                     int high = Math.Max(r, Math.Max(g, b));
                     if (high < 34) sawDark = true;
-                    if (low >= minInk && high - low < 44)
+                    if (low >= minInk && high <= maxInk && high - low < 44)
                     {
                         unvisited[y * region.Width + x] = 1;
                         sawInk = true;
@@ -267,7 +356,7 @@ public sealed class FateOcrImage
             pending.Enqueue(point);
         }
 
-        private static bool IsSlash(Glyph glyph)
+        private static bool IsSlash(Glyph glyph, Func<int, int, bool> covered = null)
         {
             int w = glyph.Bounds.Width, h = glyph.Bounds.Height;
             if (h < MinSlashHeight || w < h * .15 || w > h * .43) return false;
@@ -282,14 +371,22 @@ public sealed class FateOcrImage
                         end = x;
                         ink++;
                     }
+                if (ink == 0 && covered != null) { centers[y] = double.NaN; continue; }
                 if (ink == 0 || ink != end - start + 1 || ink > Math.Max(2.0, h * .19)) return false;
                 centers[y] = (start + end) / 2.0;
             }
             double shift = centers[0] - centers[h - 1];
             if (shift < h * .12 || shift > h * .35) return false;
             for (int y = 1; y < h - 1; y++)
-                if (Math.Abs(centers[y] - (centers[0] - shift * y / (h - 1))) > Math.Max(1.4, h * .07))
+            {
+                double expected = centers[0] - shift * y / (h - 1);
+                if (double.IsNaN(centers[y]))
+                {
+                    if (!covered(glyph.Bounds.Left + (int)Math.Round(expected), glyph.Bounds.Top + y)) return false;
+                }
+                else if (Math.Abs(centers[y] - expected) > Math.Max(1.4, h * .07))
                     return false;
+            }
             return true;
         }
 
@@ -356,8 +453,8 @@ public sealed class FateOcrImage
 
         private bool OnDarkPlaque(Rectangle slash)
         {
-            return Sample(slash, -1.8, -.37, -.8, .35, (r, g, b) => Math.Max(r, Math.Max(g, b)) < 34) >= .85 &&
-                Sample(slash, .8, -.37, 1.8, .35, (r, g, b) => Math.Max(r, Math.Max(g, b)) < 34) >= .85;
+            return Sample(slash, -1.8, -.37, -.8, .35, IsDark) >= .85 &&
+                Sample(slash, .8, -.37, 1.8, .35, IsDark) >= .85;
         }
 
         private bool HasHudCards(Rectangle slash)

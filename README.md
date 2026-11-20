@@ -97,7 +97,7 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.10.14 includes a standalone advisor and displays next-Fate advice over
+Helper 0.10.15 includes a standalone advisor and displays next-Fate advice over
 windowed/borderless PoE without an open browser. Extract the complete ZIP,
 run the helper and set reward priorities in its local window. Closing that
 window keeps the advisor running; **Open local advisor** in the tray restores it.

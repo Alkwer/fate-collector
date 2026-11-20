@@ -185,6 +185,17 @@ function Test-FatePanelCounter($Counter, $Lines) {
     return $false
 }
 
+function Get-FateDimCounterRegion($Lines) {
+    $titles = @($Lines | Where-Object { $_.text -match '^\s*(?:invoke\s+)?fates\s*$' })
+    if ($titles.Count -ne 1) { return [Drawing.Rectangle]::Empty }
+    $title = $titles[0]
+    $unit = $title.height
+    if ($unit -lt 6 -or $unit -gt 80) { return [Drawing.Rectangle]::Empty }
+    $axis = $title.x + $title.width / 2
+    return [Drawing.Rectangle]::FromLTRB([int]($axis - 10 * $unit), [int]($title.y + 9 * $unit),
+        [int]($axis - 3 * $unit), [int]($title.y + 32 * $unit))
+}
+
 function Test-FateCounterOverlap($Word, [Drawing.Rectangle]$Bounds) {
     $centerX = $Word.x + $Word.width / 2
     $centerY = $Word.y + $Word.height / 2
@@ -294,7 +305,8 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
                 $selected = Read-FateConfirm $selected $other $Png $engine $ImageWidth $ImageHeight
             } catch { Write-Verbose ("Confirm OCR retry failed. " + $_.Exception.Message) }
             try {
-                $counters = [FateOcrImage]::ReadCounters($Png)
+                $region = Get-FateDimCounterRegion $selected.lines
+                $counters = [FateOcrImage]::ReadCounters($Png, $region)
                 $selected = Merge-FateCounterLines $selected $other $counters
             } catch { Write-Verbose ("Counter OCR failed. " + $_.Exception.Message) }
             try {
