@@ -1,8 +1,9 @@
 import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
+import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'live-names-6'
+export const PARSER_VERSION = 'counted-offers-7'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -15,8 +16,62 @@ type OcrLine = CaptureUpload['ocr']['lines'][number]
 const centerX = (line: OcrLine) => line.x + line.width / 2
 const alignedControls = (a: OcrLine, b: OcrLine) =>
   Math.abs(centerX(a) - centerX(b)) <= Math.max(a.width, b.width) / 2
+type OfferRegion = { lines: OcrLine[]; headers: OcrLine[]; bottom: number; columnPitch?: number }
 
-export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { lines: CaptureUpload['ocr']['lines']; headers: CaptureUpload['ocr']['lines']; bottom: number } | null {
+function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bottom: number, minimumKnown: number) {
+  const pitch = span * .56
+  const band = lines.filter(l => l.y >= top + .13 * span && l.y < top + .29 * span && l.width < pitch * .85)
+  const matches: OfferRegion[] = []
+  for (let count = minimumKnown; count <= 6; count++) {
+    const row: OcrLine[] = []
+    for (let slot = 0; slot < count; slot++) {
+      const x = axis + (slot - (count - 1) / 2) * pitch
+      const atSlot = band.filter(l => Math.abs(centerX(l) - x) < pitch * .15)
+      if (atSlot.length !== 1) break
+      row.push(atSlot[0])
+    }
+    // A smaller grid embedded in a larger offer is not a complete row.
+    if (row.length !== count || band.some(l => !row.includes(l) && knownFateName(l.text))
+      || offeredCardHeaders(row).length !== count || row.filter(l => knownFateName(l.text)).length < minimumKnown) continue
+    matches.push({ headers: row, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
+  }
+  return matches
+}
+
+// The counter sits left of the central button. Header spacing, button offset and
+// body positions scale with the panel, independently of the capture rectangle.
+function countedOffer(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]): OfferRegion | null {
+  const counters = lines.filter(line => /^\d{1,2}\s*\/\s*\d{1,2}$/.test(line.text.trim()))
+  const matches: OfferRegion[] = []
+  for (const counter of counters) {
+    const [current, total] = counter.text.split('/').map(Number)
+    if (!total || current > total) continue
+    const level = counter.y + counter.height / 2
+    const nearbyButtons = confirms.filter(line => Math.abs(line.y + line.height / 2 - level) < counter.height
+      && centerX(line) > centerX(counter) + 3 * counter.height && centerX(line) < centerX(counter) + 14 * counter.height)
+    if (nearbyButtons.length > 1) continue
+    const button = nearbyButtons[0]
+    const titles = headings.filter(line => {
+      const span = level - line.y
+      const offset = centerX(line) - centerX(counter)
+      return normalize(line.text) === 'fates' && span > 0 && offset > .25 * span && offset < .35 * span
+    })
+    if (titles.length > 1 || (!titles.length && !button)) continue
+    const title = titles[0]
+    if (title && button && !alignedControls(title, button)) continue
+    const axis = centerX(title ?? button)
+    const span = title ? level - title.y : (axis - centerX(counter)) / .30
+    const top = level - span
+    // A tooltip may mask the title. Require visible tooltip text across that
+    // position and a complete, centered row of at least three named slots.
+    if (!title && !lines.some(l => l.y >= top - .08 * span && l.y <= top + .09 * span
+      && l.x < axis && l.x + l.width > axis && l.width > span * .56)) continue
+    matches.push(...panelRows(lines, axis, top, span, button?.y ?? counter.y, title ? 2 : 3))
+  }
+  return matches.length === 1 ? matches[0] : null
+}
+
+export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>): OfferRegion | null {
   if (capture.ocr.status !== 'ok' || !capture.ocr.lines.length) return null
   const lines = capture.ocr.lines.filter(line => line.x >= 0 && line.y >= 0 && line.width > 0 && line.height > 0
     && line.x + line.width <= capture.image.width && line.y + line.height <= capture.image.height)
@@ -35,8 +90,13 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
     .map(confirm => ({ heading, confirm })))
   // Establish the offered region independently of the name dictionary. A known
   // card below Confirm must never replace unreadable or missing offered headers.
-  if (invocation || panels.length !== 1) return null
+  if (invocation || panels.length > 1) return null
+  const counted = countedOffer(lines, headings, confirms)
+  if (counted) return counted
+  if (panels.length !== 1) return null
   const { heading, confirm } = panels[0]
+  const rows = panelRows(lines, centerX(heading), heading.y, confirm.y - heading.y, confirm.y, 2)
+  if (rows.length === 1) return rows[0]
   const offerLines = lines.filter(line => line.y >= heading.y + heading.height
     && line.y + line.height < confirm.y && /[a-z]/i.test(line.text)
     && !['fates', 'selectafate', 'confirm'].includes(normalize(line.text))).sort((a, b) => a.y - b.y)
@@ -47,6 +107,16 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
   const row = offerLines.filter(m => m.y - first.y <= Math.max(first.height * 4, capture.image.height * 0.06))
     .sort((a, b) => a.x - b.x)
   return { lines: offerLines, headers: row, bottom: confirm.y }
+}
+
+// Correct case and OCR edge noise only if all words of a documented short
+// description are present in its own column. Missing or different words stay raw.
+const descriptionWords = (text: string) => text.toLowerCase().replace(/(?<!\d)[.,](?!\d)/g, '').replace(/\s+/g, ' ').trim()
+const shortDescriptions = new Map(screenshots.fates.map(fate => [fate.name, [...new Set(fate.variants.map(v => v.shortDescription))]]))
+function reviewedSpelling(name: string, text: string): string {
+  const words = descriptionWords(text)
+  return shortDescriptions.get(name)?.find(value => value && (descriptionWords(value) === words
+    || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2)))) ?? text
 }
 
 export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
@@ -70,11 +140,17 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
     const right = next ? (next.x + next.width / 2 + center) / 2 : capture.image.width
     const description = offerLines.filter(line => {
       const x = line.x + line.width / 2
+      if (region.columnPitch) {
+        const pitch = region.columnPitch
+        return Math.abs(x - center) < pitch * .43 && line.width < pitch
+          && line.y >= header.y + pitch * .62 && line.y < header.y + pitch * 1.23
+          && /[a-z]/i.test(line.text)
+      }
       return line.y > headerBottom + first.height && x > left && x < right
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
-    return [{ ...newCard(), name: name ?? '', modifiers: description ? [description.slice(0, 1000)] : [] }]
+    return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000))] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }
   return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }

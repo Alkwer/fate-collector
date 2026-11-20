@@ -89,8 +89,9 @@ catalog does not introduce visual matches or assign rewards by Fate name.
 Five further tooltip variants were checked in the Malformation offer on 17 November,
 including the three-copy Valuable Currency combo.
 The 18 November Black Frost tooltip confirms the three-copy Extremely Increased Item Rarity combo.
-Fresh card review versions include `rewards-v8-3.30.0d`. Native validation of the enlarged 3.30.0c panel, the 3.30.0d area counter and the new line wrapping still needs a fresh capture. The player marks the last offer manually. Saved records are
-not backfilled. Parser `live-names-6` and Helper 0.5.1 carry the expanded dictionary.
+Fresh card review versions include `rewards-v8-3.30.0d`. Helper 0.10.10 includes the visible area counter in positioned OCR. Parser `counted-offers-7` uses panel controls and a centered row of card headers to group wrapped descriptions. It can recover a row below a tooltip when the counter and Confirm are both visible. Documented short descriptions can restore spelling case and punctuation when all their words are present in the card's own column. The capture retains the raw OCR. The player marks the last offer manually. Saved records keep their original review.
+
+On seven public 1080p video frames, the positioned counter improved from 0/7 to 7/7 on both full images and panel/HUD crops. Four offers contained fourteen card appearances. Exact descriptions assigned to the correct card improved from 0/14 to 14/14 on full images and from 3/14 to 14/14 on panel crops. The two HUD scenes and the invocation produced no offered cards. The same frames guided development and verification. This replay covers one UI scale and the displayed counts 0/4 through 4/4. [DatModz recording](https://www.twitch.tv/videos/2934270116?t=0h18m16s) · [Manni2 recording](https://www.twitch.tv/videos/2933677092?t=9h35m01s)
 The separate PoEDB catalog supplies 25 Tier 3 references and 146 reward definitions.
 It is read-only and does not supply new visual matches, combo thresholds or kinds.
 
