@@ -155,13 +155,28 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.10 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.11 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.10 exception
+### Pinned Fate Collector 0.10.11 exception
+
+The owner approved this OCR update with in-game capture deferred and authorized deferring the staging symbol submission if the real Turnstile widget waited for a human. This approval covers the following artifact.
+
+- Source revision `615e19484705dcaca1e5a8593115fcebb50b09a7`
+- Package ID `4835f6da52a141a71c15dffaf6140c34bd8c2639f8b9b3a5431d8a391c78939d`
+- Staging run [44713882693](https://github.com/Alkwer/fate-collector/actions/runs/44713882693)
+- Helper ZIP SHA-256 `9af9b37e2c73fdf5cf8ab9f9d81f95be77a8be882923879b1c3579686f2ea7bf`
+
+Full CI and the live synthetic staging checks passed. The helper downloaded from staging matched the CI artifact byte for byte. Windows OCR processed 37 public video frames and 37 unscaled panel or HUD crops. All 74 captures were imported locally in the staging browser and matched the parsed names, card order and modifiers. The ten full-frame controls and their crops returned zero offered cards.
+
+Across the 23 earlier frames, the exact Fates counter improved from 20/23 to 23/23, exact card–description pairs from 35/55 to 54/55, and complete offers from 7/15 to 14/15. Six additional frames informed a second iteration. On eight later frames held out until the final candidate was frozen, full-frame exact pairs improved from 9/26 to 16/26 and complete offers from 1/7 to 2/7. On their crops exact pairs improved from 8/26 to 21/26 and complete offers from 1/7 to 3/7. Both versions read 7/8 counters exactly. A tooltip overlapped the remaining counter. Both 1080p offers and none of the five 720p offers were complete on full frames. The recordings did not establish the physical UI scale, HDR state or exact game build.
+
+The real managed Turnstile dialog opened on staging. No synthetic report reached the submission endpoint within 60 seconds. The real submission, receipt, replay rejection and withdrawal are deferred for this package. Production Turnstile verification remains enabled.
+
+### Previous Fate Collector 0.10.10 exception (historical)
 
 The owner requested publication of the counter and card-description OCR update with in-game testing deferred. The exception covers this staging artifact.
 
@@ -570,7 +585,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.10 deployment record](#pinned-fate-collector-01010-exception) records the
+[0.10.11 deployment record](#pinned-fate-collector-01011-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.

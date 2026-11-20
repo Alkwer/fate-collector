@@ -3,9 +3,9 @@ export const PRELAUNCH_DEADLINE = '2026-11-13T19:00:00Z'
 
 // Package-specific approval and deferred checks are recorded in docs/deployment.md.
 export const HOTFIX_UPDATE_RELEASE = Object.freeze({
-  revision: '3cf3f2cc6912a75285ddf78b49a983168d066d60',
-  releaseId: '91a89dd800fb50e32852e25834a0a96be848496d4bb08fb280e568f7dd148405',
-  stagingRunId: '44645153363',
+  revision: '615e19484705dcaca1e5a8593115fcebb50b09a7',
+  releaseId: '4835f6da52a141a71c15dffaf6140c34bd8c2639f8b9b3a5431d8a391c78939d',
+  stagingRunId: '44713882693',
 })
 
 export function assertPromotionPolicy(env, now = new Date()) {
