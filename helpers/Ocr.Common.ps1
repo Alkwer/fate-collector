@@ -1,10 +1,22 @@
 # Windows OCR with multiple passes. Component attribution: THIRD_PARTY_NOTICES.md.
-# Exact candidate text is retained; this module never fills in names, tiers or rewards.
+# Counter glyphs can be read from the PNG. This module never fills in names, tiers or rewards.
 $script:FateOcrDirectory = $PSScriptRoot
 
 function Wait-WinRtResult($Operation, [type]$ResultType) {
     $task = $asTask.MakeGenericMethod($ResultType).Invoke($null, @($Operation))
     return $task.GetAwaiter().GetResult()
+}
+
+function New-PositionedOcrLine($Words, [string]$Text) {
+    $left = $top = [double]::PositiveInfinity
+    $right = $bottom = 0.0
+    foreach ($word in $Words) {
+        $left = [Math]::Min($left, $word.x)
+        $top = [Math]::Min($top, $word.y)
+        $right = [Math]::Max($right, $word.x + $word.width)
+        $bottom = [Math]::Max($bottom, $word.y + $word.height)
+    }
+    return [ordered]@{ text = $Text; x = $left; y = $top; width = $right - $left; height = $bottom - $top; words = $Words }
 }
 
 function Invoke-FateOcrPass([byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight,
@@ -22,17 +34,19 @@ function Invoke-FateOcrPass([byte[]]$Png, $Engine, [int]$ImageWidth, [int]$Image
     } finally { $memory.Dispose() }
     $lines = @(
         foreach ($line in $recognized.Lines) {
-            $left = [double]$ImageWidth; $top = [double]$ImageHeight; $right = $bottom = 0.0
-            foreach ($word in $line.Words) {
-                $rect = $word.BoundingRect
-                $left = [Math]::Min($left, [Math]::Max(0, $OffsetX + ($rect.X - $Padding) / $ScaleX))
-                $top = [Math]::Min($top, [Math]::Max(0, $OffsetY + ($rect.Y - $Padding) / $ScaleY))
-                $right = [Math]::Max($right, [Math]::Min($ImageWidth, $OffsetX + ($rect.X + $rect.Width - $Padding) / $ScaleX))
-                $bottom = [Math]::Max($bottom, [Math]::Min($ImageHeight, $OffsetY + ($rect.Y + $rect.Height - $Padding) / $ScaleY))
-            }
-            if ($right -gt $left -and $bottom -gt $top) {
-                [ordered]@{ text = [string]$line.Text; x = $left; y = $top; width = $right - $left; height = $bottom - $top }
-            }
+            $words = @(
+                foreach ($word in $line.Words) {
+                    $rect = $word.BoundingRect
+                    $left = [Math]::Max(0, $OffsetX + ($rect.X - $Padding) / $ScaleX)
+                    $top = [Math]::Max(0, $OffsetY + ($rect.Y - $Padding) / $ScaleY)
+                    $right = [Math]::Min($ImageWidth, $OffsetX + ($rect.X + $rect.Width - $Padding) / $ScaleX)
+                    $bottom = [Math]::Min($ImageHeight, $OffsetY + ($rect.Y + $rect.Height - $Padding) / $ScaleY)
+                    if ($right -gt $left -and $bottom -gt $top) {
+                        @{ text = [string]$word.Text; x = $left; y = $top; width = $right - $left; height = $bottom - $top }
+                    }
+                }
+            )
+            if ($words.Count) { New-PositionedOcrLine $words $line.Text }
         }
     )
     $text = [string](($lines | ForEach-Object { $_.text }) -join "`n")
@@ -154,6 +168,65 @@ function Read-FateConfirm($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageW
     return $merged
 }
 
+function Test-FatePanelCounter($Counter, $Lines) {
+    $centerX = $Counter.Bounds.X + $Counter.Bounds.Width / 2
+    $centerY = $Counter.Bounds.Y + $Counter.Bounds.Height / 2
+    $scale = $Counter.SlashHeight
+    foreach ($line in $Lines) {
+        $offsetX = ($line.x + $line.width / 2 - $centerX) / $scale
+        if ($offsetX -lt 5.0 -or $offsetX -gt 8.1) { continue }
+        $offsetY = ($line.y + $line.height / 2 - $centerY) / $scale
+        if ($line.text -match '^\s*confirm\s*$' -and $offsetY -ge -.35 -and $offsetY -le .65 -and
+            $line.width -ge 3 * $scale -and $line.width -le 6 * $scale) { return $true }
+        if (($line.text -replace '[^a-z]', '') -in 'fates', 'invokefates', 'selectafate' -and
+            $offsetY -ge -30 -and $offsetY -le -10) { return $true }
+    }
+    return $false
+}
+
+function Test-FateCounterOverlap($Word, [Drawing.Rectangle]$Bounds) {
+    $centerX = $Word.x + $Word.width / 2
+    $centerY = $Word.y + $Word.height / 2
+    if ($centerX -lt $Bounds.Left -or $centerX -ge $Bounds.Right -or
+        $centerY -lt $Bounds.Top -or $centerY -ge $Bounds.Bottom) { return $false }
+    $width = [Math]::Max(0, [Math]::Min($Word.x + $Word.width, $Bounds.Right) - [Math]::Max($Word.x, $Bounds.Left))
+    $height = [Math]::Max(0, [Math]::Min($Word.y + $Word.height, $Bounds.Bottom) - [Math]::Max($Word.y, $Bounds.Top))
+    return $width * $height -ge .55 * $Word.width * $Word.height
+}
+
+function Merge-FateCounterLines($Selected, $Other, $Counters) {
+    $contextLines = @($Selected.lines)
+    if ($null -ne $Other) { $contextLines += @($Other.lines) }
+    $panel = @($Counters | Where-Object { !$_.HasHudCards -and (Test-FatePanelCounter $_ $contextLines) })
+    $hud = @($Counters | Where-Object HasHudCards)
+    $accepted = @()
+    if ($panel.Count -eq 1) { $accepted += $panel[0] }
+    if ($hud.Count -eq 1) { $accepted += $hud[0] }
+    if ($accepted.Count -eq 0 -and $Counters.Count -eq 1 -and $Counters[0].IsIsolatedPlaque) { $accepted += $Counters[0] }
+    if ($accepted.Count -eq 0) { return $Selected }
+
+    $lines = @($Selected.lines)
+    foreach ($counter in $accepted) {
+        $bounds = $counter.Bounds
+        $positioned = [ordered]@{ text = $counter.Text; x = $bounds.X; y = $bounds.Y; width = $bounds.Width; height = $bounds.Height }
+        $lines = @(
+            foreach ($line in $lines) {
+                if (!$line.Contains('words')) { $line; continue }
+                $remaining = @($line.words | Where-Object { !(Test-FateCounterOverlap $_ $bounds) })
+                if ($remaining.Count -eq $line.words.Count) { $line }
+                else {
+                    if ($null -ne $positioned) { $positioned; $positioned = $null }
+                    if ($remaining.Count) { New-PositionedOcrLine $remaining ($remaining.text -join ' ') }
+                }
+            }
+            if ($null -ne $positioned) { $positioned }
+        )
+    }
+    $text = [string](($lines | ForEach-Object { $_.text }) -join "`n")
+    if ($text.Length -gt 20000 -or $lines.Count -gt 500) { return $Selected }
+    return @{ text = $text; lines = $lines }
+}
+
 function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [string]$OcrLanguage,
                        [ValidateSet('auto', 'original', 'normalized')][string]$OcrMode = 'auto') {
     $ocr = [ordered]@{ status = 'unavailable'; text = ''; lines = @(); language = $null }
@@ -215,11 +288,16 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
         $usingNormalized = [Object]::ReferenceEquals($selected, $normalized)
         Write-Verbose $(if ($usingNormalized) { 'Selected normalized OCR.' } else { 'Selected original OCR.' })
         if ($OcrMode -eq 'auto') {
+            $other = if ($usingNormalized) { $original } else { $normalized }
             try {
-                $other = if ($usingNormalized) { $original } else { $normalized }
                 $selected = Read-FateConfirm $selected $other $Png $engine $ImageWidth $ImageHeight
             } catch { Write-Verbose ("Confirm OCR retry failed. " + $_.Exception.Message) }
+            try {
+                $counters = [FateOcrImage]::ReadCounters($Png)
+                $selected = Merge-FateCounterLines $selected $other $counters
+            } catch { Write-Verbose ("Counter OCR failed. " + $_.Exception.Message) }
         }
+        foreach ($line in $selected.lines) { $line.Remove('words') }
         $ocr.status = 'ok'; $ocr.text = $selected.text; $ocr.lines = $selected.lines
     }
     return $ocr

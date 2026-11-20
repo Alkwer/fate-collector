@@ -85,3 +85,100 @@ foreach ($unusable in @((New-Line 'CONFIR' 142 99), (New-Line 'CONFIRM' 142 150)
     }
 }
 Write-Output 'PASS: OCR fallback, conservative header matching, invocation titles, and exact button rereads.'
+
+Add-Type -AssemblyName System.Drawing
+if (-not ('FateOcrImage' -as [type])) {
+    Add-Type -Path (Join-Path $helperDirectory 'OcrImage.cs') -ReferencedAssemblies System.Drawing
+}
+
+function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated) {
+    $image = [Drawing.Bitmap]::new(240, 205)
+    $stream = [IO.MemoryStream]::new()
+    $graphics = [Drawing.Graphics]::FromImage($image)
+    try {
+        $graphics.Clear([Drawing.Color]::Black)
+        $digitX = 66
+        foreach ($digit in $LeftDigit, $RightDigit) {
+            for ($row = 0; $row -lt 7; $row++) {
+                for ($col = 0; $col -lt 5; $col++) {
+                    if ($digit[$row * 5 + $col] -eq '1') {
+                        $graphics.FillRectangle([Drawing.Brushes]::White, $digitX + 2 * $col, 109 + 2 * $row, 2, 2)
+                    }
+                }
+            }
+            $digitX += 20
+        }
+        for ($row = 0; $row -lt 18; $row++) {
+            $offset = if ($VerticalMark) { 0 } else { [int][Math]::Floor((17 - $row) / 5) }
+            $graphics.FillRectangle([Drawing.Brushes]::White, 79 + $offset, 107 + $row, 2, 1)
+        }
+        if ($Hud) {
+            $graphics.FillRectangle([Drawing.Brushes]::LightSteelBlue, 63, 143, 30, 12)
+            $graphics.FillRectangle([Drawing.Brushes]::SteelBlue, 64, 155, 34, 23)
+        }
+        if ($Isolated) {
+            foreach ($y in 102, 124) {
+                foreach ($x in 50, 94) { $graphics.FillRectangle([Drawing.Brushes]::DimGray, $x, $y, 19, 1) }
+            }
+            $crop = $image.Clone([Drawing.Rectangle]::new(34, 95, 96, 42), [Drawing.Imaging.PixelFormat]::Format24bppRgb)
+            try { $crop.Save($stream, [Drawing.Imaging.ImageFormat]::Png) } finally { $crop.Dispose() }
+        } else {
+            $image.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+        }
+        return ,$stream.ToArray()
+    } finally {
+        $graphics.Dispose()
+        $stream.Dispose()
+        $image.Dispose()
+    }
+}
+
+$zero = '01110' + '11011' + '10001' + '10001' + '10001' + '11011' + '01110'
+$two = '11110' + '10011' + '00011' + '00110' + '01100' + '11000' + '11111'
+$four = '00110' + '01110' + '01110' + '11010' + '11111' + '00010' + '00010'
+$image = New-CounterFixture $zero $two
+$counters = [FateOcrImage]::ReadCounters($image)
+if ($counters.Count -ne 1 -or $counters[0].Text -cne '0/2' -or
+    $counters[0].Bounds -ne [Drawing.Rectangle]::new(66, 107, 30, 18)) {
+    throw 'Decode both visible digits and the slash in the original image coordinates.'
+}
+
+$fragment = @{ text = '012'; x = 65; y = 106; width = 42; height = 20 }
+$neighbor = @{ text = 'text'; x = 123; y = 113; width = 35; height = 10 }
+$confirm = New-Line 'CONFIRM' 165 113
+$outsidePanel = @{ text = '012 text'; lines = @((New-PositionedOcrLine @($fragment, $neighbor) '012 text')) }
+if (![object]::ReferenceEquals((Merge-FateCounterLines $outsidePanel $null $counters), $outsidePanel)) {
+    throw 'A fraction on a dark background needs panel or HUD context.'
+}
+$panel = @{ text = "012 text`nCONFIRM"; lines = @($outsidePanel.lines[0], $confirm) }
+$merged = Merge-FateCounterLines $panel $null $counters
+if ($merged.text -cne "0/2`ntext`nCONFIRM" -or $merged.lines[1].x -ne 123 -or $merged.lines[1].width -ne 35) {
+    throw 'Replace only words at the counter while preserving the adjacent text and its position.'
+}
+$withoutFragment = New-Pass @($confirm)
+if ((Merge-FateCounterLines $withoutFragment $null $counters).text -cne "CONFIRM`n0/2") {
+    throw 'Recover a missing reading using the PNG even without a near match in the OCR text.'
+}
+$hud = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -Hud))
+if ($hud.Count -ne 1 -or !$hud[0].HasHudCards -or (Merge-FateCounterLines $outsidePanel $null $hud).text -cne "0/2`ntext") {
+    throw 'Recognize the card-icon context when panel text is absent.'
+}
+$isolated = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -Isolated))
+$blankPass = @{ text = ''; lines = @() }
+if ($isolated.Count -ne 1 -or !$isolated[0].IsIsolatedPlaque -or
+    (Merge-FateCounterLines $blankPass $null $isolated).text -cne '0/2') {
+    throw 'An isolated counter needs a tightly framed plaque with visible trim.'
+}
+if (([FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -VerticalMark))).Count -ne 0 -or
+    ([FateOcrImage]::ReadCounters((New-CounterFixture $four $two))).Count -ne 0) {
+    throw 'Reject a vertical stroke in place of the slash and reject current values above capacity.'
+}
+$tooManyLines = New-Pass (@($confirm) + @(1..499 | ForEach-Object { New-Line 'other' 10 20 }))
+if (![object]::ReferenceEquals((Merge-FateCounterLines $tooManyLines $null $counters), $tooManyLines)) {
+    throw 'Appending a recovered counter must respect the line count limit.'
+}
+$tooMuchText = New-Pass (@($confirm) + @(1..10 | ForEach-Object { New-Line ('a' * 1998) 10 20 }))
+if (![object]::ReferenceEquals((Merge-FateCounterLines $tooMuchText $null $counters), $tooMuchText)) {
+    throw 'Appending a recovered counter must respect the text length limit.'
+}
+Write-Output 'PASS: visual counter geometry, digit evidence, panel and HUD context, and positioned OCR merge.'

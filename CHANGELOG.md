@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## 0.10.10 — 20 November 2026
+
+- The Windows helper reads the area counter from the Fates panel and the HUD and keeps its position in the OCR evidence.
+- Offer import uses the card columns to associate wrapped descriptions with each name. A verified row can still be read when the pointer covers Confirm or a tooltip covers the title.
+
 ## 0.10.9 — 19 November 2026
 
 - Select Divine Orb or Orb of Annulment in the tooltip catalog. Both planners complete each single-orb reward at two copies under PoE 3.30.0d.

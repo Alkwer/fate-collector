@@ -119,3 +119,52 @@ test.each([0.5, 1, 1.5])('preserves the real offered row at %sx scale', scale =>
   } })
   expect(result.cards.map(card => card.name)).toEqual(['Torchbearer', 'Tempest', 'Stormcaller', 'Houndmaster'])
 })
+
+const countedLines = [
+  line('Fates', 450, 50), { ...line('1/4', 346, 508), width: 28 },
+  line('Doomsayer', 190, 154), line('Wildfire', 450, 134), line('Murderous', 710, 154),
+  line('Creates massive', 190, 362), line('explosive blasts of', 190, 382), line('blackfire', 190, 402),
+  line('Creates walls Of blackfire.', 450, 342), line('Summons malignant', 710, 362), line('crows', 710, 382),
+  { ...line('SELECT', 354, 360), width: 36 }, line('Blood Moon', 450, 626),
+]
+function readCounted(lines: typeof countedLines) {
+  return extractCards({ ...base, ocr: { ...base.ocr, lines } }).cards.map(({ name, modifiers }) => [name, ...modifiers])
+}
+const countedCards = [
+  ['Doomsayer', 'Creates massive explosive blasts of blackfire'],
+  ['Wildfire', 'Creates walls of blackfire'], ['Murderous', 'Summons malignant crows'],
+]
+test('reads raised cards and their wrapped text when the counter anchors an unreadable button', () => {
+  expect(readCounted(countedLines)).toEqual(countedCards)
+  expect(readCounted(countedLines.filter(l => l.text !== 'Fates'))).toEqual([])
+  expect(readCounted(countedLines.map(l => l.text === '1/4' ? { ...l, text: '114' } : l))).toEqual([])
+})
+test('requires a tooltip over the title, Confirm and independent card columns to recover a masked heading', () => {
+  const masked = countedLines.filter(l => l.text !== 'Fates').concat(line('CONFIRM', 450, 515))
+  expect(readCounted(masked)).toEqual([])
+  const tooltip = { ...line('Empowered Monster creates fissures of bloated corpses', 420, 55), width: 440 }
+  expect(readCounted([...masked, tooltip])).toEqual(countedCards)
+  expect(readCounted([...masked, tooltip, line('Invoke Fates', 450, 45)])).toEqual([])
+})
+test('preserves changed or incomplete description text and abstains on an ambiguous grid', () => {
+  expect(readCounted(countedLines.filter(l => l.text !== 'blackfire'))[0]).toEqual(['Doomsayer', 'Creates massive explosive blasts of'])
+  expect(readCounted([...countedLines, line('Butcher', 447, 150)])).toEqual([])
+  expect(readCounted(countedLines.map(l => l.text === 'Creates walls Of blackfire.' ? { ...l, text: 'Creates two walls of blackfire' } : l))[1])
+    .toEqual(['Wildfire', 'Creates two walls of blackfire'])
+})
+
+test('preserves an unknown outer card next to a recognized pair when the opposite header is missing', () => {
+  const partial = [
+    line('Fates', 550, 50), line('Confirm', 550, 520), line('New Fate', 155, 154),
+    line('Doomsayer', 418, 154), line('Wildfire', 682, 154),
+    line('Unseen effect', 155, 360), line('First known effect', 418, 360), line('Second known effect', 682, 360),
+  ]
+  expect(readCounted(partial)).toEqual([['', 'Unseen effect'], ['Doomsayer', 'First known effect'], ['Wildfire', 'Second known effect']])
+})
+
+test('ignores title-cased HUD labels beyond the widest six-card layout', () => {
+  const lines = countedLines.map(l => ({ ...l, x: l.x + 500 }))
+  lines.push(line('Short Allocation', 1730, 148))
+  const cards = extractCards({ ...base, image: { ...base.image, width: 1920 }, ocr: { ...base.ocr, lines } }).cards
+  expect(cards.map(c => [c.name, ...c.modifiers])).toEqual(countedCards)
+})
