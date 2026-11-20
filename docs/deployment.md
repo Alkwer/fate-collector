@@ -155,13 +155,30 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.11 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.12 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.11 exception
+### Pinned Fate Collector 0.10.12 exception
+
+The owner requested production publication with gameplay deferred after an improvement on previously unseen recordings and retention of all prior correct results. This exception covers the following staging artifact.
+
+- Source revision `e159a31e6f62339d874ecc819bd2b9cbeae4e6cc`
+- Package ID `2ed9a43dd5abf26feb6242839e8e7cc40085e2961e0a0a4801eb7642289c8c25`
+- Staging run [44755462517](https://github.com/Alkwer/fate-collector/actions/runs/44755462517)
+- Helper ZIP SHA-256 `45ee4137f1ab16889c7e9aa08f169909daa7a87014474117e99ca367f0228291`
+
+Full CI and live synthetic staging checks passed. The public staging application and helper ZIP matched the immutable release. Windows OCR processed 67 full frames and 63 unscaled crops with the downloaded helper. All 130 local imports in the staging browser matched the offline results.
+
+Across 59 earlier frames, complete full-frame offers increased from 22/46 on production 0.10.11 to 31/46, and exact card–description pairs increased from 106/166 to 135/166. Each previously correct name, pair, counter, complete offer and negative control was retained. The three diagnosed frames yielded all ten pairs, all three counters and three complete offers.
+
+After the code was frozen, seven further offers were chosen from three different recordings, plus one negative control from a fourth. On the full frames, complete offers increased from 1/7 to 2/7, exact pairs from 4/24 to 11/24 and the counter stayed at 4/7. On crops, complete offers increased from 2/7 to 3/7, exact pairs from 11/24 to 15/24 and both versions read 5/7 counters. Six offers were 720p and one was 1080p. Four offers came from a single recording. The patch was inferred from recording times and the visible counter. Physical UI scale, client build and in-game capture remain unverified.
+
+The real managed Turnstile dialog opened on staging and waited for human verification. The owner approved deferring the live submission, receipt, replay rejection and withdrawal for this specific package. Production Turnstile verification remains enabled.
+
+### Previous Fate Collector 0.10.11 exception (historical)
 
 The owner approved this OCR update with in-game capture deferred and authorized deferring the staging symbol submission if the real Turnstile widget waited for a human. This approval covers the following artifact.
 
@@ -585,7 +602,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.11 deployment record](#pinned-fate-collector-01011-exception) records the
+[0.10.12 deployment record](#pinned-fate-collector-01012-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
