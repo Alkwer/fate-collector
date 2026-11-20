@@ -86,6 +86,20 @@ foreach ($unusable in @((New-Line 'CONFIR' 142 99), (New-Line 'CONFIRM' 142 150)
 }
 Write-Output 'PASS: OCR fallback, conservative header matching, invocation titles, and exact button rereads.'
 
+$names = @{ Alchemist = @(); Butcher = @() }
+$headers = @((New-Line 'Alchemist' 300 165), (New-Line 'Butcher' 500 165))
+$counter = @{ x = 339; y = 360; width = 20; height = 12 }
+$rage = @{ x = 740; y = 370; width = 34; height = 12 }
+if (!(Test-FateOfferFraction $counter $headers $names) -or (Test-FateOfferFraction $rage $headers $names)) {
+    throw 'A HUD fraction outside the card row cannot displace the offer counter.'
+}
+if (!(Test-FateCaptionAgreement 'causes continuai fire damage' 'causes continual fire damage' 'causes continual fire daxxge') -or
+    (Test-FateCaptionAgreement 'causes continuai fire damage' 'causes continual fire damage' 'causes minor fire damage') -or
+    (Test-FateCaptionAgreement 'release 2 fire projectiles' 'release 3 fire projectiles' 'release 3 fire projectiles') -or
+    (Test-FateCaptionAgreement 'release fire projectiles' 'release more fire projectiles' 'release more fire projectiles')) {
+    throw 'Changing undocumented text requires corroboration for each changed word with consistent numbers and word count.'
+}
+
 Add-Type -AssemblyName System.Drawing
 if (-not ('FateOcrImage' -as [type])) {
     Add-Type -Path (Join-Path $helperDirectory 'OcrImage.cs') -ReferencedAssemblies System.Drawing

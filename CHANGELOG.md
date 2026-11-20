@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## 0.10.12 — 20 November 2026
+
+- The Windows helper uses the offer layout to distinguish the Fates counter from other HUD fractions when rereading Confirm.
+- On small cards, the helper can reread faint lettering against the parchment background and keep each description in its original column.
+
 ## 0.10.11 — 20 November 2026
 
 - The Windows helper can recover a faint Fates digit or a digit touching the slash in compressed footage.

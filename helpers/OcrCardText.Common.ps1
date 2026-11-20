@@ -11,6 +11,11 @@ function Get-FateCardDescriptions {
                 if ($_.shortDescription) { ConvertTo-FateDescriptionKey $_.shortDescription }
             })
         }
+        $namesPath = Join-Path (Split-Path $path -Parent) 'fate-names.json'
+        foreach ($name in ([IO.File]::ReadAllText($namesPath) | ConvertFrom-Json)) {
+            $key = $name -replace '[^a-z]', ''
+            if (!$descriptions.ContainsKey($key)) { $descriptions[$key] = @() }
+        }
         $script:FateCardDescriptions = $descriptions
     }
     return $script:FateCardDescriptions
@@ -44,25 +49,51 @@ function Get-FateCardLines($Lines, $Center, $Pitch, $Top, $Bottom) {
     } | Sort-Object { $_.y }, { $_.x }
 }
 
+function Test-FateCaptionAgreement([string]$Original, [string]$Regional, [string]$Contrast) {
+    $before = $Original -split ' '
+    $read = $Regional -split ' '
+    $check = $Contrast -split ' '
+    if ($read.Count -lt 3 -or $read.Count -ne $before.Count -or $read.Count -ne $check.Count) { return $false }
+    $changes = 0
+    for ($i = 0; $i -lt $read.Count; $i++) {
+        if ($read[$i] -ceq $before[$i]) { continue }
+        # A changed word needs both independent regional passes. Keep numeric
+        # conflicts and truncated or extended captions for manual review.
+        if ($read[$i] -cne $check[$i] -or ($read[$i] + $before[$i]) -match '\d') { return $false }
+        $changes++
+    }
+    return $changes -gt 0 -and $changes -le $read.Count / 4
+}
+
+function Test-FateOfferFraction($Fraction, $Lines, $Dictionary) {
+    $unit = $Fraction.height
+    $x = $Fraction.x + $Fraction.width / 2
+    $y = $Fraction.y + $unit / 2
+    $namesAbove = @($Lines | Where-Object {
+        $_.y -gt $y - 24 * $unit -and $_.y -lt $y - 12 * $unit -and
+        [Math]::Abs($_.x + $_.width / 2 - $x) -lt 40 * $unit -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', ''))
+    })
+    $titles = @($Lines | Where-Object { $_.text -match '^\s*fates\s*$' -and
+        $_.y -gt $y - 30 * $unit -and $_.y -lt $y - 15 * $unit -and
+        [Math]::Abs($_.x + $_.width / 2 - $x - 6.5 * $unit) -lt 1.6 * $unit })
+    $axis = $x + 6.5 * $unit
+    $left = @($namesAbove | Where-Object { $_.x + $_.width / 2 -lt $axis })
+    $right = @($namesAbove | Where-Object { $_.x + $_.width / 2 -gt $axis })
+    return ($left.Count -gt 0 -and $right.Count -gt 0) -or $titles.Count -eq 1
+}
+
 function Read-FateOfferButton($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
     if (@($Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }).Count) { return $Selected }
+    $dictionary = Get-FateCardDescriptions
     $fractions = @($Selected.lines | Where-Object {
-        $_.text -match '^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$' -and [int]$Matches[1] -lt [int]$Matches[2]
+        $_.text -match '^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$' -and [int]$Matches[1] -lt [int]$Matches[2] -and
+        (Test-FateOfferFraction $_ $Selected.lines $dictionary)
     })
     if ($fractions.Count -ne 1) { return $Selected }
     $fraction = $fractions[0]
     $unit = $fraction.height
     $x = $fraction.x + $fraction.width / 2
     $y = $fraction.y + $unit / 2
-    $dictionary = Get-FateCardDescriptions
-    $namesAbove = @($Selected.lines | Where-Object {
-        $_.y -gt $y - 24 * $unit -and $_.y -lt $y - 12 * $unit -and
-        [Math]::Abs($_.x + $_.width / 2 - $x) -lt 40 * $unit -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', ''))
-    })
-    $titles = @($Selected.lines | Where-Object { $_.text -match '^\s*fates\s*$' -and
-        $_.y -gt $y - 30 * $unit -and $_.y -lt $y - 15 * $unit -and
-        [Math]::Abs($_.x + $_.width / 2 - $x - 6.5 * $unit) -lt 1.6 * $unit })
-    if ($namesAbove.Count -lt 2 -and $titles.Count -ne 1) { return $Selected }
     $left = [int][Math]::Max(0, [Math]::Floor($x + 2 * $unit))
     $right = [int][Math]::Min($ImageWidth, [Math]::Ceiling($x + 12 * $unit))
     $top = [int][Math]::Max(0, [Math]::Floor($y - 1.5 * $unit))
@@ -198,11 +229,28 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
                 $newBody = $otherBody; $newWords = $otherWords; $candidate = $otherScore
             }
         }
+        # On small cards the parchment texture and the letter strokes can have
+        # similar brightness. Compare a background-corrected read of this column.
+        if ($pitch -le 220 -and $best -lt 1 -and $candidate -lt 1 -and $originalKnown) {
+            $captionTop = [int][Math]::Max(0, [Math]::Floor($bodyTop))
+            $captionBox = [Drawing.Rectangle]::FromLTRB($left, $captionTop, $right, $bottom)
+            $prepared = [FateOcrImage]::PrepareCaption($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $captionBox)
+            $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $captionTop
+            $caption = @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd)
+            $printed = ConvertTo-FateDescriptionKey (($caption | ForEach-Object { $_.text }) -join ' ')
+            $score = Get-FateCaptionScore $printed $dictionary[$key]
+            if ($score -ge .75 -and $score -gt $candidate) {
+                $newBody = $caption; $newWords = $printed; $candidate = $score
+            } elseif (!$dictionary[$key].Count -and (Test-FateCaptionAgreement $words $newWords $printed)) {
+                $candidate = 1
+            }
+        }
         $remove = @()
         $add = @()
         # Do not shorten a longer original description or change visible numbers
         # just to recover a documented wording.
-        $keepsWords = !$words -or ($words -split ' ').Count -le ($newWords -split ' ').Count
+        $originalWords = @($words -split ' ' | Where-Object { $_ -ne [string][char]0x2022 })
+        $keepsWords = !$words -or $originalWords.Count -le ($newWords -split ' ').Count
         $oldNumbers = [regex]::Matches($words, '\d+') | ForEach-Object { $_.Value }
         $newNumbers = [regex]::Matches($newWords, '\d+') | ForEach-Object { $_.Value }
         if ($candidate -gt $best -and $newBody.Count -and $keepsWords -and
