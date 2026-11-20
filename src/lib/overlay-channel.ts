@@ -10,13 +10,17 @@ export function overlayPicker() {
   return (window as Window & { showDirectoryPicker?: (options: { id: string; mode: 'readwrite' }) => Promise<OverlayDirectory> }).showDirectoryPicker
 }
 export async function readOverlayFile(directory: FileSystemDirectoryHandle, name: string): Promise<unknown | null> {
-  try {
-    const file = await (await directory.getFileHandle(name)).getFile()
-    if (file.size > OVERLAY_MAX_BYTES) throw new Error('An overlay message exceeds the size limit.')
-    return JSON.parse(await file.text())
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'NotFoundError') return null
-    throw error
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const file = await (await directory.getFileHandle(name)).getFile()
+      if (file.size > OVERLAY_MAX_BYTES) throw new Error('An overlay message exceeds the size limit.')
+      return JSON.parse(await file.text())
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'NotFoundError') return null
+      // An atomic replacement can invalidate a File snapshot before text() reads it.
+      if (!(error instanceof DOMException) || error.name !== 'NotReadableError' || attempt >= 2) throw error
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
   }
 }
 async function writeState(directory: FileSystemDirectoryHandle, state: OverlayState) {

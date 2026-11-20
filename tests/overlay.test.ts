@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { overlayAdvice, type OverlayInputs } from '../src/lib/overlay-advice'
 import { newCard, newOffer, newReward } from '../shared/offers'
 import { bindOfferToMap, newAdvisorWorkspace, startMapWorkspace } from '../src/lib/advisor-workspace'
 import { newSolverSettings } from '../src/lib/solver-settings'
 import { overlayStateSchema, type OverlayCommand, type OverlayState } from '../shared/overlay'
-import { OverlayChannel } from '../src/lib/overlay-channel'
+import { OverlayChannel, readOverlayFile } from '../src/lib/overlay-channel'
 import { activeProfitGoal, profitObjectives } from '../src/lib/league-challenges'
 
 function inputs(): OverlayInputs {
@@ -200,6 +200,18 @@ function command(state: OverlayState, fields: Partial<OverlayCommand> = {}): Ove
   return { protocol: 1, id: crypto.randomUUID(), clientId: state.clientId, revision: state.revision, captureId: state.captureId, action: state.actions.find(action => action.id.startsWith('collect:'))!.id, createdAt: Date.now(), ...fields }
 }
 describe('local overlay channel', () => {
+  it('reopens a replaced command file and reports a persistent read failure', async () => {
+    const replaced = new DOMException('Snapshot replaced', 'NotReadableError')
+    const unreadable = { size: 10, text: async () => { throw replaced } }
+    const getFile = vi.fn().mockResolvedValue(unreadable)
+      .mockResolvedValueOnce(unreadable)
+      .mockResolvedValueOnce(new File(['{"id":"new"}'], 'command.json'))
+    const directory = { getFileHandle: async () => ({ getFile }) } as unknown as FileSystemDirectoryHandle
+    await expect(readOverlayFile(directory, 'command.json')).resolves.toEqual({ id: 'new' })
+    expect(getFile).toHaveBeenCalledTimes(2)
+    await expect(readOverlayFile(directory, 'command.json')).rejects.toBe(replaced)
+    expect(getFile).toHaveBeenCalledTimes(5)
+  })
   it('keeps heartbeat revisions stable, applies a choice once, and invalidates on disconnect', async () => {
     const { directory, files } = memoryDirectory(), input = inputs()
     files.set('capture.json', JSON.stringify(input.capture))
