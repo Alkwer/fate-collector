@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       staging_run_id:
-        description: Successful staging run for this main commit, or pinned run 44755462517 for hotfix-20261116
+        description: Successful staging run for this main commit, or pinned run 44783929145 for hotfix-20261116
         required: true
         type: string
       validation_mode:
-        description: Full native validation, expired prelaunch mode, or the pinned Fate Collector 0.10.12 exception
+        description: Full native validation, expired prelaunch mode, or the pinned Fate Collector 0.10.13 exception
         required: true
         default: native-holdout
         type: choice
@@ -16,7 +16,7 @@ on:
           - prelaunch
           - hotfix-20261116
       hotfix_update_acknowledged:
-        description: I accept the deferred checks recorded in docs/deployment.md for the pinned 0.10.12 package
+        description: I accept the deferred checks recorded in docs/deployment.md for the pinned 0.10.13 package
         required: true
         default: false
         type: boolean
@@ -73,8 +73,8 @@ jobs:
               throw new Error('Choose a successful staging workflow for this exact main commit.');
             }
             if (mode === 'hotfix-20261116') {
-              await core.summary.addHeading('Pinned Fate Collector 0.10.12 release')
-                .addRaw(`For this release, in-game validation is deferred, not passed. See the [0.10.12 validation record](https://github.com/Alkwer/fate-collector/blob/${context.sha}/docs/deployment.md#pinned-fate-collector-01012-exception) for the staging checks and the real-widget result. Production Turnstile verification stays enabled. Source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId}.\n`)
+              await core.summary.addHeading('Pinned Fate Collector 0.10.13 release')
+                .addRaw(`For this release, in-game validation is deferred, not passed. See the [0.10.13 validation record](https://github.com/Alkwer/fate-collector/blob/${context.sha}/docs/deployment.md#pinned-fate-collector-01013-exception) for the staging checks and the real-widget result. Production Turnstile verification stays enabled. Source ${HOTFIX_UPDATE_RELEASE.revision}, package ${HOTFIX_UPDATE_RELEASE.releaseId}, staging run ${HOTFIX_UPDATE_RELEASE.stagingRunId}.\n`)
                 .write();
               return;
             }
