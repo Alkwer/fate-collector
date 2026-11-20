@@ -1,6 +1,6 @@
 # Fate Collector releases
 
-## Unreleased
+## 0.10.14 — 20 November 2026
 
 - A named tooltip can confirm the end of one partly read word in a card's short description.
 - The Windows helper can read dark card names beneath a translucent tooltip when two Fates share the same printed description.
