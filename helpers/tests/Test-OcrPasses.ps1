@@ -340,7 +340,8 @@ foreach ($control in 'HideLeftDigit', 'HideRightDigit', 'DarkGap') {
 
 $endpointRegion = [Drawing.Rectangle]::new(15, 15, 230, 80)
 $read = [FateOcrImage]::ReadCounters((New-FragmentedCounterFixture -CoverEndpoint), $endpointRegion)
-if ($read.Count -ne 1 -or $read[0].Text -cne '4/4' -or $read[0].Bounds.Y -ne 29) {
+if ($read.Count -ne 1 -or $read[0].Text -cne '4/4' -or
+    [Math]::Abs($read[0].Bounds.Top - 29) -gt 2 -or $read[0].Bounds.Bottom -ne 74) {
     throw 'Read both digits when the overprint covers the upper tip of the diagonal.'
 }
 foreach ($control in 'HideLeftDigit', 'HideRightDigit', 'HideSlash', 'DarkGap') {

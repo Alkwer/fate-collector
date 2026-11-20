@@ -175,6 +175,8 @@ public sealed class FateOcrImage
             private readonly Rectangle region;
             private readonly byte[] mask;
             private readonly int pitch;
+            private readonly Dictionary<Rectangle, double[]> digitScores = new Dictionary<Rectangle, double[]>();
+            private readonly int[] ink = new int[35], visible = new int[35];
 
             public DimPlaque(CounterImage image, Rectangle region, int minInk)
             {
@@ -327,8 +329,6 @@ public sealed class FateOcrImage
                 var errors = new double[Digits.Length];
                 var boxes = new Rectangle[Digits.Length];
                 for (int i = 0; i < errors.Length; i++) errors[i] = 1;
-                var ink = new int[35];
-                var visible = new int[35];
                 for (int y = slash.Top + (int)Math.Round(.055 * h); y <= slash.Top + Math.Round(.16 * h); y++)
                     for (int dh = (int)Math.Round(.64 * h); dh <= Math.Round(.79 * h); dh++)
                         for (int dw = (int)Math.Round(.15 * h); dw <= Math.Round(.53 * h); dw++)
@@ -338,56 +338,21 @@ public sealed class FateOcrImage
                             for (int gap = (int)Math.Round(-.03 * h); gap <= Math.Round((narrow ? .18 : .135) * h); gap++)
                             {
                                 int x = direction < 0 ? slash.Left - gap - dw : slash.Right + gap;
-                                Array.Clear(ink, 0, ink.Length);
-                                Array.Clear(visible, 0, visible.Length);
-                                int inkCount = 0, visibleCount = 0, topInk = 0, lowerInk = 0;
-                                for (int sy = 0; sy < 28; sy++)
-                                    for (int sx = 0; sx < 20; sx++)
-                                    {
-                                        byte p = At(x + (2 * sx + 1) * dw / 40, y + (2 * sy + 1) * dh / 56);
-                                        if (p != Dark && p != Ink) continue;
-                                        int cell = sy / 4 * 5 + sx / 4;
-                                        visible[cell]++;
-                                        visibleCount++;
-                                        if (p != Ink) continue;
-                                        ink[cell]++;
-                                        inkCount++;
-                                        if (sy < 12) topInk++;
-                                        else lowerInk++;
-                                    }
-                                if (visibleCount < 224 || inkCount < .20 * visibleCount || topInk < 12 || lowerInk < 12) continue;
-                                int edgeInk = 0;
-                                for (int row = y; row < y + dh; row++)
+                                var box = new Rectangle(x, y, dw, dh);
+                                double[] scores;
+                                if (!digitScores.TryGetValue(box, out scores))
                                 {
-                                    if (At(x - 1, row) == Ink) edgeInk++;
-                                    if (At(x + dw, row) == Ink) edgeInk++;
+                                    scores = ScoreDigit(box);
+                                    // Nearby slash hypotheses reuse most of the same digit rectangles.
+                                    if (digitScores.Count >= 32768) digitScores.Clear();
+                                    digitScores.Add(box, scores);
                                 }
-                                for (int col = x; col < x + dw; col++)
-                                {
-                                    if (At(col, y - 1) == Ink) edgeInk++;
-                                    if (At(col, y + dh) == Ink) edgeInk++;
-                                }
-                                if (narrow)
-                                {
-                                    // A visible slice of a wider digit can look like a straight stem.
-                                    // Check for additional ink on the side away from the slash.
-                                    int extraInk = 0;
-                                    int edge = direction < 0 ? x : x + dw - 1;
-                                    for (int row = y; row < y + dh; row++)
-                                        for (int distance = 2; distance <= .23 * h; distance++)
-                                            if (At(edge + direction * distance, row) == Ink) extraInk++;
-                                    if (extraInk > .08 * dw * dh) continue;
-                                }
+                                if (scores == null || (narrow && !IsNarrowDigit(box, h, direction))) continue;
                                 for (int digit = 0; digit < errors.Length; digit++)
                                 {
-                                    if (narrow != (digit == 1)) continue;
-                                    double error = Math.Min(VisibleDigitError(ink, visible, Digits[digit]),
-                                        VisibleDigitError(ink, visible, PlaqueDigits[digit]));
-                                    if (digit == 1) error = Math.Min(error, VisibleDigitError(ink, visible, OneRightStem));
-                                    error = error / visibleCount + .5 * edgeInk / (dw * dh);
-                                    if (error >= errors[digit]) continue;
-                                    errors[digit] = error;
-                                    boxes[digit] = new Rectangle(x, y, dw, dh);
+                                    if (narrow != (digit == 1) || scores[digit] >= errors[digit]) continue;
+                                    errors[digit] = scores[digit];
+                                    boxes[digit] = box;
                                 }
                             }
                         }
@@ -400,6 +365,64 @@ public sealed class FateOcrImage
                 for (int digit = 0; digit < errors.Length; digit++)
                     if (digit != best && errors[digit] - bestError < .042) return -1;
                 return best;
+            }
+
+            private bool IsNarrowDigit(Rectangle box, int slashHeight, int direction)
+            {
+                // A visible slice of a wider digit can resemble a stem. Check for ink beyond
+                // the outer edge, away from the slash.
+                int extraInk = 0;
+                int edge = direction < 0 ? box.Left : box.Right - 1;
+                for (int row = box.Top; row < box.Bottom; row++)
+                    for (int distance = 2; distance <= .23 * slashHeight; distance++)
+                        if (At(edge + direction * distance, row) == Ink) extraInk++;
+                return extraInk <= .08 * box.Width * box.Height;
+            }
+
+            private double[] ScoreDigit(Rectangle box)
+            {
+                Array.Clear(ink, 0, ink.Length);
+                Array.Clear(visible, 0, visible.Length);
+                int inkCount = 0, visibleCount = 0, topInk = 0;
+                for (int sy = 0; sy < 28; sy++)
+                {
+                    int row = (box.Top + (2 * sy + 1) * box.Height / 56) * pitch + box.Left;
+                    for (int sx = 0; sx < 20; sx++)
+                    {
+                        byte p = mask[row + (2 * sx + 1) * box.Width / 40];
+                        if (p != Dark && p != Ink) continue;
+                        int cell = sy / 4 * 5 + sx / 4;
+                        visible[cell]++;
+                        visibleCount++;
+                        if (p != Ink) continue;
+                        ink[cell]++;
+                        inkCount++;
+                        if (sy < 12) topInk++;
+                    }
+                }
+                if (visibleCount < 224 || inkCount < .20 * visibleCount ||
+                    topInk < 12 || inkCount - topInk < 12) return null;
+                int edgeInk = 0;
+                for (int row = box.Top; row < box.Bottom; row++)
+                {
+                    if (At(box.Left - 1, row) == Ink) edgeInk++;
+                    if (At(box.Right, row) == Ink) edgeInk++;
+                }
+                for (int col = box.Left; col < box.Right; col++)
+                {
+                    if (At(col, box.Top - 1) == Ink) edgeInk++;
+                    if (At(col, box.Bottom) == Ink) edgeInk++;
+                }
+                var scores = new double[Digits.Length];
+                double edgeError = .5 * edgeInk / (box.Width * box.Height);
+                for (int digit = 0; digit < scores.Length; digit++)
+                {
+                    double error = Math.Min(VisibleDigitError(ink, visible, Digits[digit]),
+                        VisibleDigitError(ink, visible, PlaqueDigits[digit]));
+                    if (digit == 1) error = Math.Min(error, VisibleDigitError(ink, visible, OneRightStem));
+                    scores[digit] = error / visibleCount + edgeError;
+                }
+                return scores;
             }
         }
 
