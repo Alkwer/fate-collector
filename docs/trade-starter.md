@@ -85,7 +85,9 @@ The single Divine Orb uses the existing Divine priority. Orb of Annulment uses t
 | Rare Weapons with a Physical Modifier | Regular | 1 |
 
 The weights are provisional preferences, independent of prices or expected profit.
-A regular reward scores per confirmed icon; a combo scores once when completed.
+A regular reward scores per confirmed icon. A completed combo earns its weight.
+Three matching T2 Fates with a Valuable Currency icon on both outer cards earn
+two sets of priority points in the invocation preview. The boss payout is unverified.
 Similar rewards remain separate: family headings do not combine their counters.
 Shared orange-feather icons need exact tooltip confirmation before scoring.
 

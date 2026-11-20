@@ -1,4 +1,4 @@
-import { type InvocationLimit, MERGED_REGULAR_MULTIPLIER, normalizeRewardLabel, recommendFates, supportsDuplicateCombo, type AdvisorGoal, type InvocationPlan, type Recommendation } from '../../shared/advisor'
+import { type InvocationLimit, MERGED_REGULAR_MULTIPLIER, normalizeRewardLabel, recommendFates, supportsDuplicateCombo, type AdvisorGoal, goalPlanScore, type Recommendation } from '../../shared/advisor'
 import { normalizeFateName } from '../../shared/fate-names'
 import { assessPlanningCard } from '../../shared/planning-filters'
 import { catalogFields, KNOWN_COMBOS, type CatalogReward } from '../../shared/reward-catalog'
@@ -28,8 +28,6 @@ type TooltipSlot = { card: FateCard; location: string; reward: Reward; group: st
 type KnownVariant = CatalogReward & { kind: AdvisorGoal['kind'] }
 
 const goalKey = (goal: AdvisorGoal) => `${goal.kind}:${normalizeRewardLabel(goal.label)}`
-const planScore = (plan: InvocationPlan | null | undefined) =>
-  plan ? Math.min(plan.targetCount, plan.threshold ?? plan.targetCount) : 0
 const isKnownVariant = (variant: CatalogReward): variant is KnownVariant => variant.kind !== 'unknown'
 
 const variantsByGroup = new Map<string, Map<string, KnownVariant>>()
@@ -139,9 +137,9 @@ export function tooltipAdvice({ offered, collected, profile, excludedCardIds, la
   const weights = new Map((ranking.mode === 'single' ? [{ ...ranking.goal, weight: 1 }] : profile.goals)
     .filter(goal => goal.weight > 0).map(goal => [goalKey(goal), goal.weight]))
   const scores = new Map(ranking.mode === 'single'
-    ? ranking.result.candidates.map(candidate => [candidate.cardId, planScore(candidate.plan)])
+    ? ranking.result.candidates.map(candidate => [candidate.cardId, goalPlanScore(candidate.plan)])
     : ranking.result.candidates.map(candidate => [candidate.cardId, candidate.plan?.score ?? 0]))
-  const baseline = ranking.mode === 'single' ? planScore(ranking.result.baseline) : ranking.result.baseline?.score ?? 0
+  const baseline = ranking.mode === 'single' ? goalPlanScore(ranking.result.baseline) : ranking.result.baseline?.score ?? 0
   const bestKnown = Math.max(baseline, ...scores.values())
   const leaders = ranking.mode === 'single' ? ranking.result.recommendedCardIds
     : [...scores].filter(([, score]) => score === bestKnown).map(([id]) => id)
@@ -178,9 +176,9 @@ export function tooltipAdvice({ offered, collected, profile, excludedCardIds, la
     if (ranking.mode === 'single') {
       const result = recommendFates(hypothetical, collected, ranking.goal, filters, lastOffer, limit)
       const candidate = result.candidates.find(card => card.cardId === slot.card.id)
-      const score = planScore(candidate?.plan)
+      const score = goalPlanScore(candidate?.plan)
       putsCardAhead = score > bestKnown && result.recommendedCardIds.length === 1 && result.recommendedCardIds[0] === slot.card.id
-        && result.candidates.every(card => card.cardId === slot.card.id || planScore(card.plan) < score)
+        && result.candidates.every(card => card.cardId === slot.card.id || goalPlanScore(card.plan) < score)
       activatesCombo = candidate?.plan?.activated === true
     } else {
       // The decision compares payable scores. Skip future projections even if

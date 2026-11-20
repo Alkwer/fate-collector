@@ -1,7 +1,7 @@
 import { z } from './validation.ts'
 import { normalizeFateName } from './fate-names'
 import {
-  advisorInputProblem, MAX_COLLECTED_FATES, MAX_INVOCATION_INPUTS, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
+  advisorInputProblem, duplicateCurrencyPreview, MAX_COLLECTED_FATES, MAX_INVOCATION_INPUTS, MAX_OFFERED_FATES, MERGED_REGULAR_MULTIPLIER,
   normalizeRewardLabel, TRIPLED_REGULAR_MULTIPLIER, UNKNOWN_FATE_NAME, UNRESOLVED_COMBO_MERGE,
   UNRESOLVED_COMBO_TRIPLE, UNRESOLVED_TRIPLE_RISK, supportsDuplicateCombo, visitInvocationOrders,
   type AdvisorGoal, type InvocationLimit, type InvocationPlan, type PlanResult, type Recommendation,
@@ -318,8 +318,11 @@ function searchPlans(pool: PreparedCard[], weights: Map<string, number>, thresho
       const threshold = combo?.threshold ?? null
       const weight = weights.get(key) ?? 0
       const activated = count !== null && threshold !== null && count >= threshold
-      if (scaledCombos.has(key) && count !== null && threshold !== null) duplicateCurrency.push({ label, count, threshold })
-      const points = roundPoints(kind === 'regular' ? (count ?? 0) * weight : activated ? weight : 0)
+      const preview = scaledCombos.has(key) && count !== null && threshold !== null
+        ? duplicateCurrencyPreview(label, count, threshold, !!triple) : null
+      if (preview) duplicateCurrency.push(preview)
+      const units = kind === 'regular' ? count ?? 0 : activated ? preview?.scoredSets ?? 1 : 0
+      const points = roundPoints(units * weight)
       if (count !== null && threshold !== null) progress += weight * Math.min(count / threshold, 1)
       score += points
       rewards.push({ kind, label, count, threshold, activated, weight, points,

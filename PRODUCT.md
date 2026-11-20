@@ -25,7 +25,7 @@ must not require filling every field or interpreting every unknown icon.
 - Optional local review connects the captures folder in desktop Chrome/Edge
   on HTTPS or localhost. The page must remain open for browser folder import.
   Manual import, paste and drag/drop are fallback paths.
-- Helper 0.10.12 runs the bundled advisor locally in a WebView2 host. No browser
+- Helper 0.10.13 runs the bundled advisor locally in a WebView2 host. No browser
   tab or internet is required for advice; closing its window keeps it running.
   Collection, reward priorities and saved offers persist in the local Windows
   profile. Website data is separate; offers can move through export/import.

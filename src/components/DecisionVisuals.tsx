@@ -1,5 +1,5 @@
 import type { FateCard, Reward } from '../../shared/schema'
-import type { InvocationLimit, InvocationPlan } from '../../shared/advisor'
+import { thirdSlotPreviewNote, type InvocationLimit, type InvocationPlan } from '../../shared/advisor'
 import { useState } from 'react'
 import { fateArt, rewardArt } from '../lib/game-art'
 import { AppIcon } from './AppIcon'
@@ -42,6 +42,11 @@ export function RewardStrip({ rewards, suggested = false, compact = false }: { r
     </div>) : <div className="reward-unit" data-unknown><RewardSymbol label="" identified={false} /><span>No rewards read</span></div>}
     {suggested && <small className="reward-review-note"><AppIcon name="warning" />Suggested · check reward row</small>}
   </div>
+}
+
+export function ThirdSlotPreview({ plan }: { plan?: Pick<InvocationPlan, 'duplicateCurrency'> | null }) {
+  const note = thirdSlotPreviewNote(plan)
+  return note ? <p className="hint">{note}</p> : null
 }
 
 export function InvocationSequence({ plan, cards, collected, limit }: {
@@ -89,6 +94,7 @@ export function InvocationSequence({ plan, cards, collected, limit }: {
     {plan.duplicateCurrency?.map(({ label, count, threshold }) => <p className="hint" key={label}>
       {label} · {count}/{threshold} segments in the invocation preview · {Math.floor(count / threshold)} full {count < 2 * threshold ? 'set' : 'sets'}
     </p>)}
+    <ThirdSlotPreview plan={plan} />
     <div className="invoke-final-step"><AppIcon name="check" /><strong>Then Confirm in game</strong></div>
   </div>
 }

@@ -128,18 +128,38 @@ describe('Armoury Black Frost invocation preview', () => {
     ])
   })
 
-  it('shows two full sets on the retained cards and awards the combo weight once', () => {
+  it('scores each full Valuable Currency preview set on the two retained cards', () => {
     const cards = [first, middle, third]
     const weighted = { ...profile, goals: [...profile.goals, { ...armour, label: 'Belt' }, { ...armour, label: 'Wand' }] }
     expect(solveInvocation(cards, weighted).plans[0]).toMatchObject({
-      cardIds: ['first', 'middle', 'third'], discardedCardIds: ['middle'], duplicateCurrency: [{ label: goal.label, count: 6, threshold: 3 }], score: 12,
-      rewards: [{ label: 'Belt', count: 3 }, { label: goal.label, count: 6, threshold: 3, points: 6 }, { label: 'Wand', count: 3 }],
+      cardIds: ['first', 'middle', 'third'], discardedCardIds: ['middle'],
+      duplicateCurrency: [{ label: goal.label, count: 6, threshold: 3, scoredSets: 2 }], score: 18,
+      rewards: [{ label: 'Belt', count: 3 }, { label: goal.label, count: 6, threshold: 3, points: 12 }, { label: 'Wand', count: 3 }],
     })
-    // With only the combo weighted, a pair already earns all supported points.
-    expect(solveInvocation(cards, profile).plans[0].cardIds).toHaveLength(2)
-    expect(planInvocation(cards, goal).plans[0]).toMatchObject({ targetCount: 3, duplicateCurrency: [{ count: 3 }] })
-    expect(recommendFates([third], [first, middle], goal).recommendedCardIds).toEqual([])
-    expect(recommendPortfolio([third], [first, middle], profile).recommendedCardIds).toEqual([])
+    expect(solveInvocation(cards, profile).plans[0]).toMatchObject({ score: 12, discardedCardIds: ['middle'] })
+    expect(planInvocation(cards, goal).plans[0]).toMatchObject({ targetCount: 6, duplicateCurrency: [{ scoredSets: 2 }] })
+    for (const lastOffer of [false, true]) {
+      // The arriving copy can supply the second set or enable the two existing icons.
+      for (const [offered, held] of [[third, [first, middle]], [middle, [first, third]]] as const) {
+        expect(recommendFates([offered], [...held], goal, {}, lastOffer)).toMatchObject({
+          recommendedCardIds: [offered.id], candidates: [{ gain: 3 }],
+        })
+        expect(recommendPortfolio([offered], [...held], profile, [], lastOffer)).toMatchObject({
+          recommendedCardIds: [offered.id], candidates: [{ gain: 6, plan: { discardedCardIds: ['middle'] } }],
+        })
+      }
+    }
+    expect(recommendFates([third], [first, middle], goal, {}, true, 2).recommendedCardIds).toEqual([])
+    expect(recommendPortfolio([third], [first, middle], profile, [], true, 2).recommendedCardIds).toEqual([])
+  })
+
+  it('keeps the one-set cap for a spare copy without the icon, excess distinct icons and unreviewed rewards', () => {
+    const unreviewed = { ...third, visualReview: { version: 'test', tierReviewed: true, rewardsReviewed: false } }
+    const distinct = fate('other', [combo(goal.label, 3, 3)])
+    for (const offer of [blackFrost('blank', [reward('Belt')]), distinct, unreviewed]) {
+      expect(recommendFates([offer], [first, middle], goal).recommendedCardIds).toEqual([])
+      expect(recommendPortfolio([offer], [first, middle], profile).recommendedCardIds).toEqual([])
+    }
   })
 
   it('compares a future duplicate against the other choices and the collection under that same condition', () => {

@@ -46,8 +46,8 @@ and any supported comparison remains provisional where the missing data matters.
    The result names the matching Fate(s), shows icon progress and invocation order,
    and separates a supported recommendation from a provisional preference.
    Each candidate shows its gain over the best plan already available from your
-   collection. Combo gains stop at the threshold; extra icons do not imply another
-   payout. **No improvement for this goal** means the known alternatives do not
+   collection. Combo gains stop at the threshold except for the second full
+   Valuable Currency set in a supported three-copy preview. **No improvement for this goal** means the known alternatives do not
    improve it; missing evidence instead keeps the comparison unresolved.
 3. After choosing in the game, use **Add … to collected** for that card. Only one
    card per imported offer can be added; remove it to change that planning choice.
@@ -92,7 +92,8 @@ identify the recorded reward or infer its kind or threshold.
 Enable **Compare multiple rewards** to optimize several rewards together. Open
 **Priorities, build filters & profile**, add observed, catalog or custom rewards,
 and give each a relative weight (0 disables it). Regular icons earn that weight
-per icon unit. A completed combo earns its weight once. For example, Currency
+per icon unit. A completed combo earns its weight. The supported Valuable Currency
+triple earns that weight for each of its two full preview sets. For example, Currency
 weight 1 and Armour weight 3 give 7 points to a plan with 1 Currency and 2 Armour
 icons. These are configurable preferences or user estimates in a consistent unit,
 not measured item quantities, market prices, expected value or profit.
@@ -256,8 +257,10 @@ tooltip meanings without waiting for an application release.
   the same-name duplicate rule to **Additional Currency Items** (two segments)
   and **Additional Valuable Currency Items** (three). A retained T2 Fate carrying
   one identified icon supplies three segments to its own combo. The middle card contributes
-  no rewards. The combo earns its configured weight once even with two full
-  sets. The four ShareX frames are `Awakened_PoE_Trade_7hP14yA4JG` (inputs),
+  no rewards. With the three-segment Valuable Currency icon on both the first and
+  third cards, the single-reward advisor counts six segments and the portfolio
+  awards the configured weight twice. At weight 6 the pair scores 6 and the
+  triple scores 12 for this reward. The four ShareX frames are `Awakened_PoE_Trade_7hP14yA4JG` (inputs),
   `ciFsUz5sGd` (1/3), `k5WyUVJYZ7` (3/3) and `Fn6Xloj4OP` (two full sets).
   The captures end before Confirm, so repeated payouts are unverified.
 - T1 duplicate combo scaling, other duplicate combos, mixed tiers, and pairs starting at T3 remain unresolved.

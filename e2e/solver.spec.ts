@@ -321,9 +321,13 @@ test('Conjurer changes from a conditional choice to a completed Currency set', a
 
   await page.getByRole('button', { name: 'Choose a Fate', exact: true }).click()
   await load(page, [fate('Conjurer', [reward('Rare Wands with a Mana Modifier', 1), icon])], false)
+  const extraSet = 'Third slot adds 1 full Valuable Currency set in the preview. Boss payout unverified.'
+  await expect(page.getByRole('heading', { name: 'Recommended: Conjurer', exact: true })).toBeVisible()
+  await expect(page.locator('.advisor-candidates').getByText(extraSet, { exact: true }).first()).toBeVisible()
   await openPanel(page, '.reward-settings')
   await page.getByLabel('Compare multiple rewards', { exact: true }).check()
   await closePanels(page)
+  await expect(page.locator('.offer-score').getByText(extraSet, { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add Conjurer to collected' }).click()
   await closePanels(page)
   await page.getByRole('button', { name: 'Plan invocation', exact: true }).click()
@@ -332,7 +336,7 @@ test('Conjurer changes from a conditional choice to a completed Currency set', a
     await page.setViewportSize({ width, height: 950 })
     await best.getByRole('button', { name: 'Reward breakdown', exact: true }).click()
     const breakdown = page.getByRole('dialog', { name: 'Reward breakdown' })
-    await expect(breakdown).toContainText('6/3 icons · active · scored once')
+    await expect(breakdown).toContainText('6/3 icons · 2 preview sets scored')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
     await breakdown.screenshot({ path: testInfo.outputPath(`currency-duplicate-${width}.png`) })
     await closePanels(page)

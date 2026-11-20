@@ -1,5 +1,12 @@
 # Fate Collector releases
 
+## 0.10.13 — 20 November 2026
+
+- Import reads the offered row above previously selected Fates and keeps each short description with its card. Ambiguous names stay open for review.
+- Reward recognition uses the spacing between cards to locate icons. It can suggest two partially overlapping rewards when enough of each icon is visible.
+- The overlay reopens a command file if the helper replaces it during a read, keeping the advisor connected.
+- Both advisors now recommend a third matching T2 Fate when it adds a second full Valuable Currency set to the invocation preview. The first and third cards each earn the configured combo weight.
+
 ## 0.10.12 — 20 November 2026
 
 - The Windows helper uses the offer layout to distinguish the Fates counter from other HUD fractions when rereading Confirm.
