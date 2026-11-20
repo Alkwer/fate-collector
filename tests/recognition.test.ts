@@ -247,3 +247,22 @@ test('repairs isolated glyph errors but preserves missing words, quantities and 
     expect(change(text)).toBe(text)
   }
 })
+
+test.each([
+  ['Crowkeeper', '—Crowkeeper', 'Releases n •s of crow proj', 'Releases novas of crow projectiles',
+    'Empowered Monster will regularly release novas of Crow Projectiles', 'Releases n •s of crow hands'],
+  ['Rot', 'Rotted', 'Cursed reomsticks sweep ac the area', 'Cursed broomsticks sweep across the area',
+    'Empowered Monster summons forth cursed broomsticks, which fly in a straight line', 'Cursed reomsticks sweep 2 the area'],
+])('corroborates two damaged fragments of %s only with matching card and tooltip evidence',
+  (name, tooltip, raw, expected, phrase, conflict) => {
+    const title = line(tooltip, 4, 17)
+    const body = { ...line(phrase, tooltip.startsWith('—') ? 35 : 4, 49), width: 400 }
+    const read = (text: string, extra: typeof countedLines) => readCounted([...countedLines.map(l =>
+      l.text === 'Wildfire' ? { ...l, text: name } :
+      l.text === 'Creates walls Of blackfire.' ? { ...l, text } : l), ...extra])[1][1]
+    expect(read(raw, [title, body])).toBe(expected)
+    expect(read(conflict, [title, body])).toBe(conflict)
+    expect(read(raw, [body])).toBe(raw)
+    expect(read(raw, [title, { ...body, text: 'Empowered Monster will drop additional Threads' }])).toBe(raw)
+    expect(read(raw, [title, { ...body, x: 200 }])).toBe(raw)
+  })
