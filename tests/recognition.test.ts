@@ -161,3 +161,10 @@ test('preserves an unknown outer card next to a recognized pair when the opposit
   ]
   expect(readCounted(partial)).toEqual([['', 'Unseen effect'], ['Doomsayer', 'First known effect'], ['Wildfire', 'Second known effect']])
 })
+
+test('ignores title-cased HUD labels beyond the widest six-card layout', () => {
+  const lines = countedLines.map(l => ({ ...l, x: l.x + 500 }))
+  lines.push(line('Short Allocation', 1730, 148))
+  const cards = extractCards({ ...base, image: { ...base.image, width: 1920 }, ocr: { ...base.ocr, lines } }).cards
+  expect(cards.map(c => [c.name, ...c.modifiers])).toEqual(countedCards)
+})

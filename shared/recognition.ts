@@ -37,8 +37,9 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
     const hasOuterHeader = band.some(l => {
       if (row.includes(l)) return false
       if (knownFateName(l.text)) return true
-      const slot = (centerX(l) - axis) / pitch + (count - 1) / 2
-      return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+      const offset = (centerX(l) - axis) / pitch
+      const slot = offset + (count - 1) / 2
+      return Math.abs(offset) < 2.65 && (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
         && offeredCardHeaders([...row, l]).includes(l)
     })
     if (hasOuterHeader) continue
