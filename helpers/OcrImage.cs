@@ -21,14 +21,17 @@ public sealed class FateOcrImage
         public readonly int SlashHeight;
         public readonly bool HasHudCards;
         public readonly bool IsIsolatedPlaque;
+        public readonly bool HasPlaqueTrim;
 
-        internal Counter(int current, int capacity, Rectangle bounds, int slashHeight, bool hasHudCards, bool isIsolatedPlaque)
+        internal Counter(int current, int capacity, Rectangle bounds, int slashHeight, bool hasHudCards,
+            bool isIsolatedPlaque, bool hasPlaqueTrim = false)
         {
             Text = current.ToString() + "/" + capacity.ToString();
             Bounds = bounds;
             SlashHeight = slashHeight;
             HasHudCards = hasHudCards;
             IsIsolatedPlaque = isIsolatedPlaque;
+            HasPlaqueTrim = hasPlaqueTrim;
         }
     }
 
@@ -68,6 +71,15 @@ public sealed class FateOcrImage
             "00590" + "03990" + "27590" + "62590" + "89799" + "22591" + "00390"
         };
         private const string OneRightStem = "44999" + "44499" + "00099" + "00099" + "00099" + "00099" + "00099";
+        // Alternate coverage for the thin, antialiased plaque lettering.
+        private static readonly string[] PlaqueDigits =
+        {
+            "04861" + "36176" + "62028" + "91019" + "73017" + "56245" + "16760",
+            "35898" + "44698" + "00498" + "00498" + "00498" + "00498" + "00498",
+            "68782" + "51196" + "00195" + "00381" + "02810" + "17200" + "88776",
+            "57662" + "41085" + "01571" + "01495" + "00079" + "00185" + "57630",
+            "00480" + "02880" + "07480" + "34480" + "87896" + "22582" + "00480"
+        };
 
         private readonly int width, height, stride;
         private readonly IntPtr scan;
@@ -138,17 +150,280 @@ public sealed class FateOcrImage
                 // A translucent tooltip leaves the plaque lettering dimmer than its own text.
                 // Accept only one fraction read at the same position in both contrast bands.
                 Counter dim = ReadDimPanel(panelRegion, 32, 102);
-                if (dim != null)
+                Counter check = dim == null ? null : ReadDimPanel(panelRegion, 44, 94);
+                if (!SameCounter(dim, check))
                 {
-                    Counter check = ReadDimPanel(panelRegion, 44, 94);
-                    // Thresholding may move an edge by a pixel. Both readings must cover the same glyphs.
-                    Rectangle shared = check == null ? Rectangle.Empty : Rectangle.Intersect(check.Bounds, dim.Bounds);
-                    if (check != null && check.Text == dim.Text && shared.Width * shared.Height >= .8 *
-                        Math.Max(dim.Bounds.Width * dim.Bounds.Height, check.Bounds.Width * check.Bounds.Height))
-                        counters.Add(dim);
+                    dim = new DimPlaque(this, panelRegion, 34).Read();
+                    check = dim == null ? null : new DimPlaque(this, panelRegion, 40).Read(dim);
                 }
+                if (SameCounter(dim, check)) counters.Add(dim);
             }
             return counters.ToArray();
+        }
+
+        private static bool SameCounter(Counter first, Counter second)
+        {
+            if (first == null || second == null || first.Text != second.Text) return false;
+            Rectangle shared = Rectangle.Intersect(first.Bounds, second.Bounds);
+            return shared.Width * shared.Height >= .8 *
+                Math.Max(first.Bounds.Width * first.Bounds.Height, second.Bounds.Width * second.Bounds.Height);
+        }
+
+        private sealed class DimPlaque
+        {
+            private const byte Dark = 1, Ink = 2, Covered = 3;
+            private readonly Rectangle region;
+            private readonly byte[] mask;
+            private readonly int pitch;
+            private readonly Dictionary<Rectangle, double[]> digitScores = new Dictionary<Rectangle, double[]>();
+            private readonly int[] ink = new int[35], visible = new int[35];
+
+            public DimPlaque(CounterImage image, Rectangle region, int minInk)
+            {
+                this.region = region;
+                pitch = region.Width;
+                mask = new byte[pitch * region.Height];
+                var bright = new List<int>();
+                for (int y = 0; y < region.Height; y++)
+                {
+                    Marshal.Copy(IntPtr.Add(image.scan, (region.Top + y) * image.stride + region.Left * 3),
+                        image.rowPixels, 0, pitch * 3);
+                    for (int x = 0; x < pitch; x++)
+                    {
+                        int i = x * 3;
+                        int low = Math.Min(image.rowPixels[i], Math.Min(image.rowPixels[i + 1], image.rowPixels[i + 2]));
+                        int high = Math.Max(image.rowPixels[i], Math.Max(image.rowPixels[i + 1], image.rowPixels[i + 2]));
+                        int point = y * pitch + x;
+                        if (low >= 100) bright.Add(point);
+                        else if (high < 27) mask[point] = Dark;
+                        else if (low >= minInk && high <= 99 && high - low < 44) mask[point] = Ink;
+                    }
+                }
+                // Include the immediate antialiased fringe of the brighter tooltip letters.
+                foreach (int p in bright)
+                {
+                    mask[p] = Covered;
+                    if (p % pitch > 0) mask[p - 1] = Covered;
+                    if (p % pitch < pitch - 1) mask[p + 1] = Covered;
+                    if (p >= pitch) mask[p - pitch] = Covered;
+                    if (p < mask.Length - pitch) mask[p + pitch] = Covered;
+                }
+            }
+
+            public Counter Read(Counter first = null)
+            {
+                Counter match = null;
+                double bestError = double.PositiveInfinity;
+                var tried = new HashSet<Rectangle>();
+                var search = Rectangle.FromLTRB(2, 1, pitch - 2, region.Height - 1);
+                int minHeight = MinSlashHeight, maxHeight = Math.Min(MaxSlashHeight, pitch / 4);
+                if (first != null)
+                {
+                    int margin = Math.Max(2, first.SlashHeight / 6);
+                    var local = Rectangle.Inflate(first.Bounds, margin, margin);
+                    local.Offset(-region.Left, -region.Top);
+                    search.Intersect(local);
+                    minHeight = Math.Max(minHeight, first.SlashHeight - margin);
+                    maxHeight = Math.Min(maxHeight, first.SlashHeight + margin);
+                }
+                for (int y = search.Top; y < search.Bottom; y++)
+                    for (int x = search.Left; x < search.Right; x++)
+                    {
+                        if (At(x, y) != Ink) continue;
+                        for (int direction = -1; direction <= 1; direction += 2)
+                        {
+                            // Start at a visible endpoint. The other tip may be capped by foreground.
+                            int beyond = y - direction;
+                            if (At(x - 1, beyond) == Ink || At(x, beyond) == Ink || At(x + 1, beyond) == Ink) continue;
+                            for (int h = minHeight; h <= maxHeight; h++)
+                                for (int shift = (int)Math.Round(.17 * h); shift <= Math.Round(.25 * h); shift++)
+                                {
+                                    int top = direction == 1 ? y : y - h + 1;
+                                    int topX = direction == 1 ? x : x + shift;
+                                    int bottomX = topX - shift;
+                                    if (top < 1 || top + h >= region.Height ||
+                                        bottomX - 2 * h < 0 || topX + 2 * h >= pitch) continue;
+                                    if (!SlashFits(top, h, topX, bottomX)) continue;
+                                    var slash = Rectangle.FromLTRB(bottomX - Math.Max(1, (int)Math.Round(.025 * h)), top,
+                                        topX + Math.Max(2, (int)Math.Round(.06 * h)), top + h);
+                                    if (!tried.Add(slash) || !HasDarkSides(slash)) continue;
+                                    Rectangle left, right;
+                                    double leftError, rightError;
+                                    int current = ReadDigit(slash, -1, out left, out leftError);
+                                    if (current < 0) continue;
+                                    int capacity = ReadDigit(slash, 1, out right, out rightError);
+                                    if (capacity <= 0 || current > capacity ||
+                                        Math.Abs(left.Top - right.Top) > .10 * h ||
+                                        Math.Abs(left.Bottom - right.Bottom) > .12 * h) continue;
+                                    Rectangle bounds = Rectangle.Union(slash, Rectangle.Union(left, right));
+                                    bounds.Offset(region.Location);
+                                    var candidate = new Counter(current, capacity, bounds, h, false, false);
+                                    if (match != null)
+                                    {
+                                        Rectangle shared = Rectangle.Intersect(match.Bounds, candidate.Bounds);
+                                        if (match.Text != candidate.Text || shared.Width * shared.Height < .6 *
+                                            Math.Max(match.Bounds.Width * match.Bounds.Height, candidate.Bounds.Width * candidate.Bounds.Height))
+                                            return null;
+                                    }
+                                    if (leftError + rightError >= bestError) continue;
+                                    bestError = leftError + rightError;
+                                    match = candidate;
+                                }
+                        }
+                    }
+                return match;
+            }
+
+            private byte At(int x, int y) { return mask[y * pitch + x]; }
+
+            private bool SlashFits(int top, int h, int topX, int bottomX)
+            {
+                int radius = Math.Max(1, (int)Math.Round(.045 * h));
+                byte upper = At(topX, top), lower = At(bottomX, top + h - 1);
+                if (upper == Dark || lower == Dark ||
+                    At(topX, top - 1) == Ink || At(bottomX, top + h) == Ink) return false;
+                int hits = 0, gaps = 0, wide = 0;
+                for (int dy = 0; dy < h; dy++)
+                {
+                    int y = top + dy, x = topX - ((topX - bottomX) * dy + h / 2) / (h - 1);
+                    bool ink = false, covered = false;
+                    for (int dx = -radius; dx <= radius; dx++)
+                    {
+                        byte pixel = At(x + dx, y);
+                        ink |= pixel == Ink;
+                        covered |= pixel == Covered;
+                    }
+                    if (ink)
+                    {
+                        hits++;
+                        if (At(x - radius - 1, y) == Ink && At(x + radius + 1, y) == Ink) wide++;
+                    }
+                    else if (!covered) gaps++;
+                    if (gaps > .10 * h || wide > .20 * h) return false;
+                }
+                return hits >= .48 * h;
+            }
+
+            private bool HasDarkSides(Rectangle slash)
+            {
+                int h = slash.Height;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    int dark = 0, ink = 0, count = 0;
+                    for (int y = slash.Top; y < slash.Bottom; y++)
+                        for (int dx = (int)(.95 * h); dx <= 1.4 * h; dx++)
+                        {
+                            byte p = At(slash.Left + slash.Width / 2 + side * dx, y);
+                            if (p == Dark) dark++;
+                            if (p == Ink) ink++;
+                            count++;
+                        }
+                    if (dark < .35 * count || dark < 4 * ink) return false;
+                }
+                return true;
+            }
+
+            private int ReadDigit(Rectangle slash, int direction, out Rectangle bounds, out double bestError)
+            {
+                int h = slash.Height;
+                var errors = new double[Digits.Length];
+                var boxes = new Rectangle[Digits.Length];
+                for (int i = 0; i < errors.Length; i++) errors[i] = 1;
+                for (int y = slash.Top + (int)Math.Round(.055 * h); y <= slash.Top + Math.Round(.16 * h); y++)
+                    for (int dh = (int)Math.Round(.64 * h); dh <= Math.Round(.79 * h); dh++)
+                        for (int dw = (int)Math.Round(.15 * h); dw <= Math.Round(.53 * h); dw++)
+                        {
+                            bool narrow = dw <= Math.Round(.28 * h);
+                            if (!narrow && dw < Math.Round(.35 * h)) continue;
+                            for (int gap = (int)Math.Round(-.03 * h); gap <= Math.Round((narrow ? .18 : .135) * h); gap++)
+                            {
+                                int x = direction < 0 ? slash.Left - gap - dw : slash.Right + gap;
+                                var box = new Rectangle(x, y, dw, dh);
+                                double[] scores;
+                                if (!digitScores.TryGetValue(box, out scores))
+                                {
+                                    scores = ScoreDigit(box);
+                                    // Nearby slash hypotheses reuse most of the same digit rectangles.
+                                    if (digitScores.Count >= 32768) digitScores.Clear();
+                                    digitScores.Add(box, scores);
+                                }
+                                if (scores == null || (narrow && !IsNarrowDigit(box, h, direction))) continue;
+                                for (int digit = 0; digit < errors.Length; digit++)
+                                {
+                                    if (narrow != (digit == 1) || scores[digit] >= errors[digit]) continue;
+                                    errors[digit] = scores[digit];
+                                    boxes[digit] = box;
+                                }
+                            }
+                        }
+                int best = 0;
+                for (int digit = 1; digit < errors.Length; digit++)
+                    if (errors[digit] < errors[best]) best = digit;
+                bounds = boxes[best];
+                bestError = errors[best];
+                if (bestError > .135) return -1;
+                for (int digit = 0; digit < errors.Length; digit++)
+                    if (digit != best && errors[digit] - bestError < .042) return -1;
+                return best;
+            }
+
+            private bool IsNarrowDigit(Rectangle box, int slashHeight, int direction)
+            {
+                // A visible slice of a wider digit can resemble a stem. Check for ink beyond
+                // the outer edge, away from the slash.
+                int extraInk = 0;
+                int edge = direction < 0 ? box.Left : box.Right - 1;
+                for (int row = box.Top; row < box.Bottom; row++)
+                    for (int distance = 2; distance <= .23 * slashHeight; distance++)
+                        if (At(edge + direction * distance, row) == Ink) extraInk++;
+                return extraInk <= .08 * box.Width * box.Height;
+            }
+
+            private double[] ScoreDigit(Rectangle box)
+            {
+                Array.Clear(ink, 0, ink.Length);
+                Array.Clear(visible, 0, visible.Length);
+                int inkCount = 0, visibleCount = 0, topInk = 0;
+                for (int sy = 0; sy < 28; sy++)
+                {
+                    int row = (box.Top + (2 * sy + 1) * box.Height / 56) * pitch + box.Left;
+                    for (int sx = 0; sx < 20; sx++)
+                    {
+                        byte p = mask[row + (2 * sx + 1) * box.Width / 40];
+                        if (p != Dark && p != Ink) continue;
+                        int cell = sy / 4 * 5 + sx / 4;
+                        visible[cell]++;
+                        visibleCount++;
+                        if (p != Ink) continue;
+                        ink[cell]++;
+                        inkCount++;
+                        if (sy < 12) topInk++;
+                    }
+                }
+                if (visibleCount < 224 || inkCount < .20 * visibleCount ||
+                    topInk < 12 || inkCount - topInk < 12) return null;
+                int edgeInk = 0;
+                for (int row = box.Top; row < box.Bottom; row++)
+                {
+                    if (At(box.Left - 1, row) == Ink) edgeInk++;
+                    if (At(box.Right, row) == Ink) edgeInk++;
+                }
+                for (int col = box.Left; col < box.Right; col++)
+                {
+                    if (At(col, box.Top - 1) == Ink) edgeInk++;
+                    if (At(col, box.Bottom) == Ink) edgeInk++;
+                }
+                var scores = new double[Digits.Length];
+                double edgeError = .5 * edgeInk / (box.Width * box.Height);
+                for (int digit = 0; digit < scores.Length; digit++)
+                {
+                    double error = Math.Min(VisibleDigitError(ink, visible, Digits[digit]),
+                        VisibleDigitError(ink, visible, PlaqueDigits[digit]));
+                    if (digit == 1) error = Math.Min(error, VisibleDigitError(ink, visible, OneRightStem));
+                    scores[digit] = error / visibleCount + edgeError;
+                }
+                return scores;
+            }
         }
 
         private Counter ReadDimPanel(Rectangle region, int minInk, int maxInk)
@@ -365,8 +640,10 @@ public sealed class FateOcrImage
             int current = ReadDigit(left), capacity = ReadDigit(right);
             if (capacity <= 0 || current < 0 || current > capacity) return null;
             Rectangle bounds = Rectangle.Union(left.Bounds, Rectangle.Union(slash, right.Bounds));
+            bool hud = !panelOnly && HasHudCards(slash);
+            bool hasTrim = !panelOnly && !hud && HasPlaqueRail(slash, -.89, -.58) && HasPlaqueRail(slash, .34, .72);
             return new Counter(current, capacity, bounds, slash.Height,
-                !panelOnly && HasHudCards(slash), !panelOnly && IsIsolatedPlaque(slash));
+                hud, hasTrim && IsIsolatedPlaque(slash), hasTrim);
         }
 
         private Counter ReadFaintDigits(Rectangle slash, Rectangle imageBounds)
@@ -611,8 +888,7 @@ public sealed class FateOcrImage
             double h = slash.Height, x = slash.Left + slash.Width / 2.0, y = slash.Top + h / 2;
             // A counter-only diagnostic crop must tightly frame one centered plaque with visible trim.
             return width >= 4.5 * h && width <= 7 * h && height >= 1.75 * h && height <= 2.6 * h &&
-                Math.Abs(x - width / 2.0) <= width * .12 && Math.Abs(y - height / 2.0) <= height * .12 &&
-                HasPlaqueRail(slash, -.89, -.58) && HasPlaqueRail(slash, .34, .72);
+                Math.Abs(x - width / 2.0) <= width * .12 && Math.Abs(y - height / 2.0) <= height * .12;
         }
 
         private bool HasPlaqueRail(Rectangle slash, double top, double bottom)

@@ -4,7 +4,7 @@ import { normalizeFateName } from './fate-names.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-13'
+export const PARSER_VERSION = 'counted-offers-14'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -22,7 +22,8 @@ type OfferRegion = { lines: OcrLine[]; headers: OfferHeader[]; bottom: number; c
 
 function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bottom: number, minimumKnown: number) {
   const pitch = span * .56
-  const band = lines.filter(l => l.y >= top + .08 * span && l.y < top + .29 * span && l.width < pitch * .85)
+  const band = lines.filter(l => l.y >= top + .08 * span && l.y < top + .29 * span && l.width < pitch * .85
+    && normalize(l.text) !== 'selectafate')
   const matches: OfferRegion[] = []
   for (let count = minimumKnown; count <= 6; count++) {
     const row: OcrLine[] = []
@@ -135,18 +136,17 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
   // card below Confirm must never replace unreadable or missing offered headers.
   if (invocation) return null
   if (panels.length > 1) {
-    // The in-world prompt can sit just above Confirm, inside the actual offer.
-    // Only a counted grid with the same button can disambiguate those labels.
+    // A world-space prompt may fall above or inside the panel. Require a
+    // unique Fates title, the same button, and a grid anchored by the counter.
     const real = panels.filter(p => normalize(p.heading.text) === 'fates')
     if (real.length !== 1) return null
     const { heading, confirm } = real[0]
-    if (!panels.every(p => p.confirm === confirm && (p.heading === heading ||
-      (normalize(p.heading.text) === 'selectafate' && p.heading.y > heading.y + .75 * (confirm.y - heading.y))))) return null
+    if (!panels.every(p => p.confirm === confirm && (p.heading === heading || normalize(p.heading.text) === 'selectafate'))) return null
     return countedOffer(lines, [heading], [confirm])
   }
   const counted = countedOffer(lines, headings, confirms)
   if (counted) return counted
-  if (panels.length !== 1) return coveredControllerButton(lines, headings, confirms)
+  if (panels.length !== 1) return coveredPanelButton(lines, headings, confirms)
   const { heading, confirm } = panels[0]
   const rows = panelRows(lines, centerX(heading), heading.y, confirm.y - heading.y, confirm.y, 2)
   if (rows.length === 1) return rows[0]
@@ -199,12 +199,15 @@ function coveredOffer(lines: OcrLine[], axis: number, level: number, pitch: numb
     for (let i = 0; i < count; i++) {
       const x = axis + (i - (count - 1) / 2) * pitch
       const body = bodies.filter(l => Math.abs(centerX(l) - x) < pitch * .18).sort((a, b) => a.y - b.y)
-      const caption = captionText(body, pitch)
+      let caption = captionText(body, pitch)
+      const slot = titles.filter(l => Math.abs(centerX(l) - x) < pitch * .2)
+      const visible = slot.filter(l => knownFateName(l.text))
+      if (visible.length === 1) {
+        caption = joinSplitCaptionWord(knownFateName(visible[0].text)!, caption)
+      }
       const names = namesByCaption.get(descriptionWords(caption))
       if (!names) break
       bodyTops.push(body[0].y)
-      const slot = titles.filter(l => Math.abs(centerX(l) - x) < pitch * .2)
-      const visible = slot.filter(l => knownFateName(l.text))
       if (visible.length) {
         if (visible.length !== 1 || !names.includes(knownFateName(visible[0].text)!)) break
         headers.push({ ...visible[0], caption })
@@ -237,9 +240,9 @@ function coveredOffer(lines: OcrLine[], axis: number, level: number, pitch: numb
   return matches.length === 1 ? matches[0] : null
 }
 
-// On a controller the footer has its own Confirm/Close hints. When a tooltip
-// covers the panel button, verify the two rows independently of that footer.
-function coveredControllerButton(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]): OfferRegion | null {
+// When a tooltip covers the button, verify both card rows and either a
+// fragment of the button at its expected position or the controller footer.
+function coveredPanelButton(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]): OfferRegion | null {
   const titles = headings.filter(l => normalize(l.text) === 'fates')
   if (titles.length !== 1) return null
   const title = titles[0], axis = centerX(title)
@@ -251,14 +254,41 @@ function coveredControllerButton(lines: OcrLine[], headings: OcrLine[], confirms
   const span = pitch / .56, bottom = title.y + span
   const footer = confirms.some(c => c.y > bottom + pitch && lines.some(l => normalize(l.text) === 'close'
     && l.x > c.x && Math.abs(l.y - c.y) < c.height))
-  if (!footer || !lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .35)
+  const partial = lines.some(l => {
+    if (!alignedControls(title, l) || Math.abs(l.y - bottom) >= pitch * .10
+      || l.width <= pitch * .25 || l.width >= pitch * .45) return false
+    const parts = /^([a-z]{2,})\s+([a-z]{2,})$/.exec(l.text.trim().toLowerCase())
+    return parts && parts[1].length + parts[2].length === 'confirm'.length - 1
+      && 'confirm'.startsWith(parts[1]) && 'confirm'.endsWith(parts[2])
+  })
+  if ((!footer && !partial) || !lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .35)
     || !lines.some(l => l.x < axis && l.x + l.width > axis && Math.abs(l.y - bottom) < pitch * .12)
     || !lines.some(l => knownFateName(l.text) && l.y > bottom + pitch * .2 && l.y < bottom + pitch * .6)) return null
   const rows = panelRows(lines, axis, title.y, span, bottom, upper.length)
-  return rows.length === 1 && rows[0].headers.every((h, i) => h === upper[i]
-    && namesByCaption.get(descriptionWords(columnDescription(lines, h, pitch, bottom)))?.includes(knownFateName(h.text)!)) ? rows[0] : null
+  return rows.length === 1 && rows[0].headers.every((h, i) => {
+    const name = knownFateName(h.text)!
+    const caption = reviewedSpelling(name, columnDescription(lines, h, pitch, bottom), h, lines)
+    return h === upper[i] && namesByCaption.get(descriptionWords(caption))?.includes(name)
+  }) ? rows[0] : null
 }
 const captionVocabulary = new Set([...shortDescriptions.values()].flat().flatMap(s => s ? descriptionWords(s).split(' ') : []))
+
+// A gap inside a word can survive both OCR passes. Keep every printed letter
+// and require the complete caption of the visible name in this column.
+function joinSplitCaptionWord(name: string, text: string) {
+  const words = descriptionWords(text).split(' ')
+  const matches = (shortDescriptions.get(name) ?? []).filter(caption => {
+    if (!caption) return false
+    const expected = descriptionWords(caption).split(' ')
+    if (words.length !== expected.length + 1) return false
+    const i = expected.findIndex((word, index) => word !== words[index])
+    if (i < 0 || expected[i].length < 4 || !/^[a-z]+$/.test(expected[i])) return false
+    return words[i] + words[i + 1] === expected[i]
+      && !(captionVocabulary.has(words[i]) && captionVocabulary.has(words[i + 1]))
+      && expected.slice(i + 1).every((word, j) => word === words[i + j + 2])
+  })
+  return matches.length === 1 ? matches[0]! : text
+}
 // OCR ligatures can turn one glyph into two, e.g. "m" into "rn". Only a
 // short contiguous difference is allowed. Never replace another catalog word.
 function glyphDifference(seen: string, expected: string) {
@@ -352,6 +382,7 @@ function tooltipConfirmsFragments(words: string, caption: string, body: string[]
 }
 
 function reviewedSpelling(name: string, text: string, header: OcrLine, lines: OcrLine[]): string {
+  text = joinSplitCaptionWord(name, text)
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
   const exact = variants.find(value => value && (descriptionWords(value) === words
