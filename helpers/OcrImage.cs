@@ -422,17 +422,24 @@ public sealed class FateOcrImage
 
     public static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale)
     {
-        return Prepare(png, maxDimension, region, targetScale, false);
+        return Prepare(png, maxDimension, region, targetScale, Ink.Original);
     }
 
     // Card captions use pale lettering on mottled parchment. Estimate the local
     // background and invert the remaining strokes for the small-text OCR pass.
     public static FateOcrImage PrepareCaption(byte[] png, int maxDimension, Rectangle region)
     {
-        return Prepare(png, maxDimension, region, 3.0, true);
+        return Prepare(png, maxDimension, region, 3.0, Ink.Light);
     }
 
-    private static void SubtractCaptionBackground(byte[] pixels, int stride, int width, int height)
+    public static FateOcrImage PrepareNameplate(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 4.0, Ink.Dark);
+    }
+
+    private enum Ink { Original, Light, Dark }
+
+    private static void SubtractBackground(byte[] pixels, int stride, int width, int height, Ink ink)
     {
         int pitch = width + 1;
         int[] sums = new int[pitch * (height + 1)];
@@ -455,12 +462,13 @@ public sealed class FateOcrImage
                 int sum = sums[bottom * pitch + right] - sums[top * pitch + right]
                     - sums[bottom * pitch + left] + sums[top * pitch + left];
                 int i = y * stride + 3 * x;
-                pixels[i] = (byte)Math.Max(0, pixels[i] - sum / ((right - left) * (bottom - top)));
+                int contrast = pixels[i] - sum / ((right - left) * (bottom - top));
+                pixels[i] = (byte)Math.Max(0, ink == Ink.Dark ? -contrast : contrast);
             }
         }
     }
 
-    private static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale, bool caption)
+    private static FateOcrImage Prepare(byte[] png, int maxDimension, Rectangle region, double targetScale, Ink ink)
     {
         const int padding = 16;
         int limit = Math.Min(maxDimension, 4096) - padding * 2;
@@ -485,11 +493,11 @@ public sealed class FateOcrImage
                         int offset = y * stride + x * 3;
                         byte value = (byte)((pixels[offset] * 114 + pixels[offset + 1] * 587 + pixels[offset + 2] * 299) / 1000);
                         pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
-                        if (!caption) histogram[value]++;
+                        if (ink == Ink.Original) histogram[value]++;
                     }
-                if (caption)
+                if (ink != Ink.Original)
                 {
-                    SubtractCaptionBackground(pixels, stride, source.Width, source.Height);
+                    SubtractBackground(pixels, stride, source.Width, source.Height, ink);
                     for (int y = 0; y < source.Height; y++)
                         for (int x = 0; x < source.Width; x++)
                             histogram[pixels[y * stride + 3 * x]]++;
@@ -499,13 +507,13 @@ public sealed class FateOcrImage
                 seen = 0;
                 while (high > 0 && seen + histogram[high] <= count * 0.02) seen += histogram[high--];
                 // Uniform images stay uniform: do not manufacture contrast or text.
-                if (high > low || caption)
+                if (high > low || ink != Ink.Original)
                     for (int y = 0; y < source.Height; y++)
                         for (int x = 0; x < source.Width; x++)
                         {
                             int offset = y * stride + x * 3;
                             int stretched = Math.Max(0, Math.Min(255, (pixels[offset] - low) * 255 / Math.Max(1, high - low)));
-                            byte value = (byte)(caption ? 255 - stretched : stretched);
+                            byte value = (byte)(ink == Ink.Original ? stretched : 255 - stretched);
                             pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
                         }
                 Marshal.Copy(pixels, 0, data.Scan0, pixels.Length);

@@ -129,6 +129,21 @@ function Get-FateHeaderGrid($Band, $Axis, $Pitch, $Dictionary) {
     }
 }
 
+function Read-FateNameplate([byte[]]$Png, $Engine, $Center, $Level, $Pitch, $Dictionary, $ImageWidth, $ImageHeight) {
+    $left = [int][Math]::Floor($Center - .34 * $Pitch)
+    $right = [int][Math]::Ceiling($Center + .34 * $Pitch)
+    $top = [int][Math]::Floor($Level - 1.55 * $Pitch)
+    $bottom = [int][Math]::Ceiling($Level - 1.30 * $Pitch)
+    if ($left -lt 0 -or $right -gt $ImageWidth -or $top -lt 0 -or $bottom -gt $ImageHeight) { return }
+    $region = [Drawing.Rectangle]::FromLTRB($left, $top, $right, $bottom)
+    $prepared = [FateOcrImage]::PrepareNameplate($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region)
+    $pass = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
+    $names = @($pass.lines | Where-Object {
+        [Math]::Abs($_.x + $_.width / 2 - $Center) -lt .14 * $Pitch -and $Dictionary.ContainsKey(($_.text -replace '[^a-z]', ''))
+    })
+    if ($names.Count -eq 1) { return $names[0] }
+}
+
 function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
     if ((Test-FateInvocation $Selected.lines) -or ($null -ne $Other -and (Test-FateInvocation $Other.lines))) { return $Selected }
     $Selected = Read-FateOfferButton $Selected $Other $Png $Engine $ImageWidth $ImageHeight
@@ -168,6 +183,14 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $prepared = [FateOcrImage]::Prepare($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region, 3)
         $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
         $found = @(Get-FateHeaderGrid @($read.lines | Where-Object { $_.y -lt $bandEnd }) $axis $pitch $dictionary)
+        if (!$found.Count -and $pitch -le 220) {
+            # The counter and Confirm establish scale and axis, but not how
+            # many cards are visible. Try the two possible row alignments.
+            $plates = @(foreach ($halfSlot in -5..5) {
+                Read-FateNameplate $Png $Engine ($axis + $halfSlot * $pitch / 2) $level $pitch $dictionary $ImageWidth $ImageHeight
+            })
+            $found = @(Get-FateHeaderGrid $plates $axis $pitch $dictionary)
+        }
         if ($found.Count -ne 1) { return $Selected }
         foreach ($cell in $found[0].cells) {
             $new = $cell.header
@@ -204,6 +227,10 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
         $newHeaders = @($read.lines | Where-Object { [Math]::Abs($_.y - $header.y) -lt .08 * $pitch -and
             [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $pitch -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', '')) })
+        if (!$originalKnown -and !$newHeaders.Count -and $pitch -le 220) {
+            $newHeaders = @(Read-FateNameplate $Png $Engine $cell.center $level $pitch $dictionary $ImageWidth $ImageHeight |
+                Where-Object { [Math]::Abs($_.y - $header.y) -lt .08 * $pitch })
+        }
         if ($newHeaders.Count -gt 1) { continue }
         if ($newHeaders.Count) {
             $readKey = $newHeaders[0].text -replace '[^a-z]', ''
