@@ -1,5 +1,10 @@
 # Fate Collector releases
 
+## Unreleased
+
+- A named tooltip can confirm the end of one partly read word in a card's short description.
+- The Windows helper can read dark card names beneath a translucent tooltip when two Fates share the same printed description.
+
 ## 0.10.13 — 20 November 2026
 
 - Import reads the offered row above previously selected Fates and keeps each short description with its card. Ambiguous names stay open for review.

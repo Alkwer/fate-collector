@@ -218,6 +218,27 @@ test('corroborates a misread header only with the complete description in its ow
   expect(readCounted(typo.map(l => l.text === 'Doornsayer' ? { ...l, text: 'New Fate' } : l))[0][0]).toBe('')
 })
 
+test.each([
+  ['Wildfire', 'Creates walls of bl', 'Empowered Monster will create walls of Blackfire, which deal Fire Damage', 'Creates walls of blackfire'],
+  ['Murderous', 'Summons malign crows', 'Empowered Monster will continually spawn malignant crows, which linger', 'Summons malignant crows'],
+  ['Murderous', 'Summons malignant cro', 'Empowered Monster will continually spawn malignant crows, which linger', 'Summons malignant crows'],
+])('reads one truncated word of %s only when its named tooltip repeats the phrase', (name, partial, tooltip, complete) => {
+  const row = countedLines.map(l => l.text === 'Wildfire' ? { ...l, text: name }
+    : l.text === 'Murderous' ? { ...l, text: 'Alchemist' }
+    : l.text === 'Creates walls Of blackfire.' ? { ...l, text: partial } : l)
+  const title = line(name, 4, 17), body = { ...line(tooltip, 4, 49), width: 400 }
+  const read = (extra: typeof row, cards = row) => readCounted([...cards, ...extra])[1][1]
+  expect(read([title, body])).toBe(complete)
+  expect(read([body])).toBe(partial)
+  expect(read([{ ...title, text: 'Conjurer' }, body])).toBe(partial)
+  expect(read([title, { ...body, text: 'Empowered Monster will cast blackfire and summon crows' }])).toBe(partial)
+  expect(read([title, { ...body, x: 250 }])).toBe(partial)
+  expect(read([title, body], row.map(l => l.text === 'Alchemist' ? { ...l, text: name } : l))).toBe(partial)
+  for (const changed of ['Creates walls of', 'Creates walls of 2', 'Creates walls of blood', 'Creates 3 walls of bl']) {
+    expect(read([title, body], row.map(l => l.text === partial ? { ...l, text: changed } : l))).toBe(changed)
+  }
+})
+
 test('repairs isolated glyph errors but preserves missing words, quantities and alternate catalog words', () => {
   const change = (text: string) => readCounted(countedLines.map(l =>
     l.text === 'Creates walls Of blackfire.' ? { ...l, text } : l))[1][1]

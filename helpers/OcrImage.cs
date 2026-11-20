@@ -437,12 +437,17 @@ public sealed class FateOcrImage
         return Prepare(png, maxDimension, region, 4.0, Ink.Dark);
     }
 
+    public static FateOcrImage PrepareCoveredNameplate(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 2.0, Ink.CoveredName);
+    }
+
     public static FateOcrImage PrepareCaptionLine(byte[] png, int maxDimension, Rectangle region)
     {
         return Prepare(png, maxDimension, region, 3.0, Ink.LightLine);
     }
 
-    private enum Ink { Original, Light, Dark, LightLine }
+    private enum Ink { Original, Light, Dark, LightLine, CoveredName }
 
     private static void SubtractBackground(byte[] pixels, int stride, int width, int height, Ink ink)
     {
@@ -512,7 +517,10 @@ public sealed class FateOcrImage
                 double lowerQuantile = ink == Ink.LightLine ? .35 : .02;
                 while (low < 255 && seen + histogram[low] <= count * lowerQuantile) seen += histogram[low++];
                 seen = 0;
-                while (high > 0 && seen + histogram[high] <= count * 0.02) seen += histogram[high--];
+                // Under a translucent tooltip the title is darker than its plate.
+                // Map the median to white so the brighter tooltip text disappears.
+                double upperTail = ink == Ink.CoveredName ? .5 : .02;
+                while (high > 0 && seen + histogram[high] <= count * upperTail) seen += histogram[high--];
                 // Uniform images stay uniform: do not manufacture contrast or text.
                 if (high > low || ink != Ink.Original)
                     for (int y = 0; y < source.Height; y++)
@@ -520,7 +528,7 @@ public sealed class FateOcrImage
                         {
                             int offset = y * stride + x * 3;
                             int stretched = Math.Max(0, Math.Min(255, (pixels[offset] - low) * 255 / Math.Max(1, high - low)));
-                            byte value = (byte)(ink == Ink.Original ? stretched : 255 - stretched);
+                            byte value = (byte)(ink == Ink.Original || ink == Ink.CoveredName ? stretched : 255 - stretched);
                             pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
                         }
                 Marshal.Copy(pixels, 0, data.Scan0, pixels.Length);
