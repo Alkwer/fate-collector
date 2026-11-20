@@ -1,5 +1,9 @@
 # Fate Collector releases
 
+## 0.10.15 — 20 November 2026
+
+- The Windows helper can recover dim Fates counters beneath a translucent tooltip when both digits and the diagonal slash are still visible.
+
 ## 0.10.14 — 20 November 2026
 
 - A named tooltip can confirm the end of one partly read word in a card's short description.

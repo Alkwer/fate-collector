@@ -136,19 +136,23 @@ try {
 } finally { $plateGraphics.Dispose(); $plateStream.Dispose(); $plate.Dispose() }
 
 function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated,
-        [switch]$FaintDigitStroke, [switch]$TouchingDigit) {
-    $image = [Drawing.Bitmap]::new(240, 205)
+        [switch]$FaintDigitStroke, [switch]$TouchingDigit, [switch]$Dim,
+        [ValidateSet('None', 'Overprint', 'Gap')][string]$SlashCover = 'None') {
+    $scale = if ($Dim) { 2 } else { 1 }
+    $image = [Drawing.Bitmap]::new(240 * $scale, 205 * $scale)
     $stream = [IO.MemoryStream]::new()
     $graphics = [Drawing.Graphics]::FromImage($image)
     $faint = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(115, 115, 115))
     try {
         $graphics.Clear([Drawing.Color]::Black)
+        $graphics.ScaleTransform($scale, $scale)
+        $ink = if ($Dim) { [Drawing.Brushes]::DarkSlateGray } else { [Drawing.Brushes]::White }
         $digitX = if ($TouchingDigit) { 69 } else { 66 }
         foreach ($digit in $LeftDigit, $RightDigit) {
             for ($row = 0; $row -lt 7; $row++) {
                 for ($col = 0; $col -lt 5; $col++) {
                     if ($digit[$row * 5 + $col] -eq '1') {
-                        $brush = if ($FaintDigitStroke -and $digitX -eq 66 -and $row -ge 4) { $faint } else { [Drawing.Brushes]::White }
+                        $brush = if ($FaintDigitStroke -and $digitX -eq 66 -and $row -ge 4) { $faint } else { $ink }
                         $graphics.FillRectangle($brush, $digitX + 2 * $col, 109 + 2 * $row, 2, 2)
                     }
                 }
@@ -157,7 +161,11 @@ function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$Ve
         }
         for ($row = 0; $row -lt 18; $row++) {
             $offset = if ($VerticalMark) { 0 } else { [int][Math]::Floor((17 - $row) / 5) }
-            $graphics.FillRectangle([Drawing.Brushes]::White, 79 + $offset, 107 + $row, 2, 1)
+            $graphics.FillRectangle($ink, 79 + $offset, 107 + $row, 2, 1)
+        }
+        if ($SlashCover -ne 'None') {
+            $cover = if ($SlashCover -eq 'Overprint') { [Drawing.Brushes]::LightGray } else { [Drawing.Brushes]::Black }
+            $graphics.FillRectangle($cover, 78, 118, 7, 2)
         }
         if ($Hud) {
             $graphics.FillRectangle([Drawing.Brushes]::LightSteelBlue, 63, 143, 30, 12)
@@ -232,6 +240,28 @@ foreach ($png in @(
 if (([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -TouchingDigit -VerticalMark -Hud))).Count -ne 0 -or
     ([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -FaintDigitStroke -VerticalMark -Hud))).Count -ne 0) {
     throw 'Reject a vertical mark even when a digit touches it or a digit has faint strokes.'
+}
+foreach ($cover in 'None', 'Overprint') {
+    $dim = New-CounterFixture $zero $four -Dim -SlashCover $cover
+    $region = [Drawing.Rectangle]::new(100, 170, 140, 100)
+    $read = [FateOcrImage]::ReadCounters($dim, $region)
+    if ($read.Count -ne 1 -or $read[0].Text -ne '0/4' -or
+        [FateOcrImage]::ReadCounters($dim).Count -ne 0) {
+        throw 'Read the dim fraction only in the panel search region, including a partly overprinted diagonal.'
+    }
+}
+foreach ($invalid in @(
+        (New-CounterFixture $zero $four -Dim -SlashCover Gap),
+        (New-CounterFixture $zero $four -Dim -SlashCover Overprint -VerticalMark),
+        (New-CounterFixture $four $two -Dim),
+        (New-CounterFixture ('0' * 35) $four -Dim))) {
+    if ([FateOcrImage]::ReadCounters($invalid, $region).Count) {
+        throw 'A dark gap, a vertical mark, an impossible count or a missing digit cannot establish a dim fraction.'
+    }
+}
+if (!(Get-FateDimCounterRegion @($confirm)).IsEmpty -or
+    !(Get-FateDimCounterRegion @((New-Line 'Fates' 80), (New-Line 'Invoke Fates' 95))).IsEmpty) {
+    throw 'A dim counter search requires a unique panel heading.'
 }
 $tooManyLines = New-Pass (@($confirm) + @(1..499 | ForEach-Object { New-Line 'other' 10 20 }))
 if (![object]::ReferenceEquals((Merge-FateCounterLines $tooManyLines $null $counters), $tooManyLines)) {
