@@ -1,6 +1,6 @@
 # Fate Collector releases
 
-## 0.10.16 — Unreleased
+## 0.10.16 — 20 November 2026
 
 - The Windows helper can read a Fates counter crossed by tooltip lettering when enough of both digits and the slash remain visible.
 - Offer import separates reward circles from printed descriptions, including when a tooltip covers the card headings.
