@@ -111,6 +111,30 @@ if (-not ('FateOcrImage' -as [type])) {
     Add-Type -Path (Join-Path $helperDirectory 'OcrImage.cs') -ReferencedAssemblies System.Drawing
 }
 
+# The name is dark ink on a dim plate. Bright tooltip lettering must map to
+# the same background as the plate while the ink stays legible.
+$plate = [Drawing.Bitmap]::new(80, 32)
+$plateStream = [IO.MemoryStream]::new()
+$plateGraphics = [Drawing.Graphics]::FromImage($plate)
+try {
+    $plateGraphics.Clear([Drawing.Color]::FromArgb(42, 33, 25))
+    $plateGraphics.FillRectangle([Drawing.Brushes]::Black, 22, 8, 8, 16)
+    $plateGraphics.FillRectangle([Drawing.Brushes]::LightGray, 48, 8, 8, 16)
+    $plate.Save($plateStream, [Drawing.Imaging.ImageFormat]::Png)
+    $prepared = [FateOcrImage]::PrepareCoveredNameplate($plateStream.ToArray(), 4096, [Drawing.Rectangle]::new(0, 0, 80, 32))
+    $resultStream = [IO.MemoryStream]::new($prepared.Png, $false)
+    try {
+        $result = [Drawing.Bitmap]::new($resultStream)
+        try {
+            $row = [int]($prepared.Padding + 16 * $prepared.ScaleY)
+            $intensities = @(foreach ($x in 14, 26, 52) { $result.GetPixel([int]($prepared.Padding + $x * $prepared.ScaleX), $row).R })
+            if ($intensities[0] -lt 245 -or $intensities[1] -gt 10 -or $intensities[2] -lt 245) {
+                throw 'Covered title OCR must preserve the dark letters and suppress the brighter overlay.'
+            }
+        } finally { $result.Dispose() }
+    } finally { $resultStream.Dispose() }
+} finally { $plateGraphics.Dispose(); $plateStream.Dispose(); $plate.Dispose() }
+
 function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated,
         [switch]$FaintDigitStroke, [switch]$TouchingDigit) {
     $image = [Drawing.Bitmap]::new(240, 205)

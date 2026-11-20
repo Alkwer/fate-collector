@@ -73,3 +73,8 @@ test('uses the hovered tooltip name only for the uniquely raised matching column
   expect(read([...lines, tooltip])[2]).toEqual(['Sadist', sadistCaption])
   expect(read([...coveredNames, tooltip])[2]).toEqual(['', sadistCaption])
 })
+
+test.each(['Sadist', 'Pestilent'])('accepts a recovered %s nameplate in the shared-caption column', name => {
+  const printed = line(name, 2124, 308, 106)
+  expect(read([...coveredNames, printed])[2]).toEqual([name, sadistCaption])
+})

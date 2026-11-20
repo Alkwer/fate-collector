@@ -188,6 +188,45 @@ function Read-FateNameplate([byte[]]$Png, $Engine, $Center, $Level, $Pitch, $Dic
     if ($names.Count -eq 1) { return $names[0] }
 }
 
+function Read-FateCoveredNames($Selected, [byte[]]$Png, $Engine, $Axis, $Level, $Pitch, $Dictionary, $ImageWidth, $ImageHeight) {
+    $overlays = @($Selected.lines | Where-Object { $_.width -gt $Pitch -and $_.y -gt $Level - 1.7 * $Pitch -and $_.y -lt $Level - 1.25 * $Pitch })
+    if (!@($overlays | Where-Object { $_.text -match 'empowered monster' }).Count) { return $Selected }
+    $bodies = @($Selected.lines | Where-Object { $_.width -lt .85 * $Pitch -and
+        $_.y -gt $Level - .77 * $Pitch -and $_.y -lt $Level - .27 * $Pitch })
+    $found = @(foreach ($slot in -5..5) {
+        # Both odd and even grids are centered on Confirm, in half-pitch steps.
+        $center = $Axis + $slot * $Pitch / 2
+        $body = @($bodies | Where-Object { [Math]::Abs($_.x + $_.width / 2 - $center) -lt .18 * $Pitch } | Sort-Object { $_.y })
+        if (!$body.Count) { continue }
+        $caption = ConvertTo-FateDescriptionKey ($body.text -join ' ')
+        $names = @($Dictionary.Keys | Where-Object { $Dictionary[$_] -contains $caption })
+        if ($names.Count -lt 2) { continue }
+        # Unique captions already identify the slot in the importer. For shared
+        # captions require an independently read name on this same card.
+        $left = [int][Math]::Floor($center - .26 * $Pitch)
+        $right = [int][Math]::Ceiling($center + .26 * $Pitch)
+        $top = [int][Math]::Floor($body[0].y - .84 * $Pitch)
+        $bottom = [int][Math]::Ceiling($body[0].y - .72 * $Pitch)
+        if ($left -lt 0 -or $right -gt $ImageWidth -or $top -lt 0 -or $bottom -gt $ImageHeight) { continue }
+        if (!@($overlays | Where-Object { $_.x -lt $center -and $_.x + $_.width -gt $center -and
+            $_.y -lt $bottom -and $_.y + $_.height -gt $top }).Count) { continue }
+        if (@($Selected.lines | Where-Object { $_.y -ge $top -and $_.y -lt $bottom -and
+            [Math]::Abs($_.x + $_.width / 2 - $center) -lt .18 * $Pitch -and $_.width -lt .85 * $Pitch }).Count) { continue }
+        $region = [Drawing.Rectangle]::FromLTRB($left, $top, $right, $bottom)
+        $prepared = [FateOcrImage]::PrepareCoveredNameplate($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region)
+        $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
+        if ($read.lines.Count -eq 1) {
+            $line = $read.lines[0]
+            if ($line.text -match '^[A-Za-z]+(?:[ -][A-Za-z]+)*$' -and $names -contains ($line.text -replace '[^a-z]', '') -and
+                [Math]::Abs($line.x + $line.width / 2 - $center) -lt .10 * $Pitch) { $line }
+        }
+    })
+    if (!$found.Count -or $Selected.lines.Count + $found.Count -gt 500) { return $Selected }
+    $text = $Selected.text + "`n" + ($found.text -join "`n")
+    if ($text.Length -gt 20000) { return $Selected }
+    return @{ lines = @($Selected.lines) + $found; text = $text }
+}
+
 function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
     if ((Test-FateInvocation $Selected.lines) -or ($null -ne $Other -and (Test-FateInvocation $Other.lines))) { return $Selected }
     $Selected = Read-FateOfferButton $Selected $Other $Png $Engine $ImageWidth $ImageHeight
@@ -202,6 +241,10 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
     $axis = $button.x + $button.width / 2
     $level = $button.y + $button.height / 2
     $pitch = 1.85 * ($axis - $counter.x - $counter.width / 2)
+    $dictionary = Get-FateCardDescriptions
+    if ([int]($counter.text.Split('/')[0]) -gt 0) {
+        $Selected = Read-FateCoveredNames $Selected $Png $Engine $axis $level $pitch $dictionary $ImageWidth $ImageHeight
+    }
     $bandTop = $level - 1.70 * $pitch
     $bandEnd = $level - 1.20 * $pitch
     $titles = @($Selected.lines | Where-Object {
@@ -221,7 +264,6 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
             $_.x -lt $axis + .22 * $pitch -and $_.x + $_.width -gt $axis - .22 * $pitch })
         if (!$letters.Count -or !$tooltip.Count) { return $Selected }
     }
-    $dictionary = Get-FateCardDescriptions
     $band = @($Selected.lines | Where-Object { $_.y -ge $bandTop -and $_.y -lt $bandEnd -and $_.width -lt .85 * $pitch })
     $lines = @($Selected.lines)
     $grids = @(Get-FateHeaderGrid $band $axis $pitch $dictionary)

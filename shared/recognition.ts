@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-11'
+export const PARSER_VERSION = 'counted-offers-12'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -304,6 +304,23 @@ function corroboratedName(header: string, description: string): string | undefin
   })
   return matches.length === 1 ? matches[0][0] : undefined
 }
+function tooltipConfirmsWord(seen: string[], caption: string, body: string[]): boolean {
+  const printed = descriptionWords(caption).split(' ')
+  if (seen.length !== printed.length || seen.length < 3) return false
+  const i = seen.findIndex((word, index) => word !== printed[index])
+  if (i < 0 || seen.slice(i + 1).some((word, j) => word !== printed[i + 1 + j])) return false
+  const repeats = (from: number, to: number) => body.some(line => line.includes(' ' + printed.slice(from, to + 1).join(' ') + ' '))
+  if (seen[i] === '01' && printed[i] === 'of') return i > 0 && i + 1 < seen.length && repeats(i - 1, i + 1)
+  // A covered word must still have visible initial letters. Require the rest
+  // of the caption to agree and the named tooltip to repeat the whole word in context.
+  if (!/^[a-z]{2,}$/.test(seen[i]) || !/^[a-z]+$/.test(printed[i]) ||
+    !printed[i].startsWith(seen[i]) || captionVocabulary.has(seen[i])) return false
+  return [-2, -1, 1, 2].some(offset => {
+    const j = i + offset
+    return /^[a-z]{4,}$/.test(printed[j] ?? '') && repeats(Math.min(i, j), Math.max(i, j))
+  })
+}
+
 function reviewedSpelling(name: string, text: string, header: OcrLine, lines: OcrLine[]): string {
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
@@ -312,24 +329,18 @@ function reviewedSpelling(name: string, text: string, header: OcrLine, lines: Oc
   if (exact) return exact
   const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
   if (supported.length === 1) return supported[0]!
-  // A pointer can cover the crossbar of "of". Correct a digit-like token
-  // only when the named tooltip independently prints the surrounding phrase
-  // and every other word of the card's own caption agrees.
-  const tokens = words.split(' ')
-  const i = tokens.indexOf('01')
-  if (i <= 0 || i >= tokens.length - 1) return text
-  const phrase = [tokens[i - 1], 'of', tokens[i + 1]].join(' ')
-  tokens[i] = 'of'
-  const corrected = tokens.join(' ')
-  const variant = variants.find(value => value && descriptionWords(value) === corrected)
-  if (!variant) return text
-  const titles = lines.filter(l => l.y < header.y - 2 * header.height && knownFateName(l.text) === name)
+  if (!name || !variants.length) return text
+  const sameName = lines.filter(l => knownFateName(l.text) === name)
+  if (sameName.some(l => Math.abs(l.y - header.y) <= 2 * header.height &&
+    Math.abs(centerX(l) - centerX(header)) > header.width)) return text
+  const titles = sameName.filter(l => l.y < header.y - 2 * header.height)
   if (titles.length !== 1) return text
   const title = titles[0]
-  const repeated = lines.some(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
-    && l.y + l.height < header.y && Math.abs(l.x - title.x) < title.height
-    && (' ' + descriptionWords(l.text) + ' ').includes(' ' + phrase + ' '))
-  return repeated ? variant : text
+  const body = lines.filter(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
+    && l.y + l.height < header.y && Math.abs(l.x - title.x) < title.height).map(l => ' ' + descriptionWords(l.text) + ' ')
+  const seen = words.split(' ')
+  const confirmed = variants.filter(value => value && tooltipConfirmsWord(seen, value, body))
+  return confirmed.length === 1 ? confirmed[0]! : text
 }
 
 export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
