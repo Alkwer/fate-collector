@@ -321,6 +321,9 @@ export function analyzeVisualCapture(input: Input): VisualAnalysis {
   const region = findOfferedRegion({ image: { width, height }, ocr: { ...ocr, lines } })
   if (!region) return stop('unsupported', 'The offered-card area could not be established.')
   const headers = region.headers.flatMap(line => {
+    // A name inferred from the caption does not locate the visible nameplate
+    // accurately enough to assign a tier or reward symbol.
+    if (line.inferred) return []
     const name = knownFateName(line.text)
     return name && line.width <= 180 * scale && line.height <= 30 * scale ? [{ line, name }] : []
   })

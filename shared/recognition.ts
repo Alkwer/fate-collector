@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-10'
+export const PARSER_VERSION = 'counted-offers-11'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -13,10 +13,11 @@ const normalize = (text: string) => text.toLowerCase().replace(/[^a-z]/g, '')
 const byName = new Map(KNOWN_FATE_NAMES.map(name => [normalize(name), name]))
 export const knownFateName = (text: string): string | undefined => byName.get(normalize(text))
 type OcrLine = CaptureUpload['ocr']['lines'][number]
+type OfferHeader = OcrLine & { caption?: string; inferred?: boolean }
 const centerX = (line: OcrLine) => line.x + line.width / 2
 const alignedControls = (a: OcrLine, b: OcrLine) =>
   Math.abs(centerX(a) - centerX(b)) <= Math.max(a.width, b.width) / 2
-type OfferRegion = { lines: OcrLine[]; headers: OcrLine[]; bottom: number; columnPitch?: number }
+type OfferRegion = { lines: OcrLine[]; headers: OfferHeader[]; bottom: number; columnPitch?: number }
 
 function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bottom: number, minimumKnown: number) {
   const pitch = span * .56
@@ -94,6 +95,13 @@ function countedOffer(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]
     // A tooltip may mask the title. Require visible tooltip text across that
     // position and a complete, centered row of at least three named slots.
     if (!title) {
+      if (button && current > 0 && current < total) {
+        const recovered = coveredOffer(lines, axis, level, span * .56, button.y, current)
+        if (recovered) {
+          matches.push(recovered)
+          continue
+        }
+      }
       const atTitle = lines.filter(l => l.y >= top - .08 * span && l.y <= top + .09 * span)
       const fragment = atTitle.some(l => /^(fa|fat|fate|ates|tes|es)$/i.test(l.text.trim())
         && Math.abs(centerX(l) - axis) < .08 * span && l.width < .15 * span)
@@ -124,10 +132,20 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
     .map(confirm => ({ heading, confirm })))
   // Establish the offered region independently of the name dictionary. A known
   // card below Confirm must never replace unreadable or missing offered headers.
-  if (invocation || panels.length > 1) return null
+  if (invocation) return null
+  if (panels.length > 1) {
+    // The in-world prompt can sit just above Confirm, inside the actual offer.
+    // Only a counted grid with the same button can disambiguate those labels.
+    const real = panels.filter(p => normalize(p.heading.text) === 'fates')
+    if (real.length !== 1) return null
+    const { heading, confirm } = real[0]
+    if (!panels.every(p => p.confirm === confirm && (p.heading === heading ||
+      (normalize(p.heading.text) === 'selectafate' && p.heading.y > heading.y + .75 * (confirm.y - heading.y))))) return null
+    return countedOffer(lines, [heading], [confirm])
+  }
   const counted = countedOffer(lines, headings, confirms)
   if (counted) return counted
-  if (panels.length !== 1) return null
+  if (panels.length !== 1) return coveredControllerButton(lines, headings, confirms)
   const { heading, confirm } = panels[0]
   const rows = panelRows(lines, centerX(heading), heading.y, confirm.y - heading.y, confirm.y, 2)
   if (rows.length === 1) return rows[0]
@@ -147,6 +165,98 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
 // description are present in its own column. Missing or different words stay raw.
 const descriptionWords = (text: string) => text.toLowerCase().replace(/(?<!\d)[.,](?!\d)/g, '').replace(/\s+/g, ' ').trim()
 const shortDescriptions = new Map(screenshots.fates.map(fate => [fate.name, [...new Set(fate.variants.map(v => v.shortDescription))]]))
+const namesByCaption = new Map<string, string[]>()
+for (const [name, variants] of shortDescriptions) for (const caption of variants) {
+  if (!caption) continue
+  const key = descriptionWords(caption)
+  const names = namesByCaption.get(key) ?? []
+  if (!names.includes(name)) namesByCaption.set(key, [...names, name])
+}
+
+// With a selected deck underneath Confirm, a tooltip can cover the top row's
+// nameplates. Use the exact printed captions only inside a verified upper grid.
+function coveredOffer(lines: OcrLine[], axis: number, level: number, pitch: number, bottom: number, owned: number): OfferRegion | null {
+  if (owned > 6) return null
+  const inBand = (l: OcrLine, from: number, to: number) => l.y >= level + from * pitch && l.y < level + to * pitch
+  const ownedHeaders = lines.filter(l => inBand(l, .22, .52) && knownFateName(l.text))
+  if (!Array.from({ length: owned }, (_, i) => axis + (i - (owned - 1) / 2) * pitch)
+    .every(x => ownedHeaders.some(l => Math.abs(centerX(l) - x) < pitch * .15))) return null
+  const wideLines = lines.filter(l => inBand(l, -1.68, -1.25) && l.width > pitch)
+  const seeds = wideLines.filter(l => /empowered monster/i.test(l.text))
+  if (!seeds.length) return null
+  const tooltip = wideLines.filter(l => seeds.some(s => Math.abs(l.x - s.x) < s.height
+    && Math.abs(l.y - s.y) <= 1.5 * s.height))
+  const tooltipTitles = lines.filter(l => knownFateName(l.text) && seeds.some(body =>
+    Math.abs(l.x - body.x) < l.height && body.y - l.y > l.height && body.y - l.y < 3.5 * l.height))
+  const bodies = lines.filter(l => inBand(l, -.77, -.27) && l.width < .85 * pitch && /[a-z]/i.test(l.text))
+  const titles = lines.filter(l => inBand(l, -1.58, -1.30) && l.width < .8 * pitch)
+  const matches: OfferRegion[] = []
+  for (let count = 3; count <= 6; count++) {
+    const headers: OfferHeader[] = []
+    const bodyTops: number[] = []
+    let anchored = false
+    for (let i = 0; i < count; i++) {
+      const x = axis + (i - (count - 1) / 2) * pitch
+      const body = bodies.filter(l => Math.abs(centerX(l) - x) < pitch * .18).sort((a, b) => a.y - b.y)
+      const caption = body.map(l => l.text.trim()).join(' ')
+      const names = namesByCaption.get(descriptionWords(caption))
+      if (!names) break
+      bodyTops.push(body[0].y)
+      const slot = titles.filter(l => Math.abs(centerX(l) - x) < pitch * .2)
+      const visible = slot.filter(l => knownFateName(l.text))
+      if (visible.length) {
+        if (visible.length !== 1 || !names.includes(knownFateName(visible[0].text)!)) break
+        headers.push({ ...visible[0], caption })
+        anchored = true
+      } else {
+        if (!tooltip.some(l => l.x < x && l.x + l.width > x)) break
+        const height = body[0].height
+        headers.push({ x: x - pitch * .2, y: body[0].y - pitch * .81, width: pitch * .4, height,
+          text: names.length === 1 ? names[0] : '', inferred: true, caption })
+      }
+    }
+    if (headers.length !== count) continue
+    // The hovered card is raised above all its neighbours. Its own tooltip
+    // can distinguish two names that have the same printed short description.
+    const raised = bodyTops.findIndex((y, i) => bodyTops.every((other, j) =>
+      j === i || other - y > headers[i].height * .75))
+    if (raised !== -1 && tooltipTitles.length === 1) {
+      const header = headers[raised], name = knownFateName(tooltipTitles[0].text)!
+      if (namesByCaption.get(descriptionWords(header.caption!))?.includes(name) && (!header.text || header.text === name)) {
+        header.text = name
+        anchored = true
+      }
+    }
+    if (!anchored) continue
+    // A centered subgrid of a four- or six-card offer is not a second offer.
+    const next = pitch * (count + 1) / 2
+    if (bodies.some(l => Math.abs(Math.abs(centerX(l) - axis) - next) < pitch * .18)) continue
+    matches.push({ headers, bottom, columnPitch: pitch, lines: bodies })
+  }
+  return matches.length === 1 ? matches[0] : null
+}
+
+// On a controller the footer has its own Confirm/Close hints. When a tooltip
+// covers the panel button, verify the two rows independently of that footer.
+function coveredControllerButton(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]): OfferRegion | null {
+  const titles = headings.filter(l => normalize(l.text) === 'fates')
+  if (titles.length !== 1) return null
+  const title = titles[0], axis = centerX(title)
+  const upper = lines.filter(l => knownFateName(l.text) && l.y > title.y + title.height * 2.5
+    && l.y < title.y + title.height * 6.5).sort((a, b) => a.x - b.x)
+  if (upper.length < 3 || upper.length > 6) return null
+  const pitch = (centerX(upper[upper.length - 1]) - centerX(upper[0])) / (upper.length - 1)
+  if (pitch < title.height * 8 || pitch > title.height * 18) return null
+  const span = pitch / .56, bottom = title.y + span
+  const footer = confirms.some(c => c.y > bottom + pitch && lines.some(l => normalize(l.text) === 'close'
+    && l.x > c.x && Math.abs(l.y - c.y) < c.height))
+  if (!footer || !lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .35)
+    || !lines.some(l => l.x < axis && l.x + l.width > axis && Math.abs(l.y - bottom) < pitch * .12)
+    || !lines.some(l => knownFateName(l.text) && l.y > bottom + pitch * .2 && l.y < bottom + pitch * .6)) return null
+  const rows = panelRows(lines, axis, title.y, span, bottom, upper.length)
+  return rows.length === 1 && rows[0].headers.every((h, i) => h === upper[i]
+    && namesByCaption.get(descriptionWords(columnDescription(lines, h, pitch, bottom)))?.includes(knownFateName(h.text)!)) ? rows[0] : null
+}
 const captionVocabulary = new Set([...shortDescriptions.values()].flat().flatMap(s => s ? descriptionWords(s).split(' ') : []))
 // OCR ligatures can turn one glyph into two, e.g. "m" into "rn". Only a
 // short contiguous difference is allowed. Never replace another catalog word.
@@ -240,12 +350,12 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
     const next = row[index + 1]
     const left = previous ? (previous.x + previous.width / 2 + center) / 2 : 0
     const right = next ? (next.x + next.width / 2 + center) / 2 : capture.image.width
-    const description = region.columnPitch ? columnDescription(offerLines, header, region.columnPitch, region.bottom) : offerLines.filter(line => {
+    const description = header.caption ?? (region.columnPitch ? columnDescription(offerLines, header, region.columnPitch, region.bottom) : offerLines.filter(line => {
       const x = line.x + line.width / 2
       return line.y > headerBottom + first.height && x > left && x < right
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
         && line.text.trim().length > 2
-    }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
+    }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' '))
     const name = knownFateName(header.text) ?? corroboratedName(header.text, description)
     return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000), header, capture.ocr.lines)] : [] }]
   })
@@ -256,17 +366,18 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
 function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number) {
   const center = centerX(header)
   return lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
-    && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text))
+    && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text)
+    && normalize(l.text) !== 'selectafate')
     .sort((a, b) => a.y - b.y || a.x - b.x).map(l => l.text.trim()).join(' ')
 }
 
 // Preserve unknown name slots only alongside a known anchor, with matching text
 // size and a separate column. All-unknown/overlapping/body-text rows still abstain.
-export function offeredCardHeaders(row: OcrLine[]): OcrLine[] {
+export function offeredCardHeaders(row: OfferHeader[]): OfferHeader[] {
   const known = row.filter(header => knownFateName(header.text))
   if (!known.length) return []
   return row.filter(header => {
-    if (knownFateName(header.text)) return true
+    if (knownFateName(header.text) || header.inferred) return true
     if (row.length > 6 || !/^[A-Z][a-zA-Z’'-]+(?: [A-Z][a-zA-Z’'-]+){0,2}$/.test(header.text.trim())) return false
     if (!known.some(anchor => header.height >= anchor.height * .75 && header.height <= anchor.height * 1.35)) return false
     return row.every(other => other === header || header.x + header.width <= other.x || other.x + other.width <= header.x)
