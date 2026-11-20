@@ -20,6 +20,23 @@ function ConvertTo-FateDescriptionKey([string]$Text) {
     return (($Text.ToLowerInvariant() -replace '(?<!\d)[.,](?!\d)', '') -replace '\s+', ' ').Trim()
 }
 
+function Get-FateCaptionScore([string]$Words, $Variants) {
+    if (!$Words) { return -1 }
+    $seen = $Words -split ' '
+    $best = -1
+    foreach ($variant in $Variants) {
+        if ($Words -ceq $variant) { return 1.0 }
+        $expected = $variant -split ' '
+        if ($seen.Count -ne $expected.Count) { continue }
+        $matches = 0
+        for ($i = 0; $i -lt $seen.Count; $i++) {
+            if ($seen[$i] -ceq $expected[$i]) { $matches++ }
+        }
+        if ($matches -ge [Math]::Ceiling($seen.Count / 2)) { $best = [Math]::Max([double]$best, $matches / $seen.Count) }
+    }
+    return $best
+}
+
 function Get-FateCardLines($Lines, $Center, $Pitch, $Top, $Bottom) {
     return $Lines | Where-Object {
         $_.y -ge $Top -and $_.y -lt $Bottom -and $_.width -lt $Pitch -and
@@ -157,7 +174,6 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $newHeaders = @($read.lines | Where-Object { [Math]::Abs($_.y - $header.y) -lt .08 * $pitch -and
             [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $pitch -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', '')) })
         if ($newHeaders.Count -gt 1) { continue }
-        if (!$originalKnown -and !$newHeaders.Count) { continue }
         if ($newHeaders.Count) {
             $readKey = $newHeaders[0].text -replace '[^a-z]', ''
             if ($originalKnown -and $readKey -ne $key) { continue }
@@ -165,6 +181,23 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         }
         $newBody = @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd)
         $newWords = ConvertTo-FateDescriptionKey (($newBody | ForEach-Object { $_.text }) -join ' ')
+        if (!$originalKnown -and !$newHeaders.Count) {
+            # An exact independent caption can support an unclear original
+            # heading. Leave that heading raw for the importer's spelling check.
+            $keys = @($dictionary.Keys | Where-Object { $dictionary[$_] -contains $newWords })
+            if ($keys.Count -ne 1) { continue }
+            $key = $keys[0]
+        }
+        $best = Get-FateCaptionScore $words $dictionary[$key]
+        $candidate = Get-FateCaptionScore $newWords $dictionary[$key]
+        if ($null -ne $Other -and $candidate -lt 1) {
+            $otherBody = @(Get-FateCardLines $Other.lines $center $pitch $bodyTop $bodyEnd)
+            $otherWords = ConvertTo-FateDescriptionKey (($otherBody | ForEach-Object { $_.text }) -join ' ')
+            $otherScore = Get-FateCaptionScore $otherWords $dictionary[$key]
+            if ($otherScore -gt $candidate) {
+                $newBody = $otherBody; $newWords = $otherWords; $candidate = $otherScore
+            }
+        }
         $remove = @()
         $add = @()
         # Do not shorten a longer original description or change visible numbers
@@ -172,12 +205,14 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $keepsWords = !$words -or ($words -split ' ').Count -le ($newWords -split ' ').Count
         $oldNumbers = [regex]::Matches($words, '\d+') | ForEach-Object { $_.Value }
         $newNumbers = [regex]::Matches($newWords, '\d+') | ForEach-Object { $_.Value }
-        if ($dictionary[$key] -contains $newWords -and $newBody.Count -and $keepsWords -and
+        if ($candidate -gt $best -and $newBody.Count -and $keepsWords -and
             (!$oldNumbers -or ($oldNumbers -join ' ') -ceq ($newNumbers -join ' '))) {
             $remove = $body
             $add = $newBody
         } elseif ($dictionary[$key] -notcontains $words) { continue }
-        if (!$originalKnown) { $remove += $header; $add += $newHeaders[0] }
+        if (!$originalKnown -and $newHeaders.Count -and ($candidate -eq 1 -or $best -eq 1)) {
+            $remove += $header; $add += $newHeaders[0]
+        }
         if ($add.Count) { $lines = @($lines | Where-Object { $remove -notcontains $_ }) + $add }
     }
     $text = ($lines | ForEach-Object { $_.text }) -join "`n"

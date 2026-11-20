@@ -182,3 +182,12 @@ test('corroborates a misread header only with the complete description in its ow
   expect(readCounted(typo.filter(l => l.text !== 'blackfire'))[0][0]).toBe('')
   expect(readCounted(typo.map(l => l.text === 'Doornsayer' ? { ...l, text: 'New Fate' } : l))[0][0]).toBe('')
 })
+
+test('repairs isolated glyph errors but preserves missing words, quantities and alternate catalog words', () => {
+  const change = (text: string) => readCounted(countedLines.map(l =>
+    l.text === 'Creates walls Of blackfire.' ? { ...l, text } : l))[1][1]
+  expect(change('Creates walls of bhckfire')).toBe('Creates walls of blackfire')
+  for (const text of ['Creates of blackfire', 'Creates 2 walls of blackfire', 'Creates walls on blackfire']) {
+    expect(change(text)).toBe(text)
+  }
+})
