@@ -1,4 +1,4 @@
-import { MAX_COLLECTED_FATES, recommendFates } from '../../shared/advisor'
+import { MAX_COLLECTED_FATES, recommendFates, thirdSlotPreviewNote } from '../../shared/advisor'
 import { completionCondition, recommendPortfolio, unweightedRewards, visceraFactors, type SolverPortfolio } from '../../shared/solver'
 import { COMPANION_VISCERA } from '../../shared/viscera'
 import type { Offer } from '../../shared/schema'
@@ -102,7 +102,7 @@ export function overlayAdvice(input: OverlayInputs): OverlayView {
     const score = !farming && plan ? `${number(plan.score)} known plan pts now` : gain == null ? 'Gain unknown' : `${gain > 0 ? '+' : ''}${number(gain)} ${portfolio ? 'priority points' : 'goal icons'}`
     const viscera = factors ? [factors.companion ? COMPANION_VISCERA : '', `${factors.inputs} ${factors.inputs === 1 ? 'Fate' : 'Fates'}`, factors.duplicate ? 'duplicate included' : ''].filter(Boolean).join(' · ') : ''
     const projection = option ? `${number(option.points)} pts with ${completionCondition(option)}` : ''
-    const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [viscera, score, projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
+    const reason = excluded.has(card.id) ? `Excluded: ${excluded.get(card.id)}` : [viscera, score, thirdSlotPreviewNote(candidate?.plan), projection, cardReviewReasons(card).join(', ') || 'Check modifiers in game'].filter(Boolean).join(' · ')
     if (!excluded.has(card.id) && workspace.collection.cards.length < MAX_COLLECTED_FATES) view.actions.push({ id: `collect:${card.id}`, label: shorten(`Record ${card.name || 'Unnamed Fate'}`, 160), slot: index + 1 })
     return { label: shorten(`${index + 1}. ${card.name || 'Unnamed Fate'}`, 240), detail: shorten(reason, 500), recommended: header ? header.winner === card.id : recommended.includes(card.id) }
   })

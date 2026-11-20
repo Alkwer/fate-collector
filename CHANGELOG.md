@@ -1,5 +1,9 @@
 # Fate Collector releases
 
+## Unreleased
+
+- Both advisors now recommend a third matching T2 Fate when it adds a second full Valuable Currency set to the invocation preview. The first and third cards each earn the configured combo weight.
+
 ## 0.10.12 — 20 November 2026
 
 - The Windows helper uses the offer layout to distinguish the Fates counter from other HUD fractions when rereading Confirm.

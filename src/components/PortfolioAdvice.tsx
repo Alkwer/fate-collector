@@ -5,7 +5,7 @@ import { MAX_COLLECTED_FATES, type InvocationLimit } from '../../shared/advisor'
 import type { FateCard, Offer } from '../../shared/schema'
 import { COMPANION_VISCERA } from '../../shared/viscera'
 import { OfferPreview } from './OfferPreview'
-import { GainMark, InvocationSequence, RewardSymbol } from './DecisionVisuals'
+import { GainMark, InvocationSequence, RewardSymbol, ThirdSlotPreview } from './DecisionVisuals'
 import { AppIcon } from './AppIcon'
 import { BuildWarnings } from './BuildWarnings'
 const VisceraTarget = lazy(async () => ({ default: (await import('./VisceraTarget')).VisceraTarget }))
@@ -20,13 +20,14 @@ function visceraPlanSummary(plan: SolverPlan) {
 }
 
 export function PortfolioPlan({ plan, cards, collected, limit, lastOffer = false }: { limit: InvocationLimit; plan: SolverPlan; cards: FateCard[]; collected: FateCard[]; lastOffer?: boolean }) {
+  const doubleSetLabel = plan.duplicateCurrency?.find(row => row.scoredSets === 2)?.label
   return <div className="portfolio-plan">
     <InvocationSequence limit={limit} plan={plan} cards={cards} collected={collected} />
     <div className="plan-result"><AppIcon name="reward" /><strong>{number(plan.score)}</strong><div><span>priority points</span>{!lastOffer && <small>{number(plan.progress)} combo progress · useful while collecting</small>}</div></div>
     {plan.rewards.some(reward => reward.uncertain || reward.count === null) && <p className="hint reward-uncertainty">Unresolved reward outcomes · check breakdown</p>}
     <DetailPanel className="plan-notes" title="Reward breakdown"><dl className="reward-breakdown" aria-label="Reward breakdown">{plan.rewards.map((reward, i) => <div key={`${reward.kind}:${reward.label}:${i}`}>
       <dt><RewardSymbol label={reward.label} identified={reward.kind !== 'unknown'} />{reward.label || 'Unidentified reward'} <span className="muted">{reward.kind}</span></dt>
-      <dd><span>{reward.count === null ? 'Unresolved outcome' : reward.kind === 'combo' ? `${reward.count}/${reward.threshold ?? '?'} icons · ${reward.activated ? 'active · scored once' : 'not activated'}` : `${reward.count} icon units`}{reward.uncertain ? ' · incomplete evidence' : ''}</span><span>{number(reward.weight)} weight → <strong>{number(reward.points)} points</strong></span></dd>
+      <dd><span>{reward.count === null ? 'Unresolved outcome' : reward.kind === 'combo' ? `${reward.count}/${reward.threshold ?? '?'} icons · ${reward.label === doubleSetLabel ? '2 preview sets scored' : reward.activated ? 'active · scored once' : 'not activated'}` : `${reward.count} icon units`}{reward.uncertain ? ' · incomplete evidence' : ''}</span><span>{number(reward.weight)} weight → <strong>{number(reward.points)} points</strong></span></dd>
     </div>)}</dl></DetailPanel>
     {plan.warnings.length > 0 && <DetailPanel className="plan-notes" title="Plan limitations"><ul className="advisor-warnings">{plan.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></DetailPanel>}
   </div>
@@ -92,6 +93,7 @@ export function PortfolioAdvice(props: Props) {
         {candidate && !alreadyCollected && (farming ? <GainMark gain={candidate.gain} label="priority points" provisional={status === 'provisional'} /> : <div className="offer-score">
           <div className="candidate-gain"><strong>{candidate.plan ? number(candidate.plan.score) : '?'}</strong><span>{status === 'provisional' ? 'Known plan points now' : 'Plan points now'}{status === 'provisional' && <small>Total unresolved</small>}
             {!!collected.length && candidate.gain !== null && <small>{signed(candidate.gain)} vs collection</small>}</span></div>
+          <ThirdSlotPreview plan={candidate.plan} />
           {candidate.opportunities?.map(option => <div className="combo-opportunity" key={JSON.stringify([option.label, option.duplicateName])}><RewardSymbol label={option.label} />
             <span><strong>{number(option.points)} pts</strong> with {completionCondition(option)}</span></div>)}
         </div>)}

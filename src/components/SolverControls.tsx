@@ -82,7 +82,7 @@ export function SolverControls({ control, availableGoals }: { control: SolverSet
     {settings.mode === 'portfolio' && settings.profile.objective !== 'viscera' && <p className="hint">Compare active rewards across two campaign slots or three map slots.</p>}
     <section className="solver-profile">
       <h3>Priorities, build filters & profile <span className="muted">{settings.profile.goals.length} priorities · {settings.profile.avoidModifiers.length} filters</span></h3>
-      <p>Weights are provisional priority points. A regular reward earns points per icon. A combo earns its points once when completed. Set weights based on what matters to you, independently of market prices or expected profit.</p>
+      <p>Weights are provisional priority points. A regular reward earns points per icon. A completed combo earns its weight. For three matching T2 Fates, each full Valuable Currency set on the first and third cards earns that weight. Set weights based on what matters to you, independently of market prices or expected profit.</p>
       <p className="hint">Incomplete combo progress helps choose the next Fate. It is not an active reward when invoking. Unlisted rewards remain visible but add no points. A weight of 0 disables that priority.</p>
       <div className="starter-profile">
         <label>Starter priorities<select value={starterId} onChange={event => setStarterId(event.target.value as StarterProfileId)}>{Object.entries(STARTER_PROFILES).map(([id, entry]) => <option key={id} value={id}>{entry.label}</option>)}</select></label>

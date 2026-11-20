@@ -20,7 +20,7 @@ export type InvocationPlan = {
   activated: boolean
   merges: { firstId: string; consumedId: string; outputTier: 2 | 3 }[]
   triples?: { firstId: string; consumedId: string; thirdId: string }[]
-  duplicateCurrency?: { label: string; count: number; threshold: number }[]
+  duplicateCurrency?: ReturnType<typeof duplicateCurrencyPreview>[]
   warnings: string[]
 }
 
@@ -74,6 +74,20 @@ export function supportsDuplicateCombo(card: FateCard, label: string, threshold:
   const matches = card.rewards.filter(reward => reward.kind === 'combo' && isRewardIdentified(reward)
     && normalizeRewardLabel(reward.label) === key)
   return matches.length === 0 || (matches.length === 1 && matches[0].count === 1 && card.visualReview?.rewardsReviewed !== false)
+}
+
+// Both retained T2 Fates supplied a complete three-segment set in the Armoury preview.
+// Surplus segments from a different arrangement do not establish another set to score.
+export function duplicateCurrencyPreview(label: string, count: number, threshold: number, threeCopies: boolean) {
+  const twoSets = threeCopies && threshold === 3 && count === 2 * threshold
+    && normalizeRewardLabel(label) === VALUABLE_CURRENCY_LABEL.toLowerCase()
+  return { label, count, threshold, scoredSets: twoSets ? 2 : 1 }
+}
+
+export function thirdSlotPreviewNote(plan?: Pick<InvocationPlan, 'duplicateCurrency'> | null): string {
+  return plan?.duplicateCurrency?.some(row => row.scoredSets === 2)
+    ? 'Third slot adds 1 full Valuable Currency set in the preview. Boss payout unverified.'
+    : ''
 }
 
 export function getAdvisorGoals(cards: FateCard[]): AdvisorGoal[] {
@@ -236,12 +250,14 @@ function analyzeGoal(cards: FateCard[], goal: AdvisorGoal) {
   return { cards: goalCards, threshold, warnings }
 }
 
-function score(plan: InvocationPlan): number {
-  return plan.threshold === null ? plan.targetCount : Math.min(plan.targetCount, plan.threshold)
+export function goalPlanScore(plan: InvocationPlan | null | undefined): number {
+  if (!plan) return 0
+  if (plan.threshold === null) return plan.targetCount
+  return Math.min(plan.targetCount, plan.threshold * (plan.duplicateCurrency?.[0]?.scoredSets ?? 1))
 }
 
 function comparePlans(a: InvocationPlan, b: InvocationPlan): number {
-  return score(b) - score(a) || a.cardIds.length - b.cardIds.length
+  return goalPlanScore(b) - goalPlanScore(a) || a.cardIds.length - b.cardIds.length
 }
 
 function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | null, goalWarnings: string[], required: GoalCard | undefined, filters: PlanningFilters, invoking: boolean, limit: InvocationLimit) {
@@ -274,7 +290,7 @@ function searchPlans(cards: GoalCard[], goal: AdvisorGoal, threshold: number | n
       threshold,
       activated: threshold !== null && targetCount >= threshold,
       ...(goal.kind === 'combo' && retainedCount > 0 && threshold !== null
-        ? { duplicateCurrency: [{ label: goal.label, count: targetCount, threshold }] } : {}),
+        ? { duplicateCurrency: [duplicateCurrencyPreview(goal.label, targetCount, threshold, !!triple)] } : {}),
       merges: pair && mergeRisk?.outputTier ? [{ firstId: pair[0].id, consumedId: pair[1].id, outputTier: mergeRisk.outputTier }] : [],
       ...(triple ? { triples: [{ firstId: triple[0].id, consumedId: triple[1].id, thirdId: triple[2].id }] } : {}),
       warnings: planWarnings,
@@ -325,18 +341,18 @@ export function recommendFates(offered: FateCard[], collected: FateCard[], goal:
   analysis.warnings.push(...filteredCollected.warnings, ...filteredOffered.warnings)
   const pool = analysis.cards.slice(0, collected.length)
   const baseline = searchPlans(pool, goal, analysis.threshold, analysis.warnings, undefined, filters, lastOffer, limit)
-  const baselineScore = baseline.plans[0] ? score(baseline.plans[0]) : 0
+  const baselineScore = goalPlanScore(baseline.plans[0])
   const warnings = new Set(baseline.warnings)
   const candidates = analysis.cards.slice(collected.length).map(card => {
     const result = searchPlans(pool, goal, analysis.threshold, analysis.warnings, card, filters, lastOffer, limit)
     for (const warning of result.warnings) warnings.add(warning)
     const plan = result.plans[0] ?? null
-    return { cardId: card.id, plan, gain: plan ? score(plan) - baselineScore : null, warnings: result.warnings }
+    return { cardId: card.id, plan, gain: plan ? goalPlanScore(plan) - baselineScore : null, warnings: result.warnings }
   })
   candidates.sort((a, b) => a.plan && b.plan ? comparePlans(a.plan, b.plan) : Number(!!b.plan) - Number(!!a.plan))
   const best = candidates[0]?.plan
-  const recommendedCardIds = best && score(best) > baselineScore
-    ? candidates.filter(({ plan }) => plan && (lastOffer ? score(plan) === score(best) : comparePlans(plan, best) === 0)).map(({ cardId }) => cardId)
+  const recommendedCardIds = best && goalPlanScore(best) > baselineScore
+    ? candidates.filter(({ plan }) => plan && (lastOffer ? goalPlanScore(plan) === goalPlanScore(best) : comparePlans(plan, best) === 0)).map(({ cardId }) => cardId)
     : []
   const status = !recommendedCardIds.length ? 'insufficient' : warnings.size ? 'provisional' : 'ready'
   const comparison = recommendedCardIds.length ? 'improvement' : warnings.size ? 'unknown' : 'no-improvement'
