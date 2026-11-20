@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-7'
+export const PARSER_VERSION = 'counted-offers-8'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -20,7 +20,7 @@ type OfferRegion = { lines: OcrLine[]; headers: OcrLine[]; bottom: number; colum
 
 function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bottom: number, minimumKnown: number) {
   const pitch = span * .56
-  const band = lines.filter(l => l.y >= top + .13 * span && l.y < top + .29 * span && l.width < pitch * .85)
+  const band = lines.filter(l => l.y >= top + .08 * span && l.y < top + .29 * span && l.width < pitch * .85)
   const matches: OfferRegion[] = []
   for (let count = minimumKnown; count <= 6; count++) {
     const row: OcrLine[] = []
@@ -36,10 +36,14 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
     // outer slot. Keep the legacy partial-row path when both controls are visible.
     const hasOuterHeader = band.some(l => {
       if (row.includes(l)) return false
-      if (knownFateName(l.text)) return true
       const offset = (centerX(l) - axis) / pitch
       const slot = offset + (count - 1) / 2
-      return Math.abs(offset) < 2.65 && (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+      if (Math.abs(offset) >= 2.65) return false
+      if (knownFateName(l.text)) return true
+      // Quest names can line up horizontally with an unused slot. An unknown
+      // outer title must also share the row's baseline (including a raised card).
+      return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+        && row.some(header => Math.abs(header.y - l.y) <= pitch * .10)
         && offeredCardHeaders([...row, l]).includes(l)
     })
     if (hasOuterHeader) continue
@@ -123,6 +127,23 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
 // description are present in its own column. Missing or different words stay raw.
 const descriptionWords = (text: string) => text.toLowerCase().replace(/(?<!\d)[.,](?!\d)/g, '').replace(/\s+/g, ' ').trim()
 const shortDescriptions = new Map(screenshots.fates.map(fate => [fate.name, [...new Set(fate.variants.map(v => v.shortDescription))]]))
+function corroboratedName(header: string, description: string): string | undefined {
+  const seen = normalize(header)
+  if (seen.length < 6 || !description) return
+  const words = descriptionWords(description)
+  const matches = [...shortDescriptions].filter(([name, variants]) => {
+    if (!variants.some(v => v && descriptionWords(v) === words)) return false
+    // A single blurred glyph can look like two letters. Require matching text
+    // on both sides of that small difference and the whole description in this column.
+    const expected = normalize(name)
+    let left = 0, right = 0
+    const limit = Math.min(seen.length, expected.length)
+    while (left < limit && seen[left] === expected[left]) left++
+    while (left + right < limit && seen.at(-1 - right) === expected.at(-1 - right)) right++
+    return Math.max(seen.length, expected.length) - left - right <= 2
+  })
+  return matches.length === 1 ? matches[0][0] : undefined
+}
 function reviewedSpelling(name: string, text: string): string {
   const words = descriptionWords(text)
   return shortDescriptions.get(name)?.find(value => value && (descriptionWords(value) === words
@@ -142,7 +163,6 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
   const headerBottom = Math.max(...row.map(m => m.y + m.height))
   const cards = row.flatMap((header, index) => {
     if (!candidates.has(header)) return []
-    const name = byName.get(normalize(header.text))
     const center = header.x + header.width / 2
     const previous = row[index - 1]
     const next = row[index + 1]
@@ -160,6 +180,7 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
+    const name = knownFateName(header.text) ?? corroboratedName(header.text, description)
     return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000))] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }

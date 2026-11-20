@@ -1,6 +1,7 @@
 # Windows OCR with multiple passes. Component attribution: THIRD_PARTY_NOTICES.md.
 # Counter glyphs can be read from the PNG. This module never fills in names, tiers or rewards.
 $script:FateOcrDirectory = $PSScriptRoot
+. (Join-Path $PSScriptRoot 'OcrCardText.Common.ps1')
 
 function Wait-WinRtResult($Operation, [type]$ResultType) {
     $task = $asTask.MakeGenericMethod($ResultType).Invoke($null, @($Operation))
@@ -296,6 +297,9 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
                 $counters = [FateOcrImage]::ReadCounters($Png)
                 $selected = Merge-FateCounterLines $selected $other $counters
             } catch { Write-Verbose ("Counter OCR failed. " + $_.Exception.Message) }
+            try {
+                $selected = Read-FateCardText $selected $other $Png $engine $ImageWidth $ImageHeight
+            } catch { Write-Verbose ("Card text retry failed. " + $_.Exception.Message) }
         }
         foreach ($line in $selected.lines) { $line.Remove('words') }
         $ocr.status = 'ok'; $ocr.text = $selected.text; $ocr.lines = $selected.lines

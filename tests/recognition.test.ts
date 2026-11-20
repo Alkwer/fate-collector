@@ -168,3 +168,17 @@ test('ignores title-cased HUD labels beyond the widest six-card layout', () => {
   const cards = extractCards({ ...base, image: { ...base.image, width: 1920 }, ocr: { ...base.ocr, lines } }).cards
   expect(cards.map(c => [c.name, ...c.modifiers])).toEqual(countedCards)
 })
+
+test('ignores a quest on a possible outer column above a complete row', () => {
+  const quest = { ...line('Kingsmarch', 970, 107), width: 100 }
+  const result = extractCards({ ...base, image: { ...base.image, width: 1200 },
+    ocr: { ...base.ocr, lines: [...countedLines, quest] } })
+  expect(result.cards.map(c => [c.name, ...c.modifiers])).toEqual(countedCards)
+})
+
+test('corroborates a misread header only with the complete description in its own column', () => {
+  const typo = countedLines.map(l => l.text === 'Doomsayer' ? { ...l, text: 'Doornsayer' } : l)
+  expect(readCounted(typo)).toEqual(countedCards)
+  expect(readCounted(typo.filter(l => l.text !== 'blackfire'))[0][0]).toBe('')
+  expect(readCounted(typo.map(l => l.text === 'Doornsayer' ? { ...l, text: 'New Fate' } : l))[0][0]).toBe('')
+})
