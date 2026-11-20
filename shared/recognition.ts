@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-8'
+export const PARSER_VERSION = 'counted-offers-9'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -30,9 +30,14 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       if (atSlot.length !== 1) break
       row.push(atSlot[0])
     }
-    if (row.length !== count || offeredCardHeaders(row).length !== count) continue
-    const identified = row.filter(header => knownFateName(header.text) || corroboratedName(header.text,
-      columnDescription(lines, header, pitch, bottom)))
+    if (row.length !== count) continue
+    const headers = row.map(header => {
+      if (knownFateName(header.text)) return header
+      const name = corroboratedName(header.text, columnDescription(lines, header, pitch, bottom))
+      return name ? { ...header, text: name } : header
+    })
+    if (offeredCardHeaders(headers).length !== count) continue
+    const identified = headers.filter(header => knownFateName(header.text))
     if (identified.length < minimumKnown) continue
     // A smaller grid embedded in a partial offer must not drop an unknown
     // outer slot. Keep the legacy partial-row path when both controls are visible.
@@ -46,10 +51,10 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       // outer title must also share the row's baseline (including a raised card).
       return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
         && row.some(header => Math.abs(header.y - l.y) <= pitch * .10)
-        && offeredCardHeaders([...row, l]).includes(l)
+        && offeredCardHeaders([...headers, l]).includes(l)
     })
     if (hasOuterHeader) continue
-    matches.push({ headers: row, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
+    matches.push({ headers, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
   }
   return matches
 }
@@ -80,8 +85,13 @@ function countedOffer(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]
     const top = level - span
     // A tooltip may mask the title. Require visible tooltip text across that
     // position and a complete, centered row of at least three named slots.
-    if (!title && !lines.some(l => l.y >= top - .08 * span && l.y <= top + .09 * span
-      && l.x < axis && l.x + l.width > axis && l.width > span * .56)) continue
+    if (!title) {
+      const atTitle = lines.filter(l => l.y >= top - .08 * span && l.y <= top + .09 * span)
+      const fragment = atTitle.some(l => /^(fa|fat|fate|ates|tes|es)$/i.test(l.text.trim())
+        && Math.abs(centerX(l) - axis) < .08 * span && l.width < .15 * span)
+      const margin = fragment ? .12 * span : 0
+      if (!atTitle.some(l => l.x < axis + margin && l.x + l.width > axis - margin && l.width > span * .56)) continue
+    }
     matches.push(...panelRows(lines, axis, top, span, button?.y ?? counter.y, title ? 2 : 3))
   }
   return matches.length === 1 ? matches[0] : null
@@ -162,7 +172,17 @@ function corroboratedName(header: string, description: string): string | undefin
     if (!variants.some(v => v && descriptionWords(v) === words)) return false
     // A single blurred glyph can look like two letters. Require matching text
     // on both sides of that small difference and the whole description in this column.
-    return glyphDifference(seen, normalize(name)) <= 2
+    const target = normalize(name)
+    if (glyphDifference(seen, target) <= 2) return true
+    // Longer names can have a dropped letter and a separate misread glyph.
+    // Both pieces still have to match the independently read whole caption.
+    if (seen.length < 8 || target.length < 8 || seen[0] !== target[0] || seen.at(-1) !== target.at(-1)) return false
+    const [shorter, longer] = seen.length < target.length ? [seen, target] : [target, seen]
+    if (longer.length !== shorter.length + 1) return false
+    for (let i = 1; i < longer.length - 1; i++) {
+      if (glyphDifference(shorter, longer.slice(0, i) + longer.slice(i + 1)) <= 1) return true
+    }
+    return false
   })
   return matches.length === 1 ? matches[0][0] : undefined
 }

@@ -3,6 +3,7 @@
 ## 0.10.12 — 20 November 2026
 
 - The Windows helper uses the offer layout to distinguish the Fates counter from other HUD fractions when rereading Confirm.
+- A controller footer can have its own Confirm prompt. The helper pairs the panel button with its counter and can recover a row when a tooltip covers part of the Fates title.
 - On small cards, the helper can reread dark lettering on the nameplate and pale lettering in the description. Each reading stays in its original column.
 
 ## 0.10.11 — 20 November 2026

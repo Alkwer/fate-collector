@@ -437,7 +437,12 @@ public sealed class FateOcrImage
         return Prepare(png, maxDimension, region, 4.0, Ink.Dark);
     }
 
-    private enum Ink { Original, Light, Dark }
+    public static FateOcrImage PrepareCaptionLine(byte[] png, int maxDimension, Rectangle region)
+    {
+        return Prepare(png, maxDimension, region, 3.0, Ink.LightLine);
+    }
+
+    private enum Ink { Original, Light, Dark, LightLine }
 
     private static void SubtractBackground(byte[] pixels, int stride, int width, int height, Ink ink)
     {
@@ -487,15 +492,16 @@ public sealed class FateOcrImage
                 var pixels = new byte[stride * source.Height];
                 Marshal.Copy(data.Scan0, pixels, 0, pixels.Length);
                 var histogram = new int[256];
+                bool localBackground = ink == Ink.Light || ink == Ink.Dark;
                 for (int y = 0; y < source.Height; y++)
                     for (int x = 0; x < source.Width; x++)
                     {
                         int offset = y * stride + x * 3;
                         byte value = (byte)((pixels[offset] * 114 + pixels[offset + 1] * 587 + pixels[offset + 2] * 299) / 1000);
                         pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = value;
-                        if (ink == Ink.Original) histogram[value]++;
+                        if (!localBackground) histogram[value]++;
                     }
-                if (ink != Ink.Original)
+                if (localBackground)
                 {
                     SubtractBackground(pixels, stride, source.Width, source.Height, ink);
                     for (int y = 0; y < source.Height; y++)
@@ -503,7 +509,8 @@ public sealed class FateOcrImage
                             histogram[pixels[y * stride + 3 * x]]++;
                 }
                 int count = source.Width * source.Height, low = 0, high = 255, seen = 0;
-                while (low < 255 && seen + histogram[low] <= count * 0.02) seen += histogram[low++];
+                double lowerQuantile = ink == Ink.LightLine ? .35 : .02;
+                while (low < 255 && seen + histogram[low] <= count * lowerQuantile) seen += histogram[low++];
                 seen = 0;
                 while (high > 0 && seen + histogram[high] <= count * 0.02) seen += histogram[high--];
                 // Uniform images stay uniform: do not manufacture contrast or text.
@@ -527,7 +534,7 @@ public sealed class FateOcrImage
             {
                 using (var graphics = Graphics.FromImage(prepared))
                 {
-                    graphics.Clear(source.GetPixel(0, 0));
+                    graphics.Clear(ink == Ink.LightLine ? Color.White : source.GetPixel(0, 0));
                     graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     using (var attributes = new ImageAttributes())
                     {

@@ -93,6 +93,12 @@ $rage = @{ x = 740; y = 370; width = 34; height = 12 }
 if (!(Test-FateOfferFraction $counter $headers $names) -or (Test-FateOfferFraction $rage $headers $names)) {
     throw 'A HUD fraction outside the card row cannot displace the offer counter.'
 }
+$fraction = @{ text='0/4'; x=537; y=460; width=20; height=15 }
+$button = @{ text='CONFIRM'; x=610; y=465; width=60; height=10 }
+$footer = @{ text='Confirm'; x=548; y=678; width=50; height=12 }
+if (@(Get-FateButtonCounters $button @($fraction)).Count -ne 1 -or @(Get-FateButtonCounters $footer @($fraction)).Count) {
+    throw 'Only the panel button should pair with the counter when the controller footer is visible.'
+}
 if (!(Test-FateCaptionAgreement 'causes continuai fire damage' 'causes continual fire damage' 'causes continual fire daxxge') -or
     (Test-FateCaptionAgreement 'causes continuai fire damage' 'causes continual fire damage' 'causes minor fire damage') -or
     (Test-FateCaptionAgreement 'release 2 fire projectiles' 'release 3 fire projectiles' 'release 3 fire projectiles') -or

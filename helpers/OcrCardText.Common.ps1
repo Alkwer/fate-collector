@@ -49,6 +49,15 @@ function Get-FateCardLines($Lines, $Center, $Pitch, $Top, $Bottom) {
     } | Sort-Object { $_.y }, { $_.x }
 }
 
+function Select-FateCaptionWords($Lines, $Center, $Pitch) {
+    foreach ($line in $Lines) {
+        if (!$line.Contains('words')) { $line; continue }
+        $inside = @($line.words | Where-Object { [Math]::Abs($_.x + $_.width / 2 - $Center) -lt .40 * $Pitch })
+        if ($inside.Count -eq $line.words.Count) { $line }
+        elseif ($inside.Count) { New-PositionedOcrLine $inside ($inside.text -join ' ') }
+    }
+}
+
 function Test-FateCaptionAgreement([string]$Original, [string]$Regional, [string]$Contrast) {
     $before = $Original -split ' '
     $read = $Regional -split ' '
@@ -82,8 +91,20 @@ function Test-FateOfferFraction($Fraction, $Lines, $Dictionary) {
     return ($left.Count -gt 0 -and $right.Count -gt 0) -or $titles.Count -eq 1
 }
 
+function Get-FateButtonCounters($Button, $Lines) {
+    $axis = $Button.x + $Button.width / 2
+    $level = $Button.y + $Button.height / 2
+    return $Lines | Where-Object {
+        $_.text -match '^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$' -and [int]$Matches[1] -lt [int]$Matches[2] -and
+        [Math]::Abs($_.y + $_.height / 2 - $level) -lt 1.6 * $Button.height -and
+        ($axis - $_.x - $_.width / 2) -gt 1.2 * $Button.width -and ($axis - $_.x - $_.width / 2) -lt 1.85 * $Button.width
+    }
+}
+
 function Read-FateOfferButton($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
-    if (@($Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }).Count) { return $Selected }
+    foreach ($label in $Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }) {
+        if (@(Get-FateButtonCounters $label $Selected.lines).Count) { return $Selected }
+    }
     $dictionary = Get-FateCardDescriptions
     $fractions = @($Selected.lines | Where-Object {
         $_.text -match '^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$' -and [int]$Matches[1] -lt [int]$Matches[2] -and
@@ -147,18 +168,17 @@ function Read-FateNameplate([byte[]]$Png, $Engine, $Center, $Level, $Pitch, $Dic
 function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
     if ((Test-FateInvocation $Selected.lines) -or ($null -ne $Other -and (Test-FateInvocation $Other.lines))) { return $Selected }
     $Selected = Read-FateOfferButton $Selected $Other $Png $Engine $ImageWidth $ImageHeight
-    $buttons = @($Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' })
-    if ($buttons.Count -ne 1) { return $Selected }
-    $button = $buttons[0]
+    $pairs = @(foreach ($label in $Selected.lines | Where-Object { $_.text -match '^\s*confirm\s*$' }) {
+        foreach ($counter in (Get-FateButtonCounters $label $Selected.lines)) {
+            @{ button = $label; counter = $counter }
+        }
+    })
+    if ($pairs.Count -ne 1) { return $Selected }
+    $button = $pairs[0].button
+    $counter = $pairs[0].counter
     $axis = $button.x + $button.width / 2
     $level = $button.y + $button.height / 2
-    $counters = @($Selected.lines | Where-Object {
-        $_.text -match '^\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$' -and [int]$Matches[1] -lt [int]$Matches[2] -and
-        [Math]::Abs($_.y + $_.height / 2 - $level) -lt 1.6 * $button.height -and
-        ($axis - $_.x - $_.width / 2) -gt 1.2 * $button.width -and ($axis - $_.x - $_.width / 2) -lt 1.85 * $button.width
-    })
-    if ($counters.Count -ne 1) { return $Selected }
-    $pitch = 1.85 * ($axis - $counters[0].x - $counters[0].width / 2)
+    $pitch = 1.85 * ($axis - $counter.x - $counter.width / 2)
     $bandTop = $level - 1.70 * $pitch
     $bandEnd = $level - 1.20 * $pitch
     $titles = @($Selected.lines | Where-Object {
@@ -166,7 +186,18 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
             ($_.text -match '^\s*fates\s*$' -and [Math]::Abs($_.x + $_.width / 2 - $axis) -lt .15 * $pitch) -or
             ($_.width -gt $pitch -and $_.x -lt $axis -and $_.x + $_.width -gt $axis))
     })
-    if (!$titles.Count) { return $Selected }
+    if (!$titles.Count) {
+        # A tooltip ending inside the title plate can leave only a few
+        # letters. Preserve those raw lines and require both visual anchors.
+        $atTitle = @($Selected.lines | Where-Object {
+            $_.y -ge $level - 1.97 * $pitch -and $_.y -le $level - 1.63 * $pitch
+        })
+        $letters = @($atTitle | Where-Object { $_.text -match '^\s*(?:fa|fat|fate|ates|tes|es)\s*$' -and
+            [Math]::Abs($_.x + $_.width / 2 - $axis) -lt .14 * $pitch -and $_.width -lt .26 * $pitch })
+        $tooltip = @($atTitle | Where-Object { $_.width -gt $pitch -and
+            $_.x -lt $axis + .22 * $pitch -and $_.x + $_.width -gt $axis - .22 * $pitch })
+        if (!$letters.Count -or !$tooltip.Count) { return $Selected }
+    }
     $dictionary = Get-FateCardDescriptions
     $band = @($Selected.lines | Where-Object { $_.y -ge $bandTop -and $_.y -lt $bandEnd -and $_.width -lt .85 * $pitch })
     $lines = @($Selected.lines)
@@ -227,9 +258,14 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
         $newHeaders = @($read.lines | Where-Object { [Math]::Abs($_.y - $header.y) -lt .08 * $pitch -and
             [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $pitch -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', '')) })
-        if (!$originalKnown -and !$newHeaders.Count -and $pitch -le 220) {
-            $newHeaders = @(Read-FateNameplate $Png $Engine $cell.center $level $pitch $dictionary $ImageWidth $ImageHeight |
+        $confirmedHeader = $false
+        if (!$originalKnown -and $pitch -le 220) {
+            $plate = @(Read-FateNameplate $Png $Engine $cell.center $level $pitch $dictionary $ImageWidth $ImageHeight |
                 Where-Object { [Math]::Abs($_.y - $header.y) -lt .08 * $pitch })
+            if (!$newHeaders.Count) { $newHeaders = $plate }
+            elseif ($newHeaders.Count -eq 1 -and $plate.Count -eq 1) {
+                $confirmedHeader = ($newHeaders[0].text -replace '[^a-z]', '') -eq ($plate[0].text -replace '[^a-z]', '')
+            }
         }
         if ($newHeaders.Count -gt 1) { continue }
         if ($newHeaders.Count) {
@@ -237,7 +273,7 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
             if ($originalKnown -and $readKey -ne $key) { continue }
             $key = $readKey
         }
-        $newBody = @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd)
+        $newBody = @(Select-FateCaptionWords @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
         $newWords = ConvertTo-FateDescriptionKey (($newBody | ForEach-Object { $_.text }) -join ' ')
         if (!$originalKnown -and !$newHeaders.Count) {
             # An exact independent caption can support an unclear original
@@ -249,7 +285,7 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $best = Get-FateCaptionScore $words $dictionary[$key]
         $candidate = Get-FateCaptionScore $newWords $dictionary[$key]
         if ($null -ne $Other -and $candidate -lt 1) {
-            $otherBody = @(Get-FateCardLines $Other.lines $center $pitch $bodyTop $bodyEnd)
+            $otherBody = @(Select-FateCaptionWords @(Get-FateCardLines $Other.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
             $otherWords = ConvertTo-FateDescriptionKey (($otherBody | ForEach-Object { $_.text }) -join ' ')
             $otherScore = Get-FateCaptionScore $otherWords $dictionary[$key]
             if ($otherScore -gt $candidate) {
@@ -258,12 +294,12 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         }
         # On small cards the parchment texture and the letter strokes can have
         # similar brightness. Compare a background-corrected read of this column.
-        if ($pitch -le 220 -and $best -lt 1 -and $candidate -lt 1 -and $originalKnown) {
+        if ($pitch -le 220 -and $best -lt 1 -and $candidate -lt 1 -and ($originalKnown -or $confirmedHeader)) {
             $captionTop = [int][Math]::Max(0, [Math]::Floor($bodyTop))
             $captionBox = [Drawing.Rectangle]::FromLTRB($left, $captionTop, $right, $bottom)
             $prepared = [FateOcrImage]::PrepareCaption($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $captionBox)
             $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $captionTop
-            $caption = @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd)
+            $caption = @(Select-FateCaptionWords @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
             $printed = ConvertTo-FateDescriptionKey (($caption | ForEach-Object { $_.text }) -join ' ')
             $score = Get-FateCaptionScore $printed $dictionary[$key]
             if ($score -ge .75 -and $score -gt $candidate) {
@@ -272,11 +308,30 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
                 $candidate = 1
             }
         }
+        # A pointer or portrait can merge with small letters in a one-line
+        # caption. Use the observed baseline and accept only a whole variant.
+        if ($pitch -le 220 -and $candidate -lt 1 -and $best -lt 1 -and $body.Count -eq 1 -and
+            ($originalKnown -or $confirmedHeader) -and $dictionary[$key].Count) {
+            $lineLeft = [int][Math]::Max(0, [Math]::Round($center - .39 * $pitch))
+            $lineRight = [int][Math]::Min($ImageWidth, [Math]::Round($center + .39 * $pitch))
+            $lineTop = [int][Math]::Max(0, [Math]::Round($body[0].y - .05 * $pitch))
+            $lineBottom = [int][Math]::Min($ImageHeight, [Math]::Round($body[0].y + $body[0].height + .02 * $pitch))
+            $region = [Drawing.Rectangle]::FromLTRB($lineLeft, $lineTop, $lineRight, $lineBottom)
+            $prepared = [FateOcrImage]::PrepareCaptionLine($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region)
+            $retry = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $lineLeft $lineTop
+            $single = @(Get-FateCardLines $retry.lines $center $pitch $bodyTop $bodyEnd)
+            if ($single.Count -eq 1) {
+                $printed = ConvertTo-FateDescriptionKey $single[0].text
+                if ($dictionary[$key] -contains $printed) { $newBody = $single; $newWords = $printed; $candidate = 1 }
+            }
+        }
         $remove = @()
         $add = @()
         # Do not shorten a longer original description or change visible numbers
         # just to recover a documented wording.
-        $originalWords = @($words -split ' ' | Where-Object { $_ -ne [string][char]0x2022 })
+        $inside = @(Select-FateCaptionWords $body $center $pitch)
+        $insideText = ConvertTo-FateDescriptionKey (($inside | ForEach-Object { $_.text }) -join ' ')
+        $originalWords = @($insideText -split ' ' | Where-Object { $_ -ne [string][char]0x2022 })
         $keepsWords = !$words -or $originalWords.Count -le ($newWords -split ' ').Count
         $oldNumbers = [regex]::Matches($words, '\d+') | ForEach-Object { $_.Value }
         $newNumbers = [regex]::Matches($newWords, '\d+') | ForEach-Object { $_.Value }
@@ -284,8 +339,10 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
             (!$oldNumbers -or ($oldNumbers -join ' ') -ceq ($newNumbers -join ' '))) {
             $remove = $body
             $add = $newBody
-        } elseif ($dictionary[$key] -notcontains $words) { continue }
-        if (!$originalKnown -and $newHeaders.Count -and ($candidate -eq 1 -or $best -eq 1)) {
+        } elseif (!$confirmedHeader -and $dictionary[$key] -notcontains $words) { continue }
+        # The wide card read and the isolated nameplate can independently
+        # agree on the header even when the description is only partial.
+        if (!$originalKnown -and $newHeaders.Count -and ($confirmedHeader -or $candidate -eq 1 -or $best -eq 1)) {
             $remove += $header; $add += $newHeaders[0]
         }
         if ($add.Count) { $lines = @($lines | Where-Object { $remove -notcontains $_ }) + $add }

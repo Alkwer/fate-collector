@@ -146,6 +146,17 @@ test('requires a tooltip over the title, Confirm and independent card columns to
   expect(readCounted([...masked, tooltip])).toEqual(countedCards)
   expect(readCounted([...masked, tooltip, line('Invoke Fates', 450, 45)])).toEqual([])
 })
+
+test('recognizes a tooltip ending inside the title plate only with the remaining letters and aligned button', () => {
+  const row = countedLines.filter(l => l.text !== 'Fates').concat(line('CONFIRM', 450, 515))
+  const tooltip = { ...line('Empowered Monster deals cold damage', 110, 55), width: 375 }
+  const fragment = { ...line('es', 509, 51), width: 20 }
+  const footer = line('Confirm', 370, 720)
+  expect(readCounted([...row, tooltip, fragment, footer])).toEqual(countedCards)
+  expect(readCounted([...row, tooltip, footer])).toEqual([])
+  expect(readCounted([...row, fragment])).toEqual([])
+  expect(readCounted([...row.filter(l => l.text !== 'CONFIRM'), tooltip, fragment, footer])).toEqual([])
+})
 test('preserves changed or incomplete description text and abstains on an ambiguous grid', () => {
   expect(readCounted(countedLines.filter(l => l.text !== 'blackfire'))[0]).toEqual(['Doomsayer', 'Creates massive explosive blasts of'])
   expect(readCounted([...countedLines, line('Butcher', 447, 150)])).toEqual([])
