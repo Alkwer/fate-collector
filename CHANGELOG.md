@@ -1,6 +1,6 @@
 # Fate Collector releases
 
-## 0.10.17 — Unreleased
+## 0.10.17 — 20 November 2026
 
 - The Windows helper can recover dim counter digits interrupted by tooltip text when the visible strokes agree across two contrast levels.
 - Capture can distinguish a world-space Select a Fate prompt from the offered card row and verify captions when text from the HUD overlaps a card edge.
