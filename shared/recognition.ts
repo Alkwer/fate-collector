@@ -3,7 +3,7 @@ import { newCard } from './offers.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-9'
+export const PARSER_VERSION = 'counted-offers-10'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -47,6 +47,14 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       const slot = offset + (count - 1) / 2
       if (Math.abs(offset) >= 2.65) return false
       if (knownFateName(l.text)) return true
+      // A wrapped quest objective can end in a capitalized place name on
+      // the header baseline. Its preceding line shares the left margin
+      // and extends beyond the width of a card.
+      const wrapsSidebarText = lines.some(previous => previous.width > pitch
+        && Math.abs(previous.x - l.x) <= l.height * .45
+        && previous.y < l.y && Math.abs(l.y - previous.y - previous.height) <= l.height * .45
+        && previous.text.trim().split(/\s+/).length >= 3)
+      if (wrapsSidebarText && !columnDescription(lines, l, pitch, bottom)) return false
       // Quest names can line up horizontally with an unused slot. An unknown
       // outer title must also share the row's baseline (including a raised card).
       return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
@@ -186,14 +194,32 @@ function corroboratedName(header: string, description: string): string | undefin
   })
   return matches.length === 1 ? matches[0][0] : undefined
 }
-function reviewedSpelling(name: string, text: string): string {
+function reviewedSpelling(name: string, text: string, header: OcrLine, lines: OcrLine[]): string {
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
   const exact = variants.find(value => value && (descriptionWords(value) === words
     || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2))))
   if (exact) return exact
   const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
-  return supported.length === 1 ? supported[0]! : text
+  if (supported.length === 1) return supported[0]!
+  // A pointer can cover the crossbar of "of". Correct a digit-like token
+  // only when the named tooltip independently prints the surrounding phrase
+  // and every other word of the card's own caption agrees.
+  const tokens = words.split(' ')
+  const i = tokens.indexOf('01')
+  if (i <= 0 || i >= tokens.length - 1) return text
+  const phrase = [tokens[i - 1], 'of', tokens[i + 1]].join(' ')
+  tokens[i] = 'of'
+  const corrected = tokens.join(' ')
+  const variant = variants.find(value => value && descriptionWords(value) === corrected)
+  if (!variant) return text
+  const titles = lines.filter(l => l.y < header.y - 2 * header.height && knownFateName(l.text) === name)
+  if (titles.length !== 1) return text
+  const title = titles[0]
+  const repeated = lines.some(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
+    && l.y + l.height < header.y && Math.abs(l.x - title.x) < title.height
+    && (' ' + descriptionWords(l.text) + ' ').includes(' ' + phrase + ' '))
+  return repeated ? variant : text
 }
 
 export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { cards: FateCard[]; message: string } {
@@ -221,7 +247,7 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
         && line.text.trim().length > 2
     }).sort((a, b) => a.y - b.y || a.x - b.x).map(line => line.text.trim()).join(' ')
     const name = knownFateName(header.text) ?? corroboratedName(header.text, description)
-    return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000))] : [] }]
+    return [{ ...newCard(), name: name ?? '', modifiers: description ? [reviewedSpelling(name ?? '', description.slice(0, 1000), header, capture.ocr.lines)] : [] }]
   })
   if (!cards.length) return { cards: [], message: 'No known Fate names were found in the offered row. Keep this capture for a later recognition update, or add cards manually.' }
   return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }

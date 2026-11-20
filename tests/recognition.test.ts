@@ -187,6 +187,30 @@ test('ignores a quest on a possible outer column above a complete row', () => {
   expect(result.cards.map(c => [c.name, ...c.modifiers])).toEqual(countedCards)
 })
 
+test('separates a wrapped sidebar objective from a possible outer card at the same height', () => {
+  const outer = line('Kingsmarch', 970, 154)
+  const objective = { ...line('Speak to Johan in the Karui Shores to visit', 971, 134), width: 304 }
+  const read = (extra: typeof countedLines) => extractCards({ ...base, image: { ...base.image, width: 1400 },
+    ocr: { ...base.ocr, lines: [...countedLines, outer, ...extra] } }).cards.map(c => [c.name, ...c.modifiers])
+  expect(read([objective])).toEqual(countedCards)
+  expect(read([])).toEqual([])
+  expect(read([{ ...objective, x: 940 }])).toEqual([])
+  expect(read([objective, line('Unseen effect', 970, 362)])).toEqual([])
+})
+
+test('requires the same card tooltip and its printed phrase for a digit-like connector', () => {
+  const row = countedLines.map(l => l.text === 'Wildfire' ? { ...l, text: 'Tempest' } :
+    l.text === 'Creates walls Of blackfire.' ? { ...l, text: 'Creates volatile orbs 01 lightning' } : l)
+  const title = line('Tempest', 3, 18)
+  const phrase = { ...line('Volatile orbs of Lightning come into being nearby Empowered Monster', 4, 48), width: 360 }
+  const text = (extra: typeof row) => readCounted([...row, ...extra])[1][1]
+  expect(text([title, phrase])).toBe('Creates volatile orbs of lightning')
+  expect(text([phrase])).toBe('Creates volatile orbs 01 lightning')
+  expect(text([{ ...title, text: 'Dryad' }, phrase])).toBe('Creates volatile orbs 01 lightning')
+  expect(text([title, { ...phrase, x: 70 }])).toBe('Creates volatile orbs 01 lightning')
+  expect(text([title, { ...phrase, text: 'Volatile orbs deal Lightning Damage' }])).toBe('Creates volatile orbs 01 lightning')
+})
+
 test('corroborates a misread header only with the complete description in its own column', () => {
   const typo = countedLines.map(l => l.text === 'Doomsayer' ? { ...l, text: 'Doornsayer' } : l)
   expect(readCounted(typo)).toEqual(countedCards)

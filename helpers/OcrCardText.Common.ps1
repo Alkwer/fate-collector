@@ -42,6 +42,10 @@ function Get-FateCaptionScore([string]$Words, $Variants) {
     return $best
 }
 
+function Get-FateCaptionNumbers([string]$Text) {
+    return ([regex]::Matches($Text, '\d+') | ForEach-Object { $_.Value }) -join ' '
+}
+
 function Get-FateCardLines($Lines, $Center, $Pitch, $Top, $Bottom) {
     return $Lines | Where-Object {
         $_.y -ge $Top -and $_.y -lt $Bottom -and $_.width -lt $Pitch -and
@@ -142,12 +146,31 @@ function Get-FateHeaderGrid($Band, $Axis, $Pitch, $Dictionary) {
             $center = $Axis + ($i - ($slots - 1) / 2) * $Pitch
             $headers = @($Band | Where-Object { $_.width -lt .85 * $Pitch -and
                 [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $Pitch })
-            if ($headers.Count -eq 1) { @{ center = $center; header = $headers[0] } }
+            if ($headers.Count -eq 1) { @{ center = $center; header = $headers[0]; index = $i } }
         })
-        if (@($cells | Where-Object { $Dictionary.ContainsKey(($_.header.text -replace '[^a-z]', '')) }).Count -ge 2) {
-            @{ cells = $cells }
+        $known = @($cells | Where-Object { $Dictionary.ContainsKey(($_.header.text -replace '[^a-z]', '')) })
+        if ($known.Count -ge 2) {
+            # The centered offer must extend at least as far on both sides
+            # as its outermost confirmed name. Never infer extra outer cards.
+            $first = [Math]::Min($known[0].index, $slots - 1 - $known[-1].index)
+            $missing = @(for ($i = $first; $i -lt $slots - $first; $i++) {
+                if ($i -notin $cells.index) { $Axis + ($i - ($slots - 1) / 2) * $Pitch }
+            })
+            @{ cells = $cells; missing = $missing }
         }
     }
+}
+
+function Read-FateHeaderStrip([byte[]]$Png, $Engine, $Axis, $Pitch, $BandTop, $BandEnd, $ImageWidth, $ImageHeight) {
+    $left = [int][Math]::Max(0, [Math]::Floor($Axis - 3 * $Pitch))
+    $right = [int][Math]::Min($ImageWidth, [Math]::Ceiling($Axis + 3 * $Pitch))
+    $top = [int][Math]::Max(0, [Math]::Floor($BandTop))
+    $bottom = [int][Math]::Min($ImageHeight, [Math]::Ceiling($BandEnd + .08 * $Pitch))
+    if ($right -le $left -or $bottom -le $top) { return }
+    $region = [Drawing.Rectangle]::FromLTRB($left, $top, $right, $bottom)
+    $prepared = [FateOcrImage]::Prepare($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region, 3)
+    $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
+    return $read.lines | Where-Object { $_.y -lt $BandEnd }
 }
 
 function Read-FateNameplate([byte[]]$Png, $Engine, $Center, $Level, $Pitch, $Dictionary, $ImageWidth, $ImageHeight) {
@@ -202,18 +225,12 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
     $band = @($Selected.lines | Where-Object { $_.y -ge $bandTop -and $_.y -lt $bandEnd -and $_.width -lt .85 * $pitch })
     $lines = @($Selected.lines)
     $grids = @(Get-FateHeaderGrid $band $axis $pitch $dictionary)
+    $strip = $null
     if (!$grids.Count) {
         # The full pass has no usable row. Retry the title strip once, preserving
         # surrounding evidence and any already readable names in their own slots.
-        $left = [int][Math]::Max(0, [Math]::Floor($axis - 3 * $pitch))
-        $right = [int][Math]::Min($ImageWidth, [Math]::Ceiling($axis + 3 * $pitch))
-        $top = [int][Math]::Max(0, [Math]::Floor($bandTop))
-        $bottom = [int][Math]::Min($ImageHeight, [Math]::Ceiling($bandEnd + .08 * $pitch))
-        if ($right -le $left -or $bottom -le $top) { return $Selected }
-        $region = [Drawing.Rectangle]::FromLTRB($left, $top, $right, $bottom)
-        $prepared = [FateOcrImage]::Prepare($Png, [Windows.Media.Ocr.OcrEngine]::MaxImageDimension, $region, 3)
-        $read = Invoke-FateOcrPass $prepared.Png $Engine $ImageWidth $ImageHeight $prepared.ScaleX $prepared.ScaleY $prepared.Padding $left $top
-        $found = @(Get-FateHeaderGrid @($read.lines | Where-Object { $_.y -lt $bandEnd }) $axis $pitch $dictionary)
+        $strip = @(Read-FateHeaderStrip $Png $Engine $axis $pitch $bandTop $bandEnd $ImageWidth $ImageHeight)
+        $found = @(Get-FateHeaderGrid $strip $axis $pitch $dictionary)
         if (!$found.Count -and $pitch -le 220) {
             # The counter and Confirm establish scale and axis, but not how
             # many cards are visible. Try the two possible row alignments.
@@ -236,6 +253,20 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $grids = @(Get-FateHeaderGrid $band $axis $pitch $dictionary)
     }
     if ($grids.Count -ne 1) { return $Selected }
+    if ($grids[0].missing.Count -and $pitch -le 220) {
+        if ($null -eq $strip) { $strip = @(Read-FateHeaderStrip $Png $Engine $axis $pitch $bandTop $bandEnd $ImageWidth $ImageHeight) }
+        foreach ($center in $grids[0].missing) {
+            # Preserve conflicting original lines in the slot. A retry may add
+            # a missing name, but it must not overwrite ambiguous evidence.
+            if (@($band | Where-Object { [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $pitch }).Count) { continue }
+            $names = @($strip | Where-Object { $_.width -lt .85 * $pitch -and
+                [Math]::Abs($_.x + $_.width / 2 - $center) -lt .16 * $pitch -and $dictionary.ContainsKey(($_.text -replace '[^a-z]', '')) })
+            if (!$names.Count) { $names = @(Read-FateNameplate $Png $Engine $center $level $pitch $dictionary $ImageWidth $ImageHeight) }
+            if ($names.Count -eq 1) { $band += $names; $lines += $names }
+        }
+        $grids = @(Get-FateHeaderGrid $band $axis $pitch $dictionary)
+        if ($grids.Count -ne 1) { return $Selected }
+    }
     foreach ($cell in $grids[0].cells) {
         $header = $cell.header
         $center = $header.x + $header.width / 2
@@ -284,6 +315,7 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         }
         $best = Get-FateCaptionScore $words $dictionary[$key]
         $candidate = Get-FateCaptionScore $newWords $dictionary[$key]
+        $oldNumbers = Get-FateCaptionNumbers $words
         if ($null -ne $Other -and $candidate -lt 1) {
             $otherBody = @(Select-FateCaptionWords @(Get-FateCardLines $Other.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
             $otherWords = ConvertTo-FateDescriptionKey (($otherBody | ForEach-Object { $_.text }) -join ' ')
@@ -302,7 +334,11 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
             $caption = @(Select-FateCaptionWords @(Get-FateCardLines $read.lines $center $pitch $bodyTop $bodyEnd) $center $pitch)
             $printed = ConvertTo-FateDescriptionKey (($caption | ForEach-Object { $_.text }) -join ' ')
             $score = Get-FateCaptionScore $printed $dictionary[$key]
-            if ($score -ge .75 -and $score -gt $candidate) {
+            # When two reads match equally well, keep the one that preserves
+            # the original digits. Other words in the caption can still improve.
+            $preservesDigits = $oldNumbers -and (Get-FateCaptionNumbers $printed) -ceq $oldNumbers -and
+                (Get-FateCaptionNumbers $newWords) -cne $oldNumbers
+            if ($score -ge .75 -and ($score -gt $candidate -or ($score -eq $candidate -and $preservesDigits))) {
                 $newBody = $caption; $newWords = $printed; $candidate = $score
             } elseif (!$dictionary[$key].Count -and (Test-FateCaptionAgreement $words $newWords $printed)) {
                 $candidate = 1
@@ -333,10 +369,9 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
         $insideText = ConvertTo-FateDescriptionKey (($inside | ForEach-Object { $_.text }) -join ' ')
         $originalWords = @($insideText -split ' ' | Where-Object { $_ -ne [string][char]0x2022 })
         $keepsWords = !$words -or $originalWords.Count -le ($newWords -split ' ').Count
-        $oldNumbers = [regex]::Matches($words, '\d+') | ForEach-Object { $_.Value }
-        $newNumbers = [regex]::Matches($newWords, '\d+') | ForEach-Object { $_.Value }
+        $newNumbers = Get-FateCaptionNumbers $newWords
         if ($candidate -gt $best -and $newBody.Count -and $keepsWords -and
-            (!$oldNumbers -or ($oldNumbers -join ' ') -ceq ($newNumbers -join ' '))) {
+            (!$oldNumbers -or $oldNumbers -ceq $newNumbers)) {
             $remove = $body
             $add = $newBody
         } elseif (!$confirmedHeader -and $dictionary[$key] -notcontains $words) { continue }
