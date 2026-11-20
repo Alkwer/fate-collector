@@ -78,3 +78,10 @@ test.each(['Sadist', 'Pestilent'])('accepts a recovered %s nameplate in the shar
   const printed = line(name, 2124, 308, 106)
   expect(read([...coveredNames, printed])[2]).toEqual([name, sadistCaption])
 })
+
+test('keeps a covered offer when Windows reads a separate row of reward circles as letters', () => {
+  const icons = line('ooo', 975, 897, 237, 55)
+  expect(read([...coveredNames, icons])).toEqual(read(coveredNames))
+  expect(read([...coveredNames, { ...icons, text: 'new effect' }])).toEqual([])
+  expect(read([...coveredNames, { ...icons, y: 758, height: 28 }])).toEqual([])
+})

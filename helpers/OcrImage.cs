@@ -162,7 +162,7 @@ public sealed class FateOcrImage
                 Counter candidate = null;
                 if (IsSlash(top) && OnDarkPlaque(top.Bounds))
                     candidate = ReadAtSlash(glyphs, i, top.Bounds, true);
-                if (candidate == null) candidate = ReadBehindForeground(glyphs, i);
+                if (candidate == null) candidate = ReadBehindForeground(glyphs, i, minInk, maxInk);
                 if (candidate == null) continue;
                 if (match != null) return null;
                 match = candidate;
@@ -176,7 +176,7 @@ public sealed class FateOcrImage
                 FindAdjacentDigit(glyphs, index, slash, 1), panelOnly);
         }
 
-        private Counter ReadBehindForeground(List<Glyph> glyphs, int index)
+        private Counter ReadBehindForeground(List<Glyph> glyphs, int index, int minInk, int maxInk)
         {
             // The brighter foreground can cut the diagonal into two strokes.
             // Require both tips, foreground ink across the gap and dark plaque on either side.
@@ -189,11 +189,15 @@ public sealed class FateOcrImage
                 int gap = lower.Top - top.Bounds.Bottom;
                 Rectangle both = Rectangle.Union(top.Bounds, lower);
                 if (gap <= 0 || gap > both.Height * .22 || both.Height > MaxSlashHeight ||
-                    lower.Height < both.Height * .16 || lower.Height > top.Bounds.Height ||
-                    !IsSlash(JoinStrokes(top, glyphs[j], both), IsForegroundInk)) continue;
-                if (!(Sample(both, -1.8, -.37, -.8, -.20, IsDark) >= .85 &&
-                      Sample(both, .8, -.37, 1.8, -.20, IsDark) >= .85)) continue;
-                Counter candidate = ReadAtSlash(glyphs, index, both, true);
+                    lower.Height < both.Height * .16 || lower.Height > top.Bounds.Height) continue;
+                Glyph stroke = JoinStrokes(top, glyphs[j], both);
+                Counter candidate = null;
+                if (IsSlash(stroke, IsForegroundInk) &&
+                    Sample(both, -1.8, -.37, -.8, -.20, IsDark) >= .85 &&
+                    Sample(both, .8, -.37, 1.8, -.20, IsDark) >= .85)
+                    candidate = ReadAtSlash(glyphs, index, both, true);
+                if (candidate == null && HasCoveredSlashEdge(stroke))
+                    candidate = ReadCoveredDigits(both, minInk, maxInk);
                 if (candidate == null) continue;
                 if (match != null) return null;
                 match = candidate;
@@ -213,8 +217,144 @@ public sealed class FateOcrImage
 
         private bool IsForegroundInk(int x, int y)
         {
+            if (x < 0 || x >= width) return false;
             Marshal.Copy(IntPtr.Add(scan, y * stride + x * 3), rowPixels, 0, 3);
             return Math.Min(rowPixels[0], Math.Min(rowPixels[1], rowPixels[2])) >= 103;
+        }
+
+        private bool HasCoveredSlashEdge(Glyph stroke)
+        {
+            // Foreground along one side can shave off the slash without changing its opposite edge.
+            Rectangle box = stroke.Bounds;
+            int w = box.Width, h = box.Height;
+            if (w < .15 * h || w > .43 * h) return false;
+            var ends = new int[h];
+            int coveredRows = 0;
+            for (int y = 0; y < h; y++)
+            {
+                int start = 0, end = w - 1;
+                while (end >= 0 && !stroke.Ink[y * w + end]) end--;
+                ends[y] = end;
+                if (end < 0) { coveredRows++; continue; }
+                while (!stroke.Ink[y * w + start]) start++;
+                if (end - start + 1 > Math.Max(2, h * .19)) return false;
+            }
+            double shift = ends[0] - ends[h - 1];
+            if (shift < h * .12 || shift > h * .35 || coveredRows == 0) return false;
+            for (int y = 1; y < h - 1; y++)
+            {
+                double edge = ends[0] - shift * y / (h - 1);
+                if (ends[y] >= 0)
+                {
+                    if (Math.Abs(ends[y] - edge) > Math.Max(1.4, h * .06)) return false;
+                }
+                else
+                {
+                    int x = box.Left + (int)Math.Round(edge);
+                    if (!IsForegroundInk(x, box.Top + y) && !IsForegroundInk(x - 1, box.Top + y) &&
+                        !IsForegroundInk(x - 2, box.Top + y)) return false;
+                }
+            }
+            return true;
+        }
+
+        private Counter ReadCoveredDigits(Rectangle slash, int minInk, int maxInk)
+        {
+            int h = slash.Height;
+            // The dim text is still framed by the dark plaque above and below the foreground.
+            if (!(Sample(slash, -1.1, -.60, 1.1, -.38, IsDark) >= .80 &&
+                  Sample(slash, -1.1, .40, 1.1, .54, IsDark) >= .80)) return null;
+            var region = Rectangle.Inflate(slash, h, 0);
+            if (region.Left < 0 || region.Right > width) return null;
+            var pixels = new byte[region.Width * h];
+            for (int y = 0; y < h; y++)
+            {
+                Marshal.Copy(IntPtr.Add(scan, (region.Top + y) * stride + region.Left * 3), rowPixels, 0, region.Width * 3);
+                for (int x = 0; x < region.Width; x++)
+                {
+                    int i = x * 3;
+                    int low = Math.Min(rowPixels[i], Math.Min(rowPixels[i + 1], rowPixels[i + 2]));
+                    int high = Math.Max(rowPixels[i], Math.Max(rowPixels[i + 1], rowPixels[i + 2]));
+                    // Use only definite dark background or dim ink. Foreground is missing evidence.
+                    if (high < 27) pixels[y * region.Width + x] = 1;
+                    else if (low >= minInk && high <= maxInk && high - low < 44)
+                        pixels[y * region.Width + x] = 2;
+                }
+            }
+            Rectangle left, right;
+            int current = ReadCoveredDigit(pixels, region.Width, slash, -1, out left);
+            int capacity = ReadCoveredDigit(pixels, region.Width, slash, 1, out right);
+            if (capacity <= 0 || current < 0 || current > capacity ||
+                Math.Abs(left.Top - right.Top) > .10 * h || Math.Abs(left.Bottom - right.Bottom) > .12 * h)
+                return null;
+            Rectangle bounds = Rectangle.Union(slash, Rectangle.Union(left, right));
+            return new Counter(current, capacity, bounds, h, false, false);
+        }
+
+        private static int ReadCoveredDigit(byte[] pixels, int pitch, Rectangle slash, int direction, out Rectangle bounds)
+        {
+            int h = slash.Height;
+            var errors = new double[Digits.Length];
+            var boxes = new Rectangle[Digits.Length];
+            for (int i = 0; i < errors.Length; i++) errors[i] = 1;
+            var ink = new int[35];
+            var visible = new int[35];
+            for (int y = (int)Math.Round(.04 * h); y <= Math.Round(.15 * h); y++)
+                for (int dh = (int)Math.Round(.69 * h); dh <= Math.Round(.79 * h); dh++)
+                    for (int dw = (int)Math.Round(.21 * h); dw <= Math.Round(.53 * h); dw++)
+                    {
+                        bool narrow = dw <= Math.Round(.37 * h);
+                        if (!narrow && dw < Math.Round(.40 * h)) continue;
+                        for (int gap = (int)Math.Round(-.07 * h); gap <= Math.Round(.15 * h); gap++)
+                        {
+                            int x = direction < 0 ? h - gap - dw : h + slash.Width + gap;
+                            Array.Clear(ink, 0, ink.Length);
+                            Array.Clear(visible, 0, visible.Length);
+                            int inkCount = 0, visibleCount = 0, topInk = 0, bottomInk = 0;
+                            for (int sy = 0; sy < 28; sy++)
+                                for (int sx = 0; sx < 20; sx++)
+                                {
+                                    int cell = sy / 4 * 5 + sx / 4;
+                                    int offset = (y + (2 * sy + 1) * dh / 56) * pitch + x + (2 * sx + 1) * dw / 40;
+                                    byte pixel = pixels[offset];
+                                    if (pixel == 0) continue;
+                                    visible[cell]++;
+                                    visibleCount++;
+                                    if (pixel != 2) continue;
+                                    ink[cell]++;
+                                    inkCount++;
+                                    if (sy < 12) topInk++;
+                                    if (sy >= 16) bottomInk++;
+                                }
+                            if (visibleCount < 280 || inkCount < .20 * visibleCount || topInk < 14 || bottomInk < 14) continue;
+                            for (int digit = 0; digit < errors.Length; digit++)
+                            {
+                                if (narrow != (digit == 1)) continue;
+                                double error = VisibleDigitError(ink, visible, Digits[digit]) / visibleCount;
+                                if (digit == 1)
+                                    error = Math.Min(error, VisibleDigitError(ink, visible, OneRightStem) / visibleCount);
+                                if (error >= errors[digit]) continue;
+                                errors[digit] = error;
+                                boxes[digit] = new Rectangle(slash.Left - h + x, slash.Top + y, dw, dh);
+                            }
+                        }
+                    }
+            int best = 0;
+            for (int digit = 1; digit < errors.Length; digit++)
+                if (errors[digit] < errors[best]) best = digit;
+            bounds = boxes[best];
+            if (errors[best] > .17) return -1;
+            for (int digit = 0; digit < errors.Length; digit++)
+                if (digit != best && errors[digit] - errors[best] < .075) return -1;
+            return best;
+        }
+
+        private static double VisibleDigitError(int[] ink, int[] visible, string template)
+        {
+            double error = 0;
+            for (int i = 0; i < ink.Length; i++)
+                error += Math.Abs(ink[i] - visible[i] * (template[i] - '0') / 9.0);
+            return error;
         }
 
         private static bool IsDark(int r, int g, int b) { return Math.Max(r, Math.Max(g, b)) < 34; }

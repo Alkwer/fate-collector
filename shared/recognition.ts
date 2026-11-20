@@ -1,9 +1,10 @@
 import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers.ts'
+import { normalizeFateName } from './fate-names.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-12'
+export const PARSER_VERSION = 'counted-offers-13'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -198,7 +199,7 @@ function coveredOffer(lines: OcrLine[], axis: number, level: number, pitch: numb
     for (let i = 0; i < count; i++) {
       const x = axis + (i - (count - 1) / 2) * pitch
       const body = bodies.filter(l => Math.abs(centerX(l) - x) < pitch * .18).sort((a, b) => a.y - b.y)
-      const caption = body.map(l => l.text.trim()).join(' ')
+      const caption = captionText(body, pitch)
       const names = namesByCaption.get(descriptionWords(caption))
       if (!names) break
       bodyTops.push(body[0].y)
@@ -321,6 +322,35 @@ function tooltipConfirmsWord(seen: string[], caption: string, body: string[]): b
   })
 }
 
+// A cursor can split a word on one line and obscure another on the next.
+// Require evidence from both the printed column and that card's own tooltip.
+function tooltipConfirmsFragments(words: string, caption: string, body: string[]) {
+  const seen = words.replace(/([a-z]+)\s*•\s*([a-z]+)/g, '$1…$2').split(' ')
+  const printed = descriptionWords(caption).split(' ')
+  if (seen.length !== printed.length || seen.length < 5) return false
+  const damaged = seen.map((w, i) => w !== printed[i] ? i : -1).filter(i => i >= 0)
+  if (damaged.length !== 2) return false
+  let confirmed = 0
+  for (const i of damaged) {
+    const fragment = seen[i], target = printed[i]
+    if (!/^[a-z]+$/.test(target) || captionVocabulary.has(fragment)) return false
+    const prefix = /^[a-z]{2,}$/.test(fragment) && target.startsWith(fragment)
+    const split = /^([a-z]+)…([a-z]+)$/.exec(fragment)
+    const inside = split && target.startsWith(split[1]) && target.endsWith(split[2])
+      && split[1].length + split[2].length < target.length
+    const blurred = /^[a-z]{6,}$/.test(fragment) && fragment.slice(-5) === target.slice(-5) && glyphDifference(fragment, target) <= 3
+    if (!prefix && !inside && !blurred) return false
+    const inPhrase = [-2, -1, 1, 2].some(offset => {
+      const j = i + offset
+      return /^[a-z]{4,}$/.test(printed[j] ?? '') && seen[j] === printed[j]
+        && body.some(line => line.includes(' ' + printed.slice(Math.min(i, j), Math.max(i, j) + 1).join(' ') + ' '))
+    })
+    if (inPhrase) confirmed++
+    else if (!prefix || i === 0 || i === seen.length - 1 || seen[i - 1] !== printed[i - 1] || seen[i + 1] !== printed[i + 1]) return false
+  }
+  return confirmed > 0
+}
+
 function reviewedSpelling(name: string, text: string, header: OcrLine, lines: OcrLine[]): string {
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
@@ -330,16 +360,19 @@ function reviewedSpelling(name: string, text: string, header: OcrLine, lines: Oc
   const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
   if (supported.length === 1) return supported[0]!
   if (!name || !variants.length) return text
-  const sameName = lines.filter(l => knownFateName(l.text) === name)
+  const nameKey = normalizeFateName(name)
+  const sameName = lines.filter(l => normalizeFateName(knownFateName(l.text) ?? '') === nameKey)
   if (sameName.some(l => Math.abs(l.y - header.y) <= 2 * header.height &&
     Math.abs(centerX(l) - centerX(header)) > header.width)) return text
   const titles = sameName.filter(l => l.y < header.y - 2 * header.height)
   if (titles.length !== 1) return text
   const title = titles[0]
+  // OCR sometimes includes a leading ornament in the title's bounding box.
+  const margin = /^[^a-z\s]/i.test(title.text.trim()) ? title.height * 2 : title.height
   const body = lines.filter(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
-    && l.y + l.height < header.y && Math.abs(l.x - title.x) < title.height).map(l => ' ' + descriptionWords(l.text) + ' ')
+    && l.y + l.height < header.y && Math.abs(l.x - title.x) < margin).map(l => ' ' + descriptionWords(l.text) + ' ')
   const seen = words.split(' ')
-  const confirmed = variants.filter(value => value && tooltipConfirmsWord(seen, value, body))
+  const confirmed = variants.filter(value => value && (tooltipConfirmsWord(seen, value, body) || tooltipConfirmsFragments(words, value, body)))
   return confirmed.length === 1 ? confirmed[0]! : text
 }
 
@@ -374,12 +407,19 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
   return { cards, message: `${cards.length} candidate ${cards.length === 1 ? 'card' : 'cards'} found${cards.some(card => !card.name) ? ', including unknown headers' : ''}. Check coverage and names against the screenshot and original OCR. Tiers and reward icons are not identified automatically.` }
 }
 
+function captionText(sorted: OcrLine[], pitch: number) {
+  // Reward circles below the last baseline can be recognized as a row of O's.
+  return sorted.filter((l, i) => !(i > 0 && i === sorted.length - 1 && /^o(?:\s*o)+$/i.test(l.text.trim())
+    && l.height >= pitch * .085 && l.y > sorted[i - 1].y + sorted[i - 1].height + pitch * .07))
+    .map(l => l.text.trim()).join(' ')
+}
+
 function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number) {
   const center = centerX(header)
-  return lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
+  return captionText(lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
     && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text)
     && normalize(l.text) !== 'selectafate')
-    .sort((a, b) => a.y - b.y || a.x - b.x).map(l => l.text.trim()).join(' ')
+    .sort((a, b) => a.y - b.y || a.x - b.x), pitch)
 }
 
 // Preserve unknown name slots only alongside a known anchor, with matching text

@@ -263,6 +263,66 @@ if (!(Get-FateDimCounterRegion @($confirm)).IsEmpty -or
     !(Get-FateDimCounterRegion @((New-Line 'Fates' 80), (New-Line 'Invoke Fates' 95))).IsEmpty) {
     throw 'A dim counter search requires a unique panel heading.'
 }
+function New-FragmentedCounterFixture {
+    param([switch]$HideLeftDigit, [switch]$HideRightDigit, [switch]$DarkGap)
+    $image = [Drawing.Bitmap]::new(200, 110)
+    $graphics = [Drawing.Graphics]::FromImage($image)
+    $ink = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(72, 72, 72))
+    $foreground = [Drawing.SolidBrush]::new([Drawing.Color]::FromArgb(145, 145, 145))
+    $stream = [IO.MemoryStream]::new()
+    try {
+        $graphics.Clear([Drawing.Color]::Black)
+        foreach ($x in 51, 89) {
+            $outline = [Drawing.Point[]]@(
+                [Drawing.Point]::new($x + 12, 33), [Drawing.Point]::new($x + 17, 33),
+                [Drawing.Point]::new($x + 17, 54), [Drawing.Point]::new($x + 23, 54),
+                [Drawing.Point]::new($x + 23, 59), [Drawing.Point]::new($x + 17, 59),
+                [Drawing.Point]::new($x + 17, 67), [Drawing.Point]::new($x + 12, 67),
+                [Drawing.Point]::new($x + 12, 59), [Drawing.Point]::new($x, 59),
+                [Drawing.Point]::new($x, 54)
+            )
+            $hole = [Drawing.Point[]]@(
+                [Drawing.Point]::new($x + 12, 40), [Drawing.Point]::new($x + 4, 55),
+                [Drawing.Point]::new($x + 13, 55)
+            )
+            $graphics.FillPolygon($ink, $outline)
+            $graphics.FillPolygon([Drawing.Brushes]::Black, $hole)
+        }
+        for ($y = 0; $y -lt 45; $y++) {
+            $offset = [int][Math]::Floor((44 - $y) * .21)
+            $graphics.FillRectangle($ink, 72 + $offset, 29 + $y, 4, 1)
+        }
+        if ($HideLeftDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 48, 33, 24, 35) }
+        if ($HideRightDigit) { $graphics.FillRectangle([Drawing.Brushes]::Black, 89, 33, 24, 35) }
+        $graphics.FillRectangle($foreground, 46, 37, 26, 4)
+        $graphics.FillRectangle($foreground, 88, 42, 23, 4)
+        $graphics.FillRectangle($foreground, 73, 33, 3, 27)
+        $gap = if ($DarkGap) { [Drawing.Brushes]::Black } else { $foreground }
+        $graphics.FillRectangle($gap, 72, 54, 11, 6)
+        $image.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+        return ,$stream.ToArray()
+    } finally {
+        $graphics.Dispose()
+        $ink.Dispose()
+        $foreground.Dispose()
+        $stream.Dispose()
+        $image.Dispose()
+    }
+}
+
+$coveredRegion = [Drawing.Rectangle]::new(15, 15, 175, 80)
+$read = [FateOcrImage]::ReadCounters((New-FragmentedCounterFixture), $coveredRegion)
+if ($read.Count -ne 1 -or $read[0].Text -cne '4/4' -or
+    $read[0].Bounds.Y -ne 29 -or $read[0].SlashHeight -ne 45) {
+    throw 'Read the slash edge and both matching digit shapes around the bright foreground.'
+}
+foreach ($control in 'HideLeftDigit', 'HideRightDigit', 'DarkGap') {
+    $flags = @{$control = $true}
+    if ([FateOcrImage]::ReadCounters((New-FragmentedCounterFixture @flags), $coveredRegion).Count) {
+        throw "Insufficient pixel evidence in the fragmented fraction with control $control."
+    }
+}
+
 $tooManyLines = New-Pass (@($confirm) + @(1..499 | ForEach-Object { New-Line 'other' 10 20 }))
 if (![object]::ReferenceEquals((Merge-FateCounterLines $tooManyLines $null $counters), $tooManyLines)) {
     throw 'Appending a recovered counter must respect the line count limit.'

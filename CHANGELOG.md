@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.16 — 20 November 2026
+
+- The Windows helper can read a Fates counter crossed by tooltip lettering when enough of both digits and the slash remain visible.
+- Offer import separates reward circles from printed descriptions, including when a tooltip covers the card headings.
+- A matching tooltip can confirm damaged words in a card description when the remaining text identifies a single printed variant.
+
 ## 0.10.15 — 20 November 2026
 
 - The Windows helper can recover dim Fates counters beneath a translucent tooltip when both digits and the diagonal slash are still visible.
