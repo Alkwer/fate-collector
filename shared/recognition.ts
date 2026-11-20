@@ -30,9 +30,18 @@ function panelRows(lines: OcrLine[], axis: number, top: number, span: number, bo
       if (atSlot.length !== 1) break
       row.push(atSlot[0])
     }
-    // A smaller grid embedded in a larger offer is not a complete row.
-    if (row.length !== count || band.some(l => !row.includes(l) && knownFateName(l.text))
-      || offeredCardHeaders(row).length !== count || row.filter(l => knownFateName(l.text)).length < minimumKnown) continue
+    if (row.length !== count || offeredCardHeaders(row).length !== count
+      || row.filter(l => knownFateName(l.text)).length < minimumKnown) continue
+    // A smaller grid embedded in a partial offer must not drop an unknown
+    // outer slot. Keep the legacy partial-row path when both controls are visible.
+    const hasOuterHeader = band.some(l => {
+      if (row.includes(l)) return false
+      if (knownFateName(l.text)) return true
+      const slot = (centerX(l) - axis) / pitch + (count - 1) / 2
+      return (slot < 0 || slot > count - 1) && Math.abs(slot - Math.round(slot)) < .15
+        && offeredCardHeaders([...row, l]).includes(l)
+    })
+    if (hasOuterHeader) continue
     matches.push({ headers: row, bottom, columnPitch: pitch, lines: lines.filter(l => l.y > top && l.y + l.height < bottom) })
   }
   return matches

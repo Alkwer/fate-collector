@@ -152,3 +152,12 @@ test('preserves changed or incomplete description text and abstains on an ambigu
   expect(readCounted(countedLines.map(l => l.text === 'Creates walls Of blackfire.' ? { ...l, text: 'Creates two walls of blackfire' } : l))[1])
     .toEqual(['Wildfire', 'Creates two walls of blackfire'])
 })
+
+test('preserves an unknown outer card next to a recognized pair when the opposite header is missing', () => {
+  const partial = [
+    line('Fates', 550, 50), line('Confirm', 550, 520), line('New Fate', 155, 154),
+    line('Doomsayer', 418, 154), line('Wildfire', 682, 154),
+    line('Unseen effect', 155, 360), line('First known effect', 418, 360), line('Second known effect', 682, 360),
+  ]
+  expect(readCounted(partial)).toEqual([['', 'Unseen effect'], ['Doomsayer', 'First known effect'], ['Wildfire', 'Second known effect']])
+})
