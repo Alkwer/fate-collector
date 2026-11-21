@@ -44,14 +44,6 @@ function Get-FateOfferProbe($Ocr, [int]$Width, [int]$Height) {
     if (!$lines.Count) { return $uncertain }
     if (Test-FateInvocation $lines) { return $uncertain }
     $headings = @($lines | Where-Object { $_.key -in 'fates', 'selectafate' })
-    # This title can also be split horizontally by WinRT.
-    foreach ($invoke in $lines | Where-Object key -EQ 'invoke') {
-        foreach ($heading in $headings | Where-Object key -EQ 'fates') {
-            if ($heading.x -ge $invoke.x + $invoke.width -and
-                $heading.x - ($invoke.x + $invoke.width) -le [Math]::Max($heading.height, $invoke.height) * 2 -and
-                [Math]::Abs($heading.y - $invoke.y) -le [Math]::Max($heading.height, $invoke.height) / 2) { return $uncertain }
-        }
-    }
     $confirms = @($lines | Where-Object key -EQ 'confirm')
     if (!$headings.Count -and !$confirms.Count) {
         # Fragments and catalog names can survive when the controls do not.

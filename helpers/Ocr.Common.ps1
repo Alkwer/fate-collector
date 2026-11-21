@@ -66,6 +66,9 @@ function Test-FateInvocation($Lines) {
     $fates = @($Lines | Where-Object { ($_.text -replace '[^a-z]', '') -eq 'fates' })
     foreach ($invoke in $Lines | Where-Object { ($_.text -replace '[^a-z]', '') -eq 'invoke' }) {
         foreach ($heading in $fates) {
+            $height = [Math]::Max($heading.height, $invoke.height)
+            $gap = $heading.x - ($invoke.x + $invoke.width)
+            if ($gap -ge 0 -and $gap -le $height * 2 -and [Math]::Abs($heading.y - $invoke.y) -le $height / 2) { return $true }
             if ($heading.y -ge $invoke.y -and
                 $heading.y - ($invoke.y + $invoke.height) -le [Math]::Max($invoke.height, $heading.height) * 1.5 -and
                 (Test-FateControlAlignment $invoke $heading)) { return $true }
@@ -175,11 +178,14 @@ function Test-FatePanelCounter($Counter, $Lines) {
     $scale = $Counter.SlashHeight
     foreach ($line in $Lines) {
         $offsetX = ($line.x + $line.width / 2 - $centerX) / $scale
-        if ($offsetX -lt 5.0 -or $offsetX -gt 8.1) { continue }
         $offsetY = ($line.y + $line.height / 2 - $centerY) / $scale
-        if ($line.text -match '^\s*confirm\s*$' -and $offsetY -ge -.35 -and $offsetY -le .65 -and
+        if ($offsetX -lt 5.0 -or $offsetX -gt 9.6) { continue }
+        if ($line.text -match '^\s*confirm\s*$' -and $offsetX -le 8.1 -and $offsetY -ge -.35 -and $offsetY -le .65 -and
             $line.width -ge 3 * $scale -and $line.width -le 6 * $scale) { return $true }
-        if (($line.text -replace '[^a-z]', '') -in 'fates', 'invokefates', 'selectafate' -and
+        $title = $line.text -replace '[^a-z]', ''
+        # OCR can retain only the rightmost word of "Invoke Fates". Its center is farther right.
+        $maxTitleOffset = if ($title -eq 'fates') { 9.6 } else { 8.1 }
+        if ($title -in 'fates', 'invokefates', 'selectafate' -and $offsetX -le $maxTitleOffset -and
             $offsetY -ge -30 -and $offsetY -le -10) { return $true }
     }
     return $false
@@ -192,7 +198,8 @@ function Get-FateDimCounterRegion($Lines) {
     $unit = $title.height
     if ($unit -lt 6 -or $unit -gt 80) { return [Drawing.Rectangle]::Empty }
     $axis = $title.x + $title.width / 2
-    return [Drawing.Rectangle]::FromLTRB([int]($axis - 10 * $unit), [int]($title.y + 9 * $unit),
+    $leftUnits = if ($title.text -match '^\s*fates\s*$') { 13 } else { 10 }
+    return [Drawing.Rectangle]::FromLTRB([int]($axis - $leftUnits * $unit), [int]($title.y + 9 * $unit),
         [int]($axis - 3 * $unit), [int]($title.y + 32 * $unit))
 }
 

@@ -4,7 +4,7 @@ import { normalizeFateName } from './fate-names.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-14'
+export const PARSER_VERSION = 'counted-offers-15'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -121,11 +121,15 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
     && line.x + line.width <= capture.image.width && line.y + line.height <= capture.image.height)
   const headings = lines.filter(line => ['fates', 'selectafate'].includes(normalize(line.text)))
   const confirms = lines.filter(line => normalize(line.text) === 'confirm')
-  // Windows OCR can split the invocation title into two adjacent lines.
-  const invocation = lines.some(line => normalize(line.text) === 'invokefates'
-    || (normalize(line.text) === 'invoke' && headings.some(heading => normalize(heading.text) === 'fates'
-      && alignedControls(line, heading) && heading.y >= line.y
-      && heading.y - (line.y + line.height) <= Math.max(line.height, heading.height) * 1.5)))
+  // Windows OCR can split the invocation title vertically or horizontally.
+  const invocation = lines.some(line => normalize(line.text) === 'invokefates' ||
+    (normalize(line.text) === 'invoke' && headings.some(heading => {
+      if (normalize(heading.text) !== 'fates') return false
+      const height = Math.max(line.height, heading.height)
+      const gap = heading.x - (line.x + line.width)
+      return (alignedControls(line, heading) && heading.y >= line.y && heading.y - line.y - line.height <= height * 1.5)
+        || (gap >= 0 && gap <= 2 * height && Math.abs(heading.y - line.y) <= height / 2)
+    })))
   // A world-space "Select a Fate" label can coexist with the actual Fates title.
   // Pair controls on their shared horizontal axis instead of counting every title
   // in the frame. Several aligned pairs remain ambiguous; never choose by names.
@@ -240,8 +244,8 @@ function coveredOffer(lines: OcrLine[], axis: number, level: number, pitch: numb
   return matches.length === 1 ? matches[0] : null
 }
 
-// When a tooltip covers the button, verify both card rows and either a
-// fragment of the button at its expected position or the controller footer.
+// If the tooltip covers both controls completely, the centered lower row
+// and its own printed captions must independently confirm the panel geometry.
 function coveredPanelButton(lines: OcrLine[], headings: OcrLine[], confirms: OcrLine[]): OfferRegion | null {
   const titles = headings.filter(l => normalize(l.text) === 'fates')
   if (titles.length !== 1) return null
@@ -261,9 +265,17 @@ function coveredPanelButton(lines: OcrLine[], headings: OcrLine[], confirms: Ocr
     return parts && parts[1].length + parts[2].length === 'confirm'.length - 1
       && 'confirm'.startsWith(parts[1]) && 'confirm'.endsWith(parts[2])
   })
-  if ((!footer && !partial) || !lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .35)
-    || !lines.some(l => l.x < axis && l.x + l.width > axis && Math.abs(l.y - bottom) < pitch * .12)
-    || !lines.some(l => knownFateName(l.text) && l.y > bottom + pitch * .2 && l.y < bottom + pitch * .6)) return null
+  const owned = lines.filter(l => knownFateName(l.text) && l.y > bottom + pitch * .2 && l.y < bottom + pitch * .6)
+    .sort((a, b) => a.x - b.x)
+  if (!owned.length || !lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .35)
+    || !lines.some(l => l.x < axis && l.x + l.width > axis && Math.abs(l.y - bottom) < pitch * .12)) return null
+  if (!footer && !partial) {
+    const covered = lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .12
+      && l.x < axis - .30 * span && l.x + l.width > axis)
+    if (!covered || owned.length < 2 || owned.length > 6 || !owned.every((h, i) =>
+      Math.abs(centerX(h) - axis - (i - (owned.length - 1) / 2) * pitch) < pitch * .15
+      && namesByCaption.get(descriptionWords(columnDescription(lines, h, pitch, bottom + 2 * pitch)))?.includes(knownFateName(h.text)!))) return null
+  }
   const rows = panelRows(lines, axis, title.y, span, bottom, upper.length)
   return rows.length === 1 && rows[0].headers.every((h, i) => {
     const name = knownFateName(h.text)!
@@ -447,10 +459,21 @@ function captionText(sorted: OcrLine[], pitch: number) {
 
 function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number) {
   const center = centerX(header)
-  return captionText(lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
+  const column = lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
     && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text)
     && normalize(l.text) !== 'selectafate')
-    .sort((a, b) => a.y - b.y || a.x - b.x), pitch)
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+  // HUD labels can fall just inside a column. Discard only separated edge
+  // lines before or after an independently recognizable, centered caption.
+  const middle = column.filter(l => Math.abs(centerX(l) - center) < .20 * pitch)
+  if (middle.length && middle.length < column.length && column.every(l => middle.includes(l)
+    || (Math.abs(centerX(l) - center) > .30 * pitch && (l.y + l.height < middle[0].y || l.y > middle.at(-1)!.y + middle.at(-1)!.height)))) {
+    const words = descriptionWords(captionText(middle, pitch))
+    const supported = shortDescriptions.get(knownFateName(header.text) ?? '')?.filter(v => v &&
+      (descriptionWords(v) === words || matchesPrintedWords(words, descriptionWords(v))))
+    if (supported?.length === 1) return captionText(middle, pitch)
+  }
+  return captionText(column, pitch)
 }
 
 // Preserve unknown name slots only alongside a known anchor, with matching text

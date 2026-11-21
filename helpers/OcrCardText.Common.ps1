@@ -369,9 +369,10 @@ function Read-FateCardText($Selected, $Other, [byte[]]$Png, $Engine, [int]$Image
                 $newBody = $otherBody; $newWords = $otherWords; $candidate = $otherScore
             }
         }
-        # Compare a background-corrected read on small cards and on uncatalogued
-        # captions where two readings of the column disagree.
-        if (($pitch -le 220 -or (!$dictionary[$key].Count -and $newWords -ne $insideText)) -and
+        # A pointer can damage several words even at a larger UI scale. Retry
+        # when the original has the right word count and at least half agree.
+        $partialCaption = $originalKnown -and $best -ge .5 -and $best -lt .75
+        if (($pitch -le 220 -or $partialCaption -or (!$dictionary[$key].Count -and $newWords -ne $insideText)) -and
             $best -lt 1 -and $candidate -lt 1 -and ($originalKnown -or $confirmedHeader)) {
             $captionTop = [int][Math]::Max(0, [Math]::Floor($bodyTop))
             $captionBox = [Drawing.Rectangle]::FromLTRB($left, $captionTop, $right, $bottom)

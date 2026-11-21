@@ -140,6 +140,19 @@ test('reads raised cards and their wrapped text when the counter anchors an unre
   expect(readCounted(countedLines.map(l => l.text === '1/4' ? { ...l, text: '114' } : l))).toEqual([])
 })
 
+test('rejects a horizontally split invocation only when the two words form one heading', () => {
+  expect(readCounted([...countedLines, line('Invoke', 338, 48)])).toEqual([])
+  expect(readCounted([...countedLines, line('Invoke', 260, 48)])).toEqual(countedCards)
+  expect(readCounted([...countedLines, line('Invoke', 338, 85)])).toEqual(countedCards)
+})
+
+test('excludes detached HUD text at a column edge while keeping centered or incomplete descriptions', () => {
+  const edge = { ...line('AREA', 317, 439), width: 32 }
+  expect(readCounted([...countedLines, edge])).toEqual(countedCards)
+  expect(readCounted([...countedLines, { ...edge, x: 224 }])[0][1]).toContain('AREA')
+  expect(readCounted([...countedLines.filter(l => l.text !== 'blackfire'), edge])[0][1]).toContain('AREA')
+})
+
 test('ignores the world prompt above the panel and in a card name slot', () => {
   const offer = [...countedLines, line('CONFIRM', 450, 515)]
   for (const prompt of [line('Select a Fate', 450, 10), line('Select a Fate', 710, 103)]) {

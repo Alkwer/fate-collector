@@ -153,8 +153,16 @@ public sealed class FateOcrImage
                 Counter check = dim == null ? null : ReadDimPanel(panelRegion, 44, 94);
                 if (!SameCounter(dim, check))
                 {
-                    dim = new DimPlaque(this, panelRegion, 34).Read();
-                    check = dim == null ? null : new DimPlaque(this, panelRegion, 40).Read(dim);
+                    int foregroundInk = 100;
+                    dim = new DimPlaque(this, panelRegion, 34, foregroundInk).Read();
+                    if (dim == null)
+                    {
+                        // Video can darken the tooltip strokes. Avoid scoring those pixels
+                        // as part of a digit and keep the same two-band shape agreement.
+                        foregroundInk = 92;
+                        dim = new DimPlaque(this, panelRegion, 34, foregroundInk).Read();
+                    }
+                    check = dim == null ? null : new DimPlaque(this, panelRegion, 40, foregroundInk).Read(dim);
                 }
                 if (SameCounter(dim, check)) counters.Add(dim);
             }
@@ -178,7 +186,7 @@ public sealed class FateOcrImage
             private readonly Dictionary<Rectangle, double[]> digitScores = new Dictionary<Rectangle, double[]>();
             private readonly int[] ink = new int[35], visible = new int[35];
 
-            public DimPlaque(CounterImage image, Rectangle region, int minInk)
+            public DimPlaque(CounterImage image, Rectangle region, int minInk, int foregroundInk)
             {
                 this.region = region;
                 pitch = region.Width;
@@ -194,9 +202,9 @@ public sealed class FateOcrImage
                         int low = Math.Min(image.rowPixels[i], Math.Min(image.rowPixels[i + 1], image.rowPixels[i + 2]));
                         int high = Math.Max(image.rowPixels[i], Math.Max(image.rowPixels[i + 1], image.rowPixels[i + 2]));
                         int point = y * pitch + x;
-                        if (low >= 100) bright.Add(point);
+                        if (low >= foregroundInk) bright.Add(point);
                         else if (high < 27) mask[point] = Dark;
-                        else if (low >= minInk && high <= 99 && high - low < 44) mask[point] = Ink;
+                        else if (low >= minInk && high < foregroundInk && high - low < 44) mask[point] = Ink;
                     }
                 }
                 // Include the immediate antialiased fringe of the brighter tooltip letters.
@@ -638,9 +646,11 @@ public sealed class FateOcrImage
         {
             if (left == null || right == null) return null;
             int current = ReadDigit(left), capacity = ReadDigit(right);
-            if (capacity <= 0 || current < 0 || current > capacity) return null;
+            if (capacity < 0 || current < 0 || current > capacity) return null;
             Rectangle bounds = Rectangle.Union(left.Bounds, Rectangle.Union(slash, right.Bounds));
             bool hud = !panelOnly && HasHudCards(slash);
+            // An empty HUD stack can show 0/0. The panel always has a positive capacity.
+            if (capacity == 0 && !hud) return null;
             bool hasTrim = !panelOnly && !hud && HasPlaqueRail(slash, -.89, -.58) && HasPlaqueRail(slash, .34, .72);
             return new Counter(current, capacity, bounds, slash.Height,
                 hud, hasTrim && IsIsolatedPlaque(slash), hasTrim);
@@ -878,9 +888,14 @@ public sealed class FateOcrImage
         {
             // The HUD plaque sits directly above the light-edged, blue stack of cards.
             Func<int, int, int, bool> blue = (r, g, b) => b >= 65 && b - r >= 23 && b - g >= 10;
-            return Sample(slash, -.7, 2.2, .7, 3.3, blue) >= .74 &&
-                Sample(slash, -1.55, 2.2, -1.15, 3.3, blue) <= .30 &&
-                Sample(slash, -1, 1.45, .7, 2.15, (r, g, b) => b > 120 && r > 90 && g > 90) >= .35;
+            Func<int, int, int, bool> pale = (r, g, b) => b > 120 && r > 90 && g > 90;
+            if (!(Sample(slash, -.7, 2.2, .7, 3.3, blue) >= .74)) return false;
+            if (Sample(slash, -1.55, 2.2, -1.15, 3.3, blue) <= .30 &&
+                Sample(slash, -1, 1.45, .7, 2.15, pale) >= .35) return true;
+            // Compressed or short slash masks shift the normalized card edge down and out.
+            return Sample(slash, -2.0, 2.2, -1.65, 3.3, blue) <= .20 &&
+                Sample(slash, 1.65, 2.2, 2.0, 3.3, blue) <= .20 &&
+                Sample(slash, -1.0, 1.67, .7, 2.41, pale) >= .55;
         }
 
         private bool IsIsolatedPlaque(Rectangle slash)

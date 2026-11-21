@@ -219,6 +219,17 @@ $hud = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -Hud))
 if ($hud.Count -ne 1 -or !$hud[0].HasHudCards -or (Merge-FateCounterLines $outsidePanel $null $hud).text -cne "0/2`ntext") {
     throw 'Recognize the card-icon context when panel text is absent.'
 }
+$emptyHud = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $zero -Hud))
+if ($emptyHud.Count -ne 1 -or !$emptyHud[0].HasHudCards -or $emptyHud[0].Text -cne '0/0' -or
+    ([FateOcrImage]::ReadCounters((New-CounterFixture $zero $zero -Isolated))).Count) {
+    throw 'Only the HUD card icon can establish a 0/0 count.'
+}
+$partialInvokeTitle = @{ text = 'Fates'; x = 223; y = 179; width = 54; height = 18 }
+$lowerCounter = @{ Bounds = [Drawing.Rectangle]::new(66, 465, 30, 18); SlashHeight = 18 }
+if (!(Test-FatePanelCounter $lowerCounter @($partialInvokeTitle)) -or
+    !(Get-FateDimCounterRegion @($partialInvokeTitle)).Contains($lowerCounter.Bounds)) {
+    throw 'A title retaining only Fates can frame the full counter to its lower left.'
+}
 $isolated = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -Isolated))
 $blankPass = @{ text = ''; lines = @() }
 if ($isolated.Count -ne 1 -or !$isolated[0].IsIsolatedPlaque -or
