@@ -1,6 +1,6 @@
 # Fate Collector releases
 
-## 0.10.19 — Unreleased
+## 0.10.19 — 21 November 2026
 
 - The Windows helper checks the interior of the counter plaque at higher UI resolutions and can read a partly dimmed digit when its remaining strokes agree.
 - A tooltip covering Confirm and the counter can still leave both card rows readable. Capture uses the visible nameplates and captions to recognize the offer.
