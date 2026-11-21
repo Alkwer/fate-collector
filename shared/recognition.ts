@@ -4,7 +4,7 @@ import { normalizeFateName } from './fate-names.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-15'
+export const PARSER_VERSION = 'counted-offers-16'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -272,9 +272,10 @@ function coveredPanelButton(lines: OcrLine[], headings: OcrLine[], confirms: Ocr
   if (!footer && !partial) {
     const covered = lines.some(l => /empowered monster/i.test(l.text) && Math.abs(l.y - bottom) < pitch * .12
       && l.x < axis - .30 * span && l.x + l.width > axis)
-    if (!covered || owned.length < 2 || owned.length > 6 || !owned.every((h, i) =>
+    if (!covered || owned.length > 6 || !owned.every((h, i) =>
       Math.abs(centerX(h) - axis - (i - (owned.length - 1) / 2) * pitch) < pitch * .15
-      && namesByCaption.get(descriptionWords(columnDescription(lines, h, pitch, bottom + 2 * pitch)))?.includes(knownFateName(h.text)!))) return null
+      && namesByCaption.get(descriptionWords(reviewedSpelling(knownFateName(h.text)!,
+        columnDescription(lines, h, pitch, bottom + 2 * pitch), h, lines)))?.includes(knownFateName(h.text)!))) return null
   }
   const rows = panelRows(lines, axis, title.y, span, bottom, upper.length)
   return rows.length === 1 && rows[0].headers.every((h, i) => {
@@ -317,9 +318,18 @@ function matchesPrintedWords(seen: string, expected: string) {
   let exact = 0, differences = 0
   for (const [i, word] of a.entries()) {
     if (word === b[i]) { exact++; continue }
-    if (captionVocabulary.has(word) || /\d/.test(word + b[i]) || word.length < 2) return false
+    const target = b[i]
+    // A single digit can replace a letter inside an otherwise intact word.
+    // Standalone numbers, units and quantity-bearing variants remain literal.
+    const digitInWord = /^[a-z]*\d[a-z]*$/.test(word) && /^[a-z]{5,}$/.test(target) && word.length === target.length
+      && [...word].every((c, j) => c === target[j] || /\d/.test(c))
+      && a.every((s, j) => j === i || s === b[j])
+    if (captionVocabulary.has(word) || (/\d/.test(word + target) && !digitInWord) || word.length < 2) return false
     const difference = glyphDifference(word, b[i])
-    if (difference > (Math.min(word.length, b[i].length) >= 5 ? 2 : 1)) return false
+    const sameEnds = /^[a-z]{6,}$/.test(word) && word.slice(0, 2) === target.slice(0, 2)
+      && word.slice(-2) === target.slice(-2) && a.length >= 4 && a.every((s, j) => j === i || s === b[j])
+    const limit = Math.min(word.length, target.length) >= 5 ? 2 : 1
+    if (difference > (sameEnds ? 3 : limit)) return false
     differences += difference
   }
   return exact >= Math.ceil(a.length / 2) && differences <= Math.min(4, expected.length * .12)
@@ -437,7 +447,7 @@ export function extractCards(capture: Pick<CaptureUpload, 'image' | 'ocr'>): { c
     const next = row[index + 1]
     const left = previous ? (previous.x + previous.width / 2 + center) / 2 : 0
     const right = next ? (next.x + next.width / 2 + center) / 2 : capture.image.width
-    const description = header.caption ?? (region.columnPitch ? columnDescription(offerLines, header, region.columnPitch, region.bottom) : offerLines.filter(line => {
+    const description = header.caption ?? (region.columnPitch ? columnDescription(offerLines, header, region.columnPitch, region.bottom, capture.ocr.lines) : offerLines.filter(line => {
       const x = line.x + line.width / 2
       return line.y > headerBottom + first.height && x > left && x < right
         && !/^(confirm|select a fate|fates)$/i.test(line.text.trim())
@@ -457,14 +467,23 @@ function captionText(sorted: OcrLine[], pitch: number) {
     .map(l => l.text.trim()).join(' ')
 }
 
-function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number) {
+function columnDescription(lines: OcrLine[], header: OcrLine, pitch: number, bottom: number, context = lines) {
   const center = centerX(header)
   const column = lines.filter(l => Math.abs(centerX(l) - center) < pitch * .43 && l.width < pitch
     && l.y >= header.y + pitch * .62 && l.y < header.y + pitch * 1.23 && l.y + l.height < bottom && /[a-z]/i.test(l.text)
     && normalize(l.text) !== 'selectafate')
     .sort((a, b) => a.y - b.y || a.x - b.x)
-  // HUD labels can fall just inside a column. Discard only separated edge
-  // lines before or after an independently recognizable, centered caption.
+  // A lower-card tooltip may begin inside this column. Its detached name
+  // and aligned body must follow an independently verified caption.
+  const last = column.at(-1)
+  if (last && column.length > 1 && knownFateName(last.text)
+    && last.y - (column.at(-2)!.y + column.at(-2)!.height) > pitch * .16) {
+    const caption = captionText(column.slice(0, -1), pitch)
+    const next = context.some(l => l.width > pitch && Math.abs(l.x - last.x) < last.height
+      && l.y > last.y + last.height && l.y < last.y + last.height * 4)
+    if (next && namesByCaption.get(descriptionWords(caption))?.includes(knownFateName(header.text) ?? '')) return caption
+  }
+  // HUD labels can also fall inside the column, away from its centered caption.
   const middle = column.filter(l => Math.abs(centerX(l) - center) < .20 * pitch)
   if (middle.length && middle.length < column.length && column.every(l => middle.includes(l)
     || (Math.abs(centerX(l) - center) > .30 * pitch && (l.y + l.height < middle[0].y || l.y > middle.at(-1)!.y + middle.at(-1)!.height)))) {

@@ -67,6 +67,17 @@ test('requires both grids and a tooltip over both controls when Confirm is entir
   expect(read(panel.map(l => l.text === 'crows' ? { ...l, text: 'lightning' } : l))).toEqual([])
 })
 
+test('recognizes a covered button with one centered owned card and its independently read caption', () => {
+  const owned = line('Stormcaller', 1820, 1240, 200)
+  const caption = [line('Creates leylines of', 1780, 1670, 280), line('lightning', 1840, 1707, 160)]
+  const panel = [...coveredButton.filter(l => !controllerFooter.includes(l) && l.text !== 'Black Frost'),
+    line('Empowered Monster drops additional Rare Claws', 1200, 1038, 1500)]
+  expect(read([...panel, owned, ...caption]).map(c => c[0])).toEqual(['Torchbearer', 'Sadist', 'Tempest'])
+  expect(read([...panel, { ...owned, x: owned.x - 200 }, ...caption])).toEqual([])
+  expect(read([...panel, owned, caption[0]])).toEqual([])
+  expect(read([...panel, owned, ...caption, line('Invoke Fates', 1780, 85, 280)])).toEqual([])
+})
+
 const coveredNames = [
   line('CONFIRM', 1829, 1037, 181), line('1/4', 1615, 1021, 51, 45),
   line('Houndmaster', 1019, 262, 254), line('Creates spectral wolves', 980, 682, 335),
