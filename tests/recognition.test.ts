@@ -153,6 +153,23 @@ test('excludes detached HUD text at a column edge while keeping centered or inco
   expect(readCounted([...countedLines.filter(l => l.text !== 'blackfire'), edge])[0][1]).toContain('AREA')
 })
 
+test('excludes a detached tooltip title only when its body follows the same left margin', () => {
+  const title = line('Dryad', 450, 431)
+  const tooltip = { ...line('Empowered Monster creates vines', 450, 477), width: 358 }
+  expect(readCounted([...countedLines, title, tooltip])[1]).toEqual(countedCards[1])
+  expect(readCounted([...countedLines, title])[1][1]).toContain('Dryad')
+  expect(readCounted([...countedLines, title, { ...tooltip, x: 525 }])[1][1]).toContain('Dryad')
+})
+
+test('repairs isolated glyphs in alphabetic words while preserving conflicting digits', () => {
+  const change = (text: string) => readCounted(countedLines.map(l => l.text === 'Creates walls Of blackfire.' ? { ...l, text } : l))[1][1]
+  expect(change('CrQxes walls of blackfire')).toBe(countedCards[1][1])
+  expect(change('Creates wa1ls of blackfire')).toBe(countedCards[1][1])
+  expect(change('Creates 1 walls of blackfire')).toContain('1 walls')
+  expect(change('Creates wa12s of blackfire')).toContain('wa12s')
+  expect(change('Creates wa1ls of blackf1re')).toContain('wa1ls')
+})
+
 test('ignores the world prompt above the panel and in a card name slot', () => {
   const offer = [...countedLines, line('CONFIRM', 450, 515)]
   for (const prompt of [line('Select a Fate', 450, 10), line('Select a Fate', 710, 103)]) {

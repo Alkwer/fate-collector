@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.19 — Unreleased
+
+- The Windows helper checks the interior of the counter plaque at higher UI resolutions and can read a partly dimmed digit when its remaining strokes agree.
+- A tooltip covering Confirm and the counter can still leave both card rows readable. Capture uses the visible nameplates and captions to recognize the offer.
+- Regional OCR can recover compressed card lettering and distinguish the end of a caption from the start of a nearby tooltip.
+
 ## 0.10.18 — 21 November 2026
 
 - The Windows helper recovers more Fates counters under tooltip lettering and beside the HUD when the remaining digit strokes are legible.

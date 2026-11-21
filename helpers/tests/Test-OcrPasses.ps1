@@ -136,7 +136,7 @@ try {
 } finally { $plateGraphics.Dispose(); $plateStream.Dispose(); $plate.Dispose() }
 
 function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$VerticalMark, [switch]$Hud, [switch]$Isolated,
-        [switch]$FaintDigitStroke, [switch]$TouchingDigit, [switch]$Dim,
+        [switch]$FaintDigitStroke, [switch]$TouchingDigit, [switch]$Dim, [switch]$NarrowPlaque, [switch]$DimRightDigit,
         [ValidateSet('None', 'Overprint', 'Gap')][string]$SlashCover = 'None') {
     $scale = if ($Dim) { 2 } else { 1 }
     $image = [Drawing.Bitmap]::new(240 * $scale, 205 * $scale)
@@ -149,10 +149,11 @@ function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$Ve
         $ink = if ($Dim) { [Drawing.Brushes]::DarkSlateGray } else { [Drawing.Brushes]::White }
         $digitX = if ($TouchingDigit) { 69 } else { 66 }
         foreach ($digit in $LeftDigit, $RightDigit) {
+            $digitInk = if ($DimRightDigit -and $digitX -eq 86) { [Drawing.Brushes]::DimGray } else { $ink }
             for ($row = 0; $row -lt 7; $row++) {
                 for ($col = 0; $col -lt 5; $col++) {
                     if ($digit[$row * 5 + $col] -eq '1') {
-                        $brush = if ($FaintDigitStroke -and $digitX -eq 66 -and $row -ge 4) { $faint } else { $ink }
+                        $brush = if ($FaintDigitStroke -and $digitX -eq 66 -and $row -ge 4) { $faint } else { $digitInk }
                         $graphics.FillRectangle($brush, $digitX + 2 * $col, 109 + 2 * $row, 2, 2)
                     }
                 }
@@ -171,10 +172,16 @@ function New-CounterFixture([string]$LeftDigit, [string]$RightDigit, [switch]$Ve
             $graphics.FillRectangle([Drawing.Brushes]::LightSteelBlue, 63, 143, 30, 12)
             $graphics.FillRectangle([Drawing.Brushes]::SteelBlue, 64, 155, 34, 23)
         }
-        if ($Isolated) {
+        if ($NarrowPlaque) {
+            $graphics.FillRectangle([Drawing.Brushes]::DimGray, 0, 108, 56, 16)
+            $graphics.FillRectangle([Drawing.Brushes]::DimGray, 107, 108, 133, 16)
+        }
+        if ($Isolated -or $NarrowPlaque) {
             foreach ($y in 102, 124) {
                 foreach ($x in 50, 94) { $graphics.FillRectangle([Drawing.Brushes]::DimGray, $x, $y, 19, 1) }
             }
+        }
+        if ($Isolated) {
             $crop = $image.Clone([Drawing.Rectangle]::new(34, 95, 96, 42), [Drawing.Imaging.PixelFormat]::Format24bppRgb)
             try { $crop.Save($stream, [Drawing.Imaging.ImageFormat]::Png) } finally { $crop.Dispose() }
         } else {
@@ -251,6 +258,23 @@ foreach ($png in @(
 if (([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -TouchingDigit -VerticalMark -Hud))).Count -ne 0 -or
     ([FateOcrImage]::ReadCounters((New-CounterFixture $two $two -FaintDigitStroke -VerticalMark -Hud))).Count -ne 0) {
     throw 'Reject a vertical mark even when a digit touches it or a digit has faint strokes.'
+}
+foreach ($dimRight in $false, $true) {
+    $narrow = [FateOcrImage]::ReadCounters((New-CounterFixture $zero $two -NarrowPlaque -DimRightDigit:$dimRight))
+    if ($narrow.Count -ne 1 -or $narrow[0].Text -cne '0/2' -or
+        $narrow[0].Bounds -ne [Drawing.Rectangle]::new(66, 107, 30, 18) -or
+        (Merge-FateCounterLines $withoutFragment $null $narrow).text -cne "CONFIRM`n0/2" -or
+        (Merge-FateCounterLines $blankPass $null $narrow).text) {
+        throw 'Read a narrow plaque with either full contrast or one dim digit, and require panel context.'
+    }
+}
+foreach ($invalid in @(
+        (New-CounterFixture $zero $two -DimRightDigit),
+        (New-CounterFixture $zero $two -NarrowPlaque -DimRightDigit -VerticalMark),
+        (New-CounterFixture $zero ('0' * 35) -NarrowPlaque))) {
+    if ([FateOcrImage]::ReadCounters($invalid).Count) {
+        throw 'Mixed contrast requires plaque trim and visible evidence for both digits and the slash.'
+    }
 }
 foreach ($cover in 'None', 'Overprint') {
     $dim = New-CounterFixture $zero $four -Dim -SlashCover $cover

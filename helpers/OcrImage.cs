@@ -130,6 +130,8 @@ public sealed class FateOcrImage
                     counter = ReadAtSlash(glyphs, i, box);
                     if (counter == null)
                         counter = ReadFaintDigits(box, imageBounds);
+                    if (counter == null)
+                        counter = ReadMixedContrastCounter(box, glyphs, i, imageBounds);
                 }
                 else
                 {
@@ -677,6 +679,40 @@ public sealed class FateOcrImage
             return match;
         }
 
+        private Counter ReadMixedContrastCounter(Rectangle slash, List<Glyph> glyphs, int index, Rectangle imageBounds)
+        {
+            // A tooltip edge can dim only one digit and leave the slash and the
+            // other digit visible. Look for a complete second digit in both bands.
+            Glyph left = FindAdjacentDigit(glyphs, index, slash, -1);
+            Glyph right = FindAdjacentDigit(glyphs, index, slash, 1);
+            if ((left == null) == (right == null) ||
+                !HasPlaqueRail(slash, -.89, -.58) || !HasPlaqueRail(slash, .34, .72)) return null;
+            Glyph bright = left ?? right;
+            int direction = left == null ? -1 : 1;
+            var region = Rectangle.Intersect(imageBounds, Rectangle.Inflate(slash, slash.Height, 0));
+            Glyph dim = FindDimDigit(region, slash, bright.Bounds, direction, 66);
+            Glyph check = dim == null ? null : FindDimDigit(region, slash, bright.Bounds, direction, 76);
+            Counter candidate = ReadCounter(slash, left ?? dim, right ?? dim, true);
+            Counter verification = ReadCounter(slash, left ?? check, right ?? check, true);
+            return SameCounter(candidate, verification) ? candidate : null;
+        }
+
+        private Glyph FindDimDigit(Rectangle region, Rectangle slash, Rectangle bright, int direction, int minInk)
+        {
+            Glyph match = null;
+            foreach (Glyph glyph in FindGlyphs(region, minInk, 129))
+            {
+                Rectangle box = glyph.Bounds;
+                if (box.Left <= region.Left || box.Right >= region.Right ||
+                    !IsAdjacentDigit(box, slash, direction) ||
+                    Math.Abs(box.Top - bright.Top) > slash.Height * .10 ||
+                    Math.Abs(box.Bottom - bright.Bottom) > slash.Height * .12) continue;
+                if (match != null) return null;
+                match = glyph;
+            }
+            return match;
+        }
+
         private static bool SplitJoinedSlash(Glyph joined, out Glyph left, out Glyph slash)
         {
             left = slash = null;
@@ -880,8 +916,10 @@ public sealed class FateOcrImage
 
         private bool OnDarkPlaque(Rectangle slash)
         {
-            return Sample(slash, -1.8, -.37, -.8, .35, IsDark) >= .85 &&
-                Sample(slash, .8, -.37, 1.8, .35, IsDark) >= .85;
+            // Sample the plaque face next to the digits. The decorated sides
+            // can start inside the wider sampling area on some UI scales.
+            return Sample(slash, -1.4, -.37, -.8, .35, IsDark) >= .85 &&
+                Sample(slash, .8, -.37, 1.4, .35, IsDark) >= .85;
         }
 
         private bool HasHudCards(Rectangle slash)
