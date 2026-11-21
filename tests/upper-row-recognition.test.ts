@@ -54,6 +54,19 @@ test('recognizes a split panel button under a tooltip with a verified upper row 
 })
 
 const sadistCaption = 'Spawns an additional Boss from Campaign Areas without an Atlas equivalent'
+test('requires both grids and a tooltip over both controls when Confirm is entirely covered', () => {
+  const panel = [...coveredButton.filter(l => !controllerFooter.includes(l) && l.text !== 'Black Frost'),
+    line('Empowered Monster drops additional Rare Claws', 1200, 1038, 1500),
+    line('Stormcaller', 1560, 1240, 200), line('Murderous', 2078, 1240, 200),
+    line('Creates leylines of', 1520, 1670, 280), line('lightning', 1580, 1707, 160),
+    line('Summons malignant', 2028, 1670, 300), line('crows', 2128, 1707, 100)]
+  expect(read(panel).map(c => c[0])).toEqual(['Torchbearer', 'Sadist', 'Tempest'])
+  for (const text of ['Stormcaller', 'Creates leylines of', 'Creates dangerous', 'Empowered Monster drops additional Rare Claws']) {
+    expect(read(panel.filter(l => l.text !== text))).toEqual([])
+  }
+  expect(read(panel.map(l => l.text === 'crows' ? { ...l, text: 'lightning' } : l))).toEqual([])
+})
+
 const coveredNames = [
   line('CONFIRM', 1829, 1037, 181), line('1/4', 1615, 1021, 51, 45),
   line('Houndmaster', 1019, 262, 254), line('Creates spectral wolves', 980, 682, 335),

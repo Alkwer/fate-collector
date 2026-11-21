@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.18 — 21 November 2026
+
+- The Windows helper recovers more Fates counters under tooltip lettering and beside the HUD when the remaining digit strokes are legible.
+- Import recognizes an offer with a fully covered Confirm button when the tooltip crosses both controls and the printed captions corroborate both card rows. A split Invoke Fates heading excludes the invocation screen.
+- Card descriptions can recover from pointer damage at larger UI scales and exclude detached HUD text at the column edge.
+
 ## 0.10.17 — 20 November 2026
 
 - The Windows helper can recover dim counter digits interrupted by tooltip text when the visible strokes agree across two contrast levels.
