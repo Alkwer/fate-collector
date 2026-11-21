@@ -174,7 +174,7 @@ Full CI and live synthetic staging checks passed. The public application and hel
 
 The staging helper also reproduced the OCR on 124 earlier frames and 34 modified controls. All 183 local imports in the staging browser matched the expected card order, names and descriptions, including six captures from 0.10.17.
 
-The managed Turnstile widget displayed a human verification challenge on staging. The form waited 60 seconds without submitting. The owner authorized deferral of this submission, receipt, token reuse and withdrawal test if human verification blocked it. Production Turnstile verification stays enabled.
+The automated staging form waited 60 seconds at the managed Turnstile challenge. The owner then used a regular browser to submit a synthetic symbol report. The staging history displayed its receipt and confirmed withdrawal of the same report, including removal of the images and description. Live rejection of a reused Turnstile token remains deferred under the owner-approved exception. Production Turnstile verification stays enabled.
 
 ### Previous Fate Collector 0.10.17 exception (historical)
 
