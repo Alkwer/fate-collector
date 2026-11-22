@@ -310,3 +310,17 @@ test.each([
     expect(read(raw, [title, { ...body, text: 'Empowered Monster will drop additional Threads' }])).toBe(raw)
     expect(read(raw, [title, { ...body, x: 200 }])).toBe(raw)
   })
+
+test.each([
+  ['Tempest', 'Creates volatile orbs of ning', 'Volatile orbs of Lightning come into being', 'Creates volatile orbs of lightning'],
+  ['Murderous', 'Summons alignant cro', 'Empowered Monster will spawn malignant crows', 'Summons malignant crows'],
+  ['Bloodthirsty', 'Fires volleys oft ne harpoons', 'Empowered Monster fires volleys of bone harpoons', 'Fires volleys of bone harpoons'],
+])('checks adjacent damaged letters against the tooltip for %s', (name, raw, phrase, expected) => {
+  const row = countedLines.map(l => l.text === 'Wildfire' ? { ...l, text: name }
+    : l.text === 'Murderous' ? { ...l, text: 'Dryad' }
+    : l.text === 'Creates walls Of blackfire.' ? { ...l, text: raw } : l)
+  const title = line(name, 4, 17), body = { ...line(phrase, 4, 49), width: 400 }
+  expect(readCounted([...row, title, body])[1][1]).toBe(expected)
+  expect(readCounted([...row, body])[1][1]).toBe(raw)
+  expect(readCounted([...row, title, { ...body, text: 'Empowered Monster creates explosive projectiles' }])[1][1]).toBe(raw)
+})

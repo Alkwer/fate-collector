@@ -42,6 +42,17 @@ public sealed class FateOcrImage
 
     public static Counter[] ReadCounters(byte[] png, Rectangle panelRegion)
     {
+        return ReadCounters(png, panelRegion, false);
+    }
+
+    public static Counter ReadCoveredCounter(byte[] png, Rectangle panelRegion)
+    {
+        var counters = ReadCounters(png, panelRegion, true);
+        return counters.Length == 1 ? counters[0] : null;
+    }
+
+    private static Counter[] ReadCounters(byte[] png, Rectangle panelRegion, bool panelOnly)
+    {
         using (var input = new MemoryStream(png, false))
         using (var original = new Bitmap(input))
         using (var source = new Bitmap(original.Width, original.Height, PixelFormat.Format24bppRgb))
@@ -51,7 +62,10 @@ public sealed class FateOcrImage
             var data = source.LockBits(region, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
             try
             {
-                return new CounterImage(source.Width, source.Height, data).Read(panelRegion);
+                var image = new CounterImage(source.Width, source.Height, data);
+                if (!panelOnly) return image.Read(panelRegion);
+                Counter covered = image.ReadCoveredCounter(panelRegion);
+                return covered == null ? new Counter[0] : new[] { covered };
             }
             finally { source.UnlockBits(data); }
         }
@@ -145,30 +159,35 @@ public sealed class FateOcrImage
                 }
                 if (counter != null) counters.Add(counter);
             }
-            panelRegion.Intersect(imageBounds);
-            if (panelRegion.Width > 0 && panelRegion.Height > 0 &&
-                !counters.Exists(c => panelRegion.Contains(c.Bounds)))
+            if (!counters.Exists(c => panelRegion.Contains(c.Bounds)))
             {
-                // A translucent tooltip leaves the plaque lettering dimmer than its own text.
-                // Accept only one fraction read at the same position in both contrast bands.
-                Counter dim = ReadDimPanel(panelRegion, 32, 102);
-                Counter check = dim == null ? null : ReadDimPanel(panelRegion, 44, 94);
-                if (!SameCounter(dim, check))
-                {
-                    int foregroundInk = 100;
-                    dim = new DimPlaque(this, panelRegion, 34, foregroundInk).Read();
-                    if (dim == null)
-                    {
-                        // Video can darken the tooltip strokes. Avoid scoring those pixels
-                        // as part of a digit and keep the same two-band shape agreement.
-                        foregroundInk = 92;
-                        dim = new DimPlaque(this, panelRegion, 34, foregroundInk).Read();
-                    }
-                    check = dim == null ? null : new DimPlaque(this, panelRegion, 40, foregroundInk).Read(dim);
-                }
-                if (SameCounter(dim, check)) counters.Add(dim);
+                Counter dim = ReadCoveredCounter(panelRegion);
+                if (dim != null) counters.Add(dim);
             }
             return counters.ToArray();
+        }
+
+        public Counter ReadCoveredCounter(Rectangle region)
+        {
+            region.Intersect(new Rectangle(0, 0, width, height));
+            if (region.IsEmpty || region.Width < 4 * MinSlashHeight || region.Height < MinSlashHeight)
+                return null;
+
+            // A translucent tooltip leaves the plaque lettering dimmer than its own text.
+            // Accept only one fraction read at the same position in both contrast bands.
+            Counter dim = ReadDimPanel(region, 32, 102);
+            Counter check = dim == null ? null : ReadDimPanel(region, 44, 94);
+            if (SameCounter(dim, check)) return dim;
+
+            foreach (int foregroundInk in new[] { 100, 92 })
+            {
+                // Video compression can darken the tooltip strokes.
+                dim = new DimPlaque(this, region, 34, foregroundInk).Read();
+                if (dim == null) continue;
+                check = new DimPlaque(this, region, 40, foregroundInk).Read(dim);
+                if (SameCounter(dim, check)) return dim;
+            }
+            return null;
         }
 
         private static bool SameCounter(Counter first, Counter second)

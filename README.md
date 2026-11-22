@@ -46,9 +46,11 @@ manual corrections are under **Edit details** and save automatically while conne
 Automatic records stay unverified until explicitly reviewed. Manual file import,
 paste and **Confirm and save** remain available when the helper is disconnected.
 
-Include the **Fates / Select a Fate** heading and **Confirm** button in the capture.
-If OCR cannot establish both boundaries, the screenshot is saved without suggested
-cards. A failed automatic correction save offers **Retry save**; a revision conflict
+Include the **Fates / Select a Fate** heading and **Confirm** button in the capture
+when possible. If a tooltip covers the controls, the importer can use the visible
+card names, their captions and the tooltip position to identify the offered row.
+When the row is ambiguous, it saves the screenshot without suggested cards.
+A failed automatic correction save offers **Retry save**; a revision conflict
 instead asks you to export the draft and reopen the newer saved offer.
 
 ## Run locally
@@ -97,7 +99,7 @@ are automated.
 
 ### In-game overlay
 
-Helper 0.10.19 includes a standalone advisor and displays next-Fate advice over
+Helper 0.10.20 includes a standalone advisor and displays next-Fate advice over
 windowed/borderless PoE without an open browser. Extract the complete ZIP,
 run the helper and set reward priorities in its local window. Closing that
 window keeps the advisor running; **Open local advisor** in the tray restores it.

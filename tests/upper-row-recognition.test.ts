@@ -118,3 +118,14 @@ test('keeps a covered offer when Windows reads a separate row of reward circles 
   expect(read([...coveredNames, { ...icons, text: 'new effect' }])).toEqual([])
   expect(read([...coveredNames, { ...icons, y: 758, height: 28 }])).toEqual([])
 })
+
+test('uses a reward instruction to confirm an upper row under two tooltips', () => {
+  const topTip = line('Empowered Monster creates volatile orbs of lightning', 1250, 99, 1320)
+  const reward = line('Empowered Monster has increased Item Rarity', 1230, 1017, 1020)
+  const hint = line('To claim this reward, invoke two copies of it', 1235, 1108, 820)
+  const frame = [topTip, ...cards, reward, hint]
+  expect(read(frame).map(c => c[0])).toEqual(['Torchbearer', 'Sadist', 'Tempest'])
+  for (const marker of [hint, topTip, cards[3]]) expect(read(frame.filter(l => l !== marker))).toEqual([])
+  expect(read([...frame, line('Invoke Fates', 1800, 92, 240)])).toEqual([])
+  expect(read(frame.map(l => l === hint ? { ...l, x: 200 } : l))).toEqual([])
+})
