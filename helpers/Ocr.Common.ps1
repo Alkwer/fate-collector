@@ -203,6 +203,96 @@ function Get-FateDimCounterRegion($Lines) {
         [int]($axis - 3 * $unit), [int]($title.y + 32 * $unit))
 }
 
+function Get-FateCoveredCounterAnchors($Lines, [int]$ImageWidth, [int]$ImageHeight) {
+    $confirms = @($Lines | Where-Object { $_.text -match '^\s*confirm\s*$' })
+    if ($confirms.Count -eq 1) {
+        $button = $confirms[0]
+        if ($button.width -ge 33 -and $button.width -le 380 -and
+            $button.height -ge 6 -and $button.height -le 80) {
+            @{ x = $button.x - 1.03 * $button.width; y = $button.y + $button.height / 2
+               width = 1.30 * $button.width; height = 5.5 * $button.height
+               toleranceX = .36 * $button.width; toleranceY = 1.5 * $button.height }
+        }
+    }
+
+    $tooltips = @($Lines | Where-Object { $_.text -match '\bempowered monster\b' -and
+        $_.width -gt .15 * $ImageWidth -and $_.height -gt 8 })
+    if (!$tooltips.Count) { return }
+
+    # When the lower button and upper title are hidden, use the centered spacing
+    # of three visible nameplates to locate the counter under the tooltip.
+    $axis = $ImageWidth / 2
+    $dictionary = Get-FateCardDescriptions
+    $names = @($Lines | Where-Object { $dictionary.ContainsKey(($_.text -replace '[^a-z]', '')) } |
+        Sort-Object x)
+    foreach ($a in $names) {
+        $aCenter = $a.x + $a.width / 2
+        foreach ($b in $names) {
+            $pitch = $b.x + $b.width / 2 - $aCenter
+            if ($pitch -lt .14 * $ImageHeight -or $pitch -gt .32 * $ImageHeight -or
+                [Math]::Abs($a.y - $b.y) -gt .045 * $pitch) { continue }
+            $start = ($aCenter - $axis) / $pitch
+            if ([Math]::Abs(2 * $start - [Math]::Round(2 * $start)) -gt .20) { continue }
+            $row = @($names | Where-Object {
+                $slot = ($_.x + $_.width / 2 - $aCenter) / $pitch
+                [Math]::Abs($_.y - $a.y) -lt .060 * $pitch -and
+                    [Math]::Abs($slot - [Math]::Round($slot)) -lt .09 -and
+                    [Math]::Abs($_.x + $_.width / 2 - $axis) -lt 3 * $pitch
+            })
+            $slots = @($row | ForEach-Object { [Math]::Round(($_.x + $_.width / 2 - $aCenter) / $pitch) } | Select-Object -Unique)
+            if ($slots.Count -lt 3) { continue }
+            $x = $axis - .54 * $pitch
+            $y = $a.y + 1.40 * $pitch
+            if (@($tooltips | Where-Object { $_.x -lt $x -and $_.x + $_.width -gt $x -and
+                [Math]::Abs($_.y + $_.height / 2 - $y) -lt .14 * $pitch }).Count) {
+                @{ x = $x; y = $y; width = .42 * $pitch; height = .32 * $pitch
+                   toleranceX = .08 * $pitch; toleranceY = .12 * $pitch }
+                break
+            }
+        }
+    }
+
+    # The complete counter can appear on the Invoke screen. A partly legible
+    # title anchors its horizontal position while the tooltip locates its row.
+    $invoke = @($Lines | Where-Object { $_.text -match '^\s*invoke\s+\S{4,8}\s*$' -and
+        $_.width -ge 40 -and $_.width -le .16 * $ImageWidth -and
+        [Math]::Abs($_.x + $_.width / 2 - $axis) -lt .12 * $_.width })
+    if ($invoke.Count -ne 1) { return }
+    $title = $invoke[0]
+    $x = $title.x - .5 * $title.width
+    foreach ($tooltip in $tooltips) {
+        $y = $tooltip.y + $tooltip.height / 2
+        if ($tooltip.x -lt $x -and $tooltip.x + $tooltip.width -gt $x -and
+            $y -gt $title.y + 2.4 * $title.width -and $y -lt $title.y + 5.1 * $title.width) {
+            @{ x = $x; y = $y; width = .85 * $title.width; height = .64 * $title.width
+               toleranceX = .15 * $title.width; toleranceY = .21 * $title.width }
+        }
+    }
+}
+
+function Read-FateCoveredPanelCounter($Selected, $Other, [byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight) {
+    $match = $null
+    $tried = @()
+    foreach ($pass in @($Selected, $Other)) {
+        if ($null -eq $pass) { continue }
+        foreach ($anchor in (Get-FateCoveredCounterAnchors $pass.lines $ImageWidth $ImageHeight)) {
+            if (@($tried | Where-Object { [Math]::Abs($_.x - $anchor.x) -lt 5 -and
+                [Math]::Abs($_.y - $anchor.y) -lt 6 }).Count) { continue }
+            $tried += $anchor
+            $region = [Drawing.Rectangle]::FromLTRB([int]($anchor.x - $anchor.width / 2),
+                [int]($anchor.y - $anchor.height / 2), [int]($anchor.x + $anchor.width / 2),
+                [int]($anchor.y + $anchor.height / 2))
+            $counter = [FateOcrImage]::ReadCoveredCounter($Png, $region)
+            if ($null -eq $counter) { continue }
+            if ([Math]::Abs($counter.Bounds.X + $counter.Bounds.Width / 2 - $anchor.x) -gt $anchor.toleranceX -or
+                [Math]::Abs($counter.Bounds.Y + $counter.Bounds.Height / 2 - $anchor.y) -gt $anchor.toleranceY) { continue }
+            if ($null -ne $match -and ($counter.Text -ne $match.Text -or !$match.Bounds.IntersectsWith($counter.Bounds))) { return $null }
+            $match = $counter
+        }
+    }
+    return $match
+}
+
 function Read-FateCounterButton($Counters, $Selected, $Other, [byte[]]$Png, $Engine, [int]$ImageWidth, [int]$ImageHeight) {
     $candidates = @($Counters | Where-Object { $_.HasPlaqueTrim -and !$_.IsIsolatedPlaque })
     if ($candidates.Count -ne 1) { return $null }
@@ -238,7 +328,7 @@ function Test-FateCounterOverlap($Word, [Drawing.Rectangle]$Bounds) {
     return $width * $height -ge .55 * $Word.width * $Word.height
 }
 
-function Merge-FateCounterLines($Selected, $Other, $Counters, $CounterButton = $null) {
+function Merge-FateCounterLines($Selected, $Other, $Counters, $CounterButton = $null, $CoveredPanelCounter = $null) {
     $contextLines = @($Selected.lines)
     if ($null -ne $Other) { $contextLines += @($Other.lines) }
     if ($null -ne $CounterButton) { $contextLines += $CounterButton }
@@ -246,6 +336,7 @@ function Merge-FateCounterLines($Selected, $Other, $Counters, $CounterButton = $
     $hud = @($Counters | Where-Object HasHudCards)
     $accepted = @()
     if ($panel.Count -eq 1) { $accepted += $panel[0] }
+    if ($panel.Count -eq 0 -and $null -ne $CoveredPanelCounter) { $accepted += $CoveredPanelCounter }
     if ($hud.Count -eq 1) { $accepted += $hud[0] }
     if ($accepted.Count -eq 0 -and $Counters.Count -eq 1 -and $Counters[0].IsIsolatedPlaque) { $accepted += $Counters[0] }
     if ($accepted.Count -eq 0) { return $Selected }
@@ -344,7 +435,13 @@ function Get-OcrResult([byte[]]$Png, [int]$ImageWidth, [int]$ImageHeight, [strin
                 try {
                     $button = Read-FateCounterButton $counters $selected $other $Png $engine $ImageWidth $ImageHeight
                 } catch { Write-Verbose ("Counter context OCR failed. " + $_.Exception.Message) }
-                $selected = Merge-FateCounterLines $selected $other $counters $button
+                $context = @($selected.lines)
+                if ($null -ne $other) { $context += @($other.lines) }
+                if ($null -ne $button) { $context += $button }
+                $covered = if (!@($counters | Where-Object { !$_.HasHudCards -and (Test-FatePanelCounter $_ $context) }).Count) {
+                    Read-FateCoveredPanelCounter $selected $other $Png $ImageWidth $ImageHeight
+                }
+                $selected = Merge-FateCounterLines $selected $other $counters $button $covered
             } catch { Write-Verbose ("Counter OCR failed. " + $_.Exception.Message) }
             try {
                 $selected = Read-FateCardText $selected $other $Png $engine $ImageWidth $ImageHeight

@@ -2,9 +2,10 @@ import type { CaptureUpload, FateCard } from './schema'
 import { newCard } from './offers.ts'
 import { normalizeFateName } from './fate-names.ts'
 import fateNames from './fate-names.json' with { type: 'json' }
+import sourceCatalog from './poedb-catalog.json' with { type: 'json' }
 import screenshots from './screenshot-catalog.json' with { type: 'json' }
 
-export const PARSER_VERSION = 'counted-offers-16'
+export const PARSER_VERSION = 'counted-offers-17'
 
 // Card names from prerelease materials, live screenshots and the dated PoEDB catalog.
 // This is a recognition dictionary,
@@ -150,7 +151,7 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
   }
   const counted = countedOffer(lines, headings, confirms)
   if (counted) return counted
-  if (panels.length !== 1) return coveredPanelButton(lines, headings, confirms)
+  if (panels.length !== 1) return coveredPanelButton(lines, headings, confirms) ?? tooltipBoundOffer(lines, headings)
   const { heading, confirm } = panels[0]
   const rows = panelRows(lines, centerX(heading), heading.y, confirm.y - heading.y, confirm.y, 2)
   if (rows.length === 1) return rows[0]
@@ -170,6 +171,11 @@ export function findOfferedRegion(capture: Pick<CaptureUpload, 'image' | 'ocr'>)
 // description are present in its own column. Missing or different words stay raw.
 const descriptionWords = (text: string) => text.toLowerCase().replace(/(?<!\d)[.,](?!\d)/g, '').replace(/\s+/g, ' ').trim()
 const shortDescriptions = new Map(screenshots.fates.map(fate => [fate.name, [...new Set(fate.variants.map(v => v.shortDescription))]]))
+// A reference-only name can share a caption already verified in screenshots.
+const printedCaptions = new Set([...shortDescriptions.values()].flat())
+for (const { name, effects } of sourceCatalog.fates) {
+  if (!shortDescriptions.has(name)) shortDescriptions.set(name, effects.filter(effect => printedCaptions.has(effect)))
+}
 const namesByCaption = new Map<string, string[]>()
 for (const [name, variants] of shortDescriptions) for (const caption of variants) {
   if (!caption) continue
@@ -277,13 +283,63 @@ function coveredPanelButton(lines: OcrLine[], headings: OcrLine[], confirms: Ocr
       && namesByCaption.get(descriptionWords(reviewedSpelling(knownFateName(h.text)!,
         columnDescription(lines, h, pitch, bottom + 2 * pitch), h, lines)))?.includes(knownFateName(h.text)!))) return null
   }
-  const rows = panelRows(lines, axis, title.y, span, bottom, upper.length)
-  return rows.length === 1 && rows[0].headers.every((h, i) => {
-    const name = knownFateName(h.text)!
+  return verifiedPanelRow(lines, upper, axis, title.y, pitch, bottom)
+}
+
+function verifiedPanelRow(lines: OcrLine[], upper: OcrLine[], axis: number, top: number, pitch: number, bottom: number) {
+  const rows = panelRows(lines, axis, top, pitch / .56, bottom, upper.length)
+  if (rows.length !== 1 || rows[0].headers.length !== upper.length) return null
+  return rows[0].headers.every((h, i) => {
+    const name = knownFateName(h.text)
+    if (!name || h !== upper[i]) return false
     const caption = reviewedSpelling(name, columnDescription(lines, h, pitch, bottom), h, lines)
-    return h === upper[i] && namesByCaption.get(descriptionWords(caption))?.includes(name)
+    return namesByCaption.get(descriptionWords(caption))?.includes(name)
   }) ? rows[0] : null
 }
+
+// A reward tooltip or the tooltip of an owned card can cover the counter
+// and Confirm together. Anchor the upper grid to visible names and corroborate
+// its scale, captions and missing controls independently on this frame.
+function tooltipBoundOffer(lines: OcrLine[], headings: OcrLine[]): OfferRegion | null {
+  const names = lines.filter(l => knownFateName(l.text))
+  const tooltips = lines.filter(l => /empowered monster/i.test(l.text))
+  const titles = headings.filter(l => normalize(l.text) === 'fates')
+  if (titles.length > 1) return null
+  const matches = new Map<OcrLine, OfferRegion>()
+  for (const tip of tooltips) {
+    const band = names.filter(h => tip.y - h.y > 9 * tip.height && tip.y - h.y < 24 * tip.height)
+    for (const header of band) {
+      const row = band.filter(h => Math.abs(h.y - header.y) <= 1.5 * header.height).sort((a, b) => centerX(a) - centerX(b))
+      if (header !== row[0] || row.length < 3 || row.length > 6) continue
+      const pitch = (centerX(row.at(-1)!) - centerX(header)) / (row.length - 1)
+      const axis = centerX(header) + (row.length - 1) * pitch / 2
+      if (pitch < 8 * header.height || pitch > 22 * header.height) continue
+      const top = titles[0]?.y ?? Math.max(...row.map(h => h.y)) - .4 * pitch
+      const span = pitch / .56, bottom = top + span
+      if (Math.abs(tip.y - bottom) > .14 * pitch) continue
+      const crosses = (l: OcrLine, x: number) => l.x <= x && l.x + l.width >= x
+      const maskedTitle = tooltips.some(l => Math.abs(l.y - top) < .16 * pitch && crosses(l, axis))
+        || lines.some(l => Math.abs(l.y - top) < .13 * pitch && l.width > pitch && crosses(l, axis)
+          && tooltips.some(t => Math.abs(t.x - l.x) < t.height && Math.abs(t.y - l.y) < 2.5 * t.height))
+      if (titles.length ? Math.abs(centerX(titles[0]) - axis) > .12 * pitch : !maskedTitle) continue
+      const atButton = lines.filter(l => Math.abs(l.y - bottom) < .17 * pitch && l.width > pitch)
+      if (!atButton.some(l => crosses(l, axis - .26 * pitch) || crosses(l, axis))) continue
+      const rewardHint = lines.some(l => /^to claim this reward,? invoke /i.test(l.text)
+        && Math.abs(l.x - tip.x) <= tip.height && l.y > tip.y && l.y - tip.y < .36 * pitch)
+      const owned = names.filter(l => l.y > bottom + .22 * pitch && l.y < bottom + .56 * pitch)
+      const ownedTooltip = owned.some(h => names.some(title => knownFateName(title.text) === knownFateName(h.text)
+        && Math.abs(title.x - tip.x) < tip.height && tip.y - title.y > tip.height && tip.y - title.y < 3 * tip.height))
+      const splitFooter = atButton.some(l => l !== tip && Math.abs(l.y - tip.y) < tip.height / 2
+        && Math.abs(l.x - (tip.x + tip.width)) < 2 * tip.height && crosses(l, axis))
+      if (!rewardHint && !ownedTooltip && !(owned.length && maskedTitle)
+        && !(splitFooter && owned.length >= 2)) continue
+      const region = verifiedPanelRow(lines, row, axis, top, pitch, bottom)
+      if (region) matches.set(header, region)
+    }
+  }
+  return matches.size === 1 ? [...matches.values()][0] : null
+}
+
 const captionVocabulary = new Set([...shortDescriptions.values()].flat().flatMap(s => s ? descriptionWords(s).split(' ') : []))
 
 // A gap inside a word can survive both OCR passes. Keep every printed letter
@@ -374,6 +430,29 @@ function tooltipConfirmsWord(seen: string[], caption: string, body: string[]): b
   })
 }
 
+// The pointer can obscure the start or end of adjacent words. Keep every
+// intact word, and require the named tooltip to repeat the damaged phrase.
+function tooltipRepeatsDamagedPhrase(seen: string[], caption: string, body: string[]) {
+  const printed = descriptionWords(caption).split(' ')
+  if (seen.length !== printed.length || seen.length < 3) return false
+  const damaged = seen.flatMap((w, i) => w === printed[i] ? [] : [i])
+  if (!damaged.length || damaged.length > 2 || damaged.at(-1)! - damaged[0] > 1) return false
+  for (const i of damaged) {
+    const word = seen[i], target = printed[i]
+    if (!/^[a-z]{2,}$/.test(word) || !/^[a-z]+$/.test(target) || captionVocabulary.has(word)) return false
+    if (!(target.startsWith(word) || target.endsWith(word)
+      || (damaged.length === 2 && word.length === target.length + 1 && word.startsWith(target))
+      || (word.length >= 3 && word.length < target.length && target.startsWith(word.slice(0, -1))))) return false
+  }
+  const first = damaged[0], last = damaged.at(-1)!
+  if (damaged.length === 2 && printed[first].length >= 4 && printed[last].length >= 4
+    && body.some(l => l.includes(' ' + printed.slice(first, last + 1).join(' ') + ' '))) return true
+  // Include an intact content word beside the damaged span (possibly with
+  // a connector between them). A repeated preposition alone is ambiguous.
+  return [first - 2, first - 1, last + 1, last + 2].some(i => printed[i]?.length >= 4
+    && body.some(l => l.includes(' ' + printed.slice(Math.min(i, first), Math.max(i, last) + 1).join(' ') + ' ')))
+}
+
 // A cursor can split a word on one line and obscure another on the next.
 // Require evidence from both the printed column and that card's own tooltip.
 function tooltipConfirmsFragments(words: string, caption: string, body: string[]) {
@@ -407,7 +486,7 @@ function reviewedSpelling(name: string, text: string, header: OcrLine, lines: Oc
   text = joinSplitCaptionWord(name, text)
   const words = descriptionWords(text)
   const variants = shortDescriptions.get(name) ?? []
-  const exact = variants.find(value => value && (descriptionWords(value) === words
+  const exact = variants.find(value => value && (descriptionWords(value) === words.replace(/(^| )[:•] /g, '$1')
     || (value.length >= 20 && /^[B-HJ-Z]\s/.test(text) && descriptionWords(value) === words.slice(2))))
   if (exact) return exact
   const supported = variants.filter(value => value && matchesPrintedWords(words, descriptionWords(value)))
@@ -425,7 +504,8 @@ function reviewedSpelling(name: string, text: string, header: OcrLine, lines: Oc
   const body = lines.filter(l => l.y >= title.y + title.height && l.y <= title.y + 5 * title.height
     && l.y + l.height < header.y && Math.abs(l.x - title.x) < margin).map(l => ' ' + descriptionWords(l.text) + ' ')
   const seen = words.split(' ')
-  const confirmed = variants.filter(value => value && (tooltipConfirmsWord(seen, value, body) || tooltipConfirmsFragments(words, value, body)))
+  const confirmed = variants.filter(value => value && (tooltipConfirmsWord(seen, value, body) || tooltipConfirmsFragments(words, value, body)
+    || tooltipRepeatsDamagedPhrase(seen, value, body)))
   return confirmed.length === 1 ? confirmed[0]! : text
 }
 

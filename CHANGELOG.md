@@ -1,5 +1,11 @@
 # Fate Collector releases
 
+## 0.10.20 — 22 November 2026
+
+- The helper uses nearby card names, tooltips and the Confirm button to locate a dimmed Fates counter and check its visible digits.
+- Offer recognition can use the upper row and its printed captions when a reward or card tooltip covers the controls.
+- A named tooltip can corroborate partially obscured words in that card's caption.
+
 ## 0.10.19 — 21 November 2026
 
 - The Windows helper checks the interior of the counter plaque at higher UI resolutions and can read a partly dimmed digit when its remaining strokes agree.

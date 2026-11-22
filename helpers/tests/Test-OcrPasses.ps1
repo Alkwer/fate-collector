@@ -298,6 +298,19 @@ if (!(Get-FateDimCounterRegion @($confirm)).IsEmpty -or
     !(Get-FateDimCounterRegion @((New-Line 'Fates' 80), (New-Line 'Invoke Fates' 95))).IsEmpty) {
     throw 'A dim counter search requires a unique panel heading.'
 }
+$dimButton = @{ text = 'CONFIRM'; x = 254; y = 225; width = 90; height = 18 }
+$buttonPass = New-Pass @($dimButton)
+$dim = New-CounterFixture $zero $four -Dim -SlashCover Overprint
+$covered = Read-FateCoveredPanelCounter $buttonPass $null $dim 480 410
+if ($null -eq $covered -or (Merge-FateCounterLines $buttonPass $null @() $null $covered).text -cne "CONFIRM`n0/4") {
+    throw 'Recover a covered counter using the visible Confirm button when the panel heading is hidden.'
+}
+$dimButton.y += 40
+if ($null -ne (Read-FateCoveredPanelCounter $buttonPass $null $dim 480 410) -or
+    $null -ne (Read-FateCoveredPanelCounter $blankPass $null $dim 480 410)) {
+    throw 'A covered fraction requires a panel anchor at the fraction position.'
+}
+
 function New-FragmentedCounterFixture {
     param([switch]$HideLeftDigit, [switch]$HideRightDigit, [switch]$DarkGap,
         [switch]$CoverEndpoint, [switch]$HideSlash)
