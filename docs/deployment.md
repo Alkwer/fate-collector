@@ -155,13 +155,28 @@ successful **Deploy staging** run ID from its summary and choose a validation mo
   11 November. Set `prelaunch_acknowledged=true`, leave `recognition_run_id`
   empty, and leave `manual_tests_passed=false` if the full manual checklist was
   not completed. This records deferred validation, never a passing native report.
-- `hotfix-20261116` accepts the single 0.10.19 package identified below. Select
+- `hotfix-20261116` accepts the single 0.10.20 package identified below. Select
   its staging run, set `hotfix_update_acknowledged=true`, keep
   `manual_tests_passed=false` and leave `recognition_run_id` empty. The
   workflow requires full CI, Windows helper/browser checks, package integrity
   verification and live synthetic staging tests before deployment.
 
-### Pinned Fate Collector 0.10.19 exception
+### Pinned Fate Collector 0.10.20 exception
+
+The owner requested publication of this specific OCR package without starting the game. The in-game capture, native holdout and full manual staging checklist are deferred.
+
+- Source revision `9ad173ff5d94adeb83ff63e1041ad00edc5c1bd3`
+- Package ID `a6b26e41347c5da52993137fce5b994dbf1b3843191729ba2e454ad4b1accbd7`
+- Staging run [44966188194](https://github.com/Alkwer/fate-collector/actions/runs/44966188194)
+- Helper ZIP SHA-256 `acb326c602f98568628e298672595e462d61f44befbb3c3c4feeec19fb6221a1`
+
+Staging passed the complete CI suite and live synthetic smoke checks. The staging helper read all 46 counters directly legible on the 67 development frames and four of the nine counters referenced from an adjacent frame. It detected all 37 offers, including the 12 with a covered Confirm button, and all 136 ordered card and description pairs. The 30 other screens, including 14 Invoke Fates frames, produced no offers. The five current 4K frames were negative controls. The 60 earlier regression frames included 11 at 4K.
+
+The staging ZIP matched the workflow artifact. Its positioned OCR matched the local candidate on all 67 development frames and 60 earlier frames. The staging browser reproduced the expected cards and captions on all 133 local file imports, including six older exports from 0.10.19.
+
+The managed Turnstile widget displayed a human verification challenge on staging. The form waited 60 seconds without submitting. The owner authorized deferral of this submission, receipt, token reuse and withdrawal test if human verification blocked it. Production Turnstile verification stays enabled.
+
+### Previous Fate Collector 0.10.19 exception (historical)
 
 The owner requested publication of this specific OCR package without starting the game. The in-game capture, native holdout and full manual staging checklist are deferred.
 
@@ -713,7 +728,7 @@ local Worker with a test-only Siteverify transport in the ignored E2E entrypoint
 that transport is never packaged for deployment. Before promotion, also verify a
 fresh real-widget token on staging: submit synthetic evidence, confirm the receipt,
 check replay rejection and withdraw it. The
-[0.10.19 deployment record](#pinned-fate-collector-01019-exception) records the
+[0.10.20 deployment record](#pinned-fate-collector-01020-exception) records the
 outcome for this package.
 Real user evidence must not enter staging.
 Never disable production verification or deploy a test-key bypass to run smoke tests.
